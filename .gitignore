@@ -1,0 +1,6 @@
+playground/
+common_software/dic*
+*.so
+*~
+*_C.d
+*.pcm
