@@ -128,6 +128,10 @@ void DataReducer::SetBranches() {
    fChain->SetBranchStatus("muon_probability", 1);
    fChain->SetBranchStatus("track_probability", 1);
 
+   fChain->SetBranchStatus("recolns_is_good", 1);
+   fChain->SetBranchStatus("dusj_is_good", 1);
+   fChain->SetBranchStatus("gandalf_is_good", 1);
+
 }
 
 //*********************************************************************
@@ -169,6 +173,7 @@ void DataReducer::InitOutputTree() {
   tout->Branch("gandalf_pos_z", &gandalf_pos_z, "gandalf_pos_z/D");
   
   tout->Branch("gandalf_energy_nu", &gandalf_energy_corrected, "gandalf_energy_nu/D");
+  tout->Branch("gandalf_is_good"  ,          &gandalf_is_good, "gandalf_is_good/D");
 
   //shower info
 
@@ -181,6 +186,7 @@ void DataReducer::InitOutputTree() {
   
   tout->Branch("shower_energy_nu", &dusj_energy_corrected, "shower_energy_nu/D");
   tout->Branch("shower_bjorkeny" , &dusj_best_DusjOrcaUsingProbabilitiesFinalFit_BjorkenY, "shower_bjorkeny/D");
+  tout->Branch("shower_is_good"  ,          &dusj_is_good, "shower_is_good/D");
 
   //recoLNS info
 
@@ -193,6 +199,7 @@ void DataReducer::InitOutputTree() {
 
   tout->Branch("recolns_energy_nu", &recolns_energy_neutrino, "recolns_energy_nu/D");
   tout->Branch("recolns_bjorkeny" ,       &recolns_bjorken_y, "recolns_bjorkeny/D");
+  tout->Branch("recolns_is_good"  ,         &recolns_is_good, "recolns_is_good/D");
 
   //PID info
   tout->Branch("PID_muon_probability" ,  &muon_probability, "PID_muon_probability/D");

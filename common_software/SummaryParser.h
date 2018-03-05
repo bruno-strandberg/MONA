@@ -47,6 +47,7 @@ public :
    Double_t        gandalf_pos_y;
    Double_t        gandalf_pos_z;
    Double_t        gandalf_energy_nu;
+   Double_t        gandalf_is_good;
    Double_t        shower_dir_x;
    Double_t        shower_dir_y;
    Double_t        shower_dir_z;
@@ -55,6 +56,7 @@ public :
    Double_t        shower_pos_z;
    Double_t        shower_energy_nu;
    Double_t        shower_bjorkeny;
+   Double_t        shower_is_good;
    Double_t        recolns_dir_x;
    Double_t        recolns_dir_y;
    Double_t        recolns_dir_z;
@@ -63,6 +65,7 @@ public :
    Double_t        recolns_pos_z;
    Double_t        recolns_energy_nu;
    Double_t        recolns_bjorkeny;
+   Double_t        recolns_is_good;
    Double_t        PID_muon_probability;
    Double_t        PID_track_probability;
 
@@ -89,6 +92,7 @@ public :
    TBranch        *b_gandalf_pos_y;   //!
    TBranch        *b_gandalf_pos_z;   //!
    TBranch        *b_gandalf_energy_nu;   //!
+   TBranch        *b_gandalf_is_good;   //!
    TBranch        *b_shower_dir_x;   //!
    TBranch        *b_shower_dir_y;   //!
    TBranch        *b_shower_dir_z;   //!
@@ -97,6 +101,7 @@ public :
    TBranch        *b_shower_pos_z;   //!
    TBranch        *b_shower_energy_nu;   //!
    TBranch        *b_shower_bjorkeny;   //!
+   TBranch        *b_shower_is_good;   //!
    TBranch        *b_recolns_dir_x;   //!
    TBranch        *b_recolns_dir_y;   //!
    TBranch        *b_recolns_dir_z;   //!
@@ -105,6 +110,7 @@ public :
    TBranch        *b_recolns_pos_z;   //!
    TBranch        *b_recolns_energy_nu;   //!
    TBranch        *b_recolns_bjorkeny;   //!
+   TBranch        *b_recolns_is_good;   //!
    TBranch        *b_PID_muon_probability;   //!
    TBranch        *b_PID_track_probability;   //!
 
@@ -203,6 +209,7 @@ void SummaryParser::Init(TTree *tree)
    fChain->SetBranchAddress("gandalf_pos_y", &gandalf_pos_y, &b_gandalf_pos_y);
    fChain->SetBranchAddress("gandalf_pos_z", &gandalf_pos_z, &b_gandalf_pos_z);
    fChain->SetBranchAddress("gandalf_energy_nu", &gandalf_energy_nu, &b_gandalf_energy_nu);
+   fChain->SetBranchAddress("gandalf_is_good", &gandalf_is_good, &b_gandalf_is_good);
    fChain->SetBranchAddress("shower_dir_x", &shower_dir_x, &b_shower_dir_x);
    fChain->SetBranchAddress("shower_dir_y", &shower_dir_y, &b_shower_dir_y);
    fChain->SetBranchAddress("shower_dir_z", &shower_dir_z, &b_shower_dir_z);
@@ -211,6 +218,7 @@ void SummaryParser::Init(TTree *tree)
    fChain->SetBranchAddress("shower_pos_z", &shower_pos_z, &b_shower_pos_z);
    fChain->SetBranchAddress("shower_energy_nu", &shower_energy_nu, &b_shower_energy_nu);
    fChain->SetBranchAddress("shower_bjorkeny", &shower_bjorkeny, &b_shower_bjorkeny);
+   fChain->SetBranchAddress("shower_is_good", &shower_is_good, &b_shower_is_good);
    fChain->SetBranchAddress("recolns_dir_x", &recolns_dir_x, &b_recolns_dir_x);
    fChain->SetBranchAddress("recolns_dir_y", &recolns_dir_y, &b_recolns_dir_y);
    fChain->SetBranchAddress("recolns_dir_z", &recolns_dir_z, &b_recolns_dir_z);
@@ -219,6 +227,7 @@ void SummaryParser::Init(TTree *tree)
    fChain->SetBranchAddress("recolns_pos_z", &recolns_pos_z, &b_recolns_pos_z);
    fChain->SetBranchAddress("recolns_energy_nu", &recolns_energy_nu, &b_recolns_energy_nu);
    fChain->SetBranchAddress("recolns_bjorkeny", &recolns_bjorkeny, &b_recolns_bjorkeny);
+   fChain->SetBranchAddress("recolns_is_good", &recolns_is_good, &b_recolns_is_good);
    fChain->SetBranchAddress("PID_muon_probability", &PID_muon_probability, &b_PID_muon_probability);
    fChain->SetBranchAddress("PID_track_probability", &PID_track_probability, &b_PID_track_probability);
    Notify();
