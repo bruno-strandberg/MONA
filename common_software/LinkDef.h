@@ -8,5 +8,6 @@
 //if you run a compiled macro and include before it does not matter
 #pragma link C++ class GSGParser+;
 #pragma link C++ class SummaryParser+;
+#pragma link C++ class CScalculator+;
 
 #endif
