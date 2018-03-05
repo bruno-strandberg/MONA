@@ -8,6 +8,7 @@
 //functions
 
 void  split_to_files_atmnu(Bool_t overwrite=false);
+void  split_to_files_atmnu_v2();
 void  split_to_files_mupage(Bool_t overwrite=false, Bool_t separate=false);
 Int_t get_max_run_nr(TString cut_string);
 
@@ -31,6 +32,7 @@ void RestoreParity() {
 
   //call functions
   split_to_files_atmnu();
+  //split_to_files_atmnu_v2();
   split_to_files_mupage();
   
 }
@@ -183,5 +185,132 @@ void split_to_files_mupage(Bool_t overwrite, Bool_t separate) {
     if (!separate) break;
 
   }
+
+}
+
+//****************************************************************
+
+//developing something faster. Do the sorting in one go with a loop over the file
+
+void  split_to_files_atmnu_v2() {
+
+  //--------------------------------------------------
+  //maps to sort data
+  //--------------------------------------------------
+
+  map < Double_t, TString > pdg_to_name = { {12., "elec" }, 
+					    {14., "muon" },
+					    {16., "tau"  } };
+
+  map < Double_t, TString > iscc_to_str = { { 0., "NC"}, 
+					    { 1., "CC"} };
+
+  map < Double_t, TString>  emin_to_str = { { 1., "1-5"  },
+					    { 3., "3-100"} };
+
+  //filename (except run number) and a vector with cuts for MC_type, MC_is_CC and MC_erange_start
+  map < TString, vector<Double_t> > fnstr_to_cuts;
+
+  for (auto const& type : pdg_to_name) {
+    for (auto const& interaction : iscc_to_str) {
+      for (auto const& emin : emin_to_str) {
+
+	//build the filename string except for run number
+	TString name_string = "../data/mc_end/data_atmnu/summary_"; 
+	name_string += type.second + "-";
+	name_string += interaction.second + "_";
+	name_string += emin.second + "GeV_";
+
+	//create the map entry for fnstr_to_cuts
+	vector<Double_t> cuts = { type.first, interaction.first, emin.first };
+
+	fnstr_to_cuts.insert( pair<TString, vector<Double_t>>(name_string, cuts) );
+
+      } //end loop over energy range
+    } //end loop over nc/cc
+  } //end loop over types
+
+  //--------------------------------------------------
+  //init the output files and trees
+  //--------------------------------------------------
+  
+  //const Int_t maxruns = 2000;
+  const Int_t maxruns = 20;
+
+  TFile ***files = new TFile**[ fnstr_to_cuts.size() ];
+  TTree ***trees = new TTree**[ fnstr_to_cuts.size() ];
+  for (Int_t i = 0; i < fnstr_to_cuts.size(); i++) {
+    files[i] = new TFile*[maxruns];
+    trees[i] = new TTree*[maxruns];
+  }
+
+  for ( map< TString, vector<Double_t> >::iterator it = fnstr_to_cuts.begin(); 
+	it != fnstr_to_cuts.end(); ++it) {
+
+    for (Int_t runnr = 0; runnr < maxruns; runnr++) {
+
+      TString fname     = it->first + (TString)to_string(runnr) + ".root";
+      Int_t   fname_idx = distance( fnstr_to_cuts.begin(), it );
+
+      files[fname_idx][runnr] = new TFile(fname, "RECREATE");
+      trees[fname_idx][runnr] = sp->fChain->CloneTree(0);
+
+    }
+
+  }
+
+  //--------------------------------------------------
+  //loop over all entries in the input tree and fill one of the created trees
+  //depending on the file number and cuts
+  //--------------------------------------------------
+
+  for (Int_t i = 0; i < sp->fChain->GetEntries(); i++) {
+
+    sp->fChain->GetEntry(i);
+ 
+    if (i % 100000 == 0) cout << "Entry: " << i << endl;
+   
+    //loop over all possible file types, using cuts determine what tree to fill
+    for ( map< TString, vector<Double_t> >::iterator it = fnstr_to_cuts.begin(); 
+	  it != fnstr_to_cuts.end(); ++it) {
+
+      vector<Double_t> cuts = it->second;
+      Int_t fname_idx = distance( fnstr_to_cuts.begin(), it );
+
+      //cuts are MC_type, MC_is_CC and MC_erange_start
+      if ( ( TMath::Abs(sp->MC_type) == cuts[0] ) && 
+	   ( sp->MC_is_CC            == cuts[1] ) &&
+	   ( sp->MC_erange_start     == cuts[2] ) ) {
+
+	trees[fname_idx][(Int_t)sp->MC_runID]->Fill();
+
+      }
+
+    } //end loop over map entries
+
+  } //end loop over entries in file
+
+  //--------------------------------------------------
+  //close the files, delete files with 0 entries
+  //--------------------------------------------------
+  for (Int_t ftype = 0; ftype < fnstr_to_cuts.size(); ftype++) {
+
+    for (Int_t runnr = 0; runnr < maxruns; runnr++) {
+
+      TString fname = files[ftype][runnr]->GetName();
+
+      Bool_t remove = false;
+      if ( trees[ftype][runnr]->GetEntries() > 0 ) { trees[ftype][runnr]->Write(); }
+      else { remove = true; }
+	  
+      files[ftype][runnr]->Close();
+	  
+      if (remove) system ("rm " + fname);
+
+      delete files[ftype][runnr];
+
+    } //end loop over file numbers
+
+  } //end loop over file types
 
 }

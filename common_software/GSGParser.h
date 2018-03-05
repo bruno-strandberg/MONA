@@ -210,8 +210,12 @@ public :
    //------------------------------------------------------
    //bstr: functions/members
    //------------------------------------------------------
-   Double_t Ngen;
-   Double_t Vgen;
+   Double_t Ngen;       //number of generated events
+   Double_t Vint;       //interaction volume
+   Double_t Vcan;       //can volume
+   Double_t Rcan;       //can radius
+   Double_t Zcan_min;   //can minimum
+   Double_t Zcan_max;   //can maximum
 
 };
 
@@ -242,17 +246,25 @@ GSGParser::GSGParser(TString fname) : fChain(0)
 
     Ngen = hr.NTot;
 
-    Double_t rho_water = hr.RhoSW;
-    Double_t h_water   = hr.HSeaWater;
-    Double_t rho_rock  = hr.RhoSR;
-    Double_t h_rock    = hr.HRock;
-    Double_t r_can     = hr.RVol;
-    
-    Vgen = TMath::Pi() * r_can * r_can * (h_water + h_rock * rho_rock/rho_water);
+    //variables for interaction volume calculation
+    Double_t rho_water    = 1;
+    Double_t rho_seawater = hr.RhoSW;
+    Double_t h_water      = hr.HSeaWater;
+    Double_t rho_rock     = hr.RhoSR;
+    Double_t h_rock       = hr.HRock;
+    Double_t r_int        = hr.RVol;  //radius of interaction volume
 
-    //bstr: NOTE, the gSeaGen code does. Waiting for the answer from distefano_c@lns.infn.it
-    //Vgen = TMath::Pi() * r_can * r_can * rho_water * rho_water * 
-    //  (h_water*rho_water + h_rock * rho_rock);
+    //variables for can calculation
+    Zcan_min = hr.Can1;
+    Zcan_max = hr.Can2;
+    Rcan     = hr.Can3;
+    
+    //calculate the interaction volume and the can volume
+    Vint = TMath::Pi() * r_int * r_int * 
+      (h_water * rho_seawater/rho_water + h_rock * rho_rock/rho_water);
+    
+    Vcan = TMath::Pi() * Rcan * Rcan * (Zcan_max  - Zcan_min);
+    
   }
   else { cout << "ERROR! GSGParser::GSGParser() init failed" << endl; }
 
