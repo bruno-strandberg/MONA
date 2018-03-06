@@ -6,6 +6,18 @@
 
 using namespace std;
 
+/** A class that provides a neutrino cross-section calculator. 
+ *
+ *  The class can be used as follows. After init, select the neutrino interaction
+ *  with the public function SelectInteraction. Then use the function CalculateCS
+ *  to get the cross-section depending on neutrino energy.
+ *
+ *  The class uses a root file in specific format that stores TGraphs with total neutrino
+ *  cross-sections for CC and NC interactions on proton and oxygen. The cross-section data
+ *  was extracted from GENIE by M. Jongen.
+ * 
+ */
+
 class CScalculator {
 
  public:

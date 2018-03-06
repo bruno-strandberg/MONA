@@ -4,6 +4,10 @@
 
 //*************************************************************************
 
+/**
+ * Constructor.
+ * \param  xsecfile  A root file in specific format with neutrino xsec data.
+ */
 CScalculator::CScalculator(TString xsecfile) {
 
   //init the maps that are used throughout the code
@@ -32,6 +36,9 @@ CScalculator::CScalculator(TString xsecfile) {
 
 //*************************************************************************
 
+/**
+ * Destructor.
+ */
 CScalculator::~CScalculator() {
 
   f_g_H1  = NULL;
