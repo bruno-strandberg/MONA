@@ -210,12 +210,21 @@ public :
    //------------------------------------------------------
    //bstr: functions/members
    //------------------------------------------------------
-   Double_t Ngen;       //number of generated events
-   Double_t Vint;       //interaction volume
-   Double_t Vcan;       //can volume
-   Double_t Rcan;       //can radius
-   Double_t Zcan_min;   //can minimum
-   Double_t Zcan_max;   //can maximum
+   Double_t Ngen;         //number of generated events
+   Double_t Vint;         //interaction volume
+   Double_t Rho_seawater; //sea water density
+
+   Double_t Vcan;         //can volume
+   Double_t Rcan;         //can radius
+   Double_t Zcan_min;     //can minimum
+   Double_t Zcan_max;     //can maximum
+
+   Double_t Agen;         //generation area
+   Double_t E_min;        //minimum generated neutrion energy
+   Double_t E_max;        //maximum generated neutrion energy
+   Double_t Ct_min;       //minimum generated neutrino direction
+   Double_t Ct_max;       //maximum generated neutrino direction
+   Double_t E_power;      //power of the energy spectrum, E^{-E_power}
 
 };
 
@@ -248,23 +257,30 @@ GSGParser::GSGParser(TString fname) : fChain(0)
 
     //variables for interaction volume calculation
     Double_t rho_water    = 1;
-    Double_t rho_seawater = hr.RhoSW;
+    Rho_seawater = hr.RhoSW;
     Double_t h_water      = hr.HSeaWater;
     Double_t rho_rock     = hr.RhoSR;
     Double_t h_rock       = hr.HRock;
     Double_t r_int        = hr.RVol;  //radius of interaction volume
+
+    Vint = TMath::Pi() * r_int * r_int * 
+      (h_water * Rho_seawater/rho_water + h_rock * rho_rock/rho_water);
 
     //variables for can calculation
     Zcan_min = hr.Can1;
     Zcan_max = hr.Can2;
     Rcan     = hr.Can3;
     
-    //calculate the interaction volume and the can volume
-    Vint = TMath::Pi() * r_int * r_int * 
-      (h_water * rho_seawater/rho_water + h_rock * rho_rock/rho_water);
-    
     Vcan = TMath::Pi() * Rcan * Rcan * (Zcan_max  - Zcan_min);
-    
+
+    //variables for effective volume calculation based on generation area
+    Agen     = hr.Agen;
+    E_min    = hr.EvMin;
+    E_max    = hr.EvMax;
+    Ct_min   = hr.CtMin;
+    Ct_max   = hr.CtMax;
+    E_power  = hr.Alpha;
+
   }
   else { cout << "ERROR! GSGParser::GSGParser() init failed" << endl; }
 
