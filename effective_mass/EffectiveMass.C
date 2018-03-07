@@ -19,7 +19,7 @@ void     FillGenerated_Agen(Int_t evt_type, Int_t int_type);
 //*********************************************************************
 //global histograms and variables
 
-enum effvol_options { interaction_vol = 0, can_vol, calc_from_agen, not_supported };
+enum effvol_options { interaction_vol = 0, can_vol, not_supported, calc_from_agen };
 
 //initialised in InitHists()
 TH2D *fh_gen_nu;
@@ -42,7 +42,7 @@ SummaryParser *fS;
  *
  * \param  summary_file  Summary file with reconstructed neutrino events.
  * \param  gseagen_file  GSeaGen file where all of the generated MC events are.
- * \param  flavor       Neutrino flavor. 0 - electron, 1 - muon, 2 - tauon.
+ * \param  flavor        Neutrino flavor. 0 - electron, 1 - muon, 2 - tauon.
  * \param  int_type      Interaction type. 0 - NC, 1 - CC.
  * \param  en_low        MC neutrino energy start. Either 1 or 3.
  * \param  run_nr        MC run number.
@@ -90,7 +90,8 @@ void EffectiveMass(TString summary_file, TString gseagen_file,
   }
 
   //------------------------------------------------------
-  //calculate the effective mass by dividing with h_gen_nu, write to output
+  //write out the histograms. Division of det/gen has to be done 
+  //later, this allows easy combining of the outputs.
   //------------------------------------------------------
 
   TFile *fout = new TFile(out_name, "RECREATE");
@@ -123,7 +124,7 @@ void EffectiveMass(TString summary_file, TString gseagen_file,
 
 //*********************************************************************
 
-/** This routine parses the inputs to create the output file name. */
+// This routine parses the inputs to create the output file name.
 TString ParseInputs(Int_t flavor, Int_t int_type, Int_t en_low, Int_t run_nr) {
 
   map < Int_t, TString > f_to_name = { {0, "elec" }, 
@@ -161,6 +162,7 @@ TString ParseInputs(Int_t flavor, Int_t int_type, Int_t en_low, Int_t run_nr) {
 
 //*********************************************************************
 
+// This routine initialises the (global) histograms
 void InitHists() {
 
   fh_gen_nu  = new TH2D("Generated_nu" , "Generated_nu" , 100, 0, 100, 200, -1, 1);
@@ -185,6 +187,7 @@ void InitHists() {
 
 //*********************************************************************
 
+// Function to check whether vertex is inside can
 Bool_t VertexInCan(Double_t vx, Double_t vy, Double_t vz, Double_t Rcan, Double_t zcan_min, Double_t zcan_max) {
 
   Double_t r_vtx = TMath::Sqrt(vx*vx + vy*vy);
@@ -194,6 +197,7 @@ Bool_t VertexInCan(Double_t vx, Double_t vy, Double_t vz, Double_t Rcan, Double_
 
 //*********************************************************************
 
+// Function that fills 'detected' histograms
 void FillDetected(Int_t veff_option) {
 
   //loops over summary events and fill 'detected' histograms
@@ -235,6 +239,7 @@ void FillDetected(Int_t veff_option) {
 
 //*********************************************************************
 
+// Function that fills 'generated' histograms, generation vol either interaction volume or can.
 void FillGenerated_MCevts(Int_t veff_option) {
 
   //loop over generated MC events
