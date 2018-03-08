@@ -214,23 +214,23 @@ void FillDetected(Int_t veff_option) {
     //gandalf
     if ((Bool_t)fS->gandalf_is_good) {
 
-      if (fS->MC_type > 0){ fh_det_gandalf_nu ->Fill(fS->gandalf_energy_nu, fS->gandalf_dir_z ); }
-      else                { fh_det_gandalf_nub->Fill(fS->gandalf_energy_nu, fS->gandalf_dir_z ); }
+      if (fS->MC_type > 0){ fh_det_gandalf_nu ->Fill(fS->gandalf_energy_nu, -fS->gandalf_dir_z ); }
+      else                { fh_det_gandalf_nub->Fill(fS->gandalf_energy_nu, -fS->gandalf_dir_z ); }
 
     }
 
     //shower
     if ((Bool_t)fS->shower_is_good ) {
 
-      if (fS->MC_type > 0){ fh_det_shower_nu ->Fill(fS->shower_energy_nu , fS->shower_dir_z  ); }
-      else                { fh_det_shower_nub->Fill(fS->shower_energy_nu , fS->shower_dir_z  ); }
+      if (fS->MC_type > 0){ fh_det_shower_nu ->Fill(fS->shower_energy_nu , -fS->shower_dir_z  ); }
+      else                { fh_det_shower_nub->Fill(fS->shower_energy_nu , -fS->shower_dir_z  ); }
       
     }
 
     //recolns
     if ((Bool_t)fS->recolns_is_good) {
-      if (fS->MC_type > 0){ fh_det_recolns_nu ->Fill(fS->recolns_energy_nu, fS->recolns_dir_z ); }
-      else                { fh_det_recolns_nub->Fill(fS->recolns_energy_nu, fS->recolns_dir_z ); }
+      if (fS->MC_type > 0){ fh_det_recolns_nu ->Fill(fS->recolns_energy_nu, -fS->recolns_dir_z ); }
+      else                { fh_det_recolns_nub->Fill(fS->recolns_energy_nu, -fS->recolns_dir_z ); }
     }
 
   }
@@ -252,8 +252,8 @@ void FillGenerated_MCevts(Int_t veff_option) {
       if ( !VertexInCan(fG->Neutrino_V1, fG->Neutrino_V2, fG->Neutrino_V3, fG->Rcan, fG->Zcan_min, fG->Zcan_max) ) continue;
     }
 
-    if (fG->Neutrino_PdgCode > 0) { fh_gen_nu ->Fill(fG->Neutrino_E, fG->Neutrino_D3); }
-    else                          { fh_gen_nub->Fill(fG->Neutrino_E, fG->Neutrino_D3); }
+    if (fG->Neutrino_PdgCode > 0) { fh_gen_nu ->Fill(fG->Neutrino_E, -fG->Neutrino_D3); }
+    else                          { fh_gen_nub->Fill(fG->Neutrino_E, -fG->Neutrino_D3); }
   }
 
   //multiply h_gen_nu by Veff * rho_seawater
@@ -265,8 +265,8 @@ void FillGenerated_MCevts(Int_t veff_option) {
   if (veff_option == interaction_vol) scale = fG->Vint * rho;
   else if (veff_option == can_vol) scale = fG->Vcan * rho;
 
-  fh_gen_nu ->Scale( scale );
-  fh_gen_nub->Scale( scale );
+  fh_gen_nu ->Scale( 1./scale );
+  fh_gen_nub->Scale( 1./scale );
 
 }
 
