@@ -13,7 +13,7 @@ Option:
     -f FLAVOUR        Neutrino flavour, 0 - e, 1 - mu, 2 - tau, may select several
     -i INTERACTION    Interaction type, 0 - nc, 1 - cc
     -e E_START        Energy start region, 1 or 3, may select several
-    -v VEFF_OPT       Effective volume calculation option, 0 - interaction volume, 1 - can, 3 - Agen
+    -v VEFF_OPT       Effective volume calculation option, 0 - interaction volume, 1 - can, 2 - Agen
     -h --help         Show this screen
 
 """

@@ -256,15 +256,20 @@ GSGParser::GSGParser(TString fname) : fChain(0)
     Ngen = hr.NTot;
 
     //variables for interaction volume calculation
-    Double_t rho_water    = 1;
     Rho_seawater = hr.RhoSW;
     Double_t h_water      = hr.HSeaWater;
     Double_t rho_rock     = hr.RhoSR;
     Double_t h_rock       = hr.HRock;
     Double_t r_int        = hr.RVol;  //radius of interaction volume
 
+    //interaction volume corresponding to pure water
+    //Double_t rho_water    = 1;
+    /* Vint = TMath::Pi() * r_int * r_int *  */
+    /*   (h_water * Rho_seawater/rho_water + h_rock * rho_rock/rho_water); */
+    
+    //interaction volume corresponding to sea water
     Vint = TMath::Pi() * r_int * r_int * 
-      (h_water * Rho_seawater/rho_water + h_rock * rho_rock/rho_water);
+      (h_water + h_rock * rho_rock/Rho_seawater);
 
     //variables for can calculation
     Zcan_min = hr.Can1;
@@ -279,7 +284,7 @@ GSGParser::GSGParser(TString fname) : fChain(0)
     E_max    = hr.EvMax;
     Ct_min   = hr.CtMin;
     Ct_max   = hr.CtMax;
-    E_power  = hr.Alpha;
+    E_power  = -hr.Alpha;
 
   }
   else { cout << "ERROR! GSGParser::GSGParser() init failed" << endl; }
