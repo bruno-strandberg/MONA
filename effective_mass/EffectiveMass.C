@@ -24,6 +24,13 @@ enum effvol_options { interaction_vol = 0, can_vol, not_supported, calc_from_age
 //initialised in InitHists()
 TH2D *fh_gen_nu;
 TH2D *fh_gen_nub;
+TH2D *fh_gen_all_nu;
+TH2D *fh_gen_all_nub;
+TH2D *fh_gen_scaled_nu;
+TH2D *fh_gen_scaled_nub;
+
+TH2D *fh_det_MCtruth_nu;
+TH2D *fh_det_MCtruth_nub;
 TH2D *fh_det_gandalf_nu;
 TH2D *fh_det_shower_nu;
 TH2D *fh_det_recolns_nu;
@@ -82,12 +89,15 @@ void EffectiveMass(TString summary_file, TString gseagen_file,
   //different methods, depends on how the effective volume is calculated
   //------------------------------------------------------
 
-  if (veff_option == calc_from_agen) { 
-    FillGenerated_Agen(flavor, int_type);                
-  }
-  else {
-    FillGenerated_MCevts(veff_option);
-  }
+  FillGenerated_Agen(flavor, int_type);
+  FillGenerated_MCevts(veff_option);
+
+  // if (veff_option == calc_from_agen) { 
+  //   FillGenerated_Agen(flavor, int_type);                
+  // }
+  // else {
+  //   FillGenerated_MCevts(veff_option);
+  // }
 
   //------------------------------------------------------
   //write out the histograms. Division of det/gen has to be done 
@@ -97,6 +107,12 @@ void EffectiveMass(TString summary_file, TString gseagen_file,
   TFile *fout = new TFile(out_name, "RECREATE");
   fh_gen_nu ->Write();
   fh_gen_nub->Write();
+  fh_gen_scaled_nu ->Write();
+  fh_gen_scaled_nub->Write();
+  fh_gen_all_nu->Write();
+  fh_gen_all_nub->Write();
+  fh_det_MCtruth_nu ->Write();
+  fh_det_MCtruth_nub->Write();
   fh_det_gandalf_nu->Write();
   fh_det_shower_nu ->Write();
   fh_det_recolns_nu->Write();
@@ -165,20 +181,44 @@ TString ParseInputs(Int_t flavor, Int_t int_type, Int_t en_low, Int_t run_nr) {
 // This routine initialises the (global) histograms
 void InitHists() {
 
-  fh_gen_nu  = new TH2D("Generated_nu" , "Generated_nu" , 100, 0, 100, 200, -1, 1);
-  fh_gen_nub = (TH2D*)fh_gen_nu->Clone("Generated_nub");
-  fh_gen_nub->SetNameTitle("Generated_nub","Generated_nub");
+  //dbg: Use the same binning as Martijn for comparison
+  TFile *f = new TFile("mjongen_plots.root","READ");
+  TH2D  *h = (TH2D*)f->Get("TreeEffectiveMass_num_cc/hGen");
+  h->Reset();
 
+  // 'generated' histograms
+
+  fh_gen_nu = (TH2D*)h->Clone("Generated_nu");
+  fh_gen_nu->SetNameTitle("Generated_nu","Generated_nu");
+  //fh_gen_nu  = new TH2D("Generated_nu" , "Generated_nu" , 100, 0, 100, 200, -1, 1);
+  fh_gen_all_nu     = (TH2D*)fh_gen_nu->Clone("Generated_all_nu");
+  fh_gen_scaled_nu  = (TH2D*)fh_gen_nu->Clone("Generated_scaled_nu");
+  fh_gen_all_nu   ->SetNameTitle("Generated_all_nu" ,"Generated_all_nu");
+  fh_gen_scaled_nu->SetNameTitle("Generated_scaled_nu" ,"Generated_scaled_nu");
+
+  fh_gen_nub        = (TH2D*)fh_gen_nu->Clone("Generated_nub");
+  fh_gen_all_nub    = (TH2D*)fh_gen_nu->Clone("Generated_all_nub");
+  fh_gen_scaled_nub = (TH2D*)fh_gen_nu->Clone("Generated_scaled_nub");
+  fh_gen_nub       ->SetNameTitle("Generated_nub","Generated_nub");
+  fh_gen_all_nub   ->SetNameTitle("Generated_all_nub" ,"Generated_all_nub");
+  fh_gen_scaled_nub->SetNameTitle("Generated_scaled_nub","Generated_scaled_nub");
+
+  // 'detected' histograms
+
+  fh_det_MCtruth_nu  = (TH2D*)fh_gen_nu->Clone("Detected_MCtruth_nu");
   fh_det_gandalf_nu  = (TH2D*)fh_gen_nu->Clone("Detected_gandalf_nu");
   fh_det_shower_nu   = (TH2D*)fh_gen_nu->Clone("Detected_shower_nu");
   fh_det_recolns_nu  = (TH2D*)fh_gen_nu->Clone("Detected_recolns_nu");
+  fh_det_MCtruth_nu->SetNameTitle("Detected_MCtruth_nu" ,"Detected_MCtruth_nu");
   fh_det_gandalf_nu->SetNameTitle("Detected_gandalf_nu","Detected_gandalf_nu");
   fh_det_shower_nu ->SetNameTitle("Detected_shower_nu" ,"Detected_shower_nu");
   fh_det_recolns_nu->SetNameTitle("Detected_recolns_nu","Detected_recolns_nu");
 
+  fh_det_MCtruth_nub = (TH2D*)fh_gen_nu->Clone("Detected_MCtruth_nub");
   fh_det_gandalf_nub = (TH2D*)fh_gen_nu->Clone("Detected_gandalf_nub");
   fh_det_shower_nub  = (TH2D*)fh_gen_nu->Clone("Detected_shower_nub");
   fh_det_recolns_nub = (TH2D*)fh_gen_nu->Clone("Detected_recolns_nub");
+  fh_det_MCtruth_nub->SetNameTitle("Detected_MCtruth_nub","Detected_MCtruth_nub");
   fh_det_gandalf_nub->SetNameTitle("Detected_gandalf_nub","Detected_gandalf_nub");
   fh_det_shower_nub ->SetNameTitle("Detected_shower_nub" ,"Detected_shower_nub");
   fh_det_recolns_nub->SetNameTitle("Detected_recolns_nub","Detected_recolns_nub");
@@ -207,9 +247,13 @@ void FillDetected(Int_t veff_option) {
     fS->fChain->GetEntry(i);
 
     //if can volume is used as the effective volume skip all events with vertices outside the can
-    if (veff_option == can_vol) {
-      if ( !VertexInCan(fS->MC_pos_x, fS->MC_pos_y, fS->MC_pos_z, fG->Rcan, fG->Zcan_min, fG->Zcan_max) ) continue;
+    if (veff_option == can_vol) { //DEBUG
+      if ( !VertexInCan(fS->MC_pos_x, fS->MC_pos_y, fS->MC_pos_z, TMath::Sqrt(35000.), fG->Zcan_min, fG->Zcan_max) ) continue;
     }
+
+    //mc_truth
+    if ( fS->MC_type > 0 ) { fh_det_MCtruth_nu ->Fill( fS->MC_energy, -fS->MC_dir_z ); }
+    else                   { fh_det_MCtruth_nub->Fill( fS->MC_energy, -fS->MC_dir_z ); }
 
     //gandalf
     if ((Bool_t)fS->gandalf_is_good) {
@@ -248,12 +292,18 @@ void FillGenerated_MCevts(Int_t veff_option) {
     fG->fChain->GetEntry(i);
 
     //if can volume is used as the effective volume skip all events with vertices outside the can
-    if (veff_option == can_vol) {
-      if ( !VertexInCan(fG->Neutrino_V1, fG->Neutrino_V2, fG->Neutrino_V3, fG->Rcan, fG->Zcan_min, fG->Zcan_max) ) continue;
+    if (veff_option == can_vol) { //DEBUG
+      if ( !VertexInCan(fG->Neutrino_V1, fG->Neutrino_V2, fG->Neutrino_V3, TMath::Sqrt(35000.), fG->Zcan_min, fG->Zcan_max) ) continue;
     }
 
-    if (fG->Neutrino_PdgCode > 0) { fh_gen_nu ->Fill(fG->Neutrino_E, -fG->Neutrino_D3); }
-    else                          { fh_gen_nub->Fill(fG->Neutrino_E, -fG->Neutrino_D3); }
+    if (fG->Neutrino_PdgCode > 0) { 
+      fh_gen_nu ->Fill(fG->Neutrino_E, -fG->Neutrino_D3); 
+      fh_gen_scaled_nu ->Fill(fG->Neutrino_E, -fG->Neutrino_D3); 
+    }
+    else { 
+      fh_gen_nub->Fill(fG->Neutrino_E, -fG->Neutrino_D3);
+      fh_gen_scaled_nub->Fill(fG->Neutrino_E, -fG->Neutrino_D3);
+    }
   }
 
   //multiply h_gen_nu by Veff * rho_seawater
@@ -265,8 +315,11 @@ void FillGenerated_MCevts(Int_t veff_option) {
   if (veff_option == interaction_vol) scale = fG->Vint * rho;
   else if (veff_option == can_vol) scale = fG->Vcan * rho;
 
-  fh_gen_nu ->Scale( 1./scale );
-  fh_gen_nub->Scale( 1./scale );
+  cout << "DEBUG::Recalculating the scale." << endl;
+  scale = 1.025 * TMath::Pi() * TMath::Power( TMath::Sqrt(35000.), 2) * (139.5 + 117.2) * 1e-6;
+
+  fh_gen_scaled_nu ->Scale( 1./scale );
+  fh_gen_scaled_nub->Scale( 1./scale );
 
 }
 
@@ -320,9 +373,8 @@ void FillGenerated_Agen(Int_t flavor, Int_t int_type) {
       }
 
       //calculate the fraction of the events in the specific bin, multiply by the cross-section
-      // h_gen_nu ->SetBinContent(Ebin, ctbin, Ntot * ct_frac * e_frac);
-      // h_gen_nub->SetBinContent(Ebin, ctbin, Ntot * ct_frac * e_frac);
-
+      fh_gen_all_nu ->SetBinContent(Ebin, ctbin, Ntot/2 * ct_frac * e_frac);
+      fh_gen_all_nub->SetBinContent(Ebin, ctbin, Ntot/2 * ct_frac * e_frac);
     }
   }
 
