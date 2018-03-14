@@ -1,10 +1,10 @@
 #!/usr/bin/python
 """                                                                                                 
 
-This script can be used to call the EffectiveMass.C macro.
+This script can be used to call the EffMhists.C macro.
  
 Usage:
-    caller -l RUNNR_LOW -u RUNNR_UP -f FLAVOUR... -i INTERACTION -e E_START... -v VEFF_OPT
+    caller -l RUNNR_LOW -u RUNNR_UP -f FLAVOUR... -i INTERACTION -e E_START... [-c ATMMU_CUT] [-v VEFF_OPT] [--rvol RVOL] [--zmin ZMIN] [--zmax ZMAX] [--combine] [--combstr=<cs>]
     caller -h                                                                     
                                                                                           
 Option:                                                                                   
@@ -13,8 +13,17 @@ Option:
     -f FLAVOUR        Neutrino flavour, 0 - e, 1 - mu, 2 - tau, may select several
     -i INTERACTION    Interaction type, 0 - nc, 1 - cc
     -e E_START        Energy start region, 1 or 3, may select several
-    -v VEFF_OPT       Effective volume calculation option, 0 - interaction volume, 1 - can, 2 - Agen
+    --combine         Combine the output to one file in combined_output
+    --combstr=<cs>    Identifier string added to the combined output file [default: ]
     -h --help         Show this screen
+
+    ==================FINE TUNING BELOW========================================
+
+    -c ATMMU_CUT      PID cut to reject atmospheric muons [default: 0.05]
+    -v VEFF_OPT       Vgen option, 0 - interaction volume, 1 - can, 2 - custom [default: 1]
+    --rvol RVOL       Radius of custom volume [default: 0]
+    --zmin ZMIN       Z minimum of custom volume [default: 0]
+    --zmax ZMAX       Z maximum of custom volume [default: 0]
 
 """
 
@@ -25,8 +34,9 @@ from docopt import docopt
 
 #*****************************************************************
 # some global directories
-summary_dir = "/sps/km3net/users/bstrand/data/NMH/data/mc_end/data_atmnu/"
-gseagen_dir = "/sps/km3net/users/bstrand/data/NMH/data/mc_start/data_atmnu/"
+cwd = os.getcwd()
+summary_dir = cwd[0:cwd.rfind('/')] + "/data/mc_end/data_atmnu/"
+gseagen_dir = cwd[0:cwd.rfind('/')] + "/data/mc_start/data_atmnu/"
 
 #*****************************************************************
 
@@ -38,6 +48,8 @@ def execute_effmass_calc(args):
 
     for flavour in args['-f']:
 
+        effmass_files = []
+        
         for energy in args['-e']:
 
             f = flavours[ int(flavour) ]
@@ -52,7 +64,8 @@ def execute_effmass_calc(args):
                 
                 summaryf = "{0}summary_{1}-{2}_{3}GeV_{4}.root".format(summary_dir, f, i, e, fnr)
                 gseagenf = "{0}gSeaGen_{1}-{2}_{3}GeV_{4}.root".format(gseagen_dir, f, i, e, fnr)
-            
+                effmassf = "output/EffMhists_{0}-{1}_{2}GeV_{3}.root".format(f, i, e, fnr)
+                
                 if ( not os.path.isfile(summaryf) ):
                     print("File {} missing, continuing.".format(summaryf))
                     continue
@@ -61,12 +74,28 @@ def execute_effmass_calc(args):
                     print ("File {} missing, continuing.".format(gseagenf))
                     continue
             
-                exec_cmd = get_execution_cmd(summaryf, gseagenf, flavour, args['-i'], energy, 
-                                             fnr, args['-v'])
-            
-                os.system( exec_cmd )
-        
+                exec_cmd = get_execution_cmd(summaryf, gseagenf, flavour, args['-i'], energy, fnr,
+                                             args['-c'], args['-v'],
+                                             args['--rvol'], args['--zmin'], args['--zmax'])
 
+                os.system( exec_cmd )
+                effmass_files.append(effmassf)
+
+            #end loop over file numbers
+
+        #end loop over energies
+        
+        if args['--combine']:
+
+            comb_name = "combined_output/EffMhists_{0}-{1}{2}.root".format(f, i, args['--combstr'])
+
+            syscmd = "hadd {} ".format(comb_name)
+            for outf in effmass_files:
+                syscmd += outf + " "
+
+            os.system(syscmd)
+            os.system("root -b -q 'EffMass.C({0}{1}{2})'".format('"',comb_name,'"'))
+            
 #*****************************************************************
 
 def gseagen_file_exists(gseagenf, flav, interact, en, fnr):
@@ -100,16 +129,23 @@ def gseagen_file_exists(gseagenf, flav, interact, en, fnr):
 
 #*****************************************************************
         
-def get_execution_cmd(sname, gname, flavour, interaction, estart, runnr, veff_o):
+def get_execution_cmd(sname, gname,
+                      flavour, interaction, estart, runnr,
+                      atmmu_cut, veff_o,
+                      rvol, zmin, zmax):
     
-    syscmd  = "root -b -q 'EffectiveMass.C+("
+    syscmd  = "root -b -q 'EffMhists.C+("
     syscmd += '"' + sname + '",'
     syscmd += '"' + gname + '",'
     syscmd += str(flavour) + ","
     syscmd += str(interaction) + ","
     syscmd += str(estart) + ","
     syscmd += str(runnr) + ","
-    syscmd += str(veff_o)
+    syscmd += str(atmmu_cut) + ","
+    syscmd += str(veff_o) + ","
+    syscmd += str(rvol) + ","
+    syscmd += str(zmin) + ","
+    syscmd += str(zmax)
     syscmd += ")'"
 
     return syscmd
