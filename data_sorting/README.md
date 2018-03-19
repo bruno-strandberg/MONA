@@ -7,6 +7,9 @@ Prerequisities
 * The file NMH/data/pid_result_XXX.root.
 * The compiled library NMH/common_software/libcommonsoft.so.
 
+Note that if the analysis format, defined in DataReducer.C, changes, one needs to update
+NMH/common_software/SummaryParser.h/C before running RestoreParity.C.
+
 How to run
 ==========
 1. Execute the script reduce_data.py. This creates the file NMH/data/ORCA_MC_summary_all.root, which

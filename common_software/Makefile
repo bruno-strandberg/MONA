@@ -1,3 +1,4 @@
+#Compilation to ROOT library was a gift from Joao Coelho's OscProb package.
 
 #get root CFLAGS and root LIBS
 ROOTCFLAGS    = $(shell root-config --cflags) -fPIC
