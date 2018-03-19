@@ -14,17 +14,25 @@ Int_t get_max_run_nr(TString cut_string);
 
 //global variables accessible in all functions inside this macro
 
+/// Global pointer to a summary file parser class.
 SummaryParser *sp;
 
 //****************************************************************
 
-//entry point
-
-void RestoreParity() {
+/** (main function) This function takes the file resulting from reduce_data.py as argument 
+ *  and splits it up to NMH/data/mc_end/ directories to match the file scheme used throughout the
+ *  MC chain.
+ *
+ * See NMH/data/README.md for more details.
+ *
+ * \param  fname PID summary data in analysis format, output by reduce_data.py.
+ *
+ */
+void RestoreParity(TString fname) {
 
   //initialise the data parser
   gSystem->Load("../common_software/libcommonsoft.so");
-  sp = new SummaryParser("../data/ORCA_MC_summary_all.root");
+  sp = new SummaryParser(fname);
 
   if (sp->fChain == NULL) {
     cout << "ERROR! RestoreParity() Issue with SummaryParser() initialisation." << endl;
@@ -39,9 +47,11 @@ void RestoreParity() {
 
 //****************************************************************
 
-//Function to split the pid output to summary files per mc input
-//this handles atmospheric neutrinos
-
+/** Function to split the pid output to summary files per mc input, atm neutrinos.
+ *
+ * \param overwrite If file exists in NMH/data/mc_end/data_atmnu/, ovewrite.
+ *
+ */
 void split_to_files_atmnu(Bool_t overwrite) {
 
   //maps to build the filenames
@@ -126,8 +136,11 @@ void split_to_files_atmnu(Bool_t overwrite) {
 
 //****************************************************************
 
-//this function calculates the maximum run number for a specific cut
-
+/** This function calculates the maximum run number for a specific cut.
+ *
+ * \param cut_string Cut string to select events opened for reading by sp.
+ *
+ */
 Int_t get_max_run_nr(TString cut_string) {
 
   TFile *f_tmp = new TFile("tmp.root","RECREATE");
@@ -142,10 +155,13 @@ Int_t get_max_run_nr(TString cut_string) {
 
 //****************************************************************
 
-//Function to split the pid output to summary files per mc input
-//this handles atmospheric muons. This has 11000 files, so sometimes
-//it may be better to have just one file with all mupage events
-
+/** Function to split the pid output to summary files per mc input, atm muons.
+ *
+ * \param overwrite If file exists in NMH/data/mc_end/data_atmnu/, ovewrite.
+ * \param separate Separate MUPAGE files (11k files), if false MUPAGE events in one file in 
+ *        NMH/data/mc_end/data_atmmu/
+ *
+ */
 void split_to_files_mupage(Bool_t overwrite, Bool_t separate) { 
 
   Int_t max_run_nr = sp->fChain->GetMaximum("MC_runID");
@@ -239,7 +255,7 @@ void  split_to_files_atmnu_v2() {
 
   TFile ***files = new TFile**[ fnstr_to_cuts.size() ];
   TTree ***trees = new TTree**[ fnstr_to_cuts.size() ];
-  for (Int_t i = 0; i < fnstr_to_cuts.size(); i++) {
+  for (UInt_t i = 0; i < fnstr_to_cuts.size(); i++) {
     files[i] = new TFile*[maxruns];
     trees[i] = new TTree*[maxruns];
   }
@@ -293,7 +309,7 @@ void  split_to_files_atmnu_v2() {
   //--------------------------------------------------
   //close the files, delete files with 0 entries
   //--------------------------------------------------
-  for (Int_t ftype = 0; ftype < fnstr_to_cuts.size(); ftype++) {
+  for (UInt_t ftype = 0; ftype < fnstr_to_cuts.size(); ftype++) {
 
     for (Int_t runnr = 0; runnr < maxruns; runnr++) {
 

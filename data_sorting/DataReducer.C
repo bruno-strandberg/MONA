@@ -4,9 +4,12 @@
 #include <TStyle.h>
 #include <TCanvas.h>
 
+//----------------------------------------------------
 //bstr: for cout
+//----------------------------------------------------
 #include <iostream>
 using namespace std;
+//----------------------------------------------------
 
 void DataReducer::Loop()
 {
@@ -37,8 +40,12 @@ void DataReducer::Loop()
 
    Long64_t nentries = fChain->GetEntriesFast();
 
-   //bstr: call init on the output tree
+   //----------------------------------------------------
+   //bstr: set only interesting branches, call init on the output tree
+   //----------------------------------------------------
+   SetBranches();
    InitOutputTree();
+   //----------------------------------------------------
 
    Long64_t nbytes = 0, nb = 0;
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
@@ -49,19 +56,26 @@ void DataReducer::Loop()
 
       if (ientry % 100000 == 0) cout << "Entry: " << ientry << endl;
 
+      //----------------------------------------------------
       //bstr: call fill on output tree
+      //----------------------------------------------------
       tout->Fill();
+      //----------------------------------------------------
    }
 
+   //----------------------------------------------------
    //bstr: write the tree and clone fout
+   //----------------------------------------------------
    tout->Write();
    fout->Close();
+   //----------------------------------------------------
 }
 
 //****************************************************************************
 //bstr: switch off all branches, except useful MC and reco information
 //****************************************************************************
 
+/*! \brief Function that enables only the relevant branches of the input. */
 void DataReducer::SetBranches() {
 
    //bstr: set all branches off, except a few interesting ones
@@ -125,19 +139,38 @@ void DataReducer::SetBranches() {
    fChain->SetBranchStatus("dusj_best_DusjOrcaUsingProbabilitiesFinalFit_BjorkenY", 1);
    fChain->SetBranchStatus("recolns_bjorken_y", 1);
 
-   fChain->SetBranchStatus("muon_probability", 1);
-   fChain->SetBranchStatus("track_probability", 1);
+   //------------------------------------------------------
+   //PID
+   //------------------------------------------------------
 
+   fChain->SetBranchStatus("muon_score", 1);
+   fChain->SetBranchStatus("track_score", 1);
+
+   //------------------------------------------------------
+   //quality cuts
+   //------------------------------------------------------
+   
    fChain->SetBranchStatus("recolns_is_good", 1);
    fChain->SetBranchStatus("dusj_is_good", 1);
    fChain->SetBranchStatus("gandalf_is_good", 1);
 
+   fChain->SetBranchStatus("recolns_is_selected", 1);
+   fChain->SetBranchStatus("dusj_is_selected", 1);
+   fChain->SetBranchStatus("gandalf_is_selected", 1);
+
+   fChain->SetBranchStatus("recolns_shifted_is_selected", 1);
+   fChain->SetBranchStatus("gandalf_shifted_is_selected", 1);
+   //according to Steffen dusj_is_selected is already loose/efficient
+   //and does not rely on strict containment cuts, hence the corresponding
+   //variable is not present
+   
 }
 
 //*********************************************************************
 //bstr: a function to init the formatted output tree
 //*********************************************************************
 
+/*! \brief Function that initialises the output tree in analysis format. */
 void DataReducer::InitOutputTree() {
 
   fout = new TFile("../data/ORCA_MC_summary_all.root","RECREATE");
@@ -172,8 +205,10 @@ void DataReducer::InitOutputTree() {
   tout->Branch("gandalf_pos_y", &gandalf_pos_y, "gandalf_pos_y/D");
   tout->Branch("gandalf_pos_z", &gandalf_pos_z, "gandalf_pos_z/D");
   
-  tout->Branch("gandalf_energy_nu", &gandalf_energy_corrected, "gandalf_energy_nu/D");
-  tout->Branch("gandalf_is_good"  ,          &gandalf_is_good, "gandalf_is_good/D");
+  tout->Branch("gandalf_energy_nu",    &gandalf_energy_corrected, "gandalf_energy_nu/D");
+  tout->Branch("gandalf_ql0"      ,             &gandalf_is_good, "gandalf_ql0/D");
+  tout->Branch("gandalf_ql1"      , &gandalf_shifted_is_selected, "gandalf_ql1/D");
+  tout->Branch("gandalf_ql2"      ,         &gandalf_is_selected, "gandalf_ql2/D");
 
   //shower info
 
@@ -186,7 +221,8 @@ void DataReducer::InitOutputTree() {
   
   tout->Branch("shower_energy_nu", &dusj_energy_corrected, "shower_energy_nu/D");
   tout->Branch("shower_bjorkeny" , &dusj_best_DusjOrcaUsingProbabilitiesFinalFit_BjorkenY, "shower_bjorkeny/D");
-  tout->Branch("shower_is_good"  ,          &dusj_is_good, "shower_is_good/D");
+  tout->Branch("shower_ql0"      ,             &dusj_is_good, "shower_ql0/D");
+  tout->Branch("shower_ql1"      ,         &dusj_is_selected, "shower_ql1/D");
 
   //recoLNS info
 
@@ -199,23 +235,12 @@ void DataReducer::InitOutputTree() {
 
   tout->Branch("recolns_energy_nu", &recolns_energy_neutrino, "recolns_energy_nu/D");
   tout->Branch("recolns_bjorkeny" ,       &recolns_bjorken_y, "recolns_bjorkeny/D");
-  tout->Branch("recolns_is_good"  ,         &recolns_is_good, "recolns_is_good/D");
+  tout->Branch("recolns_ql0"      ,             &recolns_is_good, "recolns_ql0/D");
+  tout->Branch("recolns_ql1"      , &recolns_shifted_is_selected, "recolns_ql1/D");
+  tout->Branch("recolns_ql2"      ,         &recolns_is_selected, "recolns_ql2/D");
 
   //PID info
-  tout->Branch("PID_muon_probability" ,  &muon_probability, "PID_muon_probability/D");
-  tout->Branch("PID_track_probability", &track_probability, "PID_track_probability/D");
-
-}
-
-//*********************************************************************
-//bstr: a function to create a reduced clone of the tree, very simple
-//*********************************************************************
-
-void DataReducer::CreateSimpleClone() {
-  
-  TFile *f_out = new TFile("../data/pid_result_reduced.root","RECREATE");
-  TTree *tree_out = fChain->CloneTree();
-  tree_out->Write();
-  f_out->Close();
+  tout->Branch("PID_muon_score" ,  &muon_score, "PID_muon_score/D");
+  tout->Branch("PID_track_score", &track_score, "PID_track_score/D");
 
 }
