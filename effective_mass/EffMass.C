@@ -62,24 +62,42 @@ void EffMass(TString effmhists_file, Int_t rebinX = 10, Int_t rebinY = 10, Bool_
   //-----------------------------------------
   TGraph *g_nu  = new TGraph();
   TGraph *g_nub = new TGraph();
+  TGraph *g_gandalf_nu  = new TGraph();
+  TGraph *g_gandalf_nub = new TGraph();
+  TGraph *g_shower_nu   = new TGraph();
+  TGraph *g_shower_nub  = new TGraph();
 
   Int_t ct_max_bin = h_det_nu->GetYaxis()->GetNbins();
   if (upgoing) ct_max_bin = h_det_nu->GetYaxis()->FindBin(-0.0001);
   
   for (Int_t ebin = 1; ebin <= h_det_nu->GetXaxis()->GetNbins(); ebin++) {
 
-    Double_t int_nu  = 0;
-    Double_t int_nub = 0;
-    Double_t nbins   = 0;
+    Double_t int_nu          = 0;
+    Double_t int_nub         = 0;
+    Double_t int_gandalf_nu  = 0;
+    Double_t int_gandalf_nub = 0;
+    Double_t int_shower_nu   = 0;
+    Double_t int_shower_nub  = 0;
+    Double_t nbins           = 0;
 
     for (Int_t ctbin = 1; ctbin <= ct_max_bin; ctbin++) {
-      int_nu  += h_det_nu ->GetBinContent(ebin, ctbin);
-      int_nub += h_det_nub->GetBinContent(ebin, ctbin);
+      int_nu          += h_det_nu ->GetBinContent(ebin, ctbin);
+      int_nub         += h_det_nub->GetBinContent(ebin, ctbin);
+      int_gandalf_nu  += h_det_gandalf_nu ->GetBinContent(ebin, ctbin);
+      int_gandalf_nub += h_det_gandalf_nub->GetBinContent(ebin, ctbin);
+      int_shower_nu   += h_det_shower_nu ->GetBinContent(ebin, ctbin);
+      int_shower_nub  += h_det_shower_nub->GetBinContent(ebin, ctbin);
       nbins++;
     }
 
-    g_nu ->SetPoint(g_nu->GetN() , h_det_nu->GetXaxis()->GetBinCenter(ebin), int_nu/nbins  );
-    g_nub->SetPoint(g_nub->GetN(), h_det_nu->GetXaxis()->GetBinCenter(ebin), int_nub/nbins );
+    Int_t point     = g_nu->GetN();
+    Double_t energy = h_det_nu->GetXaxis()->GetBinCenter(ebin);
+    g_nu ->SetPoint(point, energy, int_nu/nbins  );
+    g_nub->SetPoint(point, energy, int_nub/nbins );
+    g_gandalf_nu ->SetPoint(point, energy, int_gandalf_nu/nbins  );
+    g_gandalf_nub->SetPoint(point, energy, int_gandalf_nub/nbins );
+    g_shower_nu ->SetPoint(point, energy, int_shower_nu/nbins  );
+    g_shower_nub->SetPoint(point, energy, int_shower_nub/nbins );
 
   }
 
@@ -87,8 +105,16 @@ void EffMass(TString effmhists_file, Int_t rebinX = 10, Int_t rebinY = 10, Bool_
   if (upgoing) title += ", upgoing";
   g_nu ->SetNameTitle("E_vs_Meff_nu" ,title);
   g_nub->SetNameTitle("E_vs_Meff_nub",title);
+  g_gandalf_nu ->SetNameTitle("E_vs_Meff_gandalf_nu" ,title);
+  g_gandalf_nub->SetNameTitle("E_vs_Meff_gandalf_nub",title);
+  g_shower_nu ->SetNameTitle("E_vs_Meff_shower_nu" ,title);
+  g_shower_nub->SetNameTitle("E_vs_Meff_shower_nub",title);
   g_nu->SetLineColor(kRed);
   g_nub->SetLineColor(kBlue);
+  g_gandalf_nu->SetLineColor(kRed);
+  g_gandalf_nub->SetLineColor(kBlue);
+  g_shower_nu->SetLineColor(kRed);
+  g_shower_nub->SetLineColor(kBlue);
   
   //-----------------------------------------
   //write out
@@ -102,6 +128,10 @@ void EffMass(TString effmhists_file, Int_t rebinX = 10, Int_t rebinY = 10, Bool_
   h_det_shower_nub ->Write();
   g_nu->Write();
   g_nub->Write();
+  g_gandalf_nu->Write();
+  g_gandalf_nub->Write();
+  g_shower_nu->Write();
+  g_shower_nub->Write();
   fout->Close();
 
   //-----------------------------------------
@@ -113,4 +143,9 @@ void EffMass(TString effmhists_file, Int_t rebinX = 10, Int_t rebinY = 10, Bool_
   if (fout)  delete fout;
   if (g_nu)  delete g_nu;
   if (g_nub) delete g_nub;
+  if (g_gandalf_nu)  delete g_gandalf_nu;
+  if (g_gandalf_nub) delete g_gandalf_nub;
+  if (g_shower_nu)   delete g_shower_nu;
+  if (g_shower_nub)  delete g_shower_nub;
+
 }

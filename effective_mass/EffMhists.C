@@ -235,7 +235,7 @@ void FillDetected(Int_t veff_option, Double_t atmmu_cut) {
     }
 
     //reject events that look like atmospheric muons
-    if ( fS->PID_muon_probability >= atmmu_cut ) continue; 
+    if ( fS->PID_muon_score >= atmmu_cut ) continue; 
 
     //if you wish to set PID cut, do so here
     
@@ -243,16 +243,16 @@ void FillDetected(Int_t veff_option, Double_t atmmu_cut) {
     if ( fS->MC_type > 0 ) { fh_det_nu ->Fill( fS->MC_energy, -fS->MC_dir_z ); }
     else                   { fh_det_nub->Fill( fS->MC_energy, -fS->MC_dir_z ); }
 
-    //gandalf uses MC truth, but checks that the reco worked
-    if ((Bool_t)fS->gandalf_is_good) {
+    //gandalf uses MC truth, but checks for reco 'quality cuts'
+    if ((Bool_t)fS->gandalf_ql1) {
 
       if (fS->MC_type > 0) { fh_det_gandalf_nu ->Fill( fS->MC_energy, -fS->MC_dir_z ); }
       else                 { fh_det_gandalf_nub->Fill( fS->MC_energy, -fS->MC_dir_z ); }
 
     }
 
-    //shower uses MC truth, but checks that the reco worked
-    if ((Bool_t)fS->shower_is_good ) {
+    //shower uses MC truth, but checks for reco 'quality cuts'
+    if ((Bool_t)fS->shower_ql1 ) {
 
       if (fS->MC_type > 0) { fh_det_shower_nu ->Fill( fS->MC_energy, -fS->MC_dir_z ); }
       else                 { fh_det_shower_nub->Fill( fS->MC_energy, -fS->MC_dir_z ); }

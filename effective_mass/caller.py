@@ -1,6 +1,5 @@
 #!/usr/bin/python
-"""                                                                                                 
-
+"""
 This script can be used to call the EffMhists.C macro.
  
 Usage:
@@ -13,7 +12,7 @@ Option:
     -f FLAVOUR        Neutrino flavour, 0 - e, 1 - mu, 2 - tau, may select several
     -i INTERACTION    Interaction type, 0 - nc, 1 - cc
     -e E_START        Energy start region, 1 or 3, may select several
-    --combine         Combine the output to one file in combined_output
+    --combine         Combine the output to one file in combined_output. Flavors are kept separate.
     --combstr=<cs>    Identifier string added to the combined output file [default: ]
     -h --help         Show this screen
 
@@ -41,7 +40,11 @@ gseagen_dir = cwd[0:cwd.rfind('/')] + "/data/mc_start/data_atmnu/"
 #*****************************************************************
 
 def execute_effmass_calc(args):
+    """This function calls the rootscript EffMhists.C.
 
+    args is an argument dictionary created by docopt.
+    """
+    
     flavours     = { 0: "elec", 1: "muon", 2: "tau" }
     interactions = { 0: "NC", 1: "CC" }
     energies     = { 1: "1-5", 3: "3-100" }
@@ -99,6 +102,12 @@ def execute_effmass_calc(args):
 #*****************************************************************
 
 def gseagen_file_exists(gseagenf, flav, interact, en, fnr):
+    """
+    This function checks whether the gSeaGen file exists in ../data/mc_start/...
+
+    If the file does not exist, it tries to fetch it from IRODS. Returns true if file
+    exists of file sucessfully retrieved.
+    """
 
     filefound = False
 
@@ -133,6 +142,10 @@ def get_execution_cmd(sname, gname,
                       flavour, interaction, estart, runnr,
                       atmmu_cut, veff_o,
                       rvol, zmin, zmax):
+    """
+    This function creates the execution command for the root script.
+    """
+
     
     syscmd  = "root -b -q 'EffMhists.C+("
     syscmd += '"' + sname + '",'
