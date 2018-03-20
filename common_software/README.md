@@ -12,6 +12,9 @@ Prerequisities
 How to run
 ==============
 
+The usage of data parsers is illustrated in NMH/examples/data_parsers.C. If there is gSeaGen data
+and summary data in mc_end and mc_start, one can, in the examples directory, do
+root, data_parsers.C+ .
 
 The analysis data format
 ========================
