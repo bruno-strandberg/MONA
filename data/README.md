@@ -2,7 +2,7 @@ NMH analysis data directory
 ===========================
 
 This directory stores the data necessary for the NMH sensitivity analysis. The raw starting point
-of the analysis if the file pid_result_XXX.root. The typical ORCA MC chain is as follows (see the
+of the analysis is the file pid_result_XXX.root. The typical ORCA MC chain is as follows (see the
 following line in plain text in README.md):
 
 gSeaGen->KM3Sim             JGandalf for tracks                                           
@@ -15,7 +15,7 @@ pid_result_XXX.root is the summary file, which contains all the information from
 plus the PID info and MC truth.
 
 There are numerous gSeaGen and mupage files. We have *something* like this
-gSeaGen_{flavor}_{interaction}_{erange}_{runnr}.root, where flavor is muon/elec/tau, interaction
+gSeaGen_<flavor>_<interaction>_<erange>_<runnr>.root, where flavor is muon/elec/tau, interaction
 is CC or NC, erange is 1--5 or 3--100, runnr is 1--1800.
 
 This scheme persists until PID, however in the pid_result_XXX.root all flavours, interactions,
@@ -27,7 +27,8 @@ pid_result_XXX.root has about 300 branches, that occasionally change, depending 
 Writing an analysis code that takes a changing and incomprehensible data format as input is not
 optimal. For that purpose the data in pid_result_XXX.root is converted to 'analysis' format
 (a smaller set of variables, organised tree) and split up to match the file scheme used throughout
-the MC chain. Data sorting is discussed further in NMH/data_sorting/.
+the MC chain. Data sorting and the analysis format is discussed further in
+NMH/data_sorting/README.md .
 
 NB! The directory structure (mc_end/, mc_start/, ...) comes with the git repo. For most stuff to
 work, one requires sorted data in mc_end/... and mc_start.
@@ -49,7 +50,7 @@ Directories and files
 * cross_sections_gSeaGen_v4r1/ - neutrino cc/nc cross-sections on n, p, O16 from GENIE. Gift from
                                  M. Jongen. 
 
-pid_result_XXX.root file versions
+pid_result_XXX.root file versions (from Steffen, thanks!)
 =================================
 
 pid_result_8Feb2018.root taken from
