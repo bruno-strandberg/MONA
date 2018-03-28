@@ -20,13 +20,18 @@ SOURCES = $(wildcard $(CURDIR)/*.C)
 TARGET_LIB = $(CURDIR)/lib$(PACKAGE).so
 DICTIONARY = $(CURDIR)/dic$(PACKAGE).cxx
 
+#for debugging
+#debug:
+#	@echo ${LDFLAGS}
+#	@echo ${CXXFLAGS}
+
 all: $(TARGET_LIB)
 
 #target depends on dictionary (->depends on headers and linkdef) and sources
 #$^ means prerequesities --> $^ = $HEADERS Linkdef.h $SOURCES
 $(TARGET_LIB): $(DICTIONARY) $(SOURCES)
 	@echo "  Building $(PACKAGE)..."
-	@g++ -shared -O3 -o$@ $(LDFLAGS) $(CXXFLAGS) $^
+	@g++ -shared -O3 -o$@ $^ $(LDFLAGS) $(CXXFLAGS)
 
 #$@ means file name of the target of the rule (dic$PACAGE)
 #$^ means prerequesities --> HEADERS and Linkdef
