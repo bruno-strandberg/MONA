@@ -1,6 +1,7 @@
 #include "AtmFlux.h"
 #include <fstream>
 #include "TMath.h"
+#include<sstream>
 
 //*************************************************************************
 
@@ -109,7 +110,7 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
   ifstream in;             //create in-stream
   in.open(fname);          //load the file to in-stream
   Int_t nlines = 0;        //lines counter
-  string string_line;      //line from file
+  string line;             //line from file
   Double_t cosz     = 2.;  //cosz value, updated from specific lines in file
   Double_t cosz_bin = 0.1; //cosz bin width
 
@@ -127,23 +128,23 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
   //===================================================  
   else {
     
-    while ( getline (in, string_line) ) {
+    while ( getline (in, line) ) {
 
       nlines++;
-      TString line = (TString)string_line;
 
       //===================================================
       //Skip the header line, extract the cosz from the line starting with 'average'
       //===================================================  
       
-      if ( line.Contains("Enu") ) { continue; }
+      if ( line.find("Enu") != string::npos ) { continue; }
       
-      if ( line.Contains("average") ) {
+      if ( line.find("average") != string::npos ) {
 
 	// because string parsing in cpp is great, right. In the line that states the cosz range
 	// fetch the string between the first "=" and "--", convert this to double, add bin width
-	
-	cosz = stod( line(line.First("=")+1, line.Index("--") - (line.First("=")+1)) ) + cosz_bin/2;
+
+	cosz = stod( line.substr( line.find("=") + 1, line.find("--") - line.find("=") - 1 ) )
+	  + cosz_bin/2;
 	
 	continue;
       }
@@ -153,7 +154,7 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
       //===================================================  
       
       Double_t E_nu, f_mu, f_mub, f_e, f_eb;
-      sscanf( (const Char_t*)line, "%lf%lf%lf%lf%lf", &E_nu, &f_mu, &f_mub, &f_e, &f_eb );
+      stringstream(line) >> E_nu >> f_mu >> f_mub >> f_e >> f_eb;
 
       fGraphs[0][0]->SetPoint( fGraphs[0][0]->GetN(), E_nu, cosz, f_e  );
       fGraphs[0][1]->SetPoint( fGraphs[0][1]->GetN(), E_nu, cosz, f_eb );
@@ -176,8 +177,8 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
       }
       
       if (debug) {
-	printf("E_nu - %lf; cosz - %lf; mu - %lf; mubar - %lf; e - %lf; ebar - %lf\n",
-	       E_nu, cosz, f_mu, f_mub, f_e, f_eb);
+	cout << "E_nu, cosz, mu, mubar, e, ebar: " <<  E_nu << "\t" << cosz << "\t" << f_mu
+	     << "\t" << f_mub << "\t" << f_e << "\t" << f_eb << endl;
       }
       
     } //end while
@@ -222,8 +223,8 @@ Double_t AtmFlux::GetHondaFlux(UInt_t nu_flavor, Bool_t is_nubar, Double_t E, Do
     return 0.;
   }
   
-  if ( (E < 0.1) || (E > 100.) || TMath::Abs(cosz) > 1. ) {
-    cout << "ERROR! AtmFlux::GetHondaFlux() wrong Energy (supported 0.1 - 100 GeV): " << E
+  if ( (E < 0.1) || (E > 1.0000E+04) || TMath::Abs(cosz) > 1. ) {
+    cout << "ERROR! AtmFlux::GetHondaFlux() wrong Energy (supported 0.1 - 10000 GeV): " << E
 	 << " or cosz (supported -1 - 1): " << cosz << ", returning 0." << endl;
     return 0.;
   }
