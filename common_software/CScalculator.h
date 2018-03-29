@@ -31,9 +31,9 @@ class CScalculator {
   Bool_t   InitGraphs(TString xsecfile);
   TString  CreateString(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar);
 
-  map < Int_t, TString > nu_flavs;    //!< map with e, mu, tau
-  map < Int_t, TString > int_types;   //!< map with nc, cc
-  map < Int_t, TString > p_types;     //!< map with "", "bar"
+  map < Int_t, TString > fNu_flavs;    //!< map with e, mu, tau
+  map < Int_t, TString > fInt_types;   //!< map with nc, cc
+  map < Int_t, TString > fP_types;     //!< map with "", "bar"
 
   map < TString, vector<TGraph*> > fGraphs; //!< map with graphs from file
 

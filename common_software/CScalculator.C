@@ -26,15 +26,15 @@ CScalculator::CScalculator(TString xsecfile) {
   
   //init the maps that are used throughout the code
 
-  nu_flavs.insert( pair<Int_t, TString> {0, "e"}   );
-  nu_flavs.insert( pair<Int_t, TString> {1, "mu"}  );
-  nu_flavs.insert( pair<Int_t, TString> {2, "tau"} );
+  fNu_flavs.insert( pair<Int_t, TString> {0, "e"}   );
+  fNu_flavs.insert( pair<Int_t, TString> {1, "mu"}  );
+  fNu_flavs.insert( pair<Int_t, TString> {2, "tau"} );
 
-  int_types.insert( pair<Int_t, TString> {0, "_nc"} );
-  int_types.insert( pair<Int_t, TString> {1, "_cc"} );
+  fInt_types.insert( pair<Int_t, TString> {0, "_nc"} );
+  fInt_types.insert( pair<Int_t, TString> {1, "_cc"} );
 
-  p_types.insert( pair<Int_t, TString> {0, ""} );
-  p_types.insert( pair<Int_t, TString> {1, "_bar"} );
+  fP_types.insert( pair<Int_t, TString> {0, ""} );
+  fP_types.insert( pair<Int_t, TString> {1, "_bar"} );
 
   //init the map fGraphs that holds the TGraphs with xsec data
 
@@ -82,19 +82,19 @@ void CScalculator::SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nu
 
   Bool_t supported = true;
 
-  if ( nu_flavs.find(nu_flavor) == nu_flavs.end() ) {
+  if ( fNu_flavs.find(nu_flavor) == fNu_flavs.end() ) {
     cout << "ERROR! CScalculator::SelectInteraction() neutrino flavor " << nu_flavor 
 	 << " not supported" << endl;
     supported = false;
   }
 
-  if ( int_types.find((Bool_t)is_cc) == int_types.end() ) {
+  if ( fInt_types.find((Bool_t)is_cc) == fInt_types.end() ) {
     cout << "ERROR! CScalculator::SelectInteraction() interaction " << is_cc <<
       " not supported" << endl;
     supported = false;
   }
 
-  if ( p_types.find((Bool_t)is_nubar) == p_types.end() ) {
+  if ( fP_types.find((Bool_t)is_nubar) == fP_types.end() ) {
     cout << "ERROR! CScalculator::SelectInteraction() particle type " << is_nubar <<
       " not supported" << endl;
     supported = false;
@@ -159,9 +159,9 @@ Bool_t CScalculator::InitGraphs(TString xsecfile) {
   //loop over maps, use the CreateString() function to create a lookup string
   //for each combination of nu_flavor, int_type, p_type. Clone the xsec graphs to the map.
   
-  for (auto& nuflav: nu_flavs) {
-    for (auto& inttype: int_types) {
-      for (auto& ptype: p_types) {
+  for (auto& nuflav: fNu_flavs) {
+    for (auto& inttype: fInt_types) {
+      for (auto& ptype: fP_types) {
 
 	TString gname1 = "nu_" + nuflav.second + ptype.second + "_H1/tot" + inttype.second;
 	TString gname2 = "nu_" + nuflav.second + ptype.second + "_O16/tot" + inttype.second;
@@ -197,6 +197,6 @@ Bool_t CScalculator::InitGraphs(TString xsecfile) {
  */
 TString CScalculator::CreateString(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar) {
 
-  return nu_flavs[nu_flavor] + p_types[(Int_t)is_nubar] + int_types[(Int_t)is_cc];
+  return fNu_flavs[nu_flavor] + fP_types[(Int_t)is_nubar] + fInt_types[(Int_t)is_cc];
 
 }
