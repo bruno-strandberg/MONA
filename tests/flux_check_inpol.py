@@ -1,6 +1,7 @@
 #!/usr/bin/python -i
 from ROOT import *
 import collections
+import math
 gSystem.Load("$NMHDIR/common_software/libnmhsoft.so")
 
 #----------------------------------------------------------------------------
@@ -20,7 +21,8 @@ def comp(f_dict, Energy = 1.0000E+00, flavor = 1, is_nubar = 0):
     cosz   = -0.95      # for the dictionary data this needs to be between [-0.95, 0.95] +- 0.1
     while cosz <= 0.95:
         cosz = round(cosz, 3)
-        g_inpol.SetPoint( g_inpol.GetN(), cosz, flux.GetHondaFlux(flavor, is_nubar, Energy, cosz) )
+        g_inpol.SetPoint( g_inpol.GetN(),
+                          cosz, flux.Flux_dE_dcosz(flavor, is_nubar, Energy, cosz)/(2*math.pi) )
         g_data.SetPoint (  g_data.GetN(), cosz, f_dict[Energy][cosz])
         cosz += 0.1
 
@@ -28,7 +30,8 @@ def comp(f_dict, Energy = 1.0000E+00, flavor = 1, is_nubar = 0):
 
     cosz = -1
     while cosz <= 1:
-        g_inpol.SetPoint( g_inpol.GetN(), cosz, flux.GetHondaFlux(flavor, is_nubar, Energy, cosz) )
+        g_inpol.SetPoint( g_inpol.GetN(),
+                          cosz, flux.Flux_dE_dcosz(flavor, is_nubar, Energy, cosz)/(2*math.pi) )
         cosz += 0.1
         
     g_inpol.SetMarkerStyle(20)

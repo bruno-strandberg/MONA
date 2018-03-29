@@ -200,35 +200,42 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
 
 //*************************************************************************
 
-/** Function that returns the atmospheric neutrino in (m^2 sec sr GeV)^-1.
+/** Function that returns the differential atmospheric neutrino in units (m^2 sec rad GeV)^-1.
+*
+*   If you wish to calculate the flux in a certain bin of a (Energy, cosz) histogram, you need to 
+*   mutliply the return value of this function by 
+*   \f${\rm bin\_width}_{E} \times {\rm bin\_width}_{cosz}\f$.
+*   The factor \f$2\pi\f$ from averaging over \f$\phi\f$ (azimuth) is taken into account.
 *
 *   A honda flux table points have been read to a TGraph2D, the TGraph2D method Interpolate()
 *   is employed to estimate the flux at the input energy and angle.
 *
 *   \param nu_flavor neutrino flavor (0 - e, 1 - mu, 2 - tau)
 *   \param is_nubar  0 - particle, 1 - antiparticle
-*   \param E         neutrino energy
+*   \param E         neutrino energy (linear scale, not logE)
 *   \param cosz      neutrino direction cosz
 *
+*   \return          flux/(dE * d(cosz) * m^2 * dt).
+*
 */
-Double_t AtmFlux::GetHondaFlux(UInt_t nu_flavor, Bool_t is_nubar, Double_t E, Double_t cosz) {
+Double_t AtmFlux::Flux_dE_dcosz(UInt_t nu_flavor, Bool_t is_nubar, Double_t E, Double_t cosz) {
 
   // safety checks
   
   if (nu_flavor == 2) return 0.; //tau flux is 0
 
   if (nu_flavor > 2 || (UInt_t)is_nubar > 1) {
-    cout << "ERROR! AtmFlux::GetHondaFlux() wrong flavour (supported 0-2): " << nu_flavor
+    cout << "ERROR! AtmFlux:Flux_dE_dcosz() wrong flavour (supported 0-2): " << nu_flavor
 	 << " or is_nubar (supported true, false): " << is_nubar << ", returning 0." << endl;
     return 0.;
   }
   
   if ( (E < 0.1) || (E > 1.0000E+04) || TMath::Abs(cosz) > 1. ) {
-    cout << "ERROR! AtmFlux::GetHondaFlux() wrong Energy (supported 0.1 - 10000 GeV): " << E
+    cout << "ERROR! AtmFlux:Flux_dE_dcosz() wrong Energy (supported 0.1 - 10000 GeV): " << E
 	 << " or cosz (supported -1 - 1): " << cosz << ", returning 0." << endl;
     return 0.;
   }
 
-  return fGraphs[nu_flavor][(UInt_t)is_nubar]->Interpolate(E, cosz);
+  return fGraphs[nu_flavor][(UInt_t)is_nubar]->Interpolate(E, cosz) * 2 * TMath::Pi();
   
 }

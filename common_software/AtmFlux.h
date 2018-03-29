@@ -16,9 +16,9 @@ enum AtmFluxOpt {h_frj_min, h_frj_max, h_frj_mtn_min, h_frj_mtn_max,
 
 /** A class that reads in atm neutrino flux data from files and provides a flux calculator. 
  *
- *  To use, init AtmFlux class and use GetHondaFlux function to get the atmospheric neutrino flux
- *  for a specified neutrino at a certain energy and angle. Different flux options for the constructor
- *  are listed in AtmFluxOpt. E.g. AtmFlux f(AtmFluxOpt::h_frj_min).
+ *  To use, init AtmFlux class and use Flux_dE_dcosz function to get the differential atmospheric 
+ *  neutrino flux for a specified neutrino at a certain energy and angle. Different flux options for
+ *  the constructor are listed in AtmFluxOpt. E.g. AtmFlux f(AtmFluxOpt::h_frj_min).
  *
  *  NB! There is a small approximation involved, see documentation for function ReadHondaFlux.
  * 
@@ -28,7 +28,7 @@ class AtmFlux {
  public:
   AtmFlux(UInt_t opt = AtmFluxOpt::h_frj_min, Bool_t debug=false);
   ~AtmFlux();
-  Double_t GetHondaFlux(UInt_t nu_flavor, Bool_t is_nubar, Double_t E, Double_t cosz);
+  Double_t Flux_dE_dcosz(UInt_t nu_flavor, Bool_t is_nubar, Double_t E, Double_t cosz);
   
  private:
   Bool_t   ReadHondaFlux(TString fname, Bool_t debug=false);
