@@ -1,6 +1,7 @@
 #include "CScalculator.h"
 #include "TFile.h"
 #include<iostream>
+#include "TSystem.h"
 
 //*************************************************************************
 
@@ -10,6 +11,19 @@
  */
 CScalculator::CScalculator(TString xsecfile) {
 
+  //get the nmhdir, if default option (xsecfile="") point to default xsecfile
+  
+  TString nmhdir = getenv("NMHDIR");
+
+  if ( nmhdir == "" ) {
+    cout << "ERROR! CScalculator::CScalculator() $NMHDIR not set (source setenv.sh), " <<
+      "init failed." << endl;
+  }
+
+  if ( xsecfile == "" ) {
+    xsecfile = nmhdir + "/data/cross_sections_gSeaGen_v4r1/xsec.root";
+  }
+  
   //init the maps that are used throughout the code
 
   nu_flavs.insert( pair<Int_t, TString> {0, "e"}   );
@@ -110,7 +124,7 @@ void CScalculator::SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nu
 //*************************************************************************
 
 /**
- * This function returns the cross-section per nucleon in H20.
+ * This function returns the cross-section per nucleon in H20 in units 10e−38 cm^2.
  *
  * \param  E  Neutrino energy
  * \return    (2 x cs_proton + cs_oxygen)/18

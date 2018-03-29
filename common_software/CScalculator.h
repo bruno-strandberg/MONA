@@ -21,7 +21,7 @@ using namespace std;
 class CScalculator {
 
  public:
-  CScalculator(TString xsecfile="../data/cross_sections_gSeaGen_v4r1/xsec.root");
+  CScalculator(TString xsecfile="");
   ~CScalculator();
 
   void     SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar);
