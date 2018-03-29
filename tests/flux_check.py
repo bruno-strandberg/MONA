@@ -1,7 +1,7 @@
 #!/usr/bin/python -i
 from ROOT import *
 import collections
-gSystem.Load("../common_software/libcommonsoft.so")
+gSystem.Load("$NMHDIR/common_software/libnmhsoft.so")
 
 #----------------------------------------------------------------------------
 #This creates comparison graphs between the AtmFlux calculator value and actual data points

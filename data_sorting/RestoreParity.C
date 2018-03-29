@@ -1,6 +1,6 @@
 #include "TROOT.h"
 #include "TSystem.h"
-#include "../common_software/SummaryParser.h"
+#include "SummaryParser.h"
 
 
 //****************************************************************
@@ -31,7 +31,7 @@ SummaryParser *sp;
 void RestoreParity(TString fname) {
 
   //initialise the data parser
-  gSystem->Load("../common_software/libcommonsoft.so");
+  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
   sp = new SummaryParser(fname);
 
   if (sp->fChain == NULL) {
@@ -122,7 +122,7 @@ void split_to_files_atmnu(Bool_t overwrite) {
 	  
 	  fout->Close();
 	  
-	  if (remove) system ("rm " + name_string);
+	  if (remove) Int_t sysret = system ("rm " + name_string);
 
 	} //end loop over energy range
 
@@ -147,7 +147,7 @@ Int_t get_max_run_nr(TString cut_string) {
   TTree *t_tmp = sp->fChain->CopyTree(cut_string);
   Int_t  max_run_nr = t_tmp->GetMaximum("MC_runID");
   f_tmp->Close();
-  system("rm tmp.root");
+  Int_t sysret = system("rm tmp.root");
 
   return max_run_nr;
 
@@ -196,7 +196,7 @@ void split_to_files_mupage(Bool_t overwrite, Bool_t separate) {
     
     fout->Close();
     
-    if (remove) system ("rm " + name_string);
+    if (remove) Int_t sysret = system ("rm " + name_string);
 
     if (!separate) break;
 
@@ -321,7 +321,7 @@ void  split_to_files_atmnu_v2() {
 	  
       files[ftype][runnr]->Close();
 	  
-      if (remove) system ("rm " + fname);
+      if (remove) Int_t sysret = system ("rm " + fname);
 
       delete files[ftype][runnr];
 

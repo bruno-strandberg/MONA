@@ -1,5 +1,5 @@
-#include "../common_software/SummaryParser.h"
-#include "../common_software/GSGParser.h"
+#include "SummaryParser.h"
+#include "GSGParser.h"
 #include "TSystem.h"
 #include "TH2.h"
 #include "TVector3.h"
@@ -73,7 +73,7 @@ void EffMhists(TString summary_file, TString gseagen_file,
   //------------------------------------------------------
   //load shared library, init datafile parsers
   //------------------------------------------------------
-  gSystem->Load("../common_software/libcommonsoft.so");
+  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
   
   fS = new SummaryParser(summary_file);
   fG = new GSGParser(gseagen_file);

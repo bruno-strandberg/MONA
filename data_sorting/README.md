@@ -5,7 +5,7 @@ This directory has the code to sort the data in NMH/data/pid_result_XXX.root to 
 Prerequisities
 ==============
 * The file NMH/data/pid_result_XXX.root.
-* The compiled library NMH/common_software/libcommonsoft.so.
+* The compiled library NMH/common_software/libnmhsoft.so.
 
 Note that if the analysis format, defined in DataReducer.C, changes, one needs to update
 NMH/common_software/SummaryParser.h/C before running RestoreParity.C.

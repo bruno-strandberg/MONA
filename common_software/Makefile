@@ -14,7 +14,7 @@ LDFLAGS   += $(ROOTLIBS)
 
 #for the rootcint command LinkDef.h needs to come last, that's why it is included
 #only when Dictionary is created
-PACKAGE = commonsoft
+PACKAGE = nmhsoft
 HEADERS = $(filter-out $(CURDIR)/LinkDef.h, $(wildcard $(CURDIR)/*.h))
 SOURCES = $(wildcard $(CURDIR)/*.C)
 TARGET_LIB = $(CURDIR)/lib$(PACKAGE).so
