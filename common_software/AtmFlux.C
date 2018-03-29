@@ -23,21 +23,30 @@ AtmFlux::AtmFlux(UInt_t opt, Bool_t debug) {
   //======================================================
   //init the map options vs filenames
   //======================================================
+
+  Bool_t InitOK = true;
   
-  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_frj_min    , "../data/honda_flux/frj-ally-20-01-solmin.d"} );
-  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_frj_max    , "../data/honda_flux/frj-ally-20-01-solmax.d"} );
-  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_frj_mtn_min, "../data/honda_flux/frj-ally-20-01-mtn-solmin.d"} );
-  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_frj_mtn_max, "../data/honda_flux/frj-ally-20-01-mtn-solmax.d"} );
-  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_grn_min    , "../data/honda_flux/grn-ally-20-01-solmin.d"} );
-  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_grn_max    , "../data/honda_flux/grn-ally-20-01-solmax.d"} );
-  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_grn_mtn_min, "../data/honda_flux/grn-ally-20-01-mtn-solmin.d"} );
-  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_grn_mtn_max, "../data/honda_flux/grn-ally-20-01-mtn-solmax.d"} );
+  TString nmhdir = getenv("NMHDIR");
+
+  if ( nmhdir == "" ) {
+    cout << "ERROR! AtmFlux::AtmFlux() $NMHDIR not set (source setenv.sh), init failed." << endl;
+    InitOK = false;
+  }
+  
+  TString datadir = nmhdir + "/data/honda_flux/";
+  
+  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_frj_min    , datadir + "frj-ally-20-01-solmin.d"} );
+  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_frj_max    , datadir + "frj-ally-20-01-solmax.d"} );
+  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_frj_mtn_min, datadir + "frj-ally-20-01-mtn-solmin.d"} );
+  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_frj_mtn_max, datadir + "frj-ally-20-01-mtn-solmax.d"} );
+  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_grn_min    , datadir + "grn-ally-20-01-solmin.d"} );
+  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_grn_max    , datadir + "grn-ally-20-01-solmax.d"} );
+  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_grn_mtn_min, datadir + "grn-ally-20-01-mtn-solmin.d"} );
+  fFileMap.insert( pair<UInt_t, TString> {AtmFluxOpt::h_grn_mtn_max, datadir + "grn-ally-20-01-mtn-solmax.d"} );
   
   //======================================================
   //check that option exists
   //======================================================
-
-  Bool_t InitOK = true;
   
   if ( fFileMap.find(opt) == fFileMap.end() ) {
     cout << "ERROR! AtmFlux::AtmFlux() option " << opt
@@ -86,9 +95,8 @@ AtmFlux::~AtmFlux() {
  *  Other Honda formats (azimuth dependent or all-direction averaged) are not supported.
  *
  *  Honda flux bin centers are from -0.95 -- 0.95. We also wish to have flux at -1 and 1.
- *  To accommodate this, the flux corresponding to E, cosz = +-0.95 is set to correspond to 
+ *  To accommodate this, the flux corresponding to E, cosz = +-0.95 is also set for points 
  *  E, cosz = +-1 (otherwise TGraph2D->Interpolate() does not work for abs(cosz) > 0.95).
- *  This introduces a discrepancy of <5% for abs(cosz) > 0.95.
  *
  *  \param fname Name of the azimuth-averaged Honda flux file.
  *  \param debug Debug flag (default false). In debug mode it prints out 
@@ -136,11 +144,6 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
 	// fetch the string between the first "=" and "--", convert this to double, add bin width
 	
 	cosz = stod( line(line.First("=")+1, line.Index("--") - (line.First("=")+1)) ) + cosz_bin/2;
-
-	//for bins with centers +- 0.95, change cosz to +- 1, otherwise the interpolation
-	//function of TGraph2D will give zeroes for abs(cosz) > 0.95. This is an approximation.
-
-	if ( TMath::Abs(cosz) > 0.9 ) cosz > 0 ? cosz = 1. : cosz = -1. ;
 	
 	continue;
       }
@@ -157,6 +160,21 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
       fGraphs[1][0]->SetPoint( fGraphs[1][0]->GetN(), E_nu, cosz, f_mu );
       fGraphs[1][1]->SetPoint( fGraphs[1][1]->GetN(), E_nu, cosz, f_mub);
 
+      //Honda flux last bin is cosz +- 0.95. Add flux(E, cosz=+-0.95) value also to points
+      //cosz=+-1. Otherwise TGraph2D->Interpolate() will give zeroes for abs(cosz) > 0.95.
+            
+      if ( TMath::Abs(cosz) > 0.9 ) {
+
+	Double_t cosz_end = 2;
+	cosz > 0 ? cosz_end = 1. : cosz_end = -1. ;
+	
+	fGraphs[0][0]->SetPoint( fGraphs[0][0]->GetN(), E_nu, cosz_end, f_e  );
+	fGraphs[0][1]->SetPoint( fGraphs[0][1]->GetN(), E_nu, cosz_end, f_eb );
+	fGraphs[1][0]->SetPoint( fGraphs[1][0]->GetN(), E_nu, cosz_end, f_mu );
+	fGraphs[1][1]->SetPoint( fGraphs[1][1]->GetN(), E_nu, cosz_end, f_mub);
+	
+      }
+      
       if (debug) {
 	printf("E_nu - %lf; cosz - %lf; mu - %lf; mubar - %lf; e - %lf; ebar - %lf\n",
 	       E_nu, cosz, f_mu, f_mub, f_e, f_eb);
@@ -168,7 +186,10 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
 
     ReadOK = true;
     in.close();
-    printf("AtmFlux::ReadHondaFlux(): found %d points in file %s\n",nlines, (const Char_t*)fname);
+
+    if (debug) {
+      printf("AtmFlux::ReadHondaFlux(): found %d points in file %s\n",nlines, (const Char_t*)fname);
+    }
     
   } //end fin is open
 
