@@ -83,10 +83,10 @@ void EffMhists(TString summary_file, TString gseagen_file,
   //------------------------------------------------------
 
   if (veff_option == custom_vol) {
-    fG->Rcan         = rvol;
-    fG->Zcan_min     = zmin_vol;
-    fG->Zcan_max     = zmax_vol;
-    fG->Vcan         = TMath::Pi() * TMath::Power(fG->Rcan, 2) * (fG->Zcan_max - fG->Zcan_min);
+    fG->fRcan      = rvol;
+    fG->fZcan_min  = zmin_vol;
+    fG->fZcan_max  = zmax_vol;
+    fG->fVcan      = TMath::Pi() * TMath::Power(fG->fRcan, 2) * (fG->fZcan_max - fG->fZcan_min);
   }
   
   //------------------------------------------------------
@@ -231,7 +231,7 @@ void FillDetected(Int_t veff_option, Double_t atmmu_cut) {
     
     //if volume cut is used exclude events with vertices outside the volume cut
     if (veff_option == can_vol || veff_option == custom_vol) {
-      if ( !VertexInVol(fS->MC_pos_x, fS->MC_pos_y, fS->MC_pos_z, fG->Rcan, fG->Zcan_min, fG->Zcan_max) ) continue;
+      if ( !VertexInVol(fS->MC_pos_x, fS->MC_pos_y, fS->MC_pos_z, fG->fRcan, fG->fZcan_min, fG->fZcan_max) ) continue;
     }
 
     //reject events that look like atmospheric muons
@@ -270,12 +270,11 @@ void FillGenerated(Int_t veff_option) {
 
   //loop over generated MC events
 
-  for (Int_t i = 0; i < fG->fChain->GetEntries(); i++) {
-    fG->fChain->GetEntry(i);
+  while ( fG->NextEvent() ) {
     
     //if volume cut is used exclude events with vertices outside the volume cut
     if (veff_option == can_vol || veff_option == custom_vol) {
-      if ( !VertexInVol(fG->Neutrino_V1, fG->Neutrino_V2, fG->Neutrino_V3, fG->Rcan, fG->Zcan_min, fG->Zcan_max) ) continue;
+      if ( !VertexInVol(fG->Neutrino_V1, fG->Neutrino_V2, fG->Neutrino_V3, fG->fRcan, fG->fZcan_min, fG->fZcan_max) ) continue;
     }
 
     if (fG->Neutrino_PdgCode > 0) { 
@@ -292,10 +291,10 @@ void FillGenerated(Int_t veff_option) {
   //after this step hDetected divided by h_gen_nu gives the effective mass hist
 
   Double_t scale = 0;
-  Double_t rho   = fG->Rho_seawater;
+  Double_t rho   = fG->fRho_seawater;
   
-  if (veff_option == interaction_vol) scale = fG->Vint * rho;
-  else if (veff_option == can_vol || veff_option == custom_vol) scale = fG->Vcan * rho;
+  if (veff_option == interaction_vol) scale = fG->fVint * rho;
+  else if (veff_option == can_vol || veff_option == custom_vol) scale = fG->fVcan * rho;
 
   fh_gen_scaled_nu ->Scale( 1./scale );
   fh_gen_scaled_nub->Scale( 1./scale );

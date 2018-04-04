@@ -34,8 +34,11 @@ from docopt import docopt
 #*****************************************************************
 # some global directories
 cwd = os.getcwd()
-summary_dir = cwd[0:cwd.rfind('/')] + "/data/mc_end/data_atmnu/"
-gseagen_dir = cwd[0:cwd.rfind('/')] + "/data/mc_start/data_atmnu/"
+nmhdir = os.environ['NMHDIR']
+summary_dir = nmhdir + "/data/mc_end/data_atmnu/"
+gseagen_dir = nmhdir + "/data/mc_start/data_atmnu/"
+irodsdir    = '/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v1.0/gSeaGen/'
+irodsfiles  = []
 
 #*****************************************************************
 
@@ -58,25 +61,24 @@ def execute_effmass_calc(args):
             f = flavours[ int(flavour) ]
             i = interactions[ int(args['-i']) ]
             e = energies[ int(energy) ]
-            
-            if (f == "tau"):
-                print("Tau parsing not yet supported.")
-                raise Exception("Exiting.")
-            
+                        
             for fnr in range( int(args['-l']), int(args['-u']) + 1 ):
                 
                 summaryf = "{0}summary_{1}-{2}_{3}GeV_{4}.root".format(summary_dir, f, i, e, fnr)
-                gseagenf = "{0}gSeaGen_{1}-{2}_{3}GeV_{4}.root".format(gseagen_dir, f, i, e, fnr)
+                gseagenf = "{0}gSeaGen_{1}-{2}_{3}GeV_{4}".format(gseagen_dir, f, i, e, fnr)
                 effmassf = "output/EffMhists_{0}-{1}_{2}GeV_{3}.root".format(f, i, e, fnr)
                 
                 if ( not os.path.isfile(summaryf) ):
                     print("File {} missing, continuing.".format(summaryf))
                     continue
             
-                if ( not gseagen_file_exists(gseagenf, f, i, e, fnr) ):
+                # gSeaGen file extension determined by the function below
+                gsgexists, extension = gseagen_file_exists(gseagenf, f, i, e, fnr)
+                gseagenf += extension
+                if ( not gsgexists ):
                     print ("File {} missing, continuing.".format(gseagenf))
                     continue
-            
+
                 exec_cmd = get_execution_cmd(summaryf, gseagenf, flavour, args['-i'], energy, fnr,
                                              args['-c'], args['-v'],
                                              args['--rvol'], args['--zmin'], args['--zmax'])
@@ -88,7 +90,8 @@ def execute_effmass_calc(args):
 
         #end loop over energies
         
-        if args['--combine']:
+        #combine runs (if there are runs to combine)
+        if ( args['--combine'] and len(effmass_files) > 0 ):
 
             comb_name = "combined_output/EffMhists_{0}-{1}{2}.root".format(f, i, args['--combstr'])
 
@@ -98,7 +101,9 @@ def execute_effmass_calc(args):
 
             os.system(syscmd)
             os.system("root -b -q 'EffMass.C({0}{1}{2})'".format('"',comb_name,'"'))
-            
+        
+    #end loop over flavors
+
 #*****************************************************************
 
 def gseagen_file_exists(gseagenf, flav, interact, en, fnr):
@@ -106,35 +111,60 @@ def gseagen_file_exists(gseagenf, flav, interact, en, fnr):
     This function checks whether the gSeaGen file exists in ../data/mc_start/...
 
     If the file does not exist, it tries to fetch it from IRODS. Returns true if file
-    exists of file sucessfully retrieved.
+    exists or file sucessfully retrieved, returns the file extension.
     """
 
-    filefound = False
+    global irodsfiles
+    extension = ""
 
-    if ( os.path.isfile(gseagenf) ):
-        filefound = True
+    # if file exists locally (either in .root or .evt) return true
+
+    if ( os.path.isfile(gseagenf+".root") ):
+        extension = ".root"
+        return True, extension
+
+    if ( os.path.isfile(gseagenf+".evt") ):
+        extension = ".evt"
+        return True, extension
     
-    #try to copy the relevant file over from irods, untar and remove the tar
+    # first time populate the list with all files on IRODS
+
+    if len(irodsfiles) == 0:
+        irodsfiles = os.popen( "ils {}".format(irodsdir) ).read().split()[1:]
+        irodsfiles.append("end_of_files") #to avoid repeating if IRODS is not available
+        
+    # check if files exist in either .root or .evt format on IRODS
+
+    runspertar = 50
+    fnr_max = int( math.ceil( float(fnr)/runspertar ) )*50
+    fnr_min = fnr_max - 50 + 1
+    tar1 = "{0}-{1}_{2}GeV_{3}-{4}.root.tar.gz".format(flav, interact, en, fnr_min, fnr_max)
+    tar2 = "{0}-{1}_{2}GeV_{3}-{4}.evt.tar.gz".format(flav, interact, en, fnr_min, fnr_max)
+    tarname = ""
+
+    if tar1 in irodsfiles:
+        tarname = tar1
+        extension = ".root"
+    elif tar2 in irodsfiles:
+        tarname = tar2
+        extension = ".evt"
     else:
-        runspertar = 50
-        fnr_max = int( math.ceil( float(fnr)/runspertar ) )*50
-        fnr_min = fnr_max - 50 + 1
-        irodsdir = '/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v1.0/gSeaGen/'
-        tarname = "{0}-{1}_{2}GeV_{3}-{4}.root.tar.gz".format(flav, interact, en, fnr_min, fnr_max)
-        curdir = os.getcwd()
+        print( "Cannot find file {} in IRODS".format(gseagenf) )
+        return False, extension
 
-        os.chdir(gseagen_dir)
-        os.system( "iget {0}{1} -P".format(irodsdir, tarname) )
-        os.system("tar xvzf {}".format(tarname) )
-        os.system("rm {}".format(tarname) )
-        os.chdir(curdir)
+    # copy over the file from IRODS and untar
 
-        if ( os.path.isfile(gseagenf) ):
-            filefound = True
-        else:
-            filefound = False
+    curdir = os.getcwd()
+    os.chdir(gseagen_dir)
+    os.system( "iget {0}{1} -P".format(irodsdir, tarname) )
+    os.system("tar xvzf {}".format(tarname) )
+    os.system("rm {}".format(tarname) )
+    os.chdir(curdir)
 
-    return filefound
+    # check if file found
+
+    return os.path.isfile(gseagenf+extension), extension
+
 
 #*****************************************************************
         
