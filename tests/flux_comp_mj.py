@@ -4,7 +4,7 @@ gSystem.Load("$NMHDIR/common_software/libnmhsoft.so")
 
 # get martijn's histogram, create an equivalent histogram for my calculation
 
-fmj = TFile("mjongen_plots.root","READ");
+fmj = TFile("../data/testing/mjongen_plots.root","READ");
 hmj = fmj.Get("NH/Atmospheric fluxes/hAtmosphericFlux_num");
 
 hme = hmj.Clone();

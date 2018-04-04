@@ -50,6 +50,10 @@ Directories and files
 * cross_sections_gSeaGen_v4r1/ - neutrino cc/nc cross-sections on n, p, O16 from GENIE. Gift from
                                  M. Jongen. 
 
+* honda_flux/                  - honda flux tables for the atmospheric flux class.
+
+* testing/                     - data used by/for NMH/tests scripts.
+
 pid_result_XXX.root file versions (from Steffen, thanks!)
 =================================
 
