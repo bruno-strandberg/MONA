@@ -11,5 +11,7 @@ export NMHDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$NMHDIR/common_software
 export CPATH=${CPATH}:$NMHDIR/common_software
 
-echo "Set env NMHDIR to $NMHDIR"
-echo "${NMHDIR}/common_software was added to LD_LIBRARY_PATH and CPATH"
+# add aanet to cpath
+export CPATH=${CPATH}:${AADIR}:${AADIR}evt
+
+echo "Set variables for NMH analysis"

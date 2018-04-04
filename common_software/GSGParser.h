@@ -15,6 +15,10 @@
 #include "GSGHeaderReader.h"
 #include "TMath.h"
 #include <iostream>
+
+//aanet class to read evt files
+#include "EventFile.hh"
+
 using namespace std;
 
 // Header file for the classes stored in the TTree if any.
@@ -219,84 +223,62 @@ public :
    //------------------------------------------------------
    //bstr: functions/members
    //------------------------------------------------------
-   Double_t Ngen;         //!< number of generated events
-   Double_t Vint;         //!< interaction volume
-   Double_t Rho_seawater; //!< sea water density
+   Double_t fNgen;         //!< number of generated events
+   Double_t fVint;         //!< interaction volume
+   Double_t fRho_seawater; //!< sea water density
 
-   Double_t Vcan;         //!< can volume
-   Double_t Rcan;         //!< can radius
-   Double_t Zcan_min;     //!< can minimum
-   Double_t Zcan_max;     //!< can maximum
+   Double_t fVcan;         //!< can volume
+   Double_t fRcan;         //!< can radius
+   Double_t fZcan_min;     //!< can minimum
+   Double_t fZcan_max;     //!< can maximum
 
-   Double_t Agen;         //!< generation area
-   Double_t E_min;        //!< minimum generated neutrion energy
-   Double_t E_max;        //!< maximum generated neutrion energy
-   Double_t Ct_min;       //!< minimum generated neutrino direction
-   Double_t Ct_max;       //!< maximum generated neutrino direction
-   Double_t E_power;      //!< power of the energy spectrum, E^{-E_power}
+   Double_t fAgen;         //!< generation area
+   Double_t fE_min;        //!< minimum generated neutrion energy
+   Double_t fE_max;        //!< maximum generated neutrion energy
+   Double_t fCt_min;       //!< minimum generated neutrino direction
+   Double_t fCt_max;       //!< maximum generated neutrino direction
+   Double_t fE_power;      //!< power of the energy spectrum, E^{-E_power}
+
+   EventFile *fEvtFile;    //<! pointer aanet .evt file reader
+   Bool_t     fIsRootFile; //<! flag to indicate whether gsg file in .root or .evt format
+   Long64_t   fEntry;      //<! global index used by NextEvent() function
+   Bool_t     InitRootFile(TString fname);
+   Bool_t     InitEvtFile(TString fname);
+   Bool_t     NextEvtEvent();
+   Bool_t     NextEvent();
+
 
 };
 
 #endif
 
 #ifdef GSGParser_cxx
+
+/**
+ * Constructor.
+ * \param  fname  An input gSeaGen file (either in root or evt format).
+ */
 GSGParser::GSGParser(TString fname) : fChain(0)
 {
 
-  TFile *f = new TFile(fname, "READ");
-  TTree *t = NULL;
-  TTree *h = NULL;
-  
-  if ( f->IsOpen() ) { 
-    t = (TTree*)f->Get("Events");
-    h = (TTree*)f->Get("Header");
+  Bool_t InitOK = false;
+
+  fEvtFile    = NULL;
+  fIsRootFile = true;
+  fEntry      = -1;
+
+  if      ( fname.Contains(".root") ) {
+    InitOK = InitRootFile(fname);
+    fIsRootFile = true;
   }
-  else { cout << "ERROR! GSGParser::GSGParser() coult not open file " << fname << endl; }
-
-  if (t != NULL && h != NULL) { 
-
-    //init the Events tree for reading
-    Init(t);
-    
-    //use the header reader class to get the number of events and the generation volume
-    GSGHeaderReader hr(h);
-    hr.GetEntry(0);
-
-    Ngen = hr.NTot;
-
-    //variables for interaction volume calculation
-    Rho_seawater = hr.RhoSW;
-    Double_t h_water      = hr.HSeaWater;
-    Double_t rho_rock     = hr.RhoSR;
-    Double_t h_rock       = hr.HRock;
-    Double_t r_int        = hr.RVol;  //radius of interaction volume
-
-    //interaction volume corresponding to pure water
-    //Double_t rho_water    = 1;
-    /* Vint = TMath::Pi() * r_int * r_int *  */
-    /*   (h_water * Rho_seawater/rho_water + h_rock * rho_rock/rho_water); */
-    
-    //interaction volume corresponding to sea water
-    Vint = TMath::Pi() * r_int * r_int * 
-      (h_water + h_rock * rho_rock/Rho_seawater);
-
-    //variables for can calculation
-    Zcan_min = hr.Can1;
-    Zcan_max = hr.Can2;
-    Rcan     = hr.Can3;
-    
-    Vcan = TMath::Pi() * Rcan * Rcan * (Zcan_max  - Zcan_min);
-
-    //variables for effective volume calculation based on generation area
-    Agen     = hr.Agen;
-    E_min    = hr.EvMin;
-    E_max    = hr.EvMax;
-    Ct_min   = hr.CtMin;
-    Ct_max   = hr.CtMax;
-    E_power  = -hr.Alpha;
-
+  else if ( fname.Contains(".evt")  ) {
+    InitOK = InitEvtFile(fname);
+    fIsRootFile = false;
   }
-  else { cout << "ERROR! GSGParser::GSGParser() init failed" << endl; }
+
+  if (!InitOK) {
+    cout << "ERROR! GSGParser::GSGParser() init failed." << endl;
+  }
 
 }
 
@@ -308,10 +290,18 @@ GSGParser::~GSGParser()
 
 Int_t GSGParser::GetEntry(Long64_t entry)
 {
-// Read contents of entry.
-   if (!fChain) return 0;
-   return fChain->GetEntry(entry);
+
+  if (fIsRootFile) {
+    if (fChain) return fChain->GetEntry(entry);
+    else return 0;
+  }
+  else {
+    cout << "ERROR! GSGParser::GetEntry() can be used only with .root files, use LoadNextEvt() for parsing .evt files." << endl;
+    return 0;
+  }
+
 }
+
 Long64_t GSGParser::LoadTree(Long64_t entry)
 {
 // Set the environment to read one entry
