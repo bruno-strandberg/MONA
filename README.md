@@ -5,9 +5,7 @@ Work in progress.
 Prerequisities
 ==============
 * ROOT 6
-* Jpp ROOT 6 branch with aanet
-
-
+* To use GSGParser to parse gSeaGen files in .evt format, one also requires Jpp and aanet root6 branch.
 
 
 Developments
@@ -22,8 +20,6 @@ For improvements
 
 * For both CScalculator and AtmFlux I foresee an option to add a scaler graph. The scaler graph can be initiated from a function or from a graph. It should provide a simple way to to scale/skew the crossection/flux.
 
-* Maybe allow compilation without aanet/jpp
-
 To-do, ideas
 ------------
 
@@ -37,3 +33,7 @@ Done
 ----
 
 * Need aanet to parse tau gSeaGen files and calculate the effective mass
+
+* allow compilation without aanet/jpp
+
+* the test tests/flux_check_inpol.py illustrates that the interpolation works nicely in cosz and energy directions, no reason to put energy on log scale.

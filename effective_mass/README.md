@@ -6,6 +6,7 @@ Scripts in this directory can be used to create effective mass histograms.
 Prerequisities
 ==============
 * The scripts use the code in NMH/common_software/.
+* To parse gSeaGen files in .evt format, common_software needs Jpp and aanet root6 branch.
 * The scripts require ORCA simulation chain summary files in a specific format in NMH/data/mc_end
 * The scripts require ORCA simulation chain start (gSeaGen files) in NMH/data/mc_start/
 

@@ -11,7 +11,7 @@ This directory has some generic classes that are used by other scripts in the NM
 Prerequisities
 ==============
 * To compile, the script ../setenv.sh needs to be sourced before.
-* Jpp with aanet, using root6, need to be configured.
+* Jpp and aanet with root 6 are required only for reading .evt files with GSGParser.
 
 How to run
 ==============
