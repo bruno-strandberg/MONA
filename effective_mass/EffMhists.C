@@ -4,6 +4,7 @@
 #include "TH2.h"
 #include "TVector3.h"
 #include "TMath.h"
+#include <sys/stat.h>
 
 //*********************************************************************
 //functions
@@ -67,6 +68,12 @@ void EffMhists(TString summary_file, TString gseagen_file,
 
   TString out_name = ParseInputs(flavor, int_type, en_low, run_nr);
   if (out_name == "") return;
+
+  struct stat buf1, buf2;
+  if ( (stat(summary_file, &buf1) != 0) || (stat(summary_file, &buf2) != 0) ) {
+    cout << "ERROR! EffMhists() input file(s) missing." << endl;
+    return;
+  }
 
   InitHists();
 
