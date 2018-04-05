@@ -125,13 +125,40 @@ Bool_t GSGParser::InitRootFile(TString fname) {
 //**************************************************************************
 
 /**
+ * A function to loop over the gSeaGen file irrespective of the format.
+ *
+ * A for loop over the .evt (plain text) file is difficult, because it is not trivial to
+ * get the number of events. It is easiest to while loop until no more events are found.
+ * This is precisely what the function NextEvtEvent() does. The .root files can be looped
+ * over by using the GetEntry(i) function or calling fChain->GetEntry(i) directly. However,
+ * for using the parser generally it is much more convenient to have one function to call
+ * to loop over the events irrespective of the format. This function serves that purpose.
+ *
+ * \return True if next event found, false otherwise.
+ */
+Bool_t GSGParser::NextEvent() {
+
+  if (fIsRootFile) {
+    fEntry++;
+    return fChain->GetEntry(fEntry);
+  }
+  else {
+    return NextEvtEvent();
+  }
+
+}
+
+//**************************************************************************
+
+/**
  * This function initialises the gSeaGen file in .evt format for reading.
  *
  * \param  fname   Input file name.
  * \return         True if init successful, false otherwise.
  */
+#ifdef EVENTFILE_HH
 Bool_t GSGParser::InitEvtFile(TString fname) {
-
+  
   fEvtFile = new EventFile( (string)fname );
 
   //perform the same calculation as in InitRootFile()
@@ -191,7 +218,7 @@ Bool_t GSGParser::InitEvtFile(TString fname) {
  *
  */
 Bool_t GSGParser::NextEvtEvent() {
-
+  
   Bool_t nextLoaded = fEvtFile->next();
   if (!nextLoaded) return nextLoaded;
   
@@ -206,29 +233,7 @@ Bool_t GSGParser::NextEvtEvent() {
   
   return nextLoaded;
 }
-
-//**************************************************************************
-
-/**
- * A function to loop over the gSeaGen file irrespective of the format.
- *
- * A for loop over the .evt (plain text) file is difficult, because it is not trivial to
- * get the number of events. It is easiest to while loop until no more events are found.
- * This is precisely what the function NextEvtEvent() does. The .root files can be looped
- * over by using the GetEntry(i) function or calling fChain->GetEntry(i) directly. However,
- * for using the parser generally it is much more convenient to have one function to call
- * to loop over the events irrespective of the format. This function serves that purpose.
- *
- * \return True if next event found, false otherwise.
- */
-Bool_t GSGParser::NextEvent() {
-
-  if (fIsRootFile) {
-    fEntry++;
-    return fChain->GetEntry(fEntry);
-  }
-  else {
-    return NextEvtEvent();
-  }
-
-}
+#else
+Bool_t GSGParser::InitEvtFile(TString fname) { return false; }
+Bool_t GSGParser::NextEvtEvent()             { return false; }
+#endif

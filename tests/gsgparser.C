@@ -1,5 +1,9 @@
 #include "GSGParser.h"
 #include<iostream>
+#include "TSystem.h"
+#include "TH1.h"
+#include "TCanvas.h"
+
 using namespace std;
 
 void gsgparser() {
