@@ -52,6 +52,9 @@ Directories and files
 
 * honda_flux/                  - honda flux tables for the atmospheric flux class.
 
+* eff_mass/                    - files with effective mass histograms from the applications
+  			       	 NMH/effective_mass
+
 * testing/                     - data used by/for NMH/tests scripts.
 
 pid_result_XXX.root file versions (from Steffen, thanks!)
