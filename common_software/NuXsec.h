@@ -1,5 +1,5 @@
-#ifndef CScalculator_h
-#define CScalculator_h
+#ifndef NuXsec_h
+#define NuXsec_h
 
 #include "TGraph.h"
 #include<map>
@@ -9,7 +9,7 @@ using namespace std;
 /** A class that provides a neutrino cross-section calculator. 
  *
  *  The class can be used as follows. After init, select the neutrino interaction
- *  with the public function SelectInteraction. Then use the function CalculateCS
+ *  with the public function SelectInteraction. Then use the function GetXsec
  *  to get the cross-section depending on neutrino energy.
  *
  *  The class uses a root file in specific format that stores TGraphs with total neutrino
@@ -18,14 +18,14 @@ using namespace std;
  * 
  */
 
-class CScalculator {
+class NuXsec {
 
  public:
-  CScalculator(TString xsecfile="");
-  ~CScalculator();
+  NuXsec(TString xsecfile="");
+  ~NuXsec();
 
   void     SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar);
-  Double_t CalculateCS(Double_t E);
+  Double_t GetXsec(Double_t E);
 
  private:
   Bool_t   InitGraphs(TString xsecfile);

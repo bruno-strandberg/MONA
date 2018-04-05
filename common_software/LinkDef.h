@@ -10,7 +10,7 @@
 #pragma link C++ class GSGParser+;
 #pragma link C++ class SummaryParser+;
 #pragma link C++ class AtmFlux+;
-#pragma link C++ class CScalculator+;
+#pragma link C++ class NuXsec+;
 
 
 #endif

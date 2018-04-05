@@ -1,4 +1,4 @@
-#include "CScalculator.h"
+#include "NuXsec.h"
 #include "TFile.h"
 #include<iostream>
 #include "TSystem.h"
@@ -9,14 +9,14 @@
  * Constructor.
  * \param  xsecfile  A root file in specific format with neutrino xsec data.
  */
-CScalculator::CScalculator(TString xsecfile) {
+NuXsec::NuXsec(TString xsecfile) {
 
   //get the nmhdir, if default option (xsecfile="") point to default xsecfile
   
   TString nmhdir = getenv("NMHDIR");
 
   if ( nmhdir == "" ) {
-    cout << "ERROR! CScalculator::CScalculator() $NMHDIR not set (source setenv.sh), " <<
+    cout << "ERROR! NuXsec::NuXsec() $NMHDIR not set (source setenv.sh), " <<
       "init failed." << endl;
   }
 
@@ -53,7 +53,7 @@ CScalculator::CScalculator(TString xsecfile) {
 /**
  * Destructor.
  */
-CScalculator::~CScalculator() {
+NuXsec::~NuXsec() {
 
   f_g_H1  = NULL;
   f_g_O16 = NULL;
@@ -67,14 +67,14 @@ CScalculator::~CScalculator() {
 //*************************************************************************
 
 /**
- * This function selects the interaction for which the fuction CalculateCS(E) returns the xsec.
+ * This function selects the interaction for which the fuction GetXsec(E) returns the xsec.
  *
  * \param  nu_flavor     Neutrino flavor
  * \param  is_cc         Interaction type (0 - nc, 1 - cc)
  * \param  is_nubar      0 - particle, 1 - antiparticle.
  *
  */
-void CScalculator::SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar) {
+void NuXsec::SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar) {
 
   //--------------------------------------------------------------
   //check that the interaction type is supported (in the maps)
@@ -83,19 +83,19 @@ void CScalculator::SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nu
   Bool_t supported = true;
 
   if ( fNu_flavs.find(nu_flavor) == fNu_flavs.end() ) {
-    cout << "ERROR! CScalculator::SelectInteraction() neutrino flavor " << nu_flavor 
+    cout << "ERROR! NuXsec::SelectInteraction() neutrino flavor " << nu_flavor 
 	 << " not supported" << endl;
     supported = false;
   }
 
   if ( fInt_types.find((Bool_t)is_cc) == fInt_types.end() ) {
-    cout << "ERROR! CScalculator::SelectInteraction() interaction " << is_cc <<
+    cout << "ERROR! NuXsec::SelectInteraction() interaction " << is_cc <<
       " not supported" << endl;
     supported = false;
   }
 
   if ( fP_types.find((Bool_t)is_nubar) == fP_types.end() ) {
-    cout << "ERROR! CScalculator::SelectInteraction() particle type " << is_nubar <<
+    cout << "ERROR! NuXsec::SelectInteraction() particle type " << is_nubar <<
       " not supported" << endl;
     supported = false;
   }
@@ -129,10 +129,10 @@ void CScalculator::SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nu
  * \param  E  Neutrino energy
  * \return    (2 x cs_proton + cs_oxygen)/18
  */
-Double_t CScalculator::CalculateCS(Double_t E) {
+Double_t NuXsec::GetXsec(Double_t E) {
 
   if (!fGraphsSet || !f_g_H1 || !f_g_O16) {
-    cout << "ERROR! CScalculator::CalculateCS() graphs not set, returning 0." << endl;
+    cout << "ERROR! NuXsec::GetXsec() graphs not set, returning 0." << endl;
     return 0.;
   }
 
@@ -151,7 +151,7 @@ Double_t CScalculator::CalculateCS(Double_t E) {
  * \param  xsecfile      File with xsec TGraphs.
  * \return               true if xsec file found, false otherwise.
  */
-Bool_t CScalculator::InitGraphs(TString xsecfile) {
+Bool_t NuXsec::InitGraphs(TString xsecfile) {
 
   TFile *f = new TFile(xsecfile,"READ");
   if ( !f->IsOpen() ) return false;
@@ -195,7 +195,7 @@ Bool_t CScalculator::InitGraphs(TString xsecfile) {
  * \param  is_nubar      0 - particle, 1 - antiparticle.
  * \return               A search string for the fGraphs map.
  */
-TString CScalculator::CreateString(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar) {
+TString NuXsec::CreateString(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar) {
 
   return fNu_flavs[nu_flavor] + fP_types[(Int_t)is_nubar] + fInt_types[(Int_t)is_cc];
 

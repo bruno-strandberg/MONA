@@ -5,7 +5,7 @@ This directory has some generic classes that are used by other scripts in the NM
 
 * SummaryParser - to parse summary files the analysis format as described below,
 * GSGParser     - to parse gSeaGen files, either in .root or .evt format,
-* CScalculator  - a class to get the neutrino interaction cross-section in water,
+* NuXsec        - a class to get the neutrino interaction cross-section in water,
 * AtmFlux       - a class to get the atmospheric neutrino flux.
 
 Prerequisities
