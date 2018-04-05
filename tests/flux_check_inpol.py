@@ -6,9 +6,10 @@ gSystem.Load("$NMHDIR/common_software/libnmhsoft.so")
 
 #----------------------------------------------------------------------------
 #This creates comparison graphs between the AtmFlux calculator value and actual data points
+#along the cosz axis
 #----------------------------------------------------------------------------
 
-def comp(f_dict, Energy = 1.0000E+00, flavor = 1, is_nubar = 0):
+def comp_cosz(f_dict, Energy = 1.0000E+00, flavor = 1, is_nubar = 0):
 
     # init graphs, load library
     
@@ -33,6 +34,44 @@ def comp(f_dict, Energy = 1.0000E+00, flavor = 1, is_nubar = 0):
         g_inpol.SetPoint( g_inpol.GetN(),
                           cosz, flux.Flux_dE_dcosz(flavor, is_nubar, Energy, cosz)/(2*math.pi) )
         cosz += 0.1
+        
+    g_inpol.SetMarkerStyle(20)
+    g_inpol.SetMarkerColor(kBlack)
+    g_inpol.SetLineColor(kBlack)
+    g_data.SetMarkerStyle(21)
+    g_data.SetMarkerColor(kRed)
+    g_data.SetLineColor(kRed)
+            
+    return g_inpol, g_data
+
+#----------------------------------------------------------------------------
+#This creates comparison graphs between the AtmFlux calculator value and actual data points
+#along the energy axis
+#----------------------------------------------------------------------------
+
+def comp_E(f_dict, cosz = -0.95, flavor = 1, is_nubar = 0):
+
+    # init graphs, load library
+    
+    flux = AtmFlux(h_frj_min)
+    g_inpol = TGraph()
+    g_data  = TGraph()
+
+    # add points to data and interpolated graphs
+
+    for E, angles in f_dict.iteritems():
+        cosz = round(cosz, 3)
+        g_inpol.SetPoint( g_inpol.GetN(),
+                          E, flux.Flux_dE_dcosz(flavor, is_nubar, E, cosz)/(2*math.pi) )
+        g_data.SetPoint (  g_data.GetN(), E, f_dict[E][cosz])
+
+    # add extra points away from data to check interpolation is OK
+
+    E = 50
+    while E <= 10000:
+        g_inpol.SetPoint( g_inpol.GetN(),
+                          E, flux.Flux_dE_dcosz(flavor, is_nubar, E, cosz)/(2*math.pi) )
+        E += 100
         
     g_inpol.SetMarkerStyle(20)
     g_inpol.SetMarkerColor(kBlack)
@@ -77,14 +116,18 @@ def read_data():
     f.close()
 
     return flux_mu, flux_mub, flux_e, flux_eb
-    
+
+#----------------------------------------------------------------------------
+#main
+#----------------------------------------------------------------------------
 if __name__=="__main__":
 
     flux_mu, flux_mub, flux_e, flux_eb = read_data()
-    g1, g2 = comp(flux_mu)
-    g3, g4 = comp(flux_mu, 1.0000E+01)
-    g5, g6 = comp(flux_e, 1.0000E+00, 0, 0)
-    g7, g8 = comp(flux_e, 1.0000E+01, 0, 0)
+    g1, g2 = comp_cosz(flux_mu)
+    g3, g4 = comp_cosz(flux_mu, 1.0000E+01)
+    g5, g6 = comp_cosz(flux_e, 1.0000E+00, 0, 0)
+    g7, g8 = comp_cosz(flux_e, 1.0000E+01, 0, 0)
+    g9, g10= comp_E(flux_mu)
 
     c1 = TCanvas("c1","c1",1)
     c1.Divide(2,2)
@@ -104,3 +147,7 @@ if __name__=="__main__":
     c1.cd(4)
     g7.Draw()
     g8.Draw("Psame")
+
+    c2 = TCanvas("c1","c1",1)
+    g9.Draw("AP")
+    g10.Draw("Psame")

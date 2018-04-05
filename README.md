@@ -22,12 +22,12 @@ For improvements
 
 * For both CScalculator and AtmFlux I foresee an option to add a scaler graph. The scaler graph can be initiated from a function or from a graph. It should provide a simple way to to scale/skew the crossection/flux.
 
+* Maybe allow compilation without aanet/jpp
+
 To-do, ideas
 ------------
 
-* Alternatively, you could try to estimate the effective mass from the effective area, in which case you won't need to parse the gSeaGen files. At this stage you should also be ready to compare the oscillated event rates calculated with effective mass vs effective area. You will still need to get the header info from the .evt file, though...
-
-* There may be a reason to have the AtmFlux data on a logarithmic energy scale. If the flux fall-off mimics exponential decay, then on a log scale this looks linear. Hence, the interpolation function is more accurate at higher energies, where there are fewer points. Should be trivial to implement. It may be a good idea to have the function still take the energy on a linear scale and take the log in the function to avoid mix-up between log2, log10
+* You could try to estimate the effective mass from the effective area, in which case you won't need to parse the gSeaGen files.
 
 * Once the event weight calculation is in place, it might be the time to give another thought to the data format. It may be smart to have a way to attach the weight to the summary files? Needs thought, data sorting-->effective mass-->event weight-->data sorting may not be ideal.
 
