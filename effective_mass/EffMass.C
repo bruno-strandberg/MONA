@@ -9,16 +9,8 @@
  *
  */
 
-void EffMass(TString effmhists_file, Int_t rebinX = 10, Int_t rebinY = 10, Bool_t upgoing = kTRUE) {
-
-  //-----------------------------------------
-  //extract the output string name
-  //-----------------------------------------
-  TString outdir    = effmhists_file( 0, effmhists_file.Last('/')+1 );
-  TString outprefix = "EffMhists";
-  TString suffix    = effmhists_file( effmhists_file.Index(outprefix) + outprefix.Length(),
-				      effmhists_file.Length() );
-  TString outname   = outdir + "effmass" + suffix;
+void EffMass(TString effmhists_file, TString outname, 
+	     Int_t rebinX = 2, Int_t rebinY = 5, Bool_t upgoing = kTRUE) {
 
   //-----------------------------------------
   //Get the histograms from input, rebin, divide, rename

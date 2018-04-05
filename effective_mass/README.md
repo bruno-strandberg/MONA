@@ -13,10 +13,12 @@ How to run
 ==========
 
 Both EffMhists.C and EffMass.C macros can be run stand-alone. Run them in compiled mode
-(do root, EffMhists.C+(...) ).
+(do root, EffMhists.C+(...) ). Interfaces are documented in the code.
 
-Assuming sorted data in NMH/data/... directory, a python script caller.py can be used to run
-over several run numbers, flavors etc. Do caller.py -h for usage.
+Assuming sorted data in NMH/data/... directory, a python script EMH_caller.py can be used to run
+over several run numbers, flavors, energies, interactions. Do ```EMH_caller.py -h``` for help. It can also send jobs to the farm to save time. Combinations that do not exist (e.g. muon-NC) are ignored.
+
+After EMH_caller.py has been run to produce effective mass histograms in output/ for each flavor, energy, interaction, the script EM_caller.py can be called. This will identify missing files, summarize the data and create effective mass histograms to combined_output.
 
 Outputs
 ==========
