@@ -3,8 +3,8 @@
 This script can be used to call the EffMhists.C macro.
  
 Usage:
-    caller -l RUNNR_LOW -u RUNNR_UP -f FLAVOUR... -i INTERACTION... -e E_START... (--local | --farm) [--nmin NMIN] [-c ATMMU_CUT] [-v VEFF_OPT] [--rvol RVOL] [--zmin ZMIN] [--zmax ZMAX]
-    caller -h                                                                     
+    EMH_caller -l RUNNR_LOW -u RUNNR_UP -f FLAVOUR... -i INTERACTION... -e E_START... (--local | --farm) [--nmin NMIN] [-c ATMMU_CUT] [-v VEFF_OPT] [--rvol RVOL] [--zmin ZMIN] [--zmax ZMAX]
+    EMH_caller -h                                                                     
                                                                                           
 Option:                                                                                   
     -l RUNNR_LOW      Lowest run number
@@ -40,8 +40,7 @@ gseagen_dir   = nmhdir + "/data/mc_start/data_atmnu/"  #gseagen files on sps dir
 irodsdir      = '/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v1.0/gSeaGen/' #gsg@irods
 irodsfiles    = os.popen( "ils {}".format(irodsdir) ).read().split()[1:] #list of gsg@irods
 to_be_fetched = []                 #list of gsgfiles set to be fetched from IRODS (for farming)
-corruptfiles  = ['elec-CC_1-5GeV_251-300.root.tar.gz',
-                 'gSeaGen_elec-NC_1-5GeV_43.root'      ] #list of corrupt files
+corruptfiles  = ['elec-CC_1-5GeV_251-300.root.tar.gz'] #list of corrupt files
 
 #*****************************************************************
 
@@ -82,10 +81,10 @@ def execute_effmass_calc(args):
             gseagenf += extension
             cmds.extend(gsg_cmds)
 
-            if ( not gsgexists or gseagenf[gseagenf.rfind('/')+1:] in corruptfiles ):
-                print ("File {} missing or corrupt, continuing.".format(gseagenf))
+            if ( not gsgexists ):
+                print ("File {} missing, continuing.".format(gseagenf))
                 continue
-            
+
             cmds.append( get_execution_cmd(summaryf, gseagenf, flavour, interaction, 
                                            energy, fnr, args['-c'], args['-v'], 
                                            args['--rvol'], args['--zmin'], args['--zmax']) )
@@ -166,13 +165,13 @@ def gseagen_file_exists(gseagenf, flav, interact, en, fnr):
     # check that file is not corrupt, add to to_be_fetched list
 
     if (tarname in corruptfiles):
-        print( "File {} marked as corrupt in caller.py".format(tarname) )
+        print( "File {} marked as corrupt in EMH_caller.py".format(tarname) )
         return False, extension, syscmd
 
     if (tarname in to_be_fetched):
         return True, extension, syscmd
 
-    # create the system command and return to caller
+    # create and return the system command
     syscmd.append( "timeout 600 iget {0}{1} {2} -P\n".format(irodsdir, tarname, gseagen_dir) )
     syscmd.append( "tar xvzf {0}{1} -C {0}\n".format(gseagen_dir, tarname) )
     syscmd.append( "rm {0}{1}\n".format(gseagen_dir, tarname) )
