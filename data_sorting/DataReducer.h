@@ -623,7 +623,7 @@ public :
    TBranch        *b_dusj_dir_x;   //!
    TBranch        *b_dusj_dir_z;   //!
 
-   DataReducer(TTree *tree=0);
+   DataReducer(TTree *tree=0, TString outname="out.root");
    virtual ~DataReducer();
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
@@ -638,15 +638,16 @@ public :
    //----------------------------------------------------
    void SetBranches();
    void InitOutputTree();
-   TFile *fout; /*! \brief Pointer to the output file. */
-   TTree *tout; /*! \brief Pointer to the output tree. */ 
+   TFile *fout;       //!< Pointer to the output file.
+   TTree *tout;       //!< Pointer to the output tree.
+   TString fOutN;     //!< Name of the output file
    //----------------------------------------------------
 };
 
 #endif
 
 #ifdef DataReducer_cxx
-DataReducer::DataReducer(TTree *tree) : fChain(0) 
+DataReducer::DataReducer(TTree *tree, TString outname) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
@@ -658,6 +659,7 @@ DataReducer::DataReducer(TTree *tree) : fChain(0)
       f->GetObject("PID",tree);
 
    }
+   fOutN = outname;
    Init(tree);
 }
 

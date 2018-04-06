@@ -173,7 +173,7 @@ void DataReducer::SetBranches() {
 /*! \brief Function that initialises the output tree in analysis format. */
 void DataReducer::InitOutputTree() {
 
-  fout = new TFile("../data/ORCA_MC_summary_all.root","RECREATE");
+  fout = new TFile(fOutN,"RECREATE");
   tout = new TTree("summary","ORCA MC summary tree");
 
   //MC truth info

@@ -19,13 +19,13 @@ SummaryParser *sp;
 
 //****************************************************************
 
-/** (main function) This function takes the file resulting from reduce_data.py as argument 
+/** (main function) This function takes the file resulting from ReduceData.C as argument 
  *  and splits it up to NMH/data/mc_end/ directories to match the file scheme used throughout the
  *  MC chain.
  *
  * See NMH/data/README.md for more details.
  *
- * \param  fname PID summary data in analysis format, output by reduce_data.py.
+ * \param  fname PID summary data in analysis format, output by ReduceData.C.
  *
  */
 void RestoreParity(TString fname) {
