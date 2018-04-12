@@ -145,6 +145,7 @@ void DataReducer::SetBranches() {
 
    fChain->SetBranchStatus("muon_score", 1);
    fChain->SetBranchStatus("track_score", 1);
+   fChain->SetBranchStatus("noise_score", 1);
 
    //------------------------------------------------------
    //quality cuts
@@ -158,8 +159,8 @@ void DataReducer::SetBranches() {
    fChain->SetBranchStatus("dusj_is_selected", 1);
    fChain->SetBranchStatus("gandalf_is_selected", 1);
 
-   fChain->SetBranchStatus("recolns_shifted_is_selected", 1);
-   fChain->SetBranchStatus("gandalf_shifted_is_selected", 1);
+   fChain->SetBranchStatus("recolns_loose_is_selected", 1);
+   fChain->SetBranchStatus("gandalf_loose_is_selected", 1);
    //according to Steffen dusj_is_selected is already loose/efficient
    //and does not rely on strict containment cuts, hence the corresponding
    //variable is not present
@@ -207,7 +208,7 @@ void DataReducer::InitOutputTree() {
   
   tout->Branch("gandalf_energy_nu",    &gandalf_energy_corrected, "gandalf_energy_nu/D");
   tout->Branch("gandalf_ql0"      ,             &gandalf_is_good, "gandalf_ql0/D");
-  tout->Branch("gandalf_ql1"      , &gandalf_shifted_is_selected, "gandalf_ql1/D");
+  tout->Branch("gandalf_ql1"      ,   &gandalf_loose_is_selected, "gandalf_ql1/D");
   tout->Branch("gandalf_ql2"      ,         &gandalf_is_selected, "gandalf_ql2/D");
 
   //shower info
@@ -236,11 +237,12 @@ void DataReducer::InitOutputTree() {
   tout->Branch("recolns_energy_nu", &recolns_energy_neutrino, "recolns_energy_nu/D");
   tout->Branch("recolns_bjorkeny" ,       &recolns_bjorken_y, "recolns_bjorkeny/D");
   tout->Branch("recolns_ql0"      ,             &recolns_is_good, "recolns_ql0/D");
-  tout->Branch("recolns_ql1"      , &recolns_shifted_is_selected, "recolns_ql1/D");
+  tout->Branch("recolns_ql1"      ,   &recolns_loose_is_selected, "recolns_ql1/D");
   tout->Branch("recolns_ql2"      ,         &recolns_is_selected, "recolns_ql2/D");
 
   //PID info
   tout->Branch("PID_muon_score" ,  &muon_score, "PID_muon_score/D");
   tout->Branch("PID_track_score", &track_score, "PID_track_score/D");
+  tout->Branch("PID_noise_score", &noise_score, "PID_noise_score/D");
 
 }

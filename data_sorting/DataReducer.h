@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Wed Mar 14 21:59:47 2018 by ROOT version 6.10/06
+// Thu Apr 12 16:32:50 2018 by ROOT version 6.10/02
 // from TTree PID/
-// found on file: ../data/pid_result_14Mar2018.root
+// found on file: ../data/pid_result_10Apr2018.root
 //////////////////////////////////////////////////////////
 
 #ifndef DataReducer_h
@@ -40,17 +40,19 @@ public :
    Double_t        recolns_dir_xyz;
    Double_t        recolns_shifted30m_pos_z;
    Double_t        dusj_log10_energy_corrected;
-   Double_t        gandalf_successful;
    Double_t        recolns_n_hits_used;
    Double_t        gandalf_phi;
+   Double_t        gandalf_is_selected_without_containment;
    Double_t        dusj_sumMeasuredPMThits;
    Double_t        dusj_MuonSuppression_enoughHits;
    Double_t        dusj_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult_energy;
    Double_t        recolns_shifted30m_pos_y;
    Double_t        recolns_quality;
+   Double_t        _crossValidationTrainingMask_noise_score;
    Double_t        distance_truth_gandalf;
    Double_t        dusj_L0AroundL1HitSelection__weight_withoutSelfSquared;
    Double_t        dusj_shifted30m_pos_x;
+   Double_t        dusj_passes_anti_noise_cut;
    Double_t        dusj_Trigger_3L1Dmax52_FinalShowerHits_0dist80;
    Double_t        dusj_phi;
    Double_t        dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_Charge_scalarProduct;
@@ -62,12 +64,13 @@ public :
    Double_t        dusj_deltaTres_Q20_Q80_FinalShowerHits_0dist60_L1cc_SingleHits_difference;
    Double_t        dusj_llhBestSinglePMTperDOM__sum_forNoSignal;
    Double_t        dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_y;
-   Double_t        safety;
+   Double_t        dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_x;
    Double_t        dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_z;
    Double_t        log10_energy;
    Double_t        gandalf_spread_dir_z_mad;
    Double_t        gandalf_is_selected;
    Double_t        dusj_FinalShowerHits_0dist60_L1cc_SingleHits_emisAng40_trackShowerTres_N;
+   Double_t        noise_score;
    Double_t        gandalf_jstart_length;
    Double_t        dusj_Nom;
    Double_t        cosangle_gandalf_recolns;
@@ -77,6 +80,7 @@ public :
    Double_t        selected_in_ECAP_PID;
    Double_t        dusj_best_FirstDusjOrcaVertexFit_OUTVicinityNumber;
    Double_t        dusj_deltaTres_Q20_Q80_ClusteredL2ORV1L1HitSelection_SingleHits_difference;
+   Double_t        gandalf_containment;
    Double_t        gandalf_spread_dir_x_mean;
    Double_t        pos_z;
    Double_t        pos_x;
@@ -87,13 +91,13 @@ public :
    Double_t        pos_r;
    Double_t        dusj_Trigger_3L1Dmax52_FinalShowerHits_0dist80m25tres75;
    Double_t        gandalf_spread_dir_y_std;
-   Double_t        gandalf_spread_chi2_std;
+   Double_t        recolns_loose_is_selected;
    Double_t        recolns_cosangle_dir_pos;
    Double_t        dusj_Fork_muonSuppression_decision;
    Double_t        gandalf_spread_pos_z_std;
-   Double_t        recolns_shifted_is_selected;
    Double_t        gandalf_spread_pos_z_median;
    Double_t        cosangle_dusj_gandalf;
+   Double_t        gandalf_jenergy_energy;
    Double_t        livetime_sec;
    Double_t        recolns_is_good;
    Double_t        cos_theta;
@@ -109,7 +113,7 @@ public :
    Double_t        is_neutrino;
    Double_t        gandalf_pos_y;
    Double_t        dusj_geoCoverage_R130h160_angle20_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult;
-   Double_t        result;
+   Double_t        n_events_gen;
    Double_t        dir_xyz;
    Double_t        gandalf_spread_n_hits_mean;
    Double_t        dusj_DifferencesFirstAndSecondVertexFit_deltaTime;
@@ -124,9 +128,10 @@ public :
    Double_t        gandalf_spread_pos_y_median;
    Double_t        gandalf_spread_dir_x_iqr;
    Double_t        dusj_llhSinglePMT_sum;
+   Double_t        _crossValidationTrainingMask_muon_score;
    Double_t        gandalf_spread_dir_z_iqr;
+   Double_t        dusj_is_selected_without_anti_noise_cut;
    Double_t        utc_nanoseconds;
-   Double_t        label;
    Double_t        gandalf_spread_beta0_median;
    Double_t        gandalf_pos_r;
    Double_t        recolns_pos_xyz;
@@ -134,7 +139,7 @@ public :
    Double_t        bjorkeny;
    Double_t        theta;
    Double_t        dusj_llhSinglePMT_sum_forNoSignal;
-   Double_t        correct;
+   Double_t        gandalf_spread_chi2_std;
    Double_t        interaction_channel;
    Double_t        gandalf_pos_z;
    Double_t        dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_NXcharge;
@@ -163,7 +168,8 @@ public :
    Double_t        gandalf_dir_x;
    Double_t        gandalf_log10_energy_corrected;
    Double_t        gandalf_dir_z;
-   Double_t        recolns_is_selected;
+   Double_t        distancePointTrack_dusj_truth;
+   Double_t        gandalf_loose_is_selected;
    Double_t        gandalf_dir_r;
    Double_t        gandalf_spread_dir_z_median;
    Double_t        dusj_HitPatternTres_finalShowerHits_10degAroundCherAngle_AbsTres_Mean;
@@ -172,15 +178,16 @@ public :
    Double_t        gandalf_spread_beta1_mean;
    Double_t        gandalf_dir_xyz;
    Double_t        dusj_pos_xyz;
-   Double_t        det_id;
+   Double_t        gandalf_spread_pos_y_mean;
    Double_t        dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_HitProbCharge_scalarProduct;
+   Double_t        recolns_is_selected_without_containment;
    Double_t        dusj_deltaTres_Q20_Q80_FinalShowerHits_0dist60_L1cc_SingleHits_N;
    Double_t        gandalf_spread_pos_x_mean;
    Double_t        gandalf_cos_theta;
    Double_t        distance_truth_recolns;
    Double_t        dusj_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult_time;
    Double_t        dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_Charge_correlationCoefficient;
-   Double_t        gandalf_spread_pos_y_mad;
+   Double_t        gandalf_spread_pos_z_mad;
    Double_t        gandalf_zenith;
    Double_t        run_id;
    Double_t        dusj_energy_corrected;
@@ -194,18 +201,18 @@ public :
    Double_t        dusj_geoCoverage_R130h160_angle45_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult;
    Double_t        dusj_best_FirstDusjOrcaVertexFit_FitResult_time;
    Double_t        dusj_azimuth;
-   Double_t        recolns_successful;
    Double_t        recolns_theta;
    Double_t        recolns_zenith;
    Double_t        gandalf_time;
    Double_t        gandalf_spread_dir_x_std;
+   Double_t        gandalf_containment_shifted;
+   Double_t        recolns_is_selected;
    Double_t        gandalf_spread_beta1_iqr;
    Double_t        dusj_cosangle_dir_pos;
    Double_t        gandalf_spread_dir_x_median;
    Double_t        dusj_MuonSuppression_decision;
    Double_t        recolns_sigma2_phi;
    Double_t        gandalf_jstart_npe_mip_total;
-   Double_t        gandalf_spread_pos_y_mean;
    Double_t        type;
    Double_t        dusj_geoCoverage_R130h160_angle60_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult;
    Double_t        dusj_L0AroundL1HitSelection_weight;
@@ -219,10 +226,10 @@ public :
    Double_t        gandalf_spread_n_hits_median;
    Double_t        trigger_counter;
    Double_t        recolns_log10_energy_neutrino;
+   Double_t        distancePointTrack_gandalf_truth;
    Double_t        dusj_time;
-   Double_t        dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_x;
+   Double_t        gandalf_spread_pos_y_mad;
    Double_t        gandalf_chi2;
-   Double_t        dusj_successful;
    Double_t        cos_zenith;
    Double_t        gandalf_jstart_npe_mip;
    Double_t        gandalf_azimuth;
@@ -244,9 +251,10 @@ public :
    Double_t        dusj_HitPatternTres_finalShowerHits_10degAroundCherAngle_Tres_Mean;
    Double_t        gandalf_spread_n_hits_iqr;
    Double_t        recolns_energy_muon;
+   Double_t        recolns_containment;
    Double_t        weight_one_year;
    Double_t        distance_dusj_gandalf;
-   Double_t        n_events_gen;
+   Double_t        det_id;
    Double_t        recolns_dir_z;
    Double_t        cosangle_truth_dusj;
    Double_t        distance_gandalf_recolns;
@@ -295,10 +303,10 @@ public :
    Double_t        azimuth;
    Double_t        recolns_sin_theta;
    Double_t        gandalf_spread_beta1_mad;
-   Double_t        gandalf_shifted_is_selected;
    Double_t        gandalf_spread_chi2_mad;
    Double_t        gandalf_jenergy_chi2;
    Double_t        gandalf_spread_chi2_iqr;
+   Double_t        recolns_containment_shifted;
    Double_t        recolns_bjorken_y;
    Double_t        recolns_cos_theta;
    Double_t        recolns_beta;
@@ -308,10 +316,10 @@ public :
    Double_t        gandalf_shifted30m_pos_y;
    Double_t        frame_index;
    Double_t        gandalf_shifted30m_pos_z;
-   Double_t        gandalf_spread_pos_z_mad;
    Double_t        dusj_sumExpFromPoissonOMhits;
    Double_t        gandalf_spread_dir_x_mad;
    Double_t        dusj_Trigger_MX8hitsDmax46_FinalShowerHits_0dist80m25tres75;
+   Double_t        _crossValidationTrainingMask_track_score;
    Double_t        gandalf_spread_dir_y_mean;
    Double_t        gandalf_spread_beta0_mad;
    Double_t        dusj_multiplicity;
@@ -335,17 +343,19 @@ public :
    TBranch        *b_recolns_dir_xyz;   //!
    TBranch        *b_recolns_shifted30m_pos_z;   //!
    TBranch        *b_dusj_log10_energy_corrected;   //!
-   TBranch        *b_gandalf_successful;   //!
    TBranch        *b_recolns_n_hits_used;   //!
    TBranch        *b_gandalf_phi;   //!
+   TBranch        *b_gandalf_is_selected_without_containment;   //!
    TBranch        *b_dusj_sumMeasuredPMThits;   //!
    TBranch        *b_dusj_MuonSuppression_enoughHits;   //!
    TBranch        *b_dusj_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult_energy;   //!
    TBranch        *b_recolns_shifted30m_pos_y;   //!
    TBranch        *b_recolns_quality;   //!
+   TBranch        *b__crossValidationTrainingMask_noise_score;   //!
    TBranch        *b_distance_truth_gandalf;   //!
    TBranch        *b_dusj_L0AroundL1HitSelection__weight_withoutSelfSquared;   //!
    TBranch        *b_dusj_shifted30m_pos_x;   //!
+   TBranch        *b_dusj_passes_anti_noise_cut;   //!
    TBranch        *b_dusj_Trigger_3L1Dmax52_FinalShowerHits_0dist80;   //!
    TBranch        *b_dusj_phi;   //!
    TBranch        *b_dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_Charge_scalarProduct;   //!
@@ -357,12 +367,13 @@ public :
    TBranch        *b_dusj_deltaTres_Q20_Q80_FinalShowerHits_0dist60_L1cc_SingleHits_difference;   //!
    TBranch        *b_dusj_llhBestSinglePMTperDOM__sum_forNoSignal;   //!
    TBranch        *b_dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_y;   //!
-   TBranch        *b_safety;   //!
+   TBranch        *b_dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_x;   //!
    TBranch        *b_dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_z;   //!
    TBranch        *b_log10_energy;   //!
    TBranch        *b_gandalf_spread_dir_z_mad;   //!
    TBranch        *b_gandalf_is_selected;   //!
    TBranch        *b_dusj_FinalShowerHits_0dist60_L1cc_SingleHits_emisAng40_trackShowerTres_N;   //!
+   TBranch        *b_noise_score;   //!
    TBranch        *b_gandalf_jstart_length;   //!
    TBranch        *b_dusj_Nom;   //!
    TBranch        *b_cosangle_gandalf_recolns;   //!
@@ -372,6 +383,7 @@ public :
    TBranch        *b_selected_in_ECAP_PID;   //!
    TBranch        *b_dusj_best_FirstDusjOrcaVertexFit_OUTVicinityNumber;   //!
    TBranch        *b_dusj_deltaTres_Q20_Q80_ClusteredL2ORV1L1HitSelection_SingleHits_difference;   //!
+   TBranch        *b_gandalf_containment;   //!
    TBranch        *b_gandalf_spread_dir_x_mean;   //!
    TBranch        *b_pos_z;   //!
    TBranch        *b_pos_x;   //!
@@ -382,13 +394,13 @@ public :
    TBranch        *b_pos_r;   //!
    TBranch        *b_dusj_Trigger_3L1Dmax52_FinalShowerHits_0dist80m25tres75;   //!
    TBranch        *b_gandalf_spread_dir_y_std;   //!
-   TBranch        *b_gandalf_spread_chi2_std;   //!
+   TBranch        *b_recolns_loose_is_selected;   //!
    TBranch        *b_recolns_cosangle_dir_pos;   //!
    TBranch        *b_dusj_Fork_muonSuppression_decision;   //!
    TBranch        *b_gandalf_spread_pos_z_std;   //!
-   TBranch        *b_recolns_shifted_is_selected;   //!
    TBranch        *b_gandalf_spread_pos_z_median;   //!
    TBranch        *b_cosangle_dusj_gandalf;   //!
+   TBranch        *b_gandalf_jenergy_energy;   //!
    TBranch        *b_livetime_sec;   //!
    TBranch        *b_recolns_is_good;   //!
    TBranch        *b_cos_theta;   //!
@@ -404,7 +416,7 @@ public :
    TBranch        *b_is_neutrino;   //!
    TBranch        *b_gandalf_pos_y;   //!
    TBranch        *b_dusj_geoCoverage_R130h160_angle20_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult;   //!
-   TBranch        *b_result;   //!
+   TBranch        *b_n_events_gen;   //!
    TBranch        *b_dir_xyz;   //!
    TBranch        *b_gandalf_spread_n_hits_mean;   //!
    TBranch        *b_dusj_DifferencesFirstAndSecondVertexFit_deltaTime;   //!
@@ -419,9 +431,10 @@ public :
    TBranch        *b_gandalf_spread_pos_y_median;   //!
    TBranch        *b_gandalf_spread_dir_x_iqr;   //!
    TBranch        *b_dusj_llhSinglePMT_sum;   //!
+   TBranch        *b__crossValidationTrainingMask_muon_score;   //!
    TBranch        *b_gandalf_spread_dir_z_iqr;   //!
+   TBranch        *b_dusj_is_selected_without_anti_noise_cut;   //!
    TBranch        *b_utc_nanoseconds;   //!
-   TBranch        *b_label;   //!
    TBranch        *b_gandalf_spread_beta0_median;   //!
    TBranch        *b_gandalf_pos_r;   //!
    TBranch        *b_recolns_pos_xyz;   //!
@@ -429,7 +442,7 @@ public :
    TBranch        *b_bjorkeny;   //!
    TBranch        *b_theta;   //!
    TBranch        *b_dusj_llhSinglePMT_sum_forNoSignal;   //!
-   TBranch        *b_correct;   //!
+   TBranch        *b_gandalf_spread_chi2_std;   //!
    TBranch        *b_interaction_channel;   //!
    TBranch        *b_gandalf_pos_z;   //!
    TBranch        *b_dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_NXcharge;   //!
@@ -458,7 +471,8 @@ public :
    TBranch        *b_gandalf_dir_x;   //!
    TBranch        *b_gandalf_log10_energy_corrected;   //!
    TBranch        *b_gandalf_dir_z;   //!
-   TBranch        *b_recolns_is_selected;   //!
+   TBranch        *b_distancePointTrack_dusj_truth;   //!
+   TBranch        *b_gandalf_loose_is_selected;   //!
    TBranch        *b_gandalf_dir_r;   //!
    TBranch        *b_gandalf_spread_dir_z_median;   //!
    TBranch        *b_dusj_HitPatternTres_finalShowerHits_10degAroundCherAngle_AbsTres_Mean;   //!
@@ -467,15 +481,16 @@ public :
    TBranch        *b_gandalf_spread_beta1_mean;   //!
    TBranch        *b_gandalf_dir_xyz;   //!
    TBranch        *b_dusj_pos_xyz;   //!
-   TBranch        *b_det_id;   //!
+   TBranch        *b_gandalf_spread_pos_y_mean;   //!
    TBranch        *b_dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_HitProbCharge_scalarProduct;   //!
+   TBranch        *b_recolns_is_selected_without_containment;   //!
    TBranch        *b_dusj_deltaTres_Q20_Q80_FinalShowerHits_0dist60_L1cc_SingleHits_N;   //!
    TBranch        *b_gandalf_spread_pos_x_mean;   //!
    TBranch        *b_gandalf_cos_theta;   //!
    TBranch        *b_distance_truth_recolns;   //!
    TBranch        *b_dusj_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult_time;   //!
    TBranch        *b_dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_Charge_correlationCoefficient;   //!
-   TBranch        *b_gandalf_spread_pos_y_mad;   //!
+   TBranch        *b_gandalf_spread_pos_z_mad;   //!
    TBranch        *b_gandalf_zenith;   //!
    TBranch        *b_run_id;   //!
    TBranch        *b_dusj_energy_corrected;   //!
@@ -489,18 +504,18 @@ public :
    TBranch        *b_dusj_geoCoverage_R130h160_angle45_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult;   //!
    TBranch        *b_dusj_best_FirstDusjOrcaVertexFit_FitResult_time;   //!
    TBranch        *b_dusj_azimuth;   //!
-   TBranch        *b_recolns_successful;   //!
    TBranch        *b_recolns_theta;   //!
    TBranch        *b_recolns_zenith;   //!
    TBranch        *b_gandalf_time;   //!
    TBranch        *b_gandalf_spread_dir_x_std;   //!
+   TBranch        *b_gandalf_containment_shifted;   //!
+   TBranch        *b_recolns_is_selected;   //!
    TBranch        *b_gandalf_spread_beta1_iqr;   //!
    TBranch        *b_dusj_cosangle_dir_pos;   //!
    TBranch        *b_gandalf_spread_dir_x_median;   //!
    TBranch        *b_dusj_MuonSuppression_decision;   //!
    TBranch        *b_recolns_sigma2_phi;   //!
    TBranch        *b_gandalf_jstart_npe_mip_total;   //!
-   TBranch        *b_gandalf_spread_pos_y_mean;   //!
    TBranch        *b_type;   //!
    TBranch        *b_dusj_geoCoverage_R130h160_angle60_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult;   //!
    TBranch        *b_dusj_L0AroundL1HitSelection_weight;   //!
@@ -514,10 +529,10 @@ public :
    TBranch        *b_gandalf_spread_n_hits_median;   //!
    TBranch        *b_trigger_counter;   //!
    TBranch        *b_recolns_log10_energy_neutrino;   //!
+   TBranch        *b_distancePointTrack_gandalf_truth;   //!
    TBranch        *b_dusj_time;   //!
-   TBranch        *b_dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_x;   //!
+   TBranch        *b_gandalf_spread_pos_y_mad;   //!
    TBranch        *b_gandalf_chi2;   //!
-   TBranch        *b_dusj_successful;   //!
    TBranch        *b_cos_zenith;   //!
    TBranch        *b_gandalf_jstart_npe_mip;   //!
    TBranch        *b_gandalf_azimuth;   //!
@@ -539,9 +554,10 @@ public :
    TBranch        *b_dusj_HitPatternTres_finalShowerHits_10degAroundCherAngle_Tres_Mean;   //!
    TBranch        *b_gandalf_spread_n_hits_iqr;   //!
    TBranch        *b_recolns_energy_muon;   //!
+   TBranch        *b_recolns_containment;   //!
    TBranch        *b_weight_one_year;   //!
    TBranch        *b_distance_dusj_gandalf;   //!
-   TBranch        *b_n_events_gen;   //!
+   TBranch        *b_det_id;   //!
    TBranch        *b_recolns_dir_z;   //!
    TBranch        *b_cosangle_truth_dusj;   //!
    TBranch        *b_distance_gandalf_recolns;   //!
@@ -590,10 +606,10 @@ public :
    TBranch        *b_azimuth;   //!
    TBranch        *b_recolns_sin_theta;   //!
    TBranch        *b_gandalf_spread_beta1_mad;   //!
-   TBranch        *b_gandalf_shifted_is_selected;   //!
    TBranch        *b_gandalf_spread_chi2_mad;   //!
    TBranch        *b_gandalf_jenergy_chi2;   //!
    TBranch        *b_gandalf_spread_chi2_iqr;   //!
+   TBranch        *b_recolns_containment_shifted;   //!
    TBranch        *b_recolns_bjorken_y;   //!
    TBranch        *b_recolns_cos_theta;   //!
    TBranch        *b_recolns_beta;   //!
@@ -603,10 +619,10 @@ public :
    TBranch        *b_gandalf_shifted30m_pos_y;   //!
    TBranch        *b_frame_index;   //!
    TBranch        *b_gandalf_shifted30m_pos_z;   //!
-   TBranch        *b_gandalf_spread_pos_z_mad;   //!
    TBranch        *b_dusj_sumExpFromPoissonOMhits;   //!
    TBranch        *b_gandalf_spread_dir_x_mad;   //!
    TBranch        *b_dusj_Trigger_MX8hitsDmax46_FinalShowerHits_0dist80m25tres75;   //!
+   TBranch        *b__crossValidationTrainingMask_track_score;   //!
    TBranch        *b_gandalf_spread_dir_y_mean;   //!
    TBranch        *b_gandalf_spread_beta0_mad;   //!
    TBranch        *b_dusj_multiplicity;   //!
@@ -652,9 +668,9 @@ DataReducer::DataReducer(TTree *tree, TString outname) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("../data/pid_result_14Mar2018.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("../data/pid_result_10Apr2018.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("../data/pid_result_14Mar2018.root");
+         f = new TFile("../data/pid_result_10Apr2018.root");
       }
       f->GetObject("PID",tree);
 
@@ -710,17 +726,19 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("recolns_dir_xyz", &recolns_dir_xyz, &b_recolns_dir_xyz);
    fChain->SetBranchAddress("recolns_shifted30m_pos_z", &recolns_shifted30m_pos_z, &b_recolns_shifted30m_pos_z);
    fChain->SetBranchAddress("dusj_log10_energy_corrected", &dusj_log10_energy_corrected, &b_dusj_log10_energy_corrected);
-   fChain->SetBranchAddress("gandalf_successful", &gandalf_successful, &b_gandalf_successful);
    fChain->SetBranchAddress("recolns_n_hits_used", &recolns_n_hits_used, &b_recolns_n_hits_used);
    fChain->SetBranchAddress("gandalf_phi", &gandalf_phi, &b_gandalf_phi);
+   fChain->SetBranchAddress("gandalf_is_selected_without_containment", &gandalf_is_selected_without_containment, &b_gandalf_is_selected_without_containment);
    fChain->SetBranchAddress("dusj_sumMeasuredPMThits", &dusj_sumMeasuredPMThits, &b_dusj_sumMeasuredPMThits);
    fChain->SetBranchAddress("dusj_MuonSuppression_enoughHits", &dusj_MuonSuppression_enoughHits, &b_dusj_MuonSuppression_enoughHits);
    fChain->SetBranchAddress("dusj_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult_energy", &dusj_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult_energy, &b_dusj_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult_energy);
    fChain->SetBranchAddress("recolns_shifted30m_pos_y", &recolns_shifted30m_pos_y, &b_recolns_shifted30m_pos_y);
    fChain->SetBranchAddress("recolns_quality", &recolns_quality, &b_recolns_quality);
+   fChain->SetBranchAddress("_crossValidationTrainingMask_noise_score", &_crossValidationTrainingMask_noise_score, &b__crossValidationTrainingMask_noise_score);
    fChain->SetBranchAddress("distance_truth_gandalf", &distance_truth_gandalf, &b_distance_truth_gandalf);
    fChain->SetBranchAddress("dusj_L0AroundL1HitSelection__weight_withoutSelfSquared", &dusj_L0AroundL1HitSelection__weight_withoutSelfSquared, &b_dusj_L0AroundL1HitSelection__weight_withoutSelfSquared);
    fChain->SetBranchAddress("dusj_shifted30m_pos_x", &dusj_shifted30m_pos_x, &b_dusj_shifted30m_pos_x);
+   fChain->SetBranchAddress("dusj_passes_anti_noise_cut", &dusj_passes_anti_noise_cut, &b_dusj_passes_anti_noise_cut);
    fChain->SetBranchAddress("dusj_Trigger_3L1Dmax52_FinalShowerHits_0dist80", &dusj_Trigger_3L1Dmax52_FinalShowerHits_0dist80, &b_dusj_Trigger_3L1Dmax52_FinalShowerHits_0dist80);
    fChain->SetBranchAddress("dusj_phi", &dusj_phi, &b_dusj_phi);
    fChain->SetBranchAddress("dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_Charge_scalarProduct", &dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_Charge_scalarProduct, &b_dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_Charge_scalarProduct);
@@ -732,12 +750,13 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("dusj_deltaTres_Q20_Q80_FinalShowerHits_0dist60_L1cc_SingleHits_difference", &dusj_deltaTres_Q20_Q80_FinalShowerHits_0dist60_L1cc_SingleHits_difference, &b_dusj_deltaTres_Q20_Q80_FinalShowerHits_0dist60_L1cc_SingleHits_difference);
    fChain->SetBranchAddress("dusj_llhBestSinglePMTperDOM__sum_forNoSignal", &dusj_llhBestSinglePMTperDOM__sum_forNoSignal, &b_dusj_llhBestSinglePMTperDOM__sum_forNoSignal);
    fChain->SetBranchAddress("dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_y", &dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_y, &b_dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_y);
-   fChain->SetBranchAddress("safety", &safety, &b_safety);
+   fChain->SetBranchAddress("dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_x", &dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_x, &b_dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_x);
    fChain->SetBranchAddress("dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_z", &dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_z, &b_dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_z);
    fChain->SetBranchAddress("log10_energy", &log10_energy, &b_log10_energy);
    fChain->SetBranchAddress("gandalf_spread_dir_z_mad", &gandalf_spread_dir_z_mad, &b_gandalf_spread_dir_z_mad);
    fChain->SetBranchAddress("gandalf_is_selected", &gandalf_is_selected, &b_gandalf_is_selected);
    fChain->SetBranchAddress("dusj_FinalShowerHits_0dist60_L1cc_SingleHits_emisAng40_trackShowerTres_N", &dusj_FinalShowerHits_0dist60_L1cc_SingleHits_emisAng40_trackShowerTres_N, &b_dusj_FinalShowerHits_0dist60_L1cc_SingleHits_emisAng40_trackShowerTres_N);
+   fChain->SetBranchAddress("noise_score", &noise_score, &b_noise_score);
    fChain->SetBranchAddress("gandalf_jstart_length", &gandalf_jstart_length, &b_gandalf_jstart_length);
    fChain->SetBranchAddress("dusj_Nom", &dusj_Nom, &b_dusj_Nom);
    fChain->SetBranchAddress("cosangle_gandalf_recolns", &cosangle_gandalf_recolns, &b_cosangle_gandalf_recolns);
@@ -747,6 +766,7 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("selected_in_ECAP_PID", &selected_in_ECAP_PID, &b_selected_in_ECAP_PID);
    fChain->SetBranchAddress("dusj_best_FirstDusjOrcaVertexFit_OUTVicinityNumber", &dusj_best_FirstDusjOrcaVertexFit_OUTVicinityNumber, &b_dusj_best_FirstDusjOrcaVertexFit_OUTVicinityNumber);
    fChain->SetBranchAddress("dusj_deltaTres_Q20_Q80_ClusteredL2ORV1L1HitSelection_SingleHits_difference", &dusj_deltaTres_Q20_Q80_ClusteredL2ORV1L1HitSelection_SingleHits_difference, &b_dusj_deltaTres_Q20_Q80_ClusteredL2ORV1L1HitSelection_SingleHits_difference);
+   fChain->SetBranchAddress("gandalf_containment", &gandalf_containment, &b_gandalf_containment);
    fChain->SetBranchAddress("gandalf_spread_dir_x_mean", &gandalf_spread_dir_x_mean, &b_gandalf_spread_dir_x_mean);
    fChain->SetBranchAddress("pos_z", &pos_z, &b_pos_z);
    fChain->SetBranchAddress("pos_x", &pos_x, &b_pos_x);
@@ -757,13 +777,13 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("pos_r", &pos_r, &b_pos_r);
    fChain->SetBranchAddress("dusj_Trigger_3L1Dmax52_FinalShowerHits_0dist80m25tres75", &dusj_Trigger_3L1Dmax52_FinalShowerHits_0dist80m25tres75, &b_dusj_Trigger_3L1Dmax52_FinalShowerHits_0dist80m25tres75);
    fChain->SetBranchAddress("gandalf_spread_dir_y_std", &gandalf_spread_dir_y_std, &b_gandalf_spread_dir_y_std);
-   fChain->SetBranchAddress("gandalf_spread_chi2_std", &gandalf_spread_chi2_std, &b_gandalf_spread_chi2_std);
+   fChain->SetBranchAddress("recolns_loose_is_selected", &recolns_loose_is_selected, &b_recolns_loose_is_selected);
    fChain->SetBranchAddress("recolns_cosangle_dir_pos", &recolns_cosangle_dir_pos, &b_recolns_cosangle_dir_pos);
    fChain->SetBranchAddress("dusj_Fork_muonSuppression_decision", &dusj_Fork_muonSuppression_decision, &b_dusj_Fork_muonSuppression_decision);
    fChain->SetBranchAddress("gandalf_spread_pos_z_std", &gandalf_spread_pos_z_std, &b_gandalf_spread_pos_z_std);
-   fChain->SetBranchAddress("recolns_shifted_is_selected", &recolns_shifted_is_selected, &b_recolns_shifted_is_selected);
    fChain->SetBranchAddress("gandalf_spread_pos_z_median", &gandalf_spread_pos_z_median, &b_gandalf_spread_pos_z_median);
    fChain->SetBranchAddress("cosangle_dusj_gandalf", &cosangle_dusj_gandalf, &b_cosangle_dusj_gandalf);
+   fChain->SetBranchAddress("gandalf_jenergy_energy", &gandalf_jenergy_energy, &b_gandalf_jenergy_energy);
    fChain->SetBranchAddress("livetime_sec", &livetime_sec, &b_livetime_sec);
    fChain->SetBranchAddress("recolns_is_good", &recolns_is_good, &b_recolns_is_good);
    fChain->SetBranchAddress("cos_theta", &cos_theta, &b_cos_theta);
@@ -779,7 +799,7 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("is_neutrino", &is_neutrino, &b_is_neutrino);
    fChain->SetBranchAddress("gandalf_pos_y", &gandalf_pos_y, &b_gandalf_pos_y);
    fChain->SetBranchAddress("dusj_geoCoverage_R130h160_angle20_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult", &dusj_geoCoverage_R130h160_angle20_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult, &b_dusj_geoCoverage_R130h160_angle20_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult);
-   fChain->SetBranchAddress("result", &result, &b_result);
+   fChain->SetBranchAddress("n_events_gen", &n_events_gen, &b_n_events_gen);
    fChain->SetBranchAddress("dir_xyz", &dir_xyz, &b_dir_xyz);
    fChain->SetBranchAddress("gandalf_spread_n_hits_mean", &gandalf_spread_n_hits_mean, &b_gandalf_spread_n_hits_mean);
    fChain->SetBranchAddress("dusj_DifferencesFirstAndSecondVertexFit_deltaTime", &dusj_DifferencesFirstAndSecondVertexFit_deltaTime, &b_dusj_DifferencesFirstAndSecondVertexFit_deltaTime);
@@ -794,9 +814,10 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("gandalf_spread_pos_y_median", &gandalf_spread_pos_y_median, &b_gandalf_spread_pos_y_median);
    fChain->SetBranchAddress("gandalf_spread_dir_x_iqr", &gandalf_spread_dir_x_iqr, &b_gandalf_spread_dir_x_iqr);
    fChain->SetBranchAddress("dusj_llhSinglePMT_sum", &dusj_llhSinglePMT_sum, &b_dusj_llhSinglePMT_sum);
+   fChain->SetBranchAddress("_crossValidationTrainingMask_muon_score", &_crossValidationTrainingMask_muon_score, &b__crossValidationTrainingMask_muon_score);
    fChain->SetBranchAddress("gandalf_spread_dir_z_iqr", &gandalf_spread_dir_z_iqr, &b_gandalf_spread_dir_z_iqr);
+   fChain->SetBranchAddress("dusj_is_selected_without_anti_noise_cut", &dusj_is_selected_without_anti_noise_cut, &b_dusj_is_selected_without_anti_noise_cut);
    fChain->SetBranchAddress("utc_nanoseconds", &utc_nanoseconds, &b_utc_nanoseconds);
-   fChain->SetBranchAddress("label", &label, &b_label);
    fChain->SetBranchAddress("gandalf_spread_beta0_median", &gandalf_spread_beta0_median, &b_gandalf_spread_beta0_median);
    fChain->SetBranchAddress("gandalf_pos_r", &gandalf_pos_r, &b_gandalf_pos_r);
    fChain->SetBranchAddress("recolns_pos_xyz", &recolns_pos_xyz, &b_recolns_pos_xyz);
@@ -804,7 +825,7 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("bjorkeny", &bjorkeny, &b_bjorkeny);
    fChain->SetBranchAddress("theta", &theta, &b_theta);
    fChain->SetBranchAddress("dusj_llhSinglePMT_sum_forNoSignal", &dusj_llhSinglePMT_sum_forNoSignal, &b_dusj_llhSinglePMT_sum_forNoSignal);
-   fChain->SetBranchAddress("correct", &correct, &b_correct);
+   fChain->SetBranchAddress("gandalf_spread_chi2_std", &gandalf_spread_chi2_std, &b_gandalf_spread_chi2_std);
    fChain->SetBranchAddress("interaction_channel", &interaction_channel, &b_interaction_channel);
    fChain->SetBranchAddress("gandalf_pos_z", &gandalf_pos_z, &b_gandalf_pos_z);
    fChain->SetBranchAddress("dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_NXcharge", &dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_NXcharge, &b_dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_NXcharge);
@@ -833,7 +854,8 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("gandalf_dir_x", &gandalf_dir_x, &b_gandalf_dir_x);
    fChain->SetBranchAddress("gandalf_log10_energy_corrected", &gandalf_log10_energy_corrected, &b_gandalf_log10_energy_corrected);
    fChain->SetBranchAddress("gandalf_dir_z", &gandalf_dir_z, &b_gandalf_dir_z);
-   fChain->SetBranchAddress("recolns_is_selected", &recolns_is_selected, &b_recolns_is_selected);
+   fChain->SetBranchAddress("distancePointTrack_dusj_truth", &distancePointTrack_dusj_truth, &b_distancePointTrack_dusj_truth);
+   fChain->SetBranchAddress("gandalf_loose_is_selected", &gandalf_loose_is_selected, &b_gandalf_loose_is_selected);
    fChain->SetBranchAddress("gandalf_dir_r", &gandalf_dir_r, &b_gandalf_dir_r);
    fChain->SetBranchAddress("gandalf_spread_dir_z_median", &gandalf_spread_dir_z_median, &b_gandalf_spread_dir_z_median);
    fChain->SetBranchAddress("dusj_HitPatternTres_finalShowerHits_10degAroundCherAngle_AbsTres_Mean", &dusj_HitPatternTres_finalShowerHits_10degAroundCherAngle_AbsTres_Mean, &b_dusj_HitPatternTres_finalShowerHits_10degAroundCherAngle_AbsTres_Mean);
@@ -842,15 +864,16 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("gandalf_spread_beta1_mean", &gandalf_spread_beta1_mean, &b_gandalf_spread_beta1_mean);
    fChain->SetBranchAddress("gandalf_dir_xyz", &gandalf_dir_xyz, &b_gandalf_dir_xyz);
    fChain->SetBranchAddress("dusj_pos_xyz", &dusj_pos_xyz, &b_dusj_pos_xyz);
-   fChain->SetBranchAddress("det_id", &det_id, &b_det_id);
+   fChain->SetBranchAddress("gandalf_spread_pos_y_mean", &gandalf_spread_pos_y_mean, &b_gandalf_spread_pos_y_mean);
    fChain->SetBranchAddress("dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_HitProbCharge_scalarProduct", &dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_HitProbCharge_scalarProduct, &b_dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_HitProbCharge_scalarProduct);
+   fChain->SetBranchAddress("recolns_is_selected_without_containment", &recolns_is_selected_without_containment, &b_recolns_is_selected_without_containment);
    fChain->SetBranchAddress("dusj_deltaTres_Q20_Q80_FinalShowerHits_0dist60_L1cc_SingleHits_N", &dusj_deltaTres_Q20_Q80_FinalShowerHits_0dist60_L1cc_SingleHits_N, &b_dusj_deltaTres_Q20_Q80_FinalShowerHits_0dist60_L1cc_SingleHits_N);
    fChain->SetBranchAddress("gandalf_spread_pos_x_mean", &gandalf_spread_pos_x_mean, &b_gandalf_spread_pos_x_mean);
    fChain->SetBranchAddress("gandalf_cos_theta", &gandalf_cos_theta, &b_gandalf_cos_theta);
    fChain->SetBranchAddress("distance_truth_recolns", &distance_truth_recolns, &b_distance_truth_recolns);
    fChain->SetBranchAddress("dusj_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult_time", &dusj_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult_time, &b_dusj_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult_time);
    fChain->SetBranchAddress("dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_Charge_correlationCoefficient", &dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_Charge_correlationCoefficient, &b_dusj_HitPatternCharge_finalShowerHits_10degAroundCherAngle_Charge_correlationCoefficient);
-   fChain->SetBranchAddress("gandalf_spread_pos_y_mad", &gandalf_spread_pos_y_mad, &b_gandalf_spread_pos_y_mad);
+   fChain->SetBranchAddress("gandalf_spread_pos_z_mad", &gandalf_spread_pos_z_mad, &b_gandalf_spread_pos_z_mad);
    fChain->SetBranchAddress("gandalf_zenith", &gandalf_zenith, &b_gandalf_zenith);
    fChain->SetBranchAddress("run_id", &run_id, &b_run_id);
    fChain->SetBranchAddress("dusj_energy_corrected", &dusj_energy_corrected, &b_dusj_energy_corrected);
@@ -864,18 +887,18 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("dusj_geoCoverage_R130h160_angle45_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult", &dusj_geoCoverage_R130h160_angle45_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult, &b_dusj_geoCoverage_R130h160_angle45_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult);
    fChain->SetBranchAddress("dusj_best_FirstDusjOrcaVertexFit_FitResult_time", &dusj_best_FirstDusjOrcaVertexFit_FitResult_time, &b_dusj_best_FirstDusjOrcaVertexFit_FitResult_time);
    fChain->SetBranchAddress("dusj_azimuth", &dusj_azimuth, &b_dusj_azimuth);
-   fChain->SetBranchAddress("recolns_successful", &recolns_successful, &b_recolns_successful);
    fChain->SetBranchAddress("recolns_theta", &recolns_theta, &b_recolns_theta);
    fChain->SetBranchAddress("recolns_zenith", &recolns_zenith, &b_recolns_zenith);
    fChain->SetBranchAddress("gandalf_time", &gandalf_time, &b_gandalf_time);
    fChain->SetBranchAddress("gandalf_spread_dir_x_std", &gandalf_spread_dir_x_std, &b_gandalf_spread_dir_x_std);
+   fChain->SetBranchAddress("gandalf_containment_shifted", &gandalf_containment_shifted, &b_gandalf_containment_shifted);
+   fChain->SetBranchAddress("recolns_is_selected", &recolns_is_selected, &b_recolns_is_selected);
    fChain->SetBranchAddress("gandalf_spread_beta1_iqr", &gandalf_spread_beta1_iqr, &b_gandalf_spread_beta1_iqr);
    fChain->SetBranchAddress("dusj_cosangle_dir_pos", &dusj_cosangle_dir_pos, &b_dusj_cosangle_dir_pos);
    fChain->SetBranchAddress("gandalf_spread_dir_x_median", &gandalf_spread_dir_x_median, &b_gandalf_spread_dir_x_median);
    fChain->SetBranchAddress("dusj_MuonSuppression_decision", &dusj_MuonSuppression_decision, &b_dusj_MuonSuppression_decision);
    fChain->SetBranchAddress("recolns_sigma2_phi", &recolns_sigma2_phi, &b_recolns_sigma2_phi);
    fChain->SetBranchAddress("gandalf_jstart_npe_mip_total", &gandalf_jstart_npe_mip_total, &b_gandalf_jstart_npe_mip_total);
-   fChain->SetBranchAddress("gandalf_spread_pos_y_mean", &gandalf_spread_pos_y_mean, &b_gandalf_spread_pos_y_mean);
    fChain->SetBranchAddress("type", &type, &b_type);
    fChain->SetBranchAddress("dusj_geoCoverage_R130h160_angle60_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult", &dusj_geoCoverage_R130h160_angle60_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult, &b_dusj_geoCoverage_R130h160_angle60_lmin30_best_DusjOrcaUsingProbabilitiesFinalFit_FitResult);
    fChain->SetBranchAddress("dusj_L0AroundL1HitSelection_weight", &dusj_L0AroundL1HitSelection_weight, &b_dusj_L0AroundL1HitSelection_weight);
@@ -889,10 +912,10 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("gandalf_spread_n_hits_median", &gandalf_spread_n_hits_median, &b_gandalf_spread_n_hits_median);
    fChain->SetBranchAddress("trigger_counter", &trigger_counter, &b_trigger_counter);
    fChain->SetBranchAddress("recolns_log10_energy_neutrino", &recolns_log10_energy_neutrino, &b_recolns_log10_energy_neutrino);
+   fChain->SetBranchAddress("distancePointTrack_gandalf_truth", &distancePointTrack_gandalf_truth, &b_distancePointTrack_gandalf_truth);
    fChain->SetBranchAddress("dusj_time", &dusj_time, &b_dusj_time);
-   fChain->SetBranchAddress("dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_x", &dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_x, &b_dusj_best_FirstDusjOrcaVertexFit_FitResult_pos_x);
+   fChain->SetBranchAddress("gandalf_spread_pos_y_mad", &gandalf_spread_pos_y_mad, &b_gandalf_spread_pos_y_mad);
    fChain->SetBranchAddress("gandalf_chi2", &gandalf_chi2, &b_gandalf_chi2);
-   fChain->SetBranchAddress("dusj_successful", &dusj_successful, &b_dusj_successful);
    fChain->SetBranchAddress("cos_zenith", &cos_zenith, &b_cos_zenith);
    fChain->SetBranchAddress("gandalf_jstart_npe_mip", &gandalf_jstart_npe_mip, &b_gandalf_jstart_npe_mip);
    fChain->SetBranchAddress("gandalf_azimuth", &gandalf_azimuth, &b_gandalf_azimuth);
@@ -914,9 +937,10 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("dusj_HitPatternTres_finalShowerHits_10degAroundCherAngle_Tres_Mean", &dusj_HitPatternTres_finalShowerHits_10degAroundCherAngle_Tres_Mean, &b_dusj_HitPatternTres_finalShowerHits_10degAroundCherAngle_Tres_Mean);
    fChain->SetBranchAddress("gandalf_spread_n_hits_iqr", &gandalf_spread_n_hits_iqr, &b_gandalf_spread_n_hits_iqr);
    fChain->SetBranchAddress("recolns_energy_muon", &recolns_energy_muon, &b_recolns_energy_muon);
+   fChain->SetBranchAddress("recolns_containment", &recolns_containment, &b_recolns_containment);
    fChain->SetBranchAddress("weight_one_year", &weight_one_year, &b_weight_one_year);
    fChain->SetBranchAddress("distance_dusj_gandalf", &distance_dusj_gandalf, &b_distance_dusj_gandalf);
-   fChain->SetBranchAddress("n_events_gen", &n_events_gen, &b_n_events_gen);
+   fChain->SetBranchAddress("det_id", &det_id, &b_det_id);
    fChain->SetBranchAddress("recolns_dir_z", &recolns_dir_z, &b_recolns_dir_z);
    fChain->SetBranchAddress("cosangle_truth_dusj", &cosangle_truth_dusj, &b_cosangle_truth_dusj);
    fChain->SetBranchAddress("distance_gandalf_recolns", &distance_gandalf_recolns, &b_distance_gandalf_recolns);
@@ -965,10 +989,10 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("azimuth", &azimuth, &b_azimuth);
    fChain->SetBranchAddress("recolns_sin_theta", &recolns_sin_theta, &b_recolns_sin_theta);
    fChain->SetBranchAddress("gandalf_spread_beta1_mad", &gandalf_spread_beta1_mad, &b_gandalf_spread_beta1_mad);
-   fChain->SetBranchAddress("gandalf_shifted_is_selected", &gandalf_shifted_is_selected, &b_gandalf_shifted_is_selected);
    fChain->SetBranchAddress("gandalf_spread_chi2_mad", &gandalf_spread_chi2_mad, &b_gandalf_spread_chi2_mad);
    fChain->SetBranchAddress("gandalf_jenergy_chi2", &gandalf_jenergy_chi2, &b_gandalf_jenergy_chi2);
    fChain->SetBranchAddress("gandalf_spread_chi2_iqr", &gandalf_spread_chi2_iqr, &b_gandalf_spread_chi2_iqr);
+   fChain->SetBranchAddress("recolns_containment_shifted", &recolns_containment_shifted, &b_recolns_containment_shifted);
    fChain->SetBranchAddress("recolns_bjorken_y", &recolns_bjorken_y, &b_recolns_bjorken_y);
    fChain->SetBranchAddress("recolns_cos_theta", &recolns_cos_theta, &b_recolns_cos_theta);
    fChain->SetBranchAddress("recolns_beta", &recolns_beta, &b_recolns_beta);
@@ -978,10 +1002,10 @@ void DataReducer::Init(TTree *tree)
    fChain->SetBranchAddress("gandalf_shifted30m_pos_y", &gandalf_shifted30m_pos_y, &b_gandalf_shifted30m_pos_y);
    fChain->SetBranchAddress("frame_index", &frame_index, &b_frame_index);
    fChain->SetBranchAddress("gandalf_shifted30m_pos_z", &gandalf_shifted30m_pos_z, &b_gandalf_shifted30m_pos_z);
-   fChain->SetBranchAddress("gandalf_spread_pos_z_mad", &gandalf_spread_pos_z_mad, &b_gandalf_spread_pos_z_mad);
    fChain->SetBranchAddress("dusj_sumExpFromPoissonOMhits", &dusj_sumExpFromPoissonOMhits, &b_dusj_sumExpFromPoissonOMhits);
    fChain->SetBranchAddress("gandalf_spread_dir_x_mad", &gandalf_spread_dir_x_mad, &b_gandalf_spread_dir_x_mad);
    fChain->SetBranchAddress("dusj_Trigger_MX8hitsDmax46_FinalShowerHits_0dist80m25tres75", &dusj_Trigger_MX8hitsDmax46_FinalShowerHits_0dist80m25tres75, &b_dusj_Trigger_MX8hitsDmax46_FinalShowerHits_0dist80m25tres75);
+   fChain->SetBranchAddress("_crossValidationTrainingMask_track_score", &_crossValidationTrainingMask_track_score, &b__crossValidationTrainingMask_track_score);
    fChain->SetBranchAddress("gandalf_spread_dir_y_mean", &gandalf_spread_dir_y_mean, &b_gandalf_spread_dir_y_mean);
    fChain->SetBranchAddress("gandalf_spread_beta0_mad", &gandalf_spread_beta0_mad, &b_gandalf_spread_beta0_mad);
    fChain->SetBranchAddress("dusj_multiplicity", &dusj_multiplicity, &b_dusj_multiplicity);
