@@ -7,6 +7,16 @@ Prerequisities
 * ROOT 6
 * To use GSGParser to parse gSeaGen files in .evt format, one also requires Jpp and aanet root6 branch.
 
+How to use
+==========
+
+Sort data
+----------
+The starting point is the file NMH/data/pid_result_XXX.root. This needs to be converted to analysis format. Data sorting/conversion is handled by macros in NMH/data_sorting/. Consult NMH/data_sorting/README.md
+
+Effective mass
+--------------
+2D effective mass histograms can be created with the scripts in NMH/effective_mass. Consult NMH/data_sorting/README.md. The combined outputs of the effective mass scripts are stored in data/eff_mass. There should be a file per each neutrino flavor, CC and electron NC.
 
 Developments
 ============
@@ -14,11 +24,11 @@ Developments
 For improvements
 ----------------
 
-* CScalculator uses data in a specific format. Would be nice to have something that can use GENIE output directly (not urgent).
+* NuXsec uses data in a specific format. Would be nice to have something that can use GENIE output directly (not urgent).
 
 * AtmFlux::ReadHondaFlux() makes a small approximation for the ranges abs(cosz) > 0.95 (not sure this can be easily improved, though).
 
-* For both CScalculator and AtmFlux I foresee an option to add a scaler graph. The scaler graph can be initiated from a function or from a graph. It should provide a simple way to to scale/skew the crossection/flux.
+* For both NuXsec and AtmFlux I foresee an option to add a scaler graph. The scaler graph can be initiated from a function or from a graph. It should provide a simple way to to scale/skew the crossection/flux.
 
 To-do, ideas
 ------------

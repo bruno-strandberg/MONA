@@ -11,7 +11,12 @@ export NMHDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$NMHDIR/common_software
 export CPATH=${CPATH}:$NMHDIR/common_software
 
-# add aanet to cpath
+# add aanet to cpath. This should be modified, such that:
+# if AADIR:
+#   if ROOT6:
+#     Add to CPATH
+#   else:
+#     Remove AADIR from CPATH
 export CPATH=${CPATH}:${AADIR}:${AADIR}evt
 
 echo "Set variables for NMH analysis"
