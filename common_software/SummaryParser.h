@@ -80,6 +80,7 @@ public :
    Double_t        recolns_ql2;
    Double_t        PID_muon_score;  //!< PID score for this being an atm muon
    Double_t        PID_track_score; //!< PID score for this being a track event
+   Double_t        PID_noise_score; //!< PID score for this being a noise event
 
    // List of branches
    TBranch        *b_MC_runID;   //!
@@ -130,6 +131,7 @@ public :
    TBranch        *b_recolns_ql2;   //!
    TBranch        *b_PID_muon_score;   //!
    TBranch        *b_PID_track_score;   //!
+   TBranch        *b_PID_noise_score;   //!
 
    SummaryParser(TString fname);
    virtual ~SummaryParser();
@@ -252,6 +254,7 @@ void SummaryParser::Init(TTree *tree)
    fChain->SetBranchAddress("recolns_ql2", &recolns_ql2, &b_recolns_ql2);
    fChain->SetBranchAddress("PID_muon_score", &PID_muon_score, &b_PID_muon_score);
    fChain->SetBranchAddress("PID_track_score", &PID_track_score, &b_PID_track_score);
+   fChain->SetBranchAddress("PID_noise_score", &PID_noise_score, &b_PID_noise_score);
    Notify();
 }
 
