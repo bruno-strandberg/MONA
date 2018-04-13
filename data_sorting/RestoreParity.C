@@ -8,8 +8,7 @@
 //functions
 
 void  split_to_files_atmnu(Bool_t overwrite=false);
-void  split_to_files_atmnu_v2();
-void  split_to_files_atmnu_v3();
+void  split_to_files_atmnu_fast(Int_t max_file_handles=950);
 void  split_to_files_mupage(Bool_t overwrite=false, Bool_t separate=false);
 Int_t get_max_run_nr(TString cut_string);
 
@@ -41,7 +40,7 @@ void RestoreParity(TString fname) {
 
   //call functions
   //split_to_files_atmnu();
-  split_to_files_atmnu_v3();
+  split_to_files_atmnu_fast();
   split_to_files_mupage();
   
 }
@@ -49,6 +48,9 @@ void RestoreParity(TString fname) {
 //****************************************************************
 
 /** Function to split the pid output to summary files per mc input, atm neutrinos.
+ *
+ *  The function split_to_files_atmnu_fast() does the same thing much faster. However, this is simpler
+ *  to understand and kept for comparison.
  *
  * \param overwrite If file exists in NMH/data/mc_end/data_atmnu/, ovewrite.
  *
@@ -207,159 +209,46 @@ void split_to_files_mupage(Bool_t overwrite, Bool_t separate) {
 
 //****************************************************************
 
-//developing something faster. Do the sorting in one go with a loop over the file
+/** Function to split the pid output in summary format to summary files per mc input, atm neutrinos.
+ *
+ *  The following is for anyone looking to improve/understand the function, it is not relevant if you
+ *  are only interested in running the code.
+ *
+ *  The idea is simple. The input file to RestoreParity() is split to >5000 summary files to match the
+ *  file numbering scheme employed in the MC chain. The fastest way to achieve this is to create >5000
+ *  files, make >5000 empty clones of the input tree with entries, loop over the input tree once and
+ *  depending on the run number call Fill() function of one of the >5000 trees.
+ *
+ *  However, typically there is a limit to how many files can be opened in parallel (e.g. 1024). For this
+ *  reason, the function needs to select events in several steps before it can open files in parallel.
+ *
+ *  \param max_file_handles Maximum nr of files opened in parallel.
+ *
+ */
+void  split_to_files_atmnu_fast(Int_t max_file_handles) {
 
-void  split_to_files_atmnu_v2() {
-
-  //--------------------------------------------------
-  //maps to sort data
-  //--------------------------------------------------
-
+  //maps to build the filenames
   map < Double_t, TString > pdg_to_name = { {12., "elec" }, 
-					    {14., "muon" },
-					    {16., "tau"  } };
-
+  					    {14., "muon" },
+  					    {16., "tau"  } };
+  
   map < Double_t, TString > iscc_to_str = { { 0., "NC"}, 
 					    { 1., "CC"} };
 
   map < Double_t, TString>  emin_to_str = { { 1., "1-5"  },
-					    { 3., "3-100"} };
-
-  //filename (except run number) and a vector with cuts for MC_type, MC_is_CC and MC_erange_start
-  map < TString, vector<Double_t> > fnstr_to_cuts;
-
-  for (auto const& type : pdg_to_name) {
-    for (auto const& interaction : iscc_to_str) {
-      for (auto const& emin : emin_to_str) {
-
-	//build the filename string except for run number
-	TString name_string = "../data/mc_end/data_atmnu/summary_"; 
-	name_string += type.second + "-";
-	name_string += interaction.second + "_";
-	name_string += emin.second + "GeV_";
-
-	//create the map entry for fnstr_to_cuts
-	vector<Double_t> cuts = { type.first, interaction.first, emin.first };
-
-	fnstr_to_cuts.insert( pair<TString, vector<Double_t>>(name_string, cuts) );
-
-      } //end loop over energy range
-    } //end loop over nc/cc
-  } //end loop over types
-
-  //--------------------------------------------------
-  //init the output files and trees
-  //--------------------------------------------------
-  
-  //const Int_t maxruns = 2000;
-  const Int_t maxruns = 20;
-
-  TFile ***files = new TFile**[ fnstr_to_cuts.size() ];
-  TTree ***trees = new TTree**[ fnstr_to_cuts.size() ];
-  for (UInt_t i = 0; i < fnstr_to_cuts.size(); i++) {
-    files[i] = new TFile*[maxruns];
-    trees[i] = new TTree*[maxruns];
-  }
-
-  for ( map< TString, vector<Double_t> >::iterator it = fnstr_to_cuts.begin(); 
-	it != fnstr_to_cuts.end(); ++it) {
-
-    for (Int_t runnr = 0; runnr < maxruns; runnr++) {
-
-      TString fname     = it->first + (TString)to_string(runnr) + ".root";
-      Int_t   fname_idx = distance( fnstr_to_cuts.begin(), it );
-
-      files[fname_idx][runnr] = new TFile(fname, "RECREATE");
-      trees[fname_idx][runnr] = sp->fChain->CloneTree(0);
-
-    }
-
-  }
-
-  //--------------------------------------------------
-  //loop over all entries in the input tree and fill one of the created trees
-  //depending on the file number and cuts
-  //--------------------------------------------------
-
-  for (Int_t i = 0; i < sp->fChain->GetEntries(); i++) {
-
-    sp->fChain->GetEntry(i);
- 
-    if (i % 100000 == 0) cout << "Entry: " << i << endl;
-   
-    //loop over all possible file types, using cuts determine what tree to fill
-    for ( map< TString, vector<Double_t> >::iterator it = fnstr_to_cuts.begin(); 
-	  it != fnstr_to_cuts.end(); ++it) {
-
-      vector<Double_t> cuts = it->second;
-      Int_t fname_idx = distance( fnstr_to_cuts.begin(), it );
-
-      //cuts are MC_type, MC_is_CC and MC_erange_start
-      if ( ( TMath::Abs(sp->MC_type) == cuts[0] ) && 
-	   ( sp->MC_is_CC            == cuts[1] ) &&
-	   ( sp->MC_erange_start     == cuts[2] ) ) {
-
-	trees[fname_idx][(Int_t)sp->MC_runID]->Fill();
-
-      }
-
-    } //end loop over map entries
-
-  } //end loop over entries in file
-
-  //--------------------------------------------------
-  //close the files, delete files with 0 entries
-  //--------------------------------------------------
-  for (UInt_t ftype = 0; ftype < fnstr_to_cuts.size(); ftype++) {
-
-    for (Int_t runnr = 0; runnr < maxruns; runnr++) {
-
-      TString fname = files[ftype][runnr]->GetName();
-
-      Bool_t remove = false;
-      if ( trees[ftype][runnr]->GetEntries() > 0 ) { trees[ftype][runnr]->Write(); }
-      else { remove = true; }
-	  
-      files[ftype][runnr]->Close();
-	  
-      if (remove) Int_t sysret = system ("rm " + fname);
-
-      delete files[ftype][runnr];
-
-    } //end loop over file numbers
-
-  } //end loop over file types
-
-}
-
-//****************************************************************
-
-//developing something faster, attempt 3
-
-void  split_to_files_atmnu_v3() {
-
-  //maps to build the filenames
-  // map < Double_t, TString > pdg_to_name = { {12., "elec" }, 
-  // 					    {14., "muon" },
-  // 					    {16., "tau"  } };
-  
-  map < Double_t, TString > iscc_to_str = { { 0., "NC"}, 
-					    { 1., "CC"} };
-
-  // map < Double_t, TString>  emin_to_str = { { 1., "1-5"  },
-  // 					    { 3., "3-100"} };
-
-  map < Double_t, TString > pdg_to_name = { {14., "muon" } };
-  map < Double_t, TString>  emin_to_str = { { 3., "3-100"} };
+  					    { 3., "3-100"} };
     
   for (auto const& type : pdg_to_name) {
-
     for (auto const& interaction : iscc_to_str) {
-
       for (auto const& emin : emin_to_str) {
 
+	cout << "Processing " << type.second << " " << interaction.second
+	     << " " << emin.second << endl;
+	
+	//-------------------------------------------------------
 	//build the cut string and the file name string
-
+	//-------------------------------------------------------
+	
 	TString cut_string = "";
 	cut_string  += "TMath::Abs(MC_type)==" + (TString)to_string(type.first);
 	cut_string  += "&&MC_is_CC==" + (TString)to_string(interaction.first);
@@ -370,106 +259,78 @@ void  split_to_files_atmnu_v3() {
 	name_string += interaction.second + "_";
 	name_string += emin.second + "GeV_";
 
-	// create the tree for flavor_NC/CC_erange over all file numbers
-
-	TString fname_lev1 = name_string + "allruns.root";
-	TFile *fout_lev1   = new TFile(fname_lev1, "RECREATE");
+	//-------------------------------------------------------
+	// create level 1 tree for flavor_NC/CC_erange over all file numbers
+	//-------------------------------------------------------
+	
+	TFile *fout_lev1   = new TFile(name_string + "allruns.root", "RECREATE");
 	TTree *tout_lev1   = sp->fChain->CopyTree(cut_string);
 	Int_t max_run_nr   = 0;
-	if (tout_lev1->GetEntries() > 0) {
-	  max_run_nr = tout_lev1->GetMaximum("MC_runID");
-	}
+	if (tout_lev1->GetEntries() > 0) { max_run_nr = tout_lev1->GetMaximum("MC_runID"); }
 
-	cout << "DEBUG: Created file " << fout_lev1->GetName() << endl;
-	
+	//-------------------------------------------------------
 	// create level 2 trees that have subsetsize  # of runs
+	//-------------------------------------------------------
 	
-	vector<TFile*> fouts_lev2; //vector of lev2 files
-	vector<TTree*> touts_lev2; //vector of lev2 trees
-	Int_t subsetsize = 500;    //level 2 files have 500 files (max) each
-	Int_t subsets    = 0;      //while loop counter
+	vector<TFile*> fouts_lev2;                             //vector of lev2 files
+	vector<TTree*> touts_lev2;                             //vector of lev2 trees
+	vector<TString> temp_files = { fout_lev1->GetName() }; //vector with files to be cleaned up
+
+	Int_t subsetsize = max_file_handles;                   //lev2 files have this (max) # of runs each
+	Int_t subsets    = 0;                                  //while loop counter
 
 	while ( max_run_nr > 0 && subsets * subsetsize < max_run_nr ) {
 
-	  // create fname and cut string for level 2 files & create the file/tree
-	  
 	  Int_t runnr_min = subsetsize * subsets;
 	  Int_t runnr_max = subsetsize * (subsets+1);
-	  TString fname_lev2 = name_string + (TString)to_string(runnr_min) + "-" +  (TString)to_string(runnr_max) + ".root";
+	  TString fname_lev2      = name_string + ( (TString)to_string(runnr_min) + "-" +
+						    (TString)to_string(runnr_max) + ".root" );
 	  TString cut_string_lev2 = cut_string + ("&&MC_runID>=" + (TString)to_string(runnr_min) +
 						  "&&MC_runID<"  + (TString)to_string(runnr_max) );
 
 	  fouts_lev2.push_back( new TFile(fname_lev2, "RECREATE") );
 	  touts_lev2.push_back( tout_lev1->CopyTree(cut_string_lev2) );
-	  TTree *tout_lev2 = touts_lev2.back(); //pointer to current tree, for convenience
+	  temp_files.push_back( fname_lev2 );
 
-	  cout << "DEBUG: Created file " << fouts_lev2.back()->GetName() << endl;
-	  
-	  // now create subsetsize # of files
+	  //-------------------------------------------------------
+	  // now create subsetsize # of level 3 files, fill them in parallel during one for loop, cleanup
+	  //-------------------------------------------------------
 
-	  vector<TFile*> files;
-	  vector<TTree*> trees;
+	  vector<TFile*> fouts_lev3;
+	  vector<TTree*> touts_lev3;
 	  for (Int_t rnr = runnr_min; rnr < runnr_max; rnr++) {
 	    TString fname_lev3 = name_string + (TString)to_string(rnr) + ".root";
-	    files.push_back( new TFile(fname_lev3,"RECREATE") );
-	    trees.push_back( tout_lev2->CloneTree(0) );
+	    fouts_lev3.push_back( new TFile(fname_lev3,"RECREATE") );
+	    touts_lev3.push_back( touts_lev2.back()->CloneTree(0) );
 	  }
-
-	  //fill the files in parallel
-
-	  cout << "DEBUG: Filling files." << endl;
 	  
 	  Double_t MC_runID;
-	  tout_lev2->SetBranchAddress("MC_runID", &MC_runID);
-	  for (Int_t evt = 0; evt < tout_lev2->GetEntries(); evt++) {
-	    tout_lev2->GetEntry(evt);
-	    trees[MC_runID - subsets * subsetsize]->Fill();
+	  touts_lev2.back()->SetBranchAddress("MC_runID", &MC_runID);
+	  for (Int_t evt = 0; evt < touts_lev2.back()->GetEntries(); evt++) {
+	    touts_lev2.back()->GetEntry(evt);
+	    touts_lev3[MC_runID - subsets * subsetsize]->Fill();
 	  }
-
-	  //close the files where there are events, delete others
-
-	  cout << "DEBUG: Closing/deleting files." << endl;
 	  
-	  for (Int_t fi = 0; fi < files.size(); fi++) {
-	    files[fi]->cd();
-	    Bool_t  remove = trees[fi]->GetEntries() == 0;
-	    TString fname  = files[fi]->GetName();
-	    trees[fi]->Write();
-	    files[fi]->Close();
-	    if (remove) {
-	      TString syscmd = "rm " + fname;
-	      Int_t sysret = system(syscmd);
-	      cout << "DEBUG: Removing " << fname << "\t" << syscmd << ", system return " << sysret << endl;
-	    }
+	  for (Int_t fi = 0; fi < (Int_t)fouts_lev3.size(); fi++) {
+	    fouts_lev3[fi]->cd();
+	    if ( touts_lev3[fi]->GetEntries() == 0 ) temp_files.push_back( fouts_lev3[fi]->GetName() );
+	    touts_lev3[fi]->Write();
+	    fouts_lev3[fi]->Close();
+	    delete fouts_lev3[fi];
 	  }
 
 	  subsets++;
-	  if(subsets>0) break;//debug
 	  
 	} //end while loop
 
-	// clean up lev 2
+	cout << "Removing temp/empty files" << endl;
 
-	cout << "DEBUG: Level 2 cleanup." << endl;
-	
-	for (auto f: fouts_lev2) {
-	  TString fname = f->GetName();
-	  f->Close();
-	  Int_t sysret = system ("rm " + fname);
-	  cout << sysret << endl;
-	}
-	
-	// clean up lev1
-
-	cout << "DEBUG: Level 1 cleanup." << endl;
-	
 	fout_lev1->Close();
-	Int_t sysret = system ("rm " + fname_lev1);
+	for (auto f: fouts_lev2) {  f->Close();  delete f; }
+	for (auto fname: temp_files) Int_t sysret = system ("rm " + fname);
 	
       } //end loop over energy range
-
     } //end loop over nc/cc
-
   } //end loop over types
 
 }

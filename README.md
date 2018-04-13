@@ -39,6 +39,8 @@ To-do, ideas
 
 * SummaryParser should have a TChain instead of TTree to allow attaching several files.
 
+* It may be an idea that SummaryParser uses some event class instead of a flat tree. Needs thought, though.
+
 Done
 ----
 

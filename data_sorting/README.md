@@ -18,4 +18,4 @@ How to run
 ==========
 1. Execute ```root, ReduceData.C+("../data/pid_result_XXX.root","../data/ORCA_MC_summary_all_XXX.root")```. This creates the file NMH/data/ORCA_MC_summary_all_XXX.root, which will contain all the same events as NMH/data/pid_result_XXX.root, but will be in the analysis format (reduced and organised tree).
    
-2. Run root, .x RestoreParity.C+("../data/data/ORCA_MC_summary_all_XXX.root"). This will split the data up to several files in NMH/data/mc_end/.. to match the file naming and numbering scheme used throughout the MC chain. This step will take about 3 hours to run if done on single machine (It is currently very ineffective, but quite robust).
+2. Run root, .x RestoreParity.C+("../data/data/ORCA_MC_summary_all_XXX.root"). This will split the data up to several files in NMH/data/mc_end/.. to match the file naming and numbering scheme used throughout the MC chain. This will take ~10 minutes.

@@ -102,6 +102,7 @@ Bjorken y:
 Selection:
 * reconame_is_good     - whether the reco converged (i.e. did not give NaN)
 * reconame_is_selected - whether the reco passes selection cuts, as discussed in [selection cuts](https://wiki.km3net.de/mediawiki/index.php/Simulations/ORCA_productions#Default_Event_Selection_Cuts) and [Moritz' script](http://git.km3net.de/moritz/beluga/blob/master/beluga/cut_sets.py).
+* reconame_loose_is_selected - a looser containment cut for event selection.
 
 PID
 ---
@@ -113,3 +114,6 @@ PID
 ### PID 14Mar2018:
    * muon_score  - separate atm. muon and neutrinos
    * track_score - separate tracks and showers
+
+### PID 10Apr2018:
+   * noise score - added class to separate noise events
