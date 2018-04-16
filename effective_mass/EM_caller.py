@@ -66,10 +66,6 @@ def call_effmass():
         for inter in inters:
             if (inter == "NC" and f != "elec"): continue
 
-            if (inter == "NC"):
-                print("DEBUG: No NC files, skipping.")
-                continue
-
             combname = "combined_output/EffMhists_{0}_{1}.root".format(f, inter)
             outname  = "combined_output/EffMass_{0}_{1}.root".format(f, inter)
 
