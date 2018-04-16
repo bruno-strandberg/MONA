@@ -12,8 +12,11 @@ CXXFLAGS      = -g -Wall -std=c++11
 CXXFLAGS  += $(ROOTCFLAGS)
 LDFLAGS   += $(ROOTLIBS)
 
-#link against aanet (headers are added to CPATH by setenv, no need for -I/...)
-LDFLAGS   +=-L${AADIR} -laa
+# aanet use flag set in setenv.sh, headers are added to CPATH by setenv, no need for -I/...
+ifeq ($(USE_AANET), true)
+	CXXFLAGS += -DWAANET
+        LDFLAGS  += -L${AADIR} -laa
+endif
 
 #for the rootcint command LinkDef.h needs to come last, that's why it is included
 #only when Dictionary is created

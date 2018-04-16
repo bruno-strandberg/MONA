@@ -16,8 +16,8 @@
 #include "TMath.h"
 #include <iostream>
 
-//aanet class to read evt files
-#ifdef EVENTFILE_HH
+//aanet class to read evt files, WAANET set in makefile
+#ifdef WAANET
 #include "EventFile.hh"
 #define AANETEXISTS 1
 #else

@@ -156,7 +156,7 @@ Bool_t GSGParser::NextEvent() {
  * \param  fname   Input file name.
  * \return         True if init successful, false otherwise.
  */
-#ifdef EVENTFILE_HH
+#ifdef WAANET
 Bool_t GSGParser::InitEvtFile(TString fname) {
   
   fEvtFile = new EventFile( (string)fname );
