@@ -10,7 +10,7 @@
  */
 
 void EffMass(TString effmhists_file, TString outname, 
-	     Int_t rebinX = 2, Int_t rebinY = 5, Bool_t upgoing = kTRUE) {
+	     Int_t rebinX = 3, Int_t rebinY = 5, Bool_t upgoing = kTRUE) {
 
   //-----------------------------------------
   //Get the histograms from input, rebin, divide, rename
