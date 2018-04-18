@@ -1,4 +1,4 @@
-NMH code start page
+Main page {#mainpage}
 ===================
 Work in progress.
 
@@ -9,6 +9,10 @@ Prerequisities
 
 How to use
 ==========
+
+Setup
+-----
+* ```source setenv.sh```. Optionally, do ```source setenv.sh -a``` to compile against aanet.
 
 Sort data
 ----------
@@ -40,6 +44,8 @@ To-do, ideas
 * SummaryParser should have a TChain instead of TTree to allow attaching several files.
 
 * It may be an idea that SummaryParser uses some event class instead of a flat tree. Needs thought, though.
+
+* Interactive python setup script that asks for OscProb, Jpp with root 6, etc, paths and creates the setenv.sh script.
 
 Done
 ----
