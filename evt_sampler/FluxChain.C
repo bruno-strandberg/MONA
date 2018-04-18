@@ -59,6 +59,25 @@ Double_t fKg_per_Mton = 1e9;                        //!< kg per MTon (MTon = 1e6
 
 //*****************************************************************
 
+/**
+ *  This routine creates a file with E vs costheta histograms with expected numbers of nu events.
+ *
+ *  The output root file will have directories atmflux, oscflux, intflux, detflux and meff. Eech
+ *  of the flux directories contains E vs costheta histograms for {flavor}_{nc/cc}_{nu/nub} (12 in
+ *  total), each bin will indicate the number of neutrinos of this type after op_time years.
+ *  Directory atmflux/ has histograms with atmospheric neutrinos. oscflux/ show satmflux/ histograms
+ *  after oscillation through Earth, intflux/ shows oscflux/ histograms after nu + H2O xsec is taken
+ *  into account, detflux/ shows intflux/ histograms after effective mass is taken into account.
+ *  meff/ directory displays the effective mass histograms used for the generation of detflux/
+ *  histograms. In the region of fast oscillations it is necessary to sample each bin several times,
+ *  parameter nsamples determines how many samples per bin are calculated.
+ *
+ * \param  op_time       Operation time in years.
+ * \param  output_name   Name of the file where histograms are written.
+ * \param  NH            True - normal nu mass hierarchy, False - inverted nu mass hierarchy.
+ * \param  nsamples      Number of samples per filling one bin (recommended > 10).
+ *
+ */
 void FluxChain(Double_t op_time     = 3.,
 	       TString  output_name = "flux_chain_out.root",
 	       Bool_t   NH          = true,
@@ -66,7 +85,7 @@ void FluxChain(Double_t op_time     = 3.,
 
   gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
-
+  
   InitClasses();
   InitOscPars(NH);
   InitHists();
@@ -92,6 +111,9 @@ void FluxChain(Double_t op_time     = 3.,
 
 //*****************************************************************
 
+/**
+ *  Inline function to initialise classes.
+ */
 void InitClasses() {
 
   fProb = new OscProb::PMNS_Fast;
@@ -103,6 +125,9 @@ void InitClasses() {
 
 //*****************************************************************
 
+/**
+ *  Inline function to initialise osc parameters (PDG 2016) and give them to the osc calculator.
+ */
 void InitOscPars(Bool_t NH) {
 
   //------------------------------------------------
@@ -137,6 +162,9 @@ void InitOscPars(Bool_t NH) {
 
 //*****************************************************************
 
+/**
+ *  Inline function to init E vs costheta histograms.
+ */
 void InitHists() {
 
   Int_t    ebins  = 40;
@@ -175,6 +203,9 @@ void InitHists() {
 
 //*****************************************************************
 
+/**
+ *  Inline function to read effective mass histograms from $NMHDIR/data/eff_mass/.
+ */
 Bool_t ReadMeffHists() {
 
   for (Int_t f = 0; f < 3; f++) {
@@ -207,6 +238,9 @@ Bool_t ReadMeffHists() {
 
 //*****************************************************************
 
+/**
+ *  Inline function to fill E vs costheta histograms.
+ */
 void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsamples) {
   
   fProb->SetIsNuBar(is_nb);
@@ -300,6 +334,9 @@ void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsa
 
 //*****************************************************************
 
+/**
+ *  Inline function to write to file.
+ */
 void WriteToFile(TString output_name) {
 
   TFile fout(output_name, "RECREATE");
@@ -332,6 +369,9 @@ void WriteToFile(TString output_name) {
 
 //*****************************************************************
 
+/**
+ *  Inline function to clean up dynamic memory.
+ */
 void CleanUp() {
 
   delete fProb;
