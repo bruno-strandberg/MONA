@@ -73,10 +73,31 @@ def call_effmass():
             os.system("root -b -q 'EffMass.C({0}{1}{2},{0}{3}{2})'".format('"',combname,'"', outname))
 
 #*****************************************************************************
+
+def copy_to_datadir():
+
+    filenames = ["combined_output/EffMass_elec_CC.root",
+                 "combined_output/EffMass_muon_CC.root",
+                 "combined_output/EffMass_tau_CC.root",
+                 "combined_output/EffMass_elec_NC.root"]
+
+    copy_data = raw_input("Update files in NMH/data/eff_mass/ (typically Y) [Y/N] ?")
+    
+    if copy_data == "Y":
+
+        print("Updating files in NMH/data/eff_mass/")
+        for f in filenames:
+            os.system( "cp {} $NMHDIR/data/eff_mass/".format(f) )
+
+    else:
+        print("Not updating files in NMH/data/eff_mass/, if required perform manually.")
+
+#*****************************************************************************
 if __name__ == "__main__":
     missing = get_missing_files()
     summarize()
     call_effmass()
+    copy_to_datadir()
 
     #for m in missing:
     #    print m

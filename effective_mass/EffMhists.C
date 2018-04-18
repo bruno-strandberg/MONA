@@ -4,6 +4,7 @@
 #include "TH2.h"
 #include "TVector3.h"
 #include "TMath.h"
+#include "NMHUtils.h"
 #include <sys/stat.h>
 
 //*********************************************************************
@@ -187,17 +188,10 @@ TString ParseInputs(Int_t flavor, Int_t int_type, Int_t en_low, Int_t run_nr) {
 // This routine initialises the (global) histograms
 void InitHists() {
 
-  //generate a histogram with 120 bins equidistant on log scale
-
-  TAxis logeaxis(120, TMath::Log10(0.1),  TMath::Log10(100) );
-  vector<Double_t> low_edges;
-  for (Int_t bin = 1; bin <= logeaxis.GetNbins() + 1; bin++) {
-    low_edges.push_back( TMath::Power( 10, logeaxis.GetBinLowEdge(bin) ) );
-  }
-  
   // 'generated' histograms
+  vector<Double_t> low_edges = NMHUtils::GetLogBins(120, 1, 100);
 
-  fh_gen_nu  = new TH2D("Generated_nu", "Generated_nu", logeaxis.GetNbins(), &low_edges[0], 200, -1, 1);
+  fh_gen_nu  = new TH2D("Generated_nu", "Generated_nu", 120, &low_edges[0], 200, -1, 1);
   fh_gen_nub        = (TH2D*)fh_gen_nu->Clone("Generated_nub");
   fh_gen_scaled_nu  = (TH2D*)fh_gen_nu->Clone("Generated_scaled_nu");
   fh_gen_scaled_nub = (TH2D*)fh_gen_nu->Clone("Generated_scaled_nub");
