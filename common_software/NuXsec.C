@@ -124,7 +124,10 @@ void NuXsec::SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar) {
 //*************************************************************************
 
 /**
- * This function returns the cross-section per nucleon in H20 in units 10e−38 cm^2.
+ * This function returns the cross-section per nucleon in H20 in units m^2.
+ *
+ * The graphs store the cross-section in units 1e-38 cm^2. To convert this to m^2, the return
+ * is multiplied by 1e-38 * 1e-4, the latter term coming from cm^2 = 0.0001 m^2.
  *
  * \param  E  Neutrino energy
  * \return    (2 x cs_proton + cs_oxygen)/18
@@ -139,7 +142,7 @@ Double_t NuXsec::GetXsec(Double_t E) {
   Double_t cs_O16 = f_g_O16->Eval(E);
   Double_t cs_H1  = f_g_H1->Eval(E);
 
-  return (2 * cs_H1 + cs_O16)/18.;
+  return (2 * cs_H1 + cs_O16)/18. * 1e-42;
 
 }
 
