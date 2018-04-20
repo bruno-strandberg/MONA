@@ -26,7 +26,7 @@ using namespace std;
 
 class SummaryParser {
 public :
-   TTree          *fChain;   //<pointer to the analyzed TTree or TChain
+   TChain         *fChain;   //<pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //<current Tree number in a TChain
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
@@ -133,12 +133,12 @@ public :
    TBranch        *b_PID_track_score;   //!
    TBranch        *b_PID_noise_score;   //!
 
-   SummaryParser(TString fname);
+   SummaryParser(TString fname="");
    virtual ~SummaryParser();
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
-   virtual void     Init(TTree *tree);
+   virtual void     Init();
    virtual void     Loop();
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
@@ -151,18 +151,13 @@ public :
 #endif
 
 #ifdef SummaryParser_cxx
-SummaryParser::SummaryParser(TString fname) : fChain(0) 
+SummaryParser::SummaryParser(TString fname)
 {
 
-  TFile *f = new TFile(fname, "READ");
-  TTree *t = NULL;
+  fChain = new TChain("summary");
+  if (fname != "") fChain->Add(fname);
+  Init();
   
-  if ( f->IsOpen() ) { t = (TTree*)f->Get("summary"); }
-  else { cout << "ERROR! SummaryParser::SummaryParser() coult not open file " << fname << endl; }
-
-  if (t != NULL) Init(t);
-  else { cout << "ERROR! SummaryParser::SummaryParser() could not find TTree 'summary' in "
-	      << fname << endl; }
 }
 
 SummaryParser::~SummaryParser()
@@ -190,7 +185,7 @@ Long64_t SummaryParser::LoadTree(Long64_t entry)
    return centry;
 }
 
-void SummaryParser::Init(TTree *tree)
+void SummaryParser::Init()
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -201,8 +196,6 @@ void SummaryParser::Init(TTree *tree)
    // (once per file to be processed).
 
    // Set branch addresses and branch pointers
-   if (!tree) return;
-   fChain = tree;
    fCurrent = -1;
    fChain->SetMakeClass(1);
 
