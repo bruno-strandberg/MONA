@@ -19,7 +19,7 @@ Option:
 
     ==================FINE TUNING BELOW========================================
 
-    -c ATMMU_CUT      PID cut to reject atmospheric muons [default: 0.05]
+    -c ATMMU_CUT      PID cut to reject atmospheric muons [default: 1.0]
     -v VEFF_OPT       Vgen option, 0 - interaction volume, 1 - can, 2 - custom [default: 1]
     --rvol RVOL       Radius of custom volume [default: 0]
     --zmin ZMIN       Z minimum of custom volume [default: 0]
