@@ -4,18 +4,21 @@
 
 
 //****************************************************************
-
 //functions
+//****************************************************************
 
 void  split_to_files_atmnu(Bool_t overwrite=false);
 void  split_to_files_atmnu_fast(Int_t max_file_handles=950);
 void  split_to_files_mupage(Bool_t overwrite=false, Bool_t separate=false);
+void  split_to_files_noise();
 Int_t get_max_run_nr(TString cut_string);
 
+//****************************************************************
 //global variables accessible in all functions inside this macro
+//****************************************************************
 
 /// Global pointer to a summary file parser class.
-SummaryParser *sp;
+SummaryParser *fSp;
 
 //****************************************************************
 
@@ -23,7 +26,7 @@ SummaryParser *sp;
  *  and splits it up to NMH/data/mc_end/ directories to match the file scheme used throughout the
  *  MC chain.
  *
- * See NMH/data/README.md for more details.
+ *  See NMH/data/README.md for more details.
  *
  * \param  fname PID summary data in analysis format, output by ReduceData.C.
  *
@@ -32,16 +35,17 @@ void RestoreParity(TString fname) {
 
   //initialise the data parser
   gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
-  sp = new SummaryParser(fname);
+  fSp = new SummaryParser(fname);
 
-  if (sp->fChain == NULL) {
+  if (fSp->fChain == NULL) {
     cout << "ERROR! RestoreParity() Issue with SummaryParser() initialisation." << endl;
   }
 
   //call functions
   //split_to_files_atmnu();
   split_to_files_atmnu_fast();
-  split_to_files_mupage();
+  split_to_files_mupage(true, false);
+  split_to_files_noise();
   
 }
 
@@ -101,7 +105,7 @@ void split_to_files_atmnu(Bool_t overwrite) {
 
 	  cut_string  += "&&MC_runID==" + (TString)to_string(run_nr);
 
-	  TString name_string = "../data/mc_end/data_atmnu/summary_"; 
+	  TString name_string = "$NMHDIR/data/mc_end/data_atmnu/summary_"; 
 	  name_string += type.second + "-";
 	  name_string += interaction.second + "_";
 	  name_string += emin.second + "GeV_" + (TString)to_string(run_nr) + ".root";
@@ -117,7 +121,7 @@ void split_to_files_atmnu(Bool_t overwrite) {
 
 	  cout << "Creating file: " << name_string << endl;
 	  TFile *fout = new TFile(name_string, "RECREATE");
-	  TTree *tout = sp->fChain->CopyTree(cut_string);
+	  TTree *tout = fSp->fChain->CopyTree(cut_string);
 	  
 	  Bool_t remove = false;
 	  if (tout->GetEntries() > 0) { tout->Write(); }
@@ -147,7 +151,7 @@ void split_to_files_atmnu(Bool_t overwrite) {
 Int_t get_max_run_nr(TString cut_string) {
 
   TFile *f_tmp = new TFile("tmp.root","RECREATE");
-  TTree *t_tmp = sp->fChain->CopyTree(cut_string);
+  TTree *t_tmp = fSp->fChain->CopyTree(cut_string);
   Int_t  max_run_nr = t_tmp->GetMaximum("MC_runID");
   f_tmp->Close();
   Int_t sysret = system("rm tmp.root");
@@ -160,6 +164,8 @@ Int_t get_max_run_nr(TString cut_string) {
 
 /** Function to split the pid output to summary files per mc input, atm muons.
  *
+ *  Typically, having atm muon events in one file is better and splitting is not necessary.
+ *
  * \param overwrite If file exists in NMH/data/mc_end/data_atmnu/, ovewrite.
  * \param separate Separate MUPAGE files (11k files), if false MUPAGE events in one file in 
  *        NMH/data/mc_end/data_atmmu/
@@ -167,18 +173,18 @@ Int_t get_max_run_nr(TString cut_string) {
  */
 void split_to_files_mupage(Bool_t overwrite, Bool_t separate) { 
 
-  Int_t max_run_nr = sp->fChain->GetMaximum("MC_runID");
+  Int_t max_run_nr = fSp->fChain->GetMaximum("MC_runID");
 
   //Loop over run numbers
   for (Int_t run_nr = 1; run_nr <= max_run_nr; run_nr++) {
 
     TString cut_string  = "MC_runID==" + (TString)to_string(run_nr) + "&&MC_type==-13";
-    TString name_string = "../data/mc_end/data_mupage/summary_ORCA115_9m_2016.mupage.nevts40000." + 
+    TString name_string = "$NMHDIR/data/mc_end/data_mupage/summary_ORCA115_9m_2016.mupage.nevts40000." + 
       (TString)to_string(run_nr) + ".root";
 
     if (!separate) {
       cut_string  = "MC_type==-13";
-      name_string = "../data/mc_end/data_mupage/summary_ORCA115_9m_2016.mupage.nevts40000.all.root";
+      name_string = "$NMHDIR/data/mc_end/data_mupage/summary_ORCA115_9m_2016.mupage.nevts40000.all.root";
     }
 
     FileStat_t stats;
@@ -191,7 +197,7 @@ void split_to_files_mupage(Bool_t overwrite, Bool_t separate) {
 
     cout << "Creating file: " << name_string << endl;
     TFile *fout = new TFile(name_string, "RECREATE");
-    TTree *tout = sp->fChain->CopyTree(cut_string);
+    TTree *tout = fSp->fChain->CopyTree(cut_string);
 
     Bool_t remove = false;
     if (tout->GetEntries() > 0) { tout->Write(); }
@@ -205,6 +211,36 @@ void split_to_files_mupage(Bool_t overwrite, Bool_t separate) {
 
   }
 
+}
+
+//****************************************************************
+
+/** Function to separate noise files from pid_result file.
+ *
+ *  This is more lightweight compared to atm nu and atm muons. After some experience with the analysis,
+ *  it turned out that typically there is no reason to split noise and atm muon files. The noise and
+ *  atm muon event weighting is simpler (does not require effective mass calculation and oscillation),
+ *  meaning there are no comparisons to be made with gSeaGen files, which is the main reason why atm nu
+ *  files are split.
+ *
+ */
+void split_to_files_noise() {
+
+  TString cut_string  = "MC_type==0";
+  TString name_string = "$NMHDIR/data/mc_end/data_noise/summary_noise.root";
+
+  cout << "Creating file: " << name_string << endl;
+  TFile *fout = new TFile(name_string, "RECREATE");
+  TTree *tout = fSp->fChain->CopyTree(cut_string);
+
+  Bool_t remove = false;
+  if (tout->GetEntries() > 0) { tout->Write(); }
+  else                        { remove = true; }
+  
+  fout->Close();
+  
+  if (remove) Int_t sysret = system ("rm " + name_string);
+  
 }
 
 //****************************************************************
@@ -254,7 +290,7 @@ void  split_to_files_atmnu_fast(Int_t max_file_handles) {
 	cut_string  += "&&MC_is_CC==" + (TString)to_string(interaction.first);
 	cut_string  += "&&MC_erange_start==" + (TString)to_string(emin.first);
 
-	TString name_string = "../data/mc_end/data_atmnu/summary_"; 
+	TString name_string = "$NMHDIR/data/mc_end/data_atmnu/summary_"; 
 	name_string += type.second + "-";
 	name_string += interaction.second + "_";
 	name_string += emin.second + "GeV_";
@@ -264,7 +300,7 @@ void  split_to_files_atmnu_fast(Int_t max_file_handles) {
 	//-------------------------------------------------------
 	
 	TFile *fout_lev1   = new TFile(name_string + "allruns.root", "RECREATE");
-	TTree *tout_lev1   = sp->fChain->CopyTree(cut_string);
+	TTree *tout_lev1   = fSp->fChain->CopyTree(cut_string);
 	Int_t max_run_nr   = 0;
 	if (tout_lev1->GetEntries() > 0) { max_run_nr = tout_lev1->GetMaximum("MC_runID"); }
 

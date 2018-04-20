@@ -100,6 +100,7 @@ void DataReducer::SetBranches() {
    fChain->SetBranchStatus("type", 1);
    
    fChain->SetBranchStatus("weight_w2", 1);
+   fChain->SetBranchStatus("weight_one_year", 1);
    fChain->SetBranchStatus("Erange_min",1);
    
    fChain->SetBranchStatus("run_id",1);
@@ -179,13 +180,14 @@ void DataReducer::InitOutputTree() {
 
   //MC truth info
 
-  tout->Branch("MC_runID"        ,      &run_id, "MC_runID/D");
-  tout->Branch("MC_evtID"        ,       &mc_id, "MC_evtID/D");
-  tout->Branch("MC_w2"           ,   &weight_w2, "MC_w2/D");
-  tout->Branch("MC_erange_start" ,  &Erange_min, "MC_erange_start/D");
-  tout->Branch("MC_is_CC"        ,       &is_cc, "MC_is_CC/D");
-  tout->Branch("MC_is_neutrino"  , &is_neutrino, "MC_is_neutrino/D");
-  tout->Branch("MC_type"         ,        &type, "MC_type/D");
+  tout->Branch("MC_runID"        ,          &run_id, "MC_runID/D");
+  tout->Branch("MC_evtID"        ,           &mc_id, "MC_evtID/D");
+  tout->Branch("MC_w2"           ,       &weight_w2, "MC_w2/D");
+  tout->Branch("MC_w1y"          , &weight_one_year, "MC_w1y/D");
+  tout->Branch("MC_erange_start" ,      &Erange_min, "MC_erange_start/D");
+  tout->Branch("MC_is_CC"        ,           &is_cc, "MC_is_CC/D");
+  tout->Branch("MC_is_neutrino"  ,     &is_neutrino, "MC_is_neutrino/D");
+  tout->Branch("MC_type"         ,            &type, "MC_type/D");
 
   tout->Branch("MC_dir_x" , &dir_x, "MC_dir_x/D");
   tout->Branch("MC_dir_y" , &dir_y, "MC_dir_y/D");

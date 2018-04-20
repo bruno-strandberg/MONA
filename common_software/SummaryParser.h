@@ -35,6 +35,7 @@ public :
    Double_t        MC_runID;        //!< gSeaGen file run number
    Double_t        MC_evtID;        //!< Event ID in gSeaGen run
    Double_t        MC_w2;           //!< Weight 2 from gSeaGen
+   Double_t        MC_w1y;          //!< multiply atm. muon/noise by this to get evts in year
    Double_t        MC_erange_start; //!< Start of gSeaGen E range, e.g. for 3--100 GeV this is 3
    Double_t        MC_is_CC;        //!< 1 - CC, 0 - NC
    Double_t        MC_is_neutrino;  //!< 1 - atm neutrion, 0 - atm muon
@@ -86,6 +87,7 @@ public :
    TBranch        *b_MC_runID;   //!
    TBranch        *b_MC_evtID;   //!
    TBranch        *b_MC_w2;   //!
+   TBranch        *b_MC_w1y;   //!
    TBranch        *b_MC_erange_start;   //!
    TBranch        *b_MC_is_CC;   //!
    TBranch        *b_MC_is_neutrino;   //!
@@ -202,6 +204,7 @@ void SummaryParser::Init()
    fChain->SetBranchAddress("MC_runID", &MC_runID, &b_MC_runID);
    fChain->SetBranchAddress("MC_evtID", &MC_evtID, &b_MC_evtID);
    fChain->SetBranchAddress("MC_w2", &MC_w2, &b_MC_w2);
+   fChain->SetBranchAddress("MC_w1y", &MC_w1y, &b_MC_w1y);
    fChain->SetBranchAddress("MC_erange_start", &MC_erange_start, &b_MC_erange_start);
    fChain->SetBranchAddress("MC_is_CC", &MC_is_CC, &b_MC_is_CC);
    fChain->SetBranchAddress("MC_is_neutrino", &MC_is_neutrino, &b_MC_is_neutrino);
