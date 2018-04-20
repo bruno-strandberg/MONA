@@ -44,7 +44,22 @@ map < Int_t, TString > fFlavs  = { {0, "elec" },   //!< map of flavor numbers an
 
 //*****************************************************************
 
-void SummarySampler(TString flux_chain_file, TString out_file, Int_t flavor, Int_t is_cc) {
+/**
+ *  This routine creates a sample of simulated MC events that corresponds to a pattern expexted
+ *  from running the detector for a certain period of time.
+ *
+ *  The output of this macro is in output/SummarySample_{flavor}_{NC/CC}_{sample#}.root. If NC, then
+ *  the output will contain an event sample of muon-NC + tau-NC + elec-NC.
+ *
+ * \param  flux_chain_file  Output of FluxChain.C, provides histograms with expected number of events
+ *                          in (E,ct) bins after a certain number of years. These histgrams are used
+ *                          to create event samples.
+ * \param  flavor           Neutrino flavor.
+ * \param  is_cc            0 - NC, 1 -CC. If NC, the output will have samples over all flavors.
+ * \param  nsamples         Number of event samples (=experiments) to draw.
+ *
+ */
+void SummarySampler(TString flux_chain_file, Int_t flavor, Int_t is_cc, Int_t nsamples = 1) {
 
   gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
   
@@ -56,14 +71,28 @@ void SummarySampler(TString flux_chain_file, TString out_file, Int_t flavor, Int
   InitVars(flavor, is_cc);
   ReadSummaryData(flavor, is_cc);
 
-  TH2D *smeared_nu  = (TH2D*)fhDet_nu->Clone("sample_nu");
-  TH2D *smeared_nub = (TH2D*)fhDet_nu->Clone("sample_nub");
-  smeared_nu->Reset();
-  smeared_nub->Reset();
-  SampleEvents(fhDet_nu,  smeared_nu , fSumEvts_nu , fSampleEvts_nu );
-  SampleEvents(fhDet_nub, smeared_nub, fSumEvts_nub, fSampleEvts_nub);
-  WriteToFile(out_file, smeared_nu, smeared_nub, fSampleEvts_nu, fSampleEvts_nub);
+  for (Int_t N = 0; N < nsamples; N++) {
+    
+    TString out_name = "output/SummarySample_" + fFlavs[flavor] + "-CC_" +
+      (TString)to_string(N) + ".root";
+    if (is_cc == 0.) out_name = "output/SummarySample_allflavs-NC_" + (TString)to_string(N) + ".root";
 
+    TH2D *smeared_nu  = (TH2D*)fhDet_nu->Clone("sample_nu");
+    TH2D *smeared_nub = (TH2D*)fhDet_nu->Clone("sample_nub");
+    smeared_nu->Reset();
+    smeared_nub->Reset();
+
+    Bool_t SampleOK_nu  = SampleEvents(fhDet_nu,  smeared_nu , fSumEvts_nu , fSampleEvts_nu );
+    Bool_t SampleOK_nub = SampleEvents(fhDet_nub, smeared_nub, fSumEvts_nub, fSampleEvts_nub);
+    if (SampleOK_nu && SampleOK_nub) {
+      WriteToFile(out_name, smeared_nu, smeared_nub, fSampleEvts_nu, fSampleEvts_nub);
+    }
+
+    if (smeared_nu) delete smeared_nu;
+    if (smeared_nub) delete smeared_nub;
+
+  }
+  
   //TestPrint();
   CleanUp();
   
@@ -71,6 +100,15 @@ void SummarySampler(TString flux_chain_file, TString out_file, Int_t flavor, Int
 
 //*****************************************************************
 
+/**
+ *  Inline function to fetch the histograms with expected event distributions from FluxChain.C output.
+ *
+ * \param  flux_chain_file  Output of FluxChain.C.
+ * \param  flavor           Neutrino flavor.
+ * \param  is_cc            0 - NC, 1 -CC.
+ * \return                  True if histograms found, False if not found.
+ *
+ */
 Bool_t GetDetHists(TString flux_chain_file, Int_t flavor, Int_t is_cc) {
 
   TFile f(flux_chain_file, "READ");
@@ -142,6 +180,13 @@ Bool_t GetDetHists(TString flux_chain_file, Int_t flavor, Int_t is_cc) {
 
 //*****************************************************************
 
+/**
+ *  Inline function to initialize globally used classes, histograms and vectors.
+ *
+ * \param  flavor           Neutrino flavor.
+ * \param  is_cc            0 - NC, 1 -CC.
+ *
+ */
 void InitVars(Int_t flavor, Int_t is_cc) {
 
   // determine summary files where events should be read, create hist names
@@ -189,6 +234,20 @@ void InitVars(Int_t flavor, Int_t is_cc) {
 
 //*****************************************************************
 
+/**
+ *  Inline function to read in summary data from NMH/data/mc_end/.
+ *
+ *  Given the flavor and is_cc flag, the function will look for filenames in NMH/data/mc_end/ in
+ *  specific format (e.g. for muon cc it will look for NMH/data/mc_end/data_atmnu/summary_muon-CC*).
+ *  It will read the data from all of the matched files and sort the event IDs to the globally used 
+ *  vectors fSumEvts_nu[ebin][ctbin], fSumEvts_nub[ebin][ctbin]. After this routine, e.g.
+ *  fSumEvts_nu[ebin][ctbin] will store all of the event IDs (=event entry number it fSp->fChain)
+ *  simulated for the specified bin.
+ *
+ * \param  flavor           Neutrino flavor.
+ * \param  is_cc            0 - NC, 1 -CC.
+ *
+ */
 void ReadSummaryData(Int_t flavor, Int_t is_cc) {
   
   TString fnames    = "$NMHDIR/data/mc_end/data_atmnu/summary_" + fFlavs[flavor] + "-CC*.root";
@@ -224,6 +283,21 @@ void ReadSummaryData(Int_t flavor, Int_t is_cc) {
 
 //*****************************************************************
 
+/**
+ *  Inline function to create an event sample from the summary events.
+ *
+ * \param  h_expected     Pointer to a histogram with expected event distribution in (E,ct).
+ * \param  h_smeared      Pointer to a histogram where the Poisson-smeared event distribution is saved.
+ * \param  store          Pointer to a 2D array of vectors, each store[ebin][ctbin] vector stores the
+ *                        MC event IDs available in this (E,ct) bin.
+ * \param  sample         Pointer to a 2D array of vectors, the MC event IDs of sampled events will be
+ *                        stored into each vector[ebin][ctbin]
+ * \param low_sample_lim  In some bins there are very few events expected and available, which may
+ *                        to situations where e.g. 6 events should be sampled, but only 5 are in store.
+ *                        If sampled < low_sample_lim, this problem is ignored and all events in store
+ *                        will be used for this bin.
+ *
+ */
 Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
 		    vector<Double_t> **store, vector<Double_t> **sample,
 		    Int_t low_sample_lim) {
@@ -306,6 +380,18 @@ Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
 
 //*****************************************************************
 
+/**
+ *  Inline function to write the created event samples to a root file.
+ *
+ * \param  out_name     Name of the file where events are written.
+ * \param  h_sample_nu  2D histogram that displays the E,ct distribution of sampled nu events.
+ * \param  h_sample_nub 2D histogram that displays the E,ct distribution of sampled nub events.
+ * \param  sample_nu    Pointer to a 2D array of vectors, sample_nu[ebin][ctbin] holds the nu MC event
+ *                      IDs that were sampled for this and are to be written out.
+ * \param  sample_nub   Pointer to a 2D array of vectors, sample_nub[ebin][ctbin] holds the nub 
+ *                      MC event IDs that were sampled for this and are to be written out.
+ *
+ */
 void WriteToFile(TString out_name, TH2D *h_sample_nu, TH2D *h_sample_nub,
 		 vector<Double_t>** sample_nu, vector<Double_t>** sample_nub) {
 
@@ -332,8 +418,6 @@ void WriteToFile(TString out_name, TH2D *h_sample_nu, TH2D *h_sample_nub,
 
   std::sort( all_evts.begin(), all_evts.end() );
 
-  Int_t counter = 0;
-
   //--------------------------------------------------------------
   // After sorting write to file
   //--------------------------------------------------------------
@@ -341,6 +425,7 @@ void WriteToFile(TString out_name, TH2D *h_sample_nu, TH2D *h_sample_nub,
   TFile fout(out_name, "RECREATE");
   TTree *tout = fSp->fChain->CloneTree(0);
 
+  Int_t counter = 0;
   for (auto evt: all_evts) {
     fSp->fChain->GetEntry(evt);
     tout->Fill();
@@ -358,6 +443,9 @@ void WriteToFile(TString out_name, TH2D *h_sample_nu, TH2D *h_sample_nub,
 
 //*****************************************************************
 
+/**
+ *  Inline function to test that summary data was read to global vectors correctly.
+ */
 void TestPrint() {
 
   vector<TH2D*>                hists = {fhSum_nu, fhSum_nub};
@@ -387,6 +475,9 @@ void TestPrint() {
 
 //*****************************************************************
 
+/**
+ *  Inline function to clear dynamically allocated memory.
+ */
 void CleanUp() {
 
   //clean up the dynamically allocated vectors/arrays
