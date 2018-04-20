@@ -7,12 +7,23 @@ Prerequisities
 * ROOT 6
 * To use GSGParser to parse gSeaGen files in .evt format, one also requires Jpp and aanet root6 branch.
 
+More info
+=========
+* Regarding the data format(s) used in the analysis, consult NMH/data/README.md and NMH/data_sorting/README.md.
+* Each subdirectory holds a README.md file that describes what the code can be used for.
+
 How to use
 ==========
 
-Setup
------
+Setup in lyon
+-------------
+* TBD
+
+Setup elsewhere
+---------------
+* TBD
 * ```source setenv.sh```. Optionally, do ```source setenv.sh -a``` to compile against aanet.
+*
 
 Sort data
 ----------
@@ -46,6 +57,8 @@ To-do, ideas
 * It may be an idea that SummaryParser uses some event class instead of a flat tree. Needs thought, though.
 
 * Interactive python setup script that asks for OscProb, Jpp with root 6, etc, paths and creates the setenv.sh script.
+
+* pid_result conversion to summary format is still painful, especially when summary data format changes. One option would be to define summary data structure in a SummaryEvent() class. This would, however, break compatibility with most things I have written so far and, more importantly, will make accessing/cloning/etc of the data more difficult. Maybe a better option would be to have a script that, after DataReducer.C has run its script, it checks for branches in SummaryParser.h and advises on branches to be added?
 
 Done
 ----
