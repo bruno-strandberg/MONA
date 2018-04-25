@@ -38,7 +38,8 @@ vector<Double_t> **fSampleEvts_nu;
 //! 2D array of vectors to hold a sub-sample of events in fSumEvts_nub
 vector<Double_t> **fSampleEvts_nub;
 
-map < Int_t, TString > fFlavs  = { {0, "elec" },   //!< map of flavor numbers and strings
+//! map of flavor numbers and strings
+map < Int_t, TString > fFlavs  = { {0, "elec" },
 				   {1, "muon" },
 				   {2, "tau"  } };
 
@@ -433,9 +434,16 @@ void WriteToFile(TString out_name, TH2D *h_sample_nu, TH2D *h_sample_nub,
     if (counter % 25000 == 0) cout << "WriteToFile() written " << counter << " events" << endl;
     counter++;
   }
-  
+
+  // write out the sample histogram and also histograms depicting all available MC events
+
   h_sample_nu->Write();
-  h_sample_nub->Write();
+  h_sample_nub->Write(); 
+  TH2D* h_summary_nu  = (TH2D*)fhSum_nu->Clone();
+  TH2D* h_summary_nub = (TH2D*)fhSum_nub->Clone();
+  h_summary_nu->Write();
+  h_summary_nub->Write();
+  
   tout->Write();
   fout.Close();
   
