@@ -34,4 +34,44 @@ namespace NMHUtils {
     
   }
 
+  //****************************************************************************
+
+  /** A function that reads the lines of a plain-text file to a vector.
+   *
+   *  Empty lines and lines starting with # are ignored.
+   *
+   * \param  input_file Input plain-text file.
+   * \return a vector of TString's, each element corresponds to one line.
+   *
+   */
+  vector<TString> ReadLines(TString input_file) {
+    
+    vector<TString> FileLines;
+
+    //set up for reading
+    string line;
+    ifstream inputfile((const Char_t*)input_file);
+
+    if ( inputfile.is_open() ) {
+
+      while ( getline (inputfile, line) ) {
+
+	//ignore hashtagged. which, to think of it, also applies to life. ignore empty lines
+	if ( line[0] == '#' || line == "") continue;
+
+	FileLines.push_back( (TString)line );
+
+      }
+
+      inputfile.close();
+      cout << "Finished reading lines from " << input_file << endl;
+    }
+    else {
+      cout << "ERROR: GetLines() did not find file " << input_file << endl;
+    }
+
+    return FileLines;
+
+  }
+  
 }

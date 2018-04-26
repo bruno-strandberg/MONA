@@ -2,7 +2,6 @@
 #include "TSystem.h"
 #include "TH2.h"
 #include "TRandom3.h"
-#include "TCanvas.h"
 
 //*****************************************************************
 // functions
@@ -263,6 +262,9 @@ void ReadSummaryData(Int_t flavor, Int_t is_cc) {
 
     fSp->fChain->GetEntry(evt);
 
+    // events outside the can should not be used, as effective mass ignores them as well
+    cout << "DEBUG: Need to ignore events outside the can..." << endl;
+    
     Double_t energy =  fSp->MC_energy;
     Double_t ct     = -fSp->MC_dir_z ;
     
@@ -328,9 +330,9 @@ Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
 	Double_t en = h_expected->GetXaxis()->GetBinCenter(xbin);
 	Double_t ct = h_expected->GetYaxis()->GetBinCenter(ybin);
 	
-	if (smeared <= low_sample_lim) {
+	if (expected <= low_sample_lim) {
 	  cout << "WARNING! SampleEvents() for E, ct " << en << ", " << ct <<  " wanted " << smeared
-	       << " events, but only " << store[xbin][ybin].size()
+	       << " events (expectation " << expected << "), but only " << store[xbin][ybin].size()
 	       << " available, using all available events." << endl;
 	  smeared = store[xbin][ybin].size();
 	}
