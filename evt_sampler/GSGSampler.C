@@ -40,7 +40,7 @@ map < Int_t, TString > fFlavs  = { {0, "elec" },
 // main function
 //*****************************************************************
 
-void GSGSampler(TString flux_chain_file, Int_t flavor, Int_t is_cc, Int_t nsamples = 1) {
+void GSGSampler(TString flux_chain_file, TString gsg_file_list, Int_t flavor, Int_t is_cc, Int_t nsamples = 1) {
 
   gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
 
@@ -192,9 +192,19 @@ void InitVars(Int_t flavor, Int_t is_cc) {
 
 //*****************************************************************
 
-void ReadGSGData() {
+void ReadGSGData(TString gsg_file_list) {
 
-  
+  vector<TString> fnames = NMHUtils::ReadLines(gsg_file_list);
+
+  for (auto fname: fnames) {
+
+    GSGParser gp(fname);
+
+    while ( gp.NextEvent() ) {
+
+    }
+    
+  }
   
 }
 
