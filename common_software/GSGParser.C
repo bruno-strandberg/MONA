@@ -5,7 +5,7 @@
 #include <TCanvas.h>
 #include <fstream>
 #include<sstream>
-
+#include <sys/stat.h>
 
 void GSGParser::Loop()
 {
@@ -114,7 +114,7 @@ Bool_t GSGParser::InitRootFile(TString fname) {
 
   }
   else { 
-    cout << "ERROR! GSGParser::InitRootFile() init failed" << endl;
+    cout << "ERROR! GSGParser::InitRootFile() could not find tree(s) Events or Header in file " << fname << endl;
     InitOK = false;
   }
 
@@ -158,7 +158,13 @@ Bool_t GSGParser::NextEvent() {
  */
 #ifdef WAANET
 Bool_t GSGParser::InitEvtFile(TString fname) {
-  
+
+  struct stat buf;
+  if ( (stat(fname, &buf) != 0) ) {
+    cout << "ERROR! GSGParser::InitEvtFile() coult not open file " << fname << endl;
+    return false;
+  }
+
   fEvtFile = new EventFile( (string)fname );
 
   //perform the same calculation as in InitRootFile()

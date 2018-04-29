@@ -15,6 +15,7 @@
 #include "GSGHeaderReader.h"
 #include "TMath.h"
 #include <iostream>
+#include <stdexcept>
 
 //aanet class to read evt files, WAANET set in makefile
 #ifdef WAANET
@@ -292,7 +293,7 @@ GSGParser::GSGParser(TString fname) : fChain(0)
   }
 
   if (!InitOK) {
-    cout << "ERROR! GSGParser::GSGParser() init failed." << endl;
+    throw std::invalid_argument( "ERROR! GSGParser::GSGParser() file " + fname + " not found or trying to parse .evt files without compilation against aanet." );
   }
 
 }
