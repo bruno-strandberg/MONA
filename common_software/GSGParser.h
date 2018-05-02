@@ -230,6 +230,8 @@ public :
    //------------------------------------------------------
    //bstr: functions/members
    //------------------------------------------------------
+   Int_t    fRunNr;        //!< MC run number
+
    Double_t fNgen;         //!< number of generated events
    Double_t fVint;         //!< interaction volume
    Double_t fRho_seawater; //!< sea water density
@@ -253,7 +255,7 @@ public :
    Bool_t     InitEvtFile(TString fname);
    Bool_t     NextEvtEvent();
    Bool_t     NextEvent();
-
+   Bool_t     VertexInCan();
 
 };
 
@@ -273,6 +275,7 @@ GSGParser::GSGParser(TString fname) : fChain(0)
   fEvtFile    = NULL;
   fIsRootFile = true;
   fEntry      = -1;
+  fRunNr      = -1;
 
   if      ( fname.Contains(".root") ) {
     InitOK = InitRootFile(fname);
@@ -293,13 +296,14 @@ GSGParser::GSGParser(TString fname) : fChain(0)
   }
 
   if (!InitOK) {
-    throw std::invalid_argument( "ERROR! GSGParser::GSGParser() file " + fname + " not found or trying to parse .evt files without compilation against aanet." );
+    throw std::invalid_argument( "ERROR! GSGParser::GSGParser() file " + (string)fname + " not found or trying to parse .evt files without compilation against aanet." );
   }
 
 }
 
 GSGParser::~GSGParser()
 {
+   if (fEvtFile) delete fEvtFile;
    if (!fChain) return;
    if ( fChain->GetCurrentFile() ) fChain->GetCurrentFile()->Close();
 }

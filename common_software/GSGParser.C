@@ -79,6 +79,8 @@ Bool_t GSGParser::InitRootFile(TString fname) {
     GSGHeaderReader hr(h);
     hr.GetEntry(0);
 
+    // run nr and total generated events
+    fRunNr = hr.RunNu;
     fNgen = hr.NTot;
 
     //variables for interaction volume calculation
@@ -151,6 +153,20 @@ Bool_t GSGParser::NextEvent() {
 //**************************************************************************
 
 /**
+ * Function that determines whether the interaction vertex is inside the detector can.
+ * \return True if vertex in can, False otherwise.
+ */
+Bool_t GSGParser::VertexInCan() {
+
+  Double_t r_vtx = TMath::Sqrt(Neutrino_V1*Neutrino_V1 + Neutrino_V2*Neutrino_V2);
+
+  return ( ( r_vtx <= fRcan ) && ( Neutrino_V3 >= fZcan_min ) && ( Neutrino_V3 <= fZcan_max ) );
+
+}
+
+//**************************************************************************
+
+/**
  * This function initialises the gSeaGen file in .evt format for reading.
  *
  * \param  fname   Input file name.
@@ -168,6 +184,8 @@ Bool_t GSGParser::InitEvtFile(TString fname) {
   fEvtFile = new EventFile( (string)fname );
 
   //perform the same calculation as in InitRootFile()
+
+  fRunNr = stoi( fEvtFile->header.get_field("start_run", "run_id") );
 
   fNgen = stod( fEvtFile->header.get_field("genvol","numberOfEvents") );
 
