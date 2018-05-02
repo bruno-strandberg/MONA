@@ -263,7 +263,7 @@ void ReadSummaryData(Int_t flavor, Int_t is_cc) {
     fSp->fChain->GetEntry(evt);
 
     // events outside the can should not be used, as effective mass ignores them as well
-    cout << "DEBUG: Need to ignore events outside the can..." << endl;
+    cout << "DEBUG: Need to ignore events outside the can. The volume size should be written to effmass output and fetched from there." << endl;
     
     Double_t energy =  fSp->MC_energy;
     Double_t ct     = -fSp->MC_dir_z ;

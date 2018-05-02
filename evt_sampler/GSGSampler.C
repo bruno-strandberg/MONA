@@ -3,6 +3,7 @@
 #include "TSystem.h"
 #include "TH2.h"
 #include "TRandom3.h"
+#include "NMHUtils.h"
 
 //*****************************************************************
 // functions
@@ -10,6 +11,55 @@
 Bool_t GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc);
 void   InitVars(Int_t flavor, Int_t is_cc);
 void   CleanUp();
+void   ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc);
+
+//*****************************************************************
+// structure to store run nr and event nr in a vector and sort
+//*****************************************************************
+
+/**
+ *  Structure to store the Monte Carlo run number and event number pair.
+ *
+ */
+struct evtid {
+  Int_t run_nr;
+  Int_t evt_nr;
+
+  //! Default constructor
+  evtid(): run_nr(0), evt_nr(0) {}
+
+  /**
+   * Constructor
+   * \param _run_nr Monte-Carlo file number
+   * \param _evt_nr Monte-Carlo event number in file
+   */
+  evtid(Int_t _run_nr, Int_t _evt_nr) {
+    run_nr = _run_nr;
+    evt_nr = _evt_nr;
+  }
+
+  /**
+   * Operator to sort events by increasing file number and event id.
+   * \param i first evtid structure
+   * \param j second evtid structure
+   * \return  true if second run nr is larger; if equal run numbers true if second event nr is larger.
+   */
+  // bool operator < (const evtid& i, const evtid& j) {
+    
+  //   if      ( i.run_nr < j.run_nr )  { return true;                  }
+  //   else if ( i.run_nr == j.run_nr ) { return (i.evt_nr < j.evt_nr); }
+  //   else                             { return false;                 }
+  // }
+
+  inline bool operator < (const evtid& rhs) {
+    
+    if      ( this.run_nr < rhs.run_nr )  { return true;                  }
+    else if ( this.run_nr == rhs.run_nr ) { return (this.evt_nr < rhs.evt_nr); }
+    else                                  { return false;                 }
+  }
+
+
+};
 
 //*****************************************************************
 // globally used variables in this script
@@ -22,19 +72,25 @@ SummaryParser *fSp;    //!< class to parse summary events
 TRandom3      *fRand;  //!< random number generator
 Int_t fEbins;          //!< number of energy bins in the event vectors
 Int_t fCtbins;         //!< number of costheta bins in the event vectors
+Double_t fVcan = 0.;   //!< can size, set in ReadGSGData()
+Double_t fRhoSW = 0.;  //!< sea water density, set in ReadGSGData()
 //! 2D array of vectors, each vector holds summary nu event numbers of (E, costheta) bin
-vector<Double_t> **fGSGEvts_nu;
+vector<evtid> **fGSGEvts_nu;
 //! 2D array of vectors, each vector holds summary nub event numbers of (E, costheta) bin
-vector<Double_t> **fGSGEvts_nub;
+vector<evtid> **fGSGEvts_nub;
 //! 2D array of vectors to hold a sub-sample of events in fGSGEvts_nu
-vector<Double_t> **fSampleEvts_nu;
+vector<evtid> **fSampleEvts_nu;
 //! 2D array of vectors to hold a sub-sample of events in fGSGEvts_nub
-vector<Double_t> **fSampleEvts_nub;
+vector<evtid> **fSampleEvts_nub;
 
 //! map of flavor numbers and strings
 map < Int_t, TString > fFlavs  = { {0, "elec" },
 				   {1, "muon" },
 				   {2, "tau"  } };
+
+//! map of interaction numbers and strings
+map < Int_t, TString > fInts  = { {0, "NC" },
+				  {1, "CC" } };
 
 //*****************************************************************
 // main function
@@ -44,13 +100,22 @@ void GSGSampler(TString flux_chain_file, TString gsg_file_list, Int_t flavor, In
 
   gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
 
-  if ( !GetDetHists(flux_chain_file, flavor, is_cc) ) {
+  if ( !GetIntHists(flux_chain_file, flavor, is_cc) ) {
     cout << "ERROR! GSGSampler() problem opening flux histograms." << endl;
     return;
   }
 
   InitVars(flavor, is_cc);
-  
+
+  ReadGSGData(gsg_file_list, flavor, is_cc);
+
+  std::sort( fGSGEvts_nu[10][5].begin(), fGSGEvts_nu[10][5].end() );
+
+  for (auto evt: fGSGEvts_nu[10][5]) {
+    cout << evt.run_nr << "\t" << evt.evt_nr << endl;
+  }
+
+  CleanUp();
   
 }
 
@@ -174,15 +239,15 @@ void InitVars(Int_t flavor, Int_t is_cc) {
   fEbins  = fhGSG_nu->GetXaxis()->GetNbins() + 2;
   fCtbins = fhGSG_nu->GetYaxis()->GetNbins() + 2;
   
-  fGSGEvts_nu     = new vector<Double_t>* [fEbins];
-  fGSGEvts_nub    = new vector<Double_t>* [fEbins];
-  fSampleEvts_nu  = new vector<Double_t>* [fEbins];
-  fSampleEvts_nub = new vector<Double_t>* [fEbins];
+  fGSGEvts_nu     = new vector<evtid>* [fEbins];
+  fGSGEvts_nub    = new vector<evtid>* [fEbins];
+  fSampleEvts_nu  = new vector<evtid>* [fEbins];
+  fSampleEvts_nub = new vector<evtid>* [fEbins];
   for (Int_t eb = 0; eb < fEbins; eb++) {
-    fGSGEvts_nu[eb]     = new vector<Double_t> [fCtbins];
-    fGSGEvts_nub[eb]    = new vector<Double_t> [fCtbins];
-    fSampleEvts_nu[eb]  = new vector<Double_t> [fCtbins];
-    fSampleEvts_nub[eb] = new vector<Double_t> [fCtbins];
+    fGSGEvts_nu[eb]     = new vector<evtid> [fCtbins];
+    fGSGEvts_nub[eb]    = new vector<evtid> [fCtbins];
+    fSampleEvts_nu[eb]  = new vector<evtid> [fCtbins];
+    fSampleEvts_nub[eb] = new vector<evtid> [fCtbins];
   }
 
   // initialize the summary parser and random generator
@@ -192,20 +257,70 @@ void InitVars(Int_t flavor, Int_t is_cc) {
 
 //*****************************************************************
 
-void ReadGSGData(TString gsg_file_list) {
+void ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
 
   vector<TString> fnames = NMHUtils::ReadLines(gsg_file_list);
 
+  // loop over file names
+
   for (auto fname: fnames) {
+
+    // check that the files correspond to the expected flavor and interaction
+
+    if ( !fname.Contains( fFlavs[flavor] ) || !fname.Contains( fInts[is_cc] ) ) {
+      cout << "WARNING! ReadGSGData() specified flavor " << fFlavs[flavor] << " and interaction " << fInts[is_cc]
+	   << " seem to mismatch flavor and interaction in filename, skipping file " << fname << endl;
+      continue;
+    }
+
+    cout << "NOTICE ReadGSGData() Reading from file: " << fname << endl;
+
+    // initalise parser, set detector can size and sea water density
 
     GSGParser gp(fname);
 
+    if (fVcan == 0.) fVcan = gp.fVcan;
+    else if ( fVcan != gp.fVcan) {
+      cout << "ERROR! ReadGSGData() detector can change from  " << fVcan << " to " << gp.fVcan
+    	   << ", exiting." << endl;
+      return;
+    }
+
+    if (fRhoSW == 0.) fRhoSW = gp.fRho_seawater;
+    else if ( fRhoSW != gp.fRho_seawater) {
+      cout << "ERROR! ReadGSGData() sea water density change from  " << fRhoSW << " to " << gp.fRho_seawater
+    	   << ", exiting." << endl;
+      return;
+    }
+
+    //loop over events
+
     while ( gp.NextEvent() ) {
 
-    }
+      // skip events with vertices outside the can
+      if ( !gp.VertexInCan() ) continue;
+
+      Double_t energy =  gp.Neutrino_E;
+      Double_t ct     = -gp.Neutrino_D3;
     
-  }
+      Int_t xbin = fhGSG_nu->GetXaxis()->FindBin( energy );
+      Int_t ybin = fhGSG_nu->GetYaxis()->FindBin( ct );
+
+      if (gp.Neutrino_PdgCode > 0)  {
+      	fhGSG_nu->Fill( energy, ct );
+      	fGSGEvts_nu[xbin][ybin].push_back( evtid(gp.fRunNr, gp.iEvt) );
+      }
+      else {
+      	fhGSG_nub->Fill( energy, ct );
+      	fGSGEvts_nub[xbin][ybin].push_back( evtid(gp.fRunNr, gp.iEvt) );
+      }
+
+    } // end loop over events
+    
+  } //end loop over files
   
+  cout << "NOTICE ReadGSGData() finished reading GSG data" << endl;
+
 }
 
 //*****************************************************************
@@ -217,7 +332,7 @@ void CleanUp() {
 
   //clean up the dynamically allocated vectors/arrays
   
-  if (fGSGEvts_nu && fGSGEvts_nub && fhSum_nu) {
+  if (fGSGEvts_nu && fGSGEvts_nub) {
 
     for (Int_t xbin = 0; xbin < fEbins; xbin++) {
       if ( fGSGEvts_nu[xbin]     ) delete[] fGSGEvts_nu[xbin];
