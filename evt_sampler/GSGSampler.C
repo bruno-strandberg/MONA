@@ -12,13 +12,16 @@ Bool_t GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc);
 void   InitVars(Int_t flavor, Int_t is_cc);
 void   CleanUp();
 void   ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc);
+Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
+		    vector<Double_t> **store, vector<Double_t> **sample,
+		    Int_t low_sample_lim);
 
 //*****************************************************************
 // structure to store run nr and event nr in a vector and sort
 //*****************************************************************
 
 /**
- *  Structure to store the Monte Carlo run number and event number pair.
+ *  Struct to store the Monte Carlo run number and event number pair.
  *
  */
 struct evtid {
@@ -44,18 +47,11 @@ struct evtid {
    * \param j second evtid structure
    * \return  true if second run nr is larger; if equal run numbers true if second event nr is larger.
    */
-  // bool operator < (const evtid& i, const evtid& j) {
+  bool operator < (const evtid& rhs) {
     
-  //   if      ( i.run_nr < j.run_nr )  { return true;                  }
-  //   else if ( i.run_nr == j.run_nr ) { return (i.evt_nr < j.evt_nr); }
-  //   else                             { return false;                 }
-  // }
-
-  inline bool operator < (const evtid& rhs) {
-    
-    if      ( this.run_nr < rhs.run_nr )  { return true;                  }
-    else if ( this.run_nr == rhs.run_nr ) { return (this.evt_nr < rhs.evt_nr); }
-    else                                  { return false;                 }
+    if      ( this->run_nr < rhs.run_nr )  { return true;                  }
+    else if ( this->run_nr == rhs.run_nr ) { return (this->evt_nr < rhs.evt_nr); }
+    else                                   { return false;                 }
   }
 
 
@@ -106,14 +102,34 @@ void GSGSampler(TString flux_chain_file, TString gsg_file_list, Int_t flavor, In
   }
 
   InitVars(flavor, is_cc);
-
   ReadGSGData(gsg_file_list, flavor, is_cc);
 
-  std::sort( fGSGEvts_nu[10][5].begin(), fGSGEvts_nu[10][5].end() );
+  // convert from unit 1/MTon to unitless by 1e-6 [MTon/Ton] * V [m3] * rho [Ton/m3]
+  // after this, each bin will have expected nr of interactions per E,ct bin in
+  // certain operation time, as defined when FluxChain is run.
+  
+  fhInt_nu->Scale(1e-6 * fVcan * fRhoSw);
+  fhInt_nub->Scale(1e-6 * fVcan * fRhoSw);
+  
+  for (Int_t N = 0; N < nsamples; N++) {
 
-  for (auto evt: fGSGEvts_nu[10][5]) {
-    cout << evt.run_nr << "\t" << evt.evt_nr << endl;
+    TString out_name = "output/EvtSample_" + fFlavs[flavor] + "-CC_" +
+      (TString)to_string(N) + ".root";
+    if (is_cc == 0.) out_name = "output/EvtSample_allflavs-NC_" + (TString)to_string(N) + ".root";
+
+    TH2D *smeared_nu  = (TH2D*)fhInt_nu->Clone("sample_nu");
+    TH2D *smeared_nub = (TH2D*)fhInt_nu->Clone("sample_nub");
+    smeared_nu->Reset();
+    smeared_nub->Reset();
+
+    Bool_t SampleOK_nu  = SampleEvents(fhInt_nu,  smeared_nu , fGSGEvts_nu , fSampleEvts_nu );
+    Bool_t SampleOK_nub = SampleEvents(fhInt_nub, smeared_nub, fGSGEvts_nub, fSampleEvts_nub);
+
+    
   }
+  
+  //std::sort( fGSGEvts_nu[10][5].begin(), fGSGEvts_nu[10][5].end() );
+
 
   CleanUp();
   
@@ -321,6 +337,102 @@ void ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
   
   cout << "NOTICE ReadGSGData() finished reading GSG data" << endl;
 
+}
+//*****************************************************************
+
+/**
+ *  Inline function to create an event sample from the GSG events.
+ *
+ * \param  h_expected     Pointer to a histogram with expected event distribution in (E,ct).
+ * \param  h_smeared      Pointer to a histogram where the Poisson-smeared event distribution is saved.
+ * \param  store          Pointer to a 2D array of vectors, each store[ebin][ctbin] vector stores the
+ *                        MC event IDs available in this (E,ct) bin.
+ * \param  sample         Pointer to a 2D array of vectors, the MC event IDs of sampled events will be
+ *                        stored into each vector[ebin][ctbin]
+ * \param low_sample_lim  In some bins there are very few events expected and available, which may lead
+ *                        to situations where e.g. 6 events should be sampled, but only 5 are in store.
+ *                        If sampled < low_sample_lim, this problem is ignored and all events in store
+ *                        will be used for this bin.
+ *
+ */
+Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
+		    vector<Double_t> **store, vector<Double_t> **sample,
+		    Int_t low_sample_lim) {
+
+  // make sure sample is empty
+
+  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
+    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
+      sample[ebin][ctbin].clear();
+    }
+  }
+
+  // loop over bins
+  
+  for (Int_t xbin = 1; xbin <= h_expected->GetXaxis()->GetNbins(); xbin++) {
+    for (Int_t ybin = 1; ybin <= h_expected->GetYaxis()->GetNbins(); ybin++) {
+
+      // get the expected number of events in this bin, perform poisson smearing
+      
+      Double_t expected = h_expected->GetBinContent(xbin, ybin);
+      Double_t smeared  = fRand->Poisson(expected);
+      
+      // check that enough events are available in store
+      
+      if ( smeared > store[xbin][ybin].size() ) {
+
+	Double_t en = h_expected->GetXaxis()->GetBinCenter(xbin);
+	Double_t ct = h_expected->GetYaxis()->GetBinCenter(ybin);
+	
+	if (expected <= low_sample_lim) {
+	  cout << "WARNING! SampleEvents() for E, ct " << en << ", " << ct <<  " wanted " << smeared
+	       << " events (expectation " << expected << "), but only " << store[xbin][ybin].size()
+	       << " available, using all available events." << endl;
+	  smeared = store[xbin][ybin].size();
+	}
+	else {
+	  cout << "ERROR! SampleEvents() for E, ct " << en << ", " << ct <<  " wanted " << smeared
+	       << " events (expectation " << expected << "), but only " << store[xbin][ybin].size()
+	       << " available, exiting." << endl;
+	  return false;
+	}
+      }
+
+      h_smeared->SetBinContent(xbin, ybin, smeared);
+      
+      // randomly draw smeared number of events from store, insert them to sample
+
+      Int_t counter = 0;
+      Int_t limit   = 1e6;
+      
+      while ( sample[xbin][ybin].size() != smeared ) {
+
+	// random event index in store
+	Int_t idx = fRand->Integer( store[xbin][ybin].size() );
+
+	// check that this event has not already been drawn
+	if ( std::find( sample[xbin][ybin].begin(), sample[xbin][ybin].end(), store[xbin][ybin][idx] )
+	     == sample[xbin][ybin].end() ) {
+
+	  // insert the event id to sample
+	  sample[xbin][ybin].push_back( store[xbin][ybin][idx] );
+	  
+	} // end if
+
+	if (counter++ > limit) {
+	  cout << "ERROR! SampleEvents() while loop exceeds sampling limit of " << limit
+	       << " per xbin, ybin " << xbin << "\t" << ybin << endl;
+	  cout << "Smeared, store size, sample size: " << smeared << "\t" << store[xbin][ybin].size()
+	       << "\t" << sample[xbin][ybin].size() << endl;
+	  return false;
+	}
+	
+      } //end while
+      
+    } //end loop over ybins
+  } //end loop over xbins
+
+  return true;
 }
 
 //*****************************************************************
