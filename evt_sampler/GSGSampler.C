@@ -6,17 +6,6 @@
 #include "NMHUtils.h"
 
 //*****************************************************************
-// functions
-//*****************************************************************
-Bool_t GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc);
-void   InitVars(Int_t flavor, Int_t is_cc);
-void   CleanUp();
-void   ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc);
-Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
-		    vector<Double_t> **store, vector<Double_t> **sample,
-		    Int_t low_sample_lim);
-
-//*****************************************************************
 // structure to store run nr and event nr in a vector and sort
 //*****************************************************************
 
@@ -25,37 +14,120 @@ Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
  *
  */
 struct evtid {
-  Int_t run_nr;
-  Int_t evt_nr;
+  Int_t run_nr; //!< gSeaGen run number
+  Int_t evt_nr; //!< gSeaGen event number
+  Int_t e_min;  //!< Minimum energy of the neutrinos in gSeaGen file (1 or 3)
 
   //! Default constructor
-  evtid(): run_nr(0), evt_nr(0) {}
+  evtid(): run_nr(0), evt_nr(0), e_min(0) {}
 
   /**
    * Constructor
-   * \param _run_nr Monte-Carlo file number
-   * \param _evt_nr Monte-Carlo event number in file
+   * \param _run_nr gSeaGen file number
+   * \param _evt_nr gSeaGen event number in file
+   * \param _e_min  Minimum neutrino energy in gSeaGen file
    */
-  evtid(Int_t _run_nr, Int_t _evt_nr) {
+  evtid(Int_t _run_nr, Int_t _evt_nr, Int_t _e_min) {
     run_nr = _run_nr;
     evt_nr = _evt_nr;
+    e_min  = _e_min;
   }
 
   /**
-   * Operator to sort events by increasing file number and event id.
-   * \param i first evtid structure
-   * \param j second evtid structure
-   * \return  true if second run nr is larger; if equal run numbers true if second event nr is larger.
+   * Operator to sort events by increasing file number, event id and energy by using std::sort
+   * \param   rhs instance of evtid that this object is compared to
+   * \return  true if second run nr is larger; if equal run numbers true if second e_min larger;
+   *          if equal run nr and equal e_min true if second event number larger.
    */
-  bool operator < (const evtid& rhs) {
-    
-    if      ( this->run_nr < rhs.run_nr )  { return true;                  }
-    else if ( this->run_nr == rhs.run_nr ) { return (this->evt_nr < rhs.evt_nr); }
-    else                                   { return false;                 }
+  bool operator < (const evtid& rhs) const {
+ 
+    if ( this->run_nr < rhs.run_nr ) { 
+      return true;         
+    }
+
+    else if ( this->run_nr == rhs.run_nr ) {
+
+      if ( this->e_min < rhs.e_min) {
+	return true;
+      }
+      else if (this->e_min == rhs.e_min) {
+	return (this->evt_nr < rhs.evt_nr); 
+      }
+      else {
+	return false;
+      }
+
+    }
+
+    else {
+      return false; 
+    }
+
   }
 
+  /** 
+   * Operator to find identical events by using std::find.
+   * \param rhs instance of evtid that this object is compared to
+   * \return true if run_nr and evt_nr and e_min of this object and other object match.
+   */
+  bool operator == (const evtid& rhs) const {
+    return ( ( this->run_nr == rhs.run_nr ) && 
+	     ( this->evt_nr == rhs.evt_nr ) && 
+	     ( this->e_min  == rhs.e_min  ) );
+  }
+
+  /** 
+   * Not equal operator.
+   * \param rhs instance of evtid that this object is compared to
+   * \return true if run_nr or evt_nr or e_min of this object and other object mismatch.
+   */
+  bool operator != (const evtid &rhs) const {
+    return !(*this == rhs);
+  }
 
 };
+
+/** 
+ * Function to find the first and last index of the elements ...
+ *
+ *  
+ */
+std::pair<Int_t, Int_t> get_start_stop(vector<evtid> evts, Int_t _run_nr, Int_t _e_min) {
+
+  Int_t start = evts.size();
+  Int_t stop  = evts.size();
+
+  for (Int_t i = 0; i < evts.size(); i++) {
+
+    if (evts[i].run_nr == _run_nr && evts[i].e_min == _e_min) {
+
+      start = i;
+      stop  = start;
+
+      while ( evts[stop].run_nr == _run_nr && evts[stop].e_min == _e_min ) stop++;
+
+      break;
+
+    }
+
+  } //end for
+
+  return std::make_pair(start, stop);
+
+}
+
+//*****************************************************************
+// functions
+//*****************************************************************
+Bool_t GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc);
+void   InitVars(Int_t flavor, Int_t is_cc);
+void   CleanUp();
+Bool_t ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc);
+Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
+		    vector<evtid> **store, vector<evtid> **sample,
+		    Int_t low_sample_lim);
+void   StoreForWriting();
+void   WriteToFiles(Int_t flavor, Int_t is_cc);
 
 //*****************************************************************
 // globally used variables in this script
@@ -64,20 +136,21 @@ TH2D *fhInt_nu;        //!< histogram with expected number of interacted nu even
 TH2D *fhInt_nub;       //!< histogram with expected number of interacted nubar events
 TH2D *fhGSG_nu;        //!< histogram with all available MC nu events in GSG files
 TH2D *fhGSG_nub;       //!< histogram with all available MC nubar events in GSG files
-SummaryParser *fSp;    //!< class to parse summary events
-TRandom3      *fRand;  //!< random number generator
+TRandom3 *fRand;       //!< random number generator
 Int_t fEbins;          //!< number of energy bins in the event vectors
 Int_t fCtbins;         //!< number of costheta bins in the event vectors
 Double_t fVcan = 0.;   //!< can size, set in ReadGSGData()
 Double_t fRhoSW = 0.;  //!< sea water density, set in ReadGSGData()
-//! 2D array of vectors, each vector holds summary nu event numbers of (E, costheta) bin
+//! 2D array of vectors, each vector holds summary nu eventid's of (E, costheta) bin
 vector<evtid> **fGSGEvts_nu;
-//! 2D array of vectors, each vector holds summary nub event numbers of (E, costheta) bin
+//! 2D array of vectors, each vector holds summary nub eventid's numbers of (E, costheta) bin
 vector<evtid> **fGSGEvts_nub;
 //! 2D array of vectors to hold a sub-sample of events in fGSGEvts_nu
 vector<evtid> **fSampleEvts_nu;
 //! 2D array of vectors to hold a sub-sample of events in fGSGEvts_nub
 vector<evtid> **fSampleEvts_nub;
+//! vector of vectors; each vector contains an event sample of one experiment
+vector< vector<evtid> > fExps;
 
 //! map of flavor numbers and strings
 map < Int_t, TString > fFlavs  = { {0, "elec" },
@@ -102,34 +175,42 @@ void GSGSampler(TString flux_chain_file, TString gsg_file_list, Int_t flavor, In
   }
 
   InitVars(flavor, is_cc);
-  ReadGSGData(gsg_file_list, flavor, is_cc);
+
+  if ( !ReadGSGData(gsg_file_list, flavor, is_cc) ) {
+    cout << "ERROR! GSGSampler() problem reading gSeaGen files." << endl;
+    return;
+  }
 
   // convert from unit 1/MTon to unitless by 1e-6 [MTon/Ton] * V [m3] * rho [Ton/m3]
   // after this, each bin will have expected nr of interactions per E,ct bin in
   // certain operation time, as defined when FluxChain is run.
   
-  fhInt_nu->Scale(1e-6 * fVcan * fRhoSw);
-  fhInt_nub->Scale(1e-6 * fVcan * fRhoSw);
+  Double_t debug = 0.1;
+  fhInt_nu ->Scale(1e-6 * fVcan * fRhoSW * debug);
+  fhInt_nub->Scale(1e-6 * fVcan * fRhoSW * debug);
   
   for (Int_t N = 0; N < nsamples; N++) {
 
-    TString out_name = "output/EvtSample_" + fFlavs[flavor] + "-CC_" +
-      (TString)to_string(N) + ".root";
-    if (is_cc == 0.) out_name = "output/EvtSample_allflavs-NC_" + (TString)to_string(N) + ".root";
+    cout << "NOTICE GSGSampler() sampling experiment " << N << endl;
 
     TH2D *smeared_nu  = (TH2D*)fhInt_nu->Clone("sample_nu");
     TH2D *smeared_nub = (TH2D*)fhInt_nu->Clone("sample_nub");
     smeared_nu->Reset();
     smeared_nub->Reset();
 
-    Bool_t SampleOK_nu  = SampleEvents(fhInt_nu,  smeared_nu , fGSGEvts_nu , fSampleEvts_nu );
-    Bool_t SampleOK_nub = SampleEvents(fhInt_nub, smeared_nub, fGSGEvts_nub, fSampleEvts_nub);
+    Bool_t SampleOK_nu  = SampleEvents(fhInt_nu,  smeared_nu , fGSGEvts_nu , fSampleEvts_nu , 10);
+    Bool_t SampleOK_nub = SampleEvents(fhInt_nub, smeared_nub, fGSGEvts_nub, fSampleEvts_nub, 10);
 
+    if (SampleOK_nu && SampleOK_nub) {
+      StoreForWriting();
+    }
+
+    if (smeared_nu) delete smeared_nu;
+    if (smeared_nub) delete smeared_nub;
     
   }
   
-  //std::sort( fGSGEvts_nu[10][5].begin(), fGSGEvts_nu[10][5].end() );
-
+  WriteToFiles(flavor, is_cc);
 
   CleanUp();
   
@@ -266,14 +347,15 @@ void InitVars(Int_t flavor, Int_t is_cc) {
     fSampleEvts_nub[eb] = new vector<evtid> [fCtbins];
   }
 
-  // initialize the summary parser and random generator
-  fSp = new SummaryParser;
+  // initialize random generator
   fRand = new TRandom3(0);
 }
 
 //*****************************************************************
 
-void ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
+Bool_t ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
+
+  cout << "NOTICE ReadGSGData() started reading GSG data" << endl;
 
   vector<TString> fnames = NMHUtils::ReadLines(gsg_file_list);
 
@@ -299,14 +381,14 @@ void ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
     else if ( fVcan != gp.fVcan) {
       cout << "ERROR! ReadGSGData() detector can change from  " << fVcan << " to " << gp.fVcan
     	   << ", exiting." << endl;
-      return;
+      return false;
     }
 
     if (fRhoSW == 0.) fRhoSW = gp.fRho_seawater;
     else if ( fRhoSW != gp.fRho_seawater) {
       cout << "ERROR! ReadGSGData() sea water density change from  " << fRhoSW << " to " << gp.fRho_seawater
     	   << ", exiting." << endl;
-      return;
+      return false;
     }
 
     //loop over events
@@ -324,11 +406,11 @@ void ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
 
       if (gp.Neutrino_PdgCode > 0)  {
       	fhGSG_nu->Fill( energy, ct );
-      	fGSGEvts_nu[xbin][ybin].push_back( evtid(gp.fRunNr, gp.iEvt) );
+      	fGSGEvts_nu[xbin][ybin].push_back( evtid(gp.fRunNr, gp.iEvt, gp.fE_min) );
       }
       else {
       	fhGSG_nub->Fill( energy, ct );
-      	fGSGEvts_nub[xbin][ybin].push_back( evtid(gp.fRunNr, gp.iEvt) );
+      	fGSGEvts_nub[xbin][ybin].push_back( evtid(gp.fRunNr, gp.iEvt, gp.fE_min) );
       }
 
     } // end loop over events
@@ -336,8 +418,10 @@ void ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
   } //end loop over files
   
   cout << "NOTICE ReadGSGData() finished reading GSG data" << endl;
+  return true;
 
 }
+
 //*****************************************************************
 
 /**
@@ -348,7 +432,7 @@ void ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
  * \param  store          Pointer to a 2D array of vectors, each store[ebin][ctbin] vector stores the
  *                        MC event IDs available in this (E,ct) bin.
  * \param  sample         Pointer to a 2D array of vectors, the MC event IDs of sampled events will be
- *                        stored into each vector[ebin][ctbin]
+ *                        stored into each vector sample[ebin][ctbin]
  * \param low_sample_lim  In some bins there are very few events expected and available, which may lead
  *                        to situations where e.g. 6 events should be sampled, but only 5 are in store.
  *                        If sampled < low_sample_lim, this problem is ignored and all events in store
@@ -356,7 +440,7 @@ void ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
  *
  */
 Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
-		    vector<Double_t> **store, vector<Double_t> **sample,
+		    vector<evtid> **store, vector<evtid> **sample,
 		    Int_t low_sample_lim) {
 
   // make sure sample is empty
@@ -437,6 +521,107 @@ Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
 
 //*****************************************************************
 
+void StoreForWriting() {
+
+  // create a new vector for this experiment
+  fExps.push_back( vector<evtid>() );
+  
+  // push all sampled events into the vector
+  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
+    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
+
+      for ( auto evt: fSampleEvts_nu[ebin][ctbin]  ) { fExps.back().push_back(evt); }
+      for ( auto evt: fSampleEvts_nub[ebin][ctbin] ) { fExps.back().push_back(evt); }
+      
+    }
+  }
+ 
+  // sort the sampled events by run number, energy range and event ID
+  sort( fExps.back().begin(), fExps.back().end() );
+
+}
+
+//*****************************************************************
+
+void WriteToFiles(Int_t flavor, Int_t is_cc) {
+
+  cout << "NOTICE WriteToFiles() writing out sampled data" << endl;
+
+  // select relevant summary files and add to the summary parser
+
+  TString fnames = "$NMHDIR/data/mc_end/data_atmnu/summary_" + fFlavs[flavor] + "-CC*.root";
+  if (is_cc == 0) fnames = "$NMHDIR/data/mc_end/data_atmnu/summary_elec-NC*.root"; 
+
+  SummaryParser sp;
+  sp.fChain->Add(fnames);
+
+  // create output files and trees; create search limits that indicate which
+  // range of the fExps[i] vector should be searched for the given run_nr and e_min
+
+  vector< TFile* > files;
+  vector< TTree* > trees;
+  vector< std::pair<Int_t, Int_t> > search_lims;
+
+  for (Int_t N = 0; N < fExps.size(); N++) {
+
+    TString out_name = "output/EvtSample_" + fFlavs[flavor] + "-CC_" +
+      (TString)to_string(N) + ".root";
+    if (is_cc == 0) out_name = "output/EvtSample_allflavs-NC_" + (TString)to_string(N) + ".root";
+
+    files.push_back( new TFile(out_name, "RECREATE") );            //create file
+    trees.push_back( sp.fChain->CloneTree(0) );                    //add empty tree
+    search_lims.push_back( std::make_pair( 0, fExps[N].size() ) ); //by default search in full range
+
+  }
+
+  Double_t run_nr = -1;
+  Double_t e_min  = -1;
+
+  for (Int_t i = 0; i < sp.fChain->GetEntries(); i++) {
+
+    sp.fChain->GetEntry(i);
+
+    // if file changes update the limits in the vectors in which the events are searched
+
+    if ( run_nr != sp.MC_runID || e_min != sp.MC_erange_start ) {
+
+      run_nr = sp.MC_runID;
+      e_min  = sp.MC_erange_start;
+
+      for (Int_t N = 0; N < fExps.size(); N++) {
+	search_lims[N] = get_start_stop( fExps[N], run_nr, e_min );
+      }
+
+    }
+
+    evtid this_evt(sp.MC_runID, sp.MC_evtID, sp.MC_erange_start);
+
+    // see if this summary event is in any of the event samples, if so write it out to relevant file
+
+    for (Int_t N = 0; N < fExps.size(); N++) {
+      
+      if ( std::find( fExps[N].begin() + search_lims[N].first, fExps[N].begin() + search_lims[N].second, this_evt ) != 
+	   fExps[N].begin() + search_lims[N].second ) {
+	trees[N]->Fill();
+      }
+
+    }
+
+  }
+
+  // close the files
+  
+  for (Int_t N = 0; N < fExps.size(); N++) {
+    files[N]->cd();
+    trees[N]->Write();
+    files[N]->Close();
+    delete files[N];
+  }
+
+}
+
+//*****************************************************************
+
 /**
  *  Inline function to clear dynamically allocated memory.
  */
@@ -468,7 +653,6 @@ void CleanUp() {
   if (fhGSG_nu)  delete fhGSG_nu; 
   if (fhGSG_nub) delete fhGSG_nub;
 
-  if (fSp)   delete fSp;
   if (fRand) delete fRand;
   
 }
