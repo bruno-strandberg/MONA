@@ -48,7 +48,7 @@ map < Int_t, TString > fFlavs  = { {0, "elec" },
  *  This routine creates a sample of simulated MC events that corresponds to a pattern expexted
  *  from running the detector for a certain period of time.
  *
- *  The output of this macro is in output/SummarySample_{flavor}_{NC/CC}_{sample#}.root. If NC, then
+ *  The output of this macro is in SummarySample_{flavor}_{NC/CC}_{sample#}.root. If NC, then
  *  the output will contain an event sample of muon-NC + tau-NC + elec-NC.
  *
  * \param  flux_chain_file  Output of FluxChain.C, provides histograms with expected number of events
@@ -73,9 +73,9 @@ void SummarySampler(TString flux_chain_file, Int_t flavor, Int_t is_cc, Int_t ns
 
   for (Int_t N = 0; N < nsamples; N++) {
     
-    TString out_name = "output/SummarySample_" + fFlavs[flavor] + "-CC_" +
+    TString out_name = "SummarySample_" + fFlavs[flavor] + "-CC_" +
       (TString)to_string(N) + ".root";
-    if (is_cc == 0.) out_name = "output/SummarySample_allflavs-NC_" + (TString)to_string(N) + ".root";
+    if (is_cc == 0.) out_name = "SummarySample_allflavs-NC_" + (TString)to_string(N) + ".root";
 
     TH2D *smeared_nu  = (TH2D*)fhDet_nu->Clone("sample_nu");
     TH2D *smeared_nub = (TH2D*)fhDet_nu->Clone("sample_nub");
