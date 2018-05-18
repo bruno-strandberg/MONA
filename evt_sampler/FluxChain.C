@@ -65,7 +65,7 @@ Double_t fKg_per_Mton = 1e9;                        //!< kg per MTon (MTon = 1e6
  *  The output root file will have directories atmflux, oscflux, intflux, detflux and meff. Eech
  *  of the flux directories contains E vs costheta histograms for {flavor}_{nc/cc}_{nu/nub} (12 in
  *  total), each bin will indicate the number of neutrinos of this type after op_time years.
- *  Directory atmflux/ has histograms with atmospheric neutrinos. oscflux/ show satmflux/ histograms
+ *  Directory atmflux/ has histograms with atmospheric neutrinos. oscflux/ shows atmflux/ histograms
  *  after oscillation through Earth, intflux/ shows oscflux/ histograms after nu + H2O xsec is taken
  *  into account, detflux/ shows intflux/ histograms after effective mass is taken into account.
  *  meff/ directory displays the effective mass histograms used for the generation of detflux/
