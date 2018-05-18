@@ -237,7 +237,7 @@ Bool_t GSGParser::InitEvtFile(TString fname) {
 /**
  * This function loads the next event of the gSeaGen file in .evt format.
  *
- * Neutrino direction, vertex and energy are fetched from the .evt file in aanet format
+ * Neutrino direction, vertex, energy and mc_id are fetched from the .evt file in aanet format
  * and stored to the corresponding variables in the gSeaGen root format.
  *
  */
@@ -246,6 +246,7 @@ Bool_t GSGParser::NextEvtEvent() {
   Bool_t nextLoaded = fEvtFile->next();
   if (!nextLoaded) return nextLoaded;
   
+  iEvt              = fEvtFile->evt.mc_id;
   Neutrino_V1       = fEvtFile->evt.mc_trks[0].pos.x;
   Neutrino_V2       = fEvtFile->evt.mc_trks[0].pos.y;
   Neutrino_V3       = fEvtFile->evt.mc_trks[0].pos.z;

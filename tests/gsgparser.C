@@ -62,6 +62,7 @@ void gsgparser() {
     cout << gp1.Neutrino_D3 << "\t" << gp2.Neutrino_D3 << endl;
     cout << gp1.Neutrino_E << "\t" << gp2.Neutrino_E << endl;
     cout << gp1.Neutrino_PdgCode << "\t" << gp2.Neutrino_PdgCode << endl;
+    cout << gp1.iEvt << "\t" << gp2.iEvt << endl;
     cout << "=========================================================" << endl;
   }
 

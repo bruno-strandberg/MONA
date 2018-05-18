@@ -1,6 +1,7 @@
 #include "TAxis.h"
 #include "TMath.h"
 #include <fstream>
+#include <sys/stat.h>
 
 /**
  * A namespace that collects miscellaneous useful functions. 
@@ -74,4 +75,23 @@ namespace NMHUtils {
 
   }
   
+  //****************************************************************************
+
+  /**
+   *  Function to check whether file exists.
+   * \param filename Path to the file
+   * \param size     File size in MB; If specified, check that file is larger than size (default: 0)
+   */
+  Bool_t FileExists(TString filename, Double_t size = 0) {
+    
+    struct stat buf;
+    if ( (stat(filename, &buf) != 0) ) {
+      return false;
+    }
+    else {
+      return ( (Double_t)buf.st_size*1e-6 > size );
+    }
+
+  }
+
 }
