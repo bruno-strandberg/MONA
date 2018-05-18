@@ -1,216 +1,105 @@
+//header
+#include "GSGSampler.h"
+
+//root
+#include "TSystem.h"
+
+//NMH
 #include "SummaryParser.h"
 #include "GSGParser.h"
-#include "TSystem.h"
-#include "TH2.h"
-#include "TRandom3.h"
 #include "NMHUtils.h"
 
-//*****************************************************************
-// structure to store run nr and event nr in a vector and sort
-//*****************************************************************
+//generic cpp
+
+using namespace GSGS;
 
 /**
- *  Struct to store the Monte Carlo run number and event number pair.
+ *  Function to create a sample of Monte-Carlo events.
  *
- */
-struct evtid {
-  Int_t run_nr; //!< gSeaGen run number
-  Int_t evt_nr; //!< gSeaGen event number
-  Int_t e_min;  //!< Minimum energy of the neutrinos in gSeaGen file (1 or 3)
-
-  //! Default constructor
-  evtid(): run_nr(0), evt_nr(0), e_min(0) {}
-
-  /**
-   * Constructor
-   * \param _run_nr gSeaGen file number
-   * \param _evt_nr gSeaGen event number in file
-   * \param _e_min  Minimum neutrino energy in gSeaGen file
-   */
-  evtid(Int_t _run_nr, Int_t _evt_nr, Int_t _e_min) {
-    run_nr = _run_nr;
-    evt_nr = _evt_nr;
-    e_min  = _e_min;
-  }
-
-  /**
-   * Operator to sort events by increasing file number, event id and energy by using std::sort
-   * \param   rhs instance of evtid that this object is compared to
-   * \return  true if second run nr is larger; if equal run numbers true if second e_min larger;
-   *          if equal run nr and equal e_min true if second event number larger.
-   */
-  bool operator < (const evtid& rhs) const {
- 
-    if ( this->run_nr < rhs.run_nr ) { 
-      return true;         
-    }
-
-    else if ( this->run_nr == rhs.run_nr ) {
-
-      if ( this->e_min < rhs.e_min) {
-	return true;
-      }
-      else if (this->e_min == rhs.e_min) {
-	return (this->evt_nr < rhs.evt_nr); 
-      }
-      else {
-	return false;
-      }
-
-    }
-
-    else {
-      return false; 
-    }
-
-  }
-
-  /** 
-   * Operator to find identical events by using std::find.
-   * \param rhs instance of evtid that this object is compared to
-   * \return true if run_nr and evt_nr and e_min of this object and other object match.
-   */
-  bool operator == (const evtid& rhs) const {
-    return ( ( this->run_nr == rhs.run_nr ) && 
-	     ( this->evt_nr == rhs.evt_nr ) && 
-	     ( this->e_min  == rhs.e_min  ) );
-  }
-
-  /** 
-   * Not equal operator.
-   * \param rhs instance of evtid that this object is compared to
-   * \return true if run_nr or evt_nr or e_min of this object and other object mismatch.
-   */
-  bool operator != (const evtid &rhs) const {
-    return !(*this == rhs);
-  }
-
-};
-
-/** 
- * Function to find the first and last index of the elements ...
+ *  This function creates a sample of Monte-Carlo events for a given flavor and interaction type.
+ *  Each FluxChain.C output file contains histograms in TDirectory intflux/, each histogram holds
+ *  the number of interacted neutrino events per specific flavor and interaction type in a certain
+ *  operation time per MTon. The histograms are scaled by the can size and water density, after that
+ *  each (E, ct) bin will hold the number of interacted events inside the detector can. These numbers
+ *  are in turn Poisson-smeared to simulate statistical fluctuations.
  *
- *  
+ *  In ORCA Monte-Carlo chain, interacting events are simulated at gSeaGen level. The gSeaGen data
+ *  from the files in gsg_flist are read into vectors, each (E, ct) bin will have an associated
+ *  vector that will hold the Monte-Carlo event IDs (see struct evtid) available in that bin. Then,
+ *  N number of random event ID's are sampled from the vector, where N is the Poisson-smeared
+ *  number of expected interacted events from the intflux histogram.
+ *
+ *  After sampling, a loop over all summary files for this flavor and interaction type are performed.
+ *  The purpose of the loop is to check which of the sampled interacted (=gSeaGen) events made it 
+ *  to the end of the Monte Carlo chain (i.e. into the summary file). The events that made it to the
+ *  end are the events that will be stored in the output.
+ * 
+ *  The code will output a file output/EvtSample_{flavor}-{interaction}_{Nf}_{Ns}.root, where
+ *  Nf is the sequence number of the flux chain file and Ns is the sample number.
+ *
+ * \param flux_chain_list a text file with a list of FluxChain.C macro outputs
+ * \param gsg_flist       a text file with a list of gSeaGen files
+ * \param flavor          neutrino flavor
+ * \param is_cc           0 - neutral current, 1 - charged current
+ * \param nsamples        Number of Monte-Carlo samples to be generated.
  */
-std::pair<Int_t, Int_t> get_start_stop(vector<evtid> evts, Int_t _run_nr, Int_t _e_min) {
-
-  Int_t start = evts.size();
-  Int_t stop  = evts.size();
-
-  for (Int_t i = 0; i < evts.size(); i++) {
-
-    if (evts[i].run_nr == _run_nr && evts[i].e_min == _e_min) {
-
-      start = i;
-      stop  = start;
-
-      while ( evts[stop].run_nr == _run_nr && evts[stop].e_min == _e_min ) stop++;
-
-      break;
-
-    }
-
-  } //end for
-
-  return std::make_pair(start, stop);
-
-}
-
-//*****************************************************************
-// functions
-//*****************************************************************
-Bool_t GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc);
-void   InitVars(Int_t flavor, Int_t is_cc);
-void   CleanUp();
-Bool_t ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc);
-Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
-		    vector<evtid> **store, vector<evtid> **sample,
-		    Int_t low_sample_lim);
-void   StoreForWriting();
-void   WriteToFiles(Int_t flavor, Int_t is_cc);
-
-//*****************************************************************
-// globally used variables in this script
-//*****************************************************************
-TH2D *fhInt_nu;        //!< histogram with expected number of interacted nu events
-TH2D *fhInt_nub;       //!< histogram with expected number of interacted nubar events
-TH2D *fhGSG_nu;        //!< histogram with all available MC nu events in GSG files
-TH2D *fhGSG_nub;       //!< histogram with all available MC nubar events in GSG files
-TRandom3 *fRand;       //!< random number generator
-Int_t fEbins;          //!< number of energy bins in the event vectors
-Int_t fCtbins;         //!< number of costheta bins in the event vectors
-Double_t fVcan = 0.;   //!< can size, set in ReadGSGData()
-Double_t fRhoSW = 0.;  //!< sea water density, set in ReadGSGData()
-//! 2D array of vectors, each vector holds summary nu eventid's of (E, costheta) bin
-vector<evtid> **fGSGEvts_nu;
-//! 2D array of vectors, each vector holds summary nub eventid's numbers of (E, costheta) bin
-vector<evtid> **fGSGEvts_nub;
-//! 2D array of vectors to hold a sub-sample of events in fGSGEvts_nu
-vector<evtid> **fSampleEvts_nu;
-//! 2D array of vectors to hold a sub-sample of events in fGSGEvts_nub
-vector<evtid> **fSampleEvts_nub;
-//! vector of vectors; each vector contains an event sample of one experiment
-vector< vector<evtid> > fExps;
-
-//! map of flavor numbers and strings
-map < Int_t, TString > fFlavs  = { {0, "elec" },
-				   {1, "muon" },
-				   {2, "tau"  } };
-
-//! map of interaction numbers and strings
-map < Int_t, TString > fInts  = { {0, "NC" },
-				  {1, "CC" } };
-
-//*****************************************************************
-// main function
-//*****************************************************************
-
-void GSGSampler(TString flux_chain_file, TString gsg_file_list, Int_t flavor, Int_t is_cc, Int_t nsamples = 1) {
+void GSGSampler(TString flux_chain_flist, 
+		TString gsg_flist, 
+		Int_t flavor, Int_t is_cc, Int_t nsamples = 1) {
 
   gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
-
-  if ( !GetIntHists(flux_chain_file, flavor, is_cc) ) {
-    cout << "ERROR! GSGSampler() problem opening flux histograms." << endl;
-    return;
-  }
-
-  InitVars(flavor, is_cc);
-
-  if ( !ReadGSGData(gsg_file_list, flavor, is_cc) ) {
-    cout << "ERROR! GSGSampler() problem reading gSeaGen files." << endl;
-    return;
-  }
-
-  // convert from unit 1/MTon to unitless by 1e-6 [MTon/Ton] * V [m3] * rho [Ton/m3]
-  // after this, each bin will have expected nr of interactions per E,ct bin in
-  // certain operation time, as defined when FluxChain is run.
   
-  Double_t debug = 0.1;
-  fhInt_nu ->Scale(1e-6 * fVcan * fRhoSW * debug);
-  fhInt_nub->Scale(1e-6 * fVcan * fRhoSW * debug);
-  
-  for (Int_t N = 0; N < nsamples; N++) {
+  Bool_t initialized = false; //variable to control that init and gSeaGen reading is only done once
 
-    cout << "NOTICE GSGSampler() sampling experiment " << N << endl;
+  vector<TString> flux_files = NMHUtils::ReadLines(flux_chain_flist);
 
-    TH2D *smeared_nu  = (TH2D*)fhInt_nu->Clone("sample_nu");
-    TH2D *smeared_nub = (TH2D*)fhInt_nu->Clone("sample_nub");
-    smeared_nu->Reset();
-    smeared_nub->Reset();
+  for (auto fc_file: flux_files) {
 
-    Bool_t SampleOK_nu  = SampleEvents(fhInt_nu,  smeared_nu , fGSGEvts_nu , fSampleEvts_nu , 10);
-    Bool_t SampleOK_nub = SampleEvents(fhInt_nub, smeared_nub, fGSGEvts_nub, fSampleEvts_nub, 10);
-
-    if (SampleOK_nu && SampleOK_nub) {
-      StoreForWriting();
+    if ( !GetIntHists(fc_file, flavor, is_cc) ) {
+      cout << "ERROR! GSGSampler() problem opening flux histograms from " << fc_file << endl;
+      return;
     }
 
-    if (smeared_nu) delete smeared_nu;
-    if (smeared_nub) delete smeared_nub;
-    
-  }
+    if ( !initialized ) {
+      initialized = true;
+      InitVars(flavor, is_cc);
+
+      if ( !ReadGSGData(gsg_flist, flavor, is_cc) ) {
+	cout << "ERROR! GSGSampler() problem reading gSeaGen files." << endl;
+	return;
+      }
+    }
+
+    // convert from unit 1/MTon to unitless by 1e-6 [MTon/Ton] * V [m3] * rho [Ton/m3]
+    // after this, each bin will have expected nr of interactions per E,ct bin in
+    // certain operation time, as defined when FluxChain is run.
   
-  WriteToFiles(flavor, is_cc);
+    Double_t debug = 0.001;
+    fhInt_nu ->Scale(1e-6 * fVcan * fRhoSW * debug);
+    fhInt_nub->Scale(1e-6 * fVcan * fRhoSW * debug);
+  
+    for (Int_t N = 0; N < nsamples; N++) {
+
+      cout << "NOTICE GSGSampler() flux file " << fc_file << " sampling experiment " << N << endl;
+
+      TH2D *smeared_nu  = (TH2D*)fhInt_nu->Clone("sample_nu");
+      TH2D *smeared_nub = (TH2D*)fhInt_nu->Clone("sample_nub");
+      smeared_nu->Reset();
+      smeared_nub->Reset();
+
+      Bool_t SampleOK_nu  = SampleEvents(fhInt_nu,  smeared_nu , fGSGEvts_nu , fSampleEvts_nu , 10);
+      Bool_t SampleOK_nub = SampleEvents(fhInt_nub, smeared_nub, fGSGEvts_nub, fSampleEvts_nub, 10);
+
+      StoreForWriting( (SampleOK_nu && SampleOK_nub), smeared_nu, smeared_nub);
+
+      if (smeared_nu) delete smeared_nu;
+      if (smeared_nub) delete smeared_nub;
+    
+    } //end loop over samples
+  
+  } // end loop over flux files
+
+  WriteToFiles(flavor, is_cc, nsamples);
 
   CleanUp();
   
@@ -231,7 +120,10 @@ void GSGSampler(TString flux_chain_file, TString gsg_file_list, Int_t flavor, In
  * \return                  True if histograms found, False if not found.
  *
  */
-Bool_t GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc) {
+Bool_t GSGS::GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc) {
+
+  if (fhInt_nu)  delete fhInt_nu;
+  if (fhInt_nub) delete fhInt_nub;
 
   TFile f(flux_chain_file, "READ");
   if ( !f.IsOpen() ) {
@@ -309,7 +201,7 @@ Bool_t GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc) {
  * \param  is_cc            0 - NC, 1 -CC.
  *
  */
-void InitVars(Int_t flavor, Int_t is_cc) {
+void GSGS::InitVars(Int_t flavor, Int_t is_cc) {
 
   // create hist names; we only simulate NC for elec, so there is an exception for that
   
@@ -353,7 +245,7 @@ void InitVars(Int_t flavor, Int_t is_cc) {
 
 //*****************************************************************
 
-Bool_t ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
+Bool_t GSGS::ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
 
   cout << "NOTICE ReadGSGData() started reading GSG data" << endl;
 
@@ -366,14 +258,15 @@ Bool_t ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
     // check that the files correspond to the expected flavor and interaction
 
     if ( !fname.Contains( fFlavs[flavor] ) || !fname.Contains( fInts[is_cc] ) ) {
-      cout << "WARNING! ReadGSGData() specified flavor " << fFlavs[flavor] << " and interaction " << fInts[is_cc]
-	   << " seem to mismatch flavor and interaction in filename, skipping file " << fname << endl;
+      cout << "WARNING! ReadGSGData() specified flavor " << fFlavs[flavor] << " and interaction " 
+	   << fInts[is_cc] << " seem to mismatch flavor and interaction in filename, skipping file "
+	   << fname << endl;
       continue;
     }
 
-    cout << "NOTICE ReadGSGData() Reading from file: " << fname << endl;
-
     // initalise parser, set detector can size and sea water density
+
+    cout << "NOTICE ReadGSGData() Reading from file: " << fname << endl;
 
     GSGParser gp(fname);
 
@@ -389,6 +282,15 @@ Bool_t ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
       cout << "ERROR! ReadGSGData() sea water density change from  " << fRhoSW << " to " << gp.fRho_seawater
     	   << ", exiting." << endl;
       return false;
+    }
+
+    // check that the corresponding summary file exists
+
+    TString summary_file = GetSummaryName(flavor, is_cc, gp.fE_min, gp.fE_max, gp.fRunNr);
+    if ( !NMHUtils::FileExists( summary_file ) ) {
+      cout << "WARNING! ReadGSGData() cannot find summary file " << summary_file
+	   << ", skipping gSeaGen file " << fname << endl;
+      continue;
     }
 
     //loop over events
@@ -439,9 +341,9 @@ Bool_t ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
  *                        will be used for this bin.
  *
  */
-Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
-		    vector<evtid> **store, vector<evtid> **sample,
-		    Int_t low_sample_lim) {
+Bool_t GSGS::SampleEvents(TH2D *h_expected, TH2D *h_smeared,
+				vector<evtid> **store, vector<evtid> **sample,
+				Int_t low_sample_lim) {
 
   // make sure sample is empty
 
@@ -487,7 +389,7 @@ Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
       // randomly draw smeared number of events from store, insert them to sample
 
       Int_t counter = 0;
-      Int_t limit   = 1e6;
+      Int_t limit   = 1e8;
       
       while ( sample[xbin][ybin].size() != smeared ) {
 
@@ -521,11 +423,22 @@ Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
 
 //*****************************************************************
 
-void StoreForWriting() {
-
+void GSGS::StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub) {
+  
   // create a new vector for this experiment
   fExps.push_back( vector<evtid>() );
-  
+  fExpHists.push_back( vector<TH2D*>() );
+
+  // store the histograms
+  fExpHists.back().push_back( (TH2D*)fhInt_nu   ->Clone() );
+  fExpHists.back().push_back( (TH2D*)fhInt_nub  ->Clone() );
+  fExpHists.back().push_back( (TH2D*)fhGSG_nu   ->Clone() );
+  fExpHists.back().push_back( (TH2D*)fhGSG_nub  ->Clone() );
+  fExpHists.back().push_back( (TH2D*)smeared_nu ->Clone() );
+  fExpHists.back().push_back( (TH2D*)smeared_nub->Clone() );
+
+  if (!SampleOK) return; //if bad sample leave the vector empty, deal with this when writing to file
+
   // push all sampled events into the vector
   for (Int_t ebin = 0; ebin < fEbins; ebin++) {
     for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
@@ -543,7 +456,7 @@ void StoreForWriting() {
 
 //*****************************************************************
 
-void WriteToFiles(Int_t flavor, Int_t is_cc) {
+void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc, Int_t Ns) {
 
   cout << "NOTICE WriteToFiles() writing out sampled data" << endl;
 
@@ -562,17 +475,24 @@ void WriteToFiles(Int_t flavor, Int_t is_cc) {
   vector< TTree* > trees;
   vector< std::pair<Int_t, Int_t> > search_lims;
 
-  for (Int_t N = 0; N < fExps.size(); N++) {
+  for (Int_t N = 0; N < (Int_t)fExps.size(); N++) {
 
-    TString out_name = "output/EvtSample_" + fFlavs[flavor] + "-CC_" +
-      (TString)to_string(N) + ".root";
-    if (is_cc == 0) out_name = "output/EvtSample_allflavs-NC_" + (TString)to_string(N) + ".root";
+    Int_t f_idx = N / Ns;          // flux file index
+    Int_t s_idx = N - f_idx * Ns;  // sample index
+
+    TString suffix = "_flux" + (TString)to_string(f_idx) + 
+      "_sample" + (TString)to_string(s_idx) + ".root";
+
+    TString out_name = "output/EvtSample_" + fFlavs[flavor] + "-CC" + suffix;
+    if (is_cc == 0) out_name = "output/EvtSample_allflavs-NC" + suffix;
 
     files.push_back( new TFile(out_name, "RECREATE") );            //create file
     trees.push_back( sp.fChain->CloneTree(0) );                    //add empty tree
-    search_lims.push_back( std::make_pair( 0, fExps[N].size() ) ); //by default search in full range
-
+    search_lims.push_back( std::make_pair( 0, fExps[N].size() ) ); //by default search in full range 
+  
   }
+
+  // loop over summary events
 
   Double_t run_nr = -1;
   Double_t e_min  = -1;
@@ -588,7 +508,7 @@ void WriteToFiles(Int_t flavor, Int_t is_cc) {
       run_nr = sp.MC_runID;
       e_min  = sp.MC_erange_start;
 
-      for (Int_t N = 0; N < fExps.size(); N++) {
+      for (Int_t N = 0; N < (Int_t)fExps.size(); N++) {
 	search_lims[N] = get_start_stop( fExps[N], run_nr, e_min );
       }
 
@@ -596,26 +516,43 @@ void WriteToFiles(Int_t flavor, Int_t is_cc) {
 
     evtid this_evt(sp.MC_runID, sp.MC_evtID, sp.MC_erange_start);
 
-    // see if this summary event is in any of the event samples, if so write it out to relevant file
+    // see if this summary event is in any of the event samples, if so write it out to
+    // relevant file
 
-    for (Int_t N = 0; N < fExps.size(); N++) {
+    for (Int_t N = 0; N < (Int_t)fExps.size(); N++) {
       
-      if ( std::find( fExps[N].begin() + search_lims[N].first, fExps[N].begin() + search_lims[N].second, this_evt ) != 
-	   fExps[N].begin() + search_lims[N].second ) {
+      if ( std::find( fExps[N].begin() + search_lims[N].first, 
+		      fExps[N].begin() + search_lims[N].second, 
+		      this_evt ) != ( fExps[N].begin() + search_lims[N].second ) ) {
 	trees[N]->Fill();
       }
 
     }
 
-  }
+  } //end loop over summary events
 
-  // close the files
+  // write trees and hists; close the files; remove files where sampling failed
   
-  for (Int_t N = 0; N < fExps.size(); N++) {
+  for (Int_t N = 0; N < (Int_t)fExps.size(); N++) {
+
     files[N]->cd();
+    Bool_t remove = ( trees[N]->GetEntries() == 0 );
+    TString name  = files[N]->GetName();
     trees[N]->Write();
+
+    for (auto h: fExpHists[N]) {
+      h->Write();
+      delete h;
+    }
+
     files[N]->Close();
     delete files[N];
+
+    if (remove) {
+      cout << "NOTICE WriteToFiles() empty tree in " << name << ", removing file." << endl;
+      Int_t sysret = system("rm " + name);
+    }
+
   }
 
 }
@@ -625,7 +562,7 @@ void WriteToFiles(Int_t flavor, Int_t is_cc) {
 /**
  *  Inline function to clear dynamically allocated memory.
  */
-void CleanUp() {
+void GSGS::CleanUp() {
 
   //clean up the dynamically allocated vectors/arrays
   
@@ -655,4 +592,28 @@ void CleanUp() {
 
   if (fRand) delete fRand;
   
+}
+
+//*****************************************************************
+
+/**
+ *  Inline function to generate summary file name.
+ *
+ * \param flavor   nu flavor
+ * \param is_cc    0 - NC, 1 - CC
+ * \param emin     gSeaGen energy range start
+ * \param emax     gSeaGen energy range stop
+ * \param runnr    gSeaGen run number
+ * \return         summary file name as generated by NMHDIR/data_sorting/RestoreParity.C
+ */
+TString GSGS::GetSummaryName(Int_t flavor, Int_t is_cc, Int_t emin, Int_t emax, Int_t runnr) {
+
+  TString suffix = fInts[is_cc] + "_" + (TString)to_string(emin) + "-" + (TString)to_string(emax) + 
+    "GeV_" + (TString)to_string(runnr) + ".root";
+   
+  TString flav = fFlavs[flavor];
+  if (is_cc == 0) flav = fFlavs[0];
+  
+  TString dir = getenv("NMHDIR");
+  return dir + "/data/mc_end/data_atmnu/summary_" + flav + "-" + suffix;  
 }
