@@ -74,9 +74,8 @@ void GSGSampler(TString flux_chain_flist,
     // after this, each bin will have expected nr of interactions per E,ct bin in
     // certain operation time, as defined when FluxChain is run.
   
-    Double_t debug = 0.001;
-    fhInt_nu ->Scale(1e-6 * fVcan * fRhoSW * debug);
-    fhInt_nub->Scale(1e-6 * fVcan * fRhoSW * debug);
+    fhInt_nu ->Scale(1e-6 * fVcan * fRhoSW);
+    fhInt_nub->Scale(1e-6 * fVcan * fRhoSW);
   
     for (Int_t N = 0; N < nsamples; N++) {
 
@@ -245,6 +244,18 @@ void GSGS::InitVars(Int_t flavor, Int_t is_cc) {
 
 //*****************************************************************
 
+/**
+ * Inline function to read gSeaGen data into globally used variables.
+ *
+ * The data are read into vectors fGSGEvts_nu and fGSGEvts_nub. Additionally, the can size and
+ * sea water density fVcan and fRho_seawater are set.
+ *
+ * \param gsg_file_list  list of gSeaGen files
+ * \param flavor         nu flavor
+ * \param is_cc          0 - NC, 1 -CC
+ * \return               True if reading successful
+ *
+*/
 Bool_t GSGS::ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
 
   cout << "NOTICE ReadGSGData() started reading GSG data" << endl;
@@ -279,8 +290,8 @@ Bool_t GSGS::ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
 
     if (fRhoSW == 0.) fRhoSW = gp.fRho_seawater;
     else if ( fRhoSW != gp.fRho_seawater) {
-      cout << "ERROR! ReadGSGData() sea water density change from  " << fRhoSW << " to " << gp.fRho_seawater
-    	   << ", exiting." << endl;
+      cout << "ERROR! ReadGSGData() sea water density change from  " << fRhoSW
+	   << " to " << gp.fRho_seawater << ", exiting." << endl;
       return false;
     }
 
@@ -423,6 +434,14 @@ Bool_t GSGS::SampleEvents(TH2D *h_expected, TH2D *h_smeared,
 
 //*****************************************************************
 
+/**
+ * Inline function to store data for later writing to output.
+ *
+ * \param SampleOK     Boolean to indicate whether the sample in fSampleEvts_nu(b) is OK.
+ * \param smeared_nu   Pointer to 2D histogram with a Poisson-smeared interaction counts in E,ct bins
+ * \param smeared_nub  Pointer to 2D histogram with a Poisson-smeared interaction counts in E,ct bins
+ *
+ */
 void GSGS::StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub) {
   
   // create a new vector for this experiment
@@ -456,6 +475,14 @@ void GSGS::StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub)
 
 //*****************************************************************
 
+/**
+ * Inline function to write sampled data to files.
+ *
+ * \param flavor  nu flavor
+ * \param is_cc   0 - nc, 1 - cc
+ * \param Ns      Number of samples per flux file
+ *
+ */
 void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc, Int_t Ns) {
 
   cout << "NOTICE WriteToFiles() writing out sampled data" << endl;
