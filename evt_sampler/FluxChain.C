@@ -18,7 +18,12 @@ using namespace std;
 // functions
 //*****************************************************************
 void   InitClasses();
-void   InitOscPars(Bool_t NH);
+Bool_t InitOscPars(Bool_t UsePDG, Bool_t NH, 
+		   Double_t _sinsq_th12, Double_t _sinsq_th23, Double_t _sinsq_th13, 
+		   Double_t _dcp, Double_t _dm21, Double_t _dm32);
+void   SetToPDG(Bool_t NH, 
+		Double_t &sinsq_th12, Double_t &sinsq_th23, Double_t &sinsq_th13, 
+		Double_t &dcp, Double_t &dm21, Double_t &dm32, Double_t &dm31);
 void   InitHists();
 Bool_t ReadMeffHists();
 void   FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsamples);
@@ -80,18 +85,25 @@ Double_t fKg_per_Mton = 1e9;                        //!< kg per MTon (MTon = 1e6
  */
 void FluxChain(Double_t op_time     = 3.,
 	       TString  output_name = "flux_chain_out.root",
+	       Int_t    nsamples    = 50,
 	       Bool_t   NH          = true,
-	       Int_t    nsamples    = 50) {
+	       Bool_t   UseMeff     = false,
+	       Bool_t   PDGPars     = true,
+	       Double_t sinsq_th12  = 0., 
+	       Double_t sinsq_th23  = 0., 
+	       Double_t sinsq_th13  = 0., 
+	       Double_t dcp         = 0., 
+	       Double_t dm21        = 0., 
+	       Double_t dm32        = 0.) {
 
   gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
   
   InitClasses();
-  InitOscPars(NH);
+  if ( !InitOscPars(PDGPars, NH, sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32) ) return;
   InitHists();
-  if ( !ReadMeffHists() ) {
-    cout << "ERROR! FluxChain() Reading of effective mass histogram failed, quitting." << endl;
-    return;
+  if ( UseMeff ) {
+    if ( !ReadMeffHists() ) return;
   }
  
   for (Int_t f = 0; f < 3; f++) {
@@ -126,26 +138,43 @@ void InitClasses() {
 //*****************************************************************
 
 /**
- *  Inline function to initialise osc parameters (PDG 2016) and give them to the osc calculator.
+ *  Inline function to initialise osc parameters and give them to the osc calculator.
+ *
+ * \param UsePDG       - Use oscillation parameter values from PDG
+ * \param NH           - true for normal hierarchy, false for inverted hierarchy
+ * \param sinsq_th12   - \f$\sin^2\theta_{12}\f$ value
+ * \param sinsq_th23   - \f$\sin^2\theta_{23}\f$ value
+ * \param sinsq_th13   - \f$\sin^2\theta_{13}\f$ value
+ * \param dcp          - \f$\delta_{CP}\f$ value in \f$\pi\f$'s, as given by PDG group (e.g 1.38)
+ * \param dm21         - \f$\Delta m^2_{21}\f$ value
+ * \param dm32         - \f$\Delta m^2_{32}\f$ value; this must be > 0 for NH and < 0 for IH
+ *
  */
-void InitOscPars(Bool_t NH) {
+Bool_t InitOscPars(Bool_t UsePDG, Bool_t NH, 
+		   Double_t _sinsq_th12 , Double_t _sinsq_th23, Double_t _sinsq_th13, 
+		   Double_t _dcp, Double_t _dm21, Double_t _dm32) {
 
-  //------------------------------------------------
-  // Oscillation parameters PDG 2016
-  //------------------------------------------------
-  Double_t sinsq_th12  = 0.304;
-  Double_t sinsq_th23  = 0.51;
-  Double_t sinsq_th13  = 2.19e-2;
-  Double_t dcp         = 0.;
-  Double_t dm21        = 7.53e-5;
-  Double_t dm32        = 2.44e-3;
-  Double_t dm31        = dm32 + dm21;
+  // init oscillation parameters
+
+  Double_t sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32, dm31;
   
-  if (!NH) {
-    sinsq_th23 = 0.50;
-    dm32       = -2.51e-3;
-    dm31       = dm32 + dm21;
+  if (UsePDG) SetToPDG(NH, sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32, dm31);
+  else {
+    sinsq_th12 = _sinsq_th12;
+    sinsq_th23 = _sinsq_th23;
+    sinsq_th13 = _sinsq_th13;
+    dcp        = _dcp;
+    dm21       = _dm21;
+    dm32       = _dm32;
+    dm31       = dm21 + dm32;
   }
+
+  if ( ( NH && (dm32 < 0) ) || ( !NH && (dm32 > 0) ) ) { 
+    cout << "ERROR! InitOscPars() wrong sign of dm32 " << dm32 << " for hierarchy (0=IH, 1=NH) " 
+	 << NH << ", should be dm32 > 0 for NH and dm32 < 0 for IH."<< endl;
+    return false;
+  }
+
 
   //------------------------------------------------
   // Pass to the oscillation probability calculator
@@ -154,9 +183,49 @@ void InitOscPars(Bool_t NH) {
   fProb->SetAngle(1, 2, TMath::ASin( TMath::Sqrt(sinsq_th12) ) );
   fProb->SetAngle(1, 3, TMath::ASin( TMath::Sqrt(sinsq_th13) ) );
   fProb->SetAngle(2, 3, TMath::ASin( TMath::Sqrt(sinsq_th23) ) );
+  fProb->SetDelta(1, 3, dcp * TMath::Pi() );
 
   fProb->SetDm(2, dm21);
   fProb->SetDm(3, dm31);
+  
+  return true;
+}
+
+//*****************************************************************
+
+/**
+ * Inline function to set oscillation parameters to PDG values, depending on hierarchy.
+ *
+ * Values from http://pdg.lbl.gov/2017/reviews/rpp2017-rev-neutrino-mixing.pdf
+ *
+ * \param NH           - true for normal hierarchy, false for inverted hierarchy
+ * \param sinsq_th12   - reference to a variable where \f$\sin^2\theta_{12}\f$ is stored
+ * \param sinsq_th23   - reference to a variable where \f$\sin^2\theta_{23}\f$ is stored
+ * \param sinsq_th13   - reference to a variable where \f$\sin^2\theta_{13}\f$ is stored
+ * \param dcp          - reference to a variable where \f$\delta_{CP}\f$ is stored (in \f$\pi\f$'s)
+ * \param dm21         - reference to a variable where \f$\Delta m^2_{21}\f$ is stored
+ * \param dm32         - reference to a variable where \f$\Delta m^2_{32}\f$ is stored
+ * \param dm31         - reference to a variable where \f$\Delta m^2_{31}\f$ is stored
+ */
+void SetToPDG(Bool_t NH, 
+	      Double_t &sinsq_th12, Double_t &sinsq_th23, Double_t &sinsq_th13, 
+	      Double_t &dcp, Double_t &dm21, Double_t &dm32, Double_t &dm31) {
+
+  sinsq_th12  = 0.297;
+  sinsq_th23  = 0.425;
+  sinsq_th13  = 0.0215;
+  dcp         = 1.38;
+  dm21        = 7.37e-5;
+  dm31        = 2.56e-3;
+  dm32        = dm31 - dm21;
+
+  if (!NH) {
+    sinsq_th23 = 0.589;
+    sinsq_th13 = 0.0216;
+    dcp        = 1.31;
+    dm32       = -2.54e-3;
+    dm31       = dm32 + dm21;
+  }
   
 }
 
@@ -189,6 +258,7 @@ void InitHists() {
 	fhOscFlux[f][cc][nb] = new TH2D(oscname, oscname, ebins, &e_edges[0], ctbins, ctlow, cthigh);
 	fhIntFlux[f][cc][nb] = new TH2D(intname, intname, ebins, &e_edges[0], ctbins, ctlow, cthigh);
 	fhDetFlux[f][cc][nb] = new TH2D(detname, detname, ebins, &e_edges[0], ctbins, ctlow, cthigh);
+	fhMeff[f][cc][nb] = NULL;
 
 	fhAtmFlux[f][cc][nb]->Sumw2();
 	fhOscFlux[f][cc][nb]->Sumw2();
@@ -277,10 +347,14 @@ void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsa
 	fPrem->FillPath(ct);
 	fProb->SetPath( fPrem->GetNuPath() );
 
-	// effective mass (in units Ton)
-	Int_t meff_xbin = fhMeff[flav][is_cc][is_nb]->GetXaxis()->FindBin( en );
-	Int_t meff_ybin = fhMeff[flav][is_cc][is_nb]->GetYaxis()->FindBin( ct );
-	Double_t meff   = fhMeff[flav][is_cc][is_nb]->GetBinContent(meff_xbin, meff_ybin);
+	// effective mass (in units Ton); if meff not used then hists not defined and detflux
+	// histograms will be 0
+	Double_t meff = 0.;
+	if ( fhMeff[flav][is_cc][is_nb] ) {
+	  Int_t meff_xbin = fhMeff[flav][is_cc][is_nb]->GetXaxis()->FindBin( en );
+	  Int_t meff_ybin = fhMeff[flav][is_cc][is_nb]->GetYaxis()->FindBin( ct );
+	  meff = fhMeff[flav][is_cc][is_nb]->GetBinContent(meff_xbin, meff_ybin);
+	}
 	
 	// atm neutrino count in operation time (in units 1/m^2)
 	Double_t atm_flux_factor = en_w * ct_w * fSec_per_y * op_time;
@@ -358,7 +432,7 @@ void WriteToFile(TString output_name) {
 	detflux->cd();
 	fhDetFlux[f][cc][nb]->Write();
 	meff->cd();
-	fhMeff[f][cc][nb]->Write();
+	if (fhMeff[f][cc][nb]) fhMeff[f][cc][nb]->Write();
       }
     }
   }
@@ -387,7 +461,7 @@ void CleanUp() {
 	delete fhOscFlux[f][cc][nb];
 	delete fhIntFlux[f][cc][nb];
 	delete fhDetFlux[f][cc][nb];
-	delete fhMeff[f][cc][nb];
+	if (fhMeff[f][cc][nb]) delete fhMeff[f][cc][nb];
       }
     }
   }
