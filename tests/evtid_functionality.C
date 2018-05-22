@@ -1,4 +1,4 @@
-#include "GSGSampler.C"
+#include "../evt_sampler/GSGSampler.C"
 using namespace std;
 
 void evtid_functionality() {
@@ -26,7 +26,7 @@ void evtid_functionality() {
 
   Int_t idx = 0;
   for (auto evt: evts) {
-    cout << idx << "\t" << evt.run_nr << "\t" << evt.evt_nr << "\t" << evt.e_min << endl;
+    cout << "Index: " << idx << " Event: " << evt << endl;
     idx++;
   }
 
@@ -38,7 +38,8 @@ void evtid_functionality() {
 
   idx = 0;
   for (auto evt: evts) {
-    cout << idx << "\t" << evt.run_nr << "\t" << evt.evt_nr << "\t" << evt.e_min << endl;
+    cout << "Index: " << idx << " Event: " << evt << endl;
+    idx++;
   }
 
   cout << "******************************************************" << endl;
@@ -55,7 +56,7 @@ void evtid_functionality() {
     cout << i << "\t" << evts[i].run_nr << "\t" << evts[i].evt_nr << "\t" << evts[i].e_min << endl;
   }
 
-  evtid test(6, 2, 3);
+  evtid test(5, 2, 3);
   if ( std::find(evts.begin() + range.first, evts.begin() + range.second, test) != ( evts.begin() + range.second) ) {
     cout << "Found" << endl;
   }

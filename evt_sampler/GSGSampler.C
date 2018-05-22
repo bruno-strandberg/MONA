@@ -3,6 +3,7 @@
 
 //root
 #include "TSystem.h"
+#include "TStopwatch.h"
 
 //NMH
 #include "SummaryParser.h"
@@ -42,13 +43,27 @@ using namespace GSGS;
  * \param flavor          neutrino flavor
  * \param is_cc           0 - neutral current, 1 - charged current
  * \param nsamples        Number of Monte-Carlo samples to be generated.
+ * \param dbg_scale       Option to scale down the number of interacted events, 
+ *                        such that the program can be run with a reduced nr of gSeaGen files
+ *                        without getting errors related to not having enough Monte-Carlo events.
  */
 void GSGSampler(TString flux_chain_flist, 
 		TString gsg_flist, 
-		Int_t flavor, Int_t is_cc, Int_t nsamples = 1) {
+		Int_t flavor, Int_t is_cc, Int_t nsamples = 1, Double_t dbg_scale = 1.) {
+
+  // timers
+  TStopwatch OverallTimer, DataReadTimer, DataWriteTimer, SamplerTimer;
+  DataReadTimer.Stop();
+  DataWriteTimer.Stop();
+  SamplerTimer.Stop();
+  DataReadTimer.Reset();
+  DataWriteTimer.Reset();
+  SamplerTimer.Reset();
+
+  cout << "NOTICE GSGSampler() running for flavor, nc/cc: " << flavor << "\t" << is_cc << endl;
 
   gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
-  
+
   Bool_t initialized = false; //variable to control that init and gSeaGen reading is only done once
 
   vector<TString> flux_files = NMHUtils::ReadLines(flux_chain_flist);
@@ -64,19 +79,22 @@ void GSGSampler(TString flux_chain_flist,
       initialized = true;
       InitVars(flavor, is_cc);
 
+      DataReadTimer.Start(kFALSE);
       if ( !ReadGSGData(gsg_flist, flavor, is_cc) ) {
 	cout << "ERROR! GSGSampler() problem reading gSeaGen files." << endl;
 	return;
       }
+      DataReadTimer.Stop();
     }
 
     // convert from unit 1/MTon to unitless by 1e-6 [MTon/Ton] * V [m3] * rho [Ton/m3]
     // after this, each bin will have expected nr of interactions per E,ct bin in
     // certain operation time, as defined when FluxChain is run.
   
-    fhInt_nu ->Scale(1e-6 * fVcan * fRhoSW);
-    fhInt_nub->Scale(1e-6 * fVcan * fRhoSW);
-  
+    fhInt_nu ->Scale(1e-6 * fVcan * fRhoSW * dbg_scale);
+    fhInt_nub->Scale(1e-6 * fVcan * fRhoSW * dbg_scale);
+
+    SamplerTimer.Start(kFALSE);
     for (Int_t N = 0; N < nsamples; N++) {
 
       cout << "NOTICE GSGSampler() flux file " << fc_file << " sampling experiment " << N << endl;
@@ -95,13 +113,20 @@ void GSGSampler(TString flux_chain_flist,
       if (smeared_nub) delete smeared_nub;
     
     } //end loop over samples
-  
+    SamplerTimer.Stop();
+
   } // end loop over flux files
 
+  DataWriteTimer.Start(kFALSE);
   WriteToFiles(flavor, is_cc, nsamples);
+  DataWriteTimer.Stop();
 
   CleanUp();
   
+  cout << "NOTICE GSGSampler() data reading time: "  << (Double_t)DataReadTimer.RealTime()/3600. << " hours" << endl;
+  cout << "NOTICE GSGSampler() total sampling time: "  << (Double_t)SamplerTimer.RealTime()/3600. << " hours" << endl;
+  cout << "NOTICE GSGSampler() data writing time: " << (Double_t)DataWriteTimer.RealTime()/3600. << " hours" << endl;
+  cout << "NOTICE GSGSampler() Overall time consumed: " << (Double_t)OverallTimer.RealTime()/3600. << " hours" << endl;
 }
 
 //*****************************************************************
