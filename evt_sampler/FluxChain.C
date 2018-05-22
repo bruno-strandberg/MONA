@@ -18,9 +18,9 @@ using namespace std;
 // functions
 //*****************************************************************
 void   InitClasses();
-Bool_t InitOscPars(Bool_t UsePDG, Bool_t NH, 
-		   Double_t _sinsq_th12, Double_t _sinsq_th23, Double_t _sinsq_th13, 
-		   Double_t _dcp, Double_t _dm21, Double_t _dm32);
+Bool_t InitOscPars(Bool_t NH, 
+		   Double_t _sinsq_th12=0., Double_t _sinsq_th23=0., Double_t _sinsq_th13=0., 
+		   Double_t _dcp=-10., Double_t _dm21=0., Double_t _dm32=0.);
 void   SetToPDG(Bool_t NH, 
 		Double_t &sinsq_th12, Double_t &sinsq_th23, Double_t &sinsq_th13, 
 		Double_t &dcp, Double_t &dm21, Double_t &dm32, Double_t &dm31);
@@ -79,20 +79,30 @@ Double_t fKg_per_Mton = 1e9;                        //!< kg per MTon (MTon = 1e6
  *
  * \param  op_time       Operation time in years.
  * \param  output_name   Name of the file where histograms are written.
- * \param  NH            True - normal nu mass hierarchy, False - inverted nu mass hierarchy.
  * \param  nsamples      Number of samples per filling one bin (recommended > 10).
- *
+ * \param  NH            True - normal nu mass hierarchy, False - inverted nu mass hierarchy.
+ * \param UseMeff        If true, program will look for effective mass histograms in 
+ *                       NMHDIR/data/eff_mass to calculate detected number of events for detflux/
+ *                       directory. If one inputs the FluxChain output to GSGSampler, meff is not
+ *                       necessary.
+ * \param sinsq_th12   - \f$\sin^2\theta_{12}\f$ value. If 0., PDG value is used.
+ * \param sinsq_th23   - \f$\sin^2\theta_{23}\f$ value. If 0., PDG value is used.
+ * \param sinsq_th13   - \f$\sin^2\theta_{13}\f$ value. If 0., PDG value is used.
+ * \param dcp          - \f$\delta_{CP}\f$ value in \f$\pi\f$'s, as given by PDG group (e.g 1.38).
+ *                       If -10, PDG value is used.
+ * \param dm21         - \f$\Delta m^2_{21}\f$ value. If 0., PDG value is used.
+ * \param dm32         - \f$\Delta m^2_{32}\f$ value; this must be > 0 for NH and < 0 for IH.
+ *                       If 0., PDG value is used.
  */
 void FluxChain(Double_t op_time     = 3.,
 	       TString  output_name = "flux_chain_out.root",
 	       Int_t    nsamples    = 50,
 	       Bool_t   NH          = true,
 	       Bool_t   UseMeff     = false,
-	       Bool_t   PDGPars     = true,
 	       Double_t sinsq_th12  = 0., 
 	       Double_t sinsq_th23  = 0., 
 	       Double_t sinsq_th13  = 0., 
-	       Double_t dcp         = 0., 
+	       Double_t dcp         = -10., 
 	       Double_t dm21        = 0., 
 	       Double_t dm32        = 0.) {
 
@@ -100,7 +110,7 @@ void FluxChain(Double_t op_time     = 3.,
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
   
   InitClasses();
-  if ( !InitOscPars(PDGPars, NH, sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32) ) return;
+  if ( !InitOscPars(NH, sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32) ) return;
   InitHists();
   if ( UseMeff ) {
     if ( !ReadMeffHists() ) return;
@@ -140,7 +150,6 @@ void InitClasses() {
 /**
  *  Inline function to initialise osc parameters and give them to the osc calculator.
  *
- * \param UsePDG       - Use oscillation parameter values from PDG
  * \param NH           - true for normal hierarchy, false for inverted hierarchy
  * \param sinsq_th12   - \f$\sin^2\theta_{12}\f$ value
  * \param sinsq_th23   - \f$\sin^2\theta_{23}\f$ value
@@ -150,7 +159,7 @@ void InitClasses() {
  * \param dm32         - \f$\Delta m^2_{32}\f$ value; this must be > 0 for NH and < 0 for IH
  *
  */
-Bool_t InitOscPars(Bool_t UsePDG, Bool_t NH, 
+Bool_t InitOscPars(Bool_t NH, 
 		   Double_t _sinsq_th12 , Double_t _sinsq_th23, Double_t _sinsq_th13, 
 		   Double_t _dcp, Double_t _dm21, Double_t _dm32) {
 
@@ -158,23 +167,22 @@ Bool_t InitOscPars(Bool_t UsePDG, Bool_t NH,
 
   Double_t sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32, dm31;
   
-  if (UsePDG) SetToPDG(NH, sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32, dm31);
-  else {
-    sinsq_th12 = _sinsq_th12;
-    sinsq_th23 = _sinsq_th23;
-    sinsq_th13 = _sinsq_th13;
-    dcp        = _dcp;
-    dm21       = _dm21;
-    dm32       = _dm32;
-    dm31       = dm21 + dm32;
-  }
+  SetToPDG(NH, sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32, dm31);
 
-  if ( ( NH && (dm32 < 0) ) || ( !NH && (dm32 > 0) ) ) { 
+  // modify only these parameters for which value has been set
+  if (_sinsq_th12 != 0.) sinsq_th12 = _sinsq_th12;
+  if (_sinsq_th23 != 0.) sinsq_th23 = _sinsq_th23;
+  if (_sinsq_th13 != 0.) sinsq_th13 = _sinsq_th13;
+  if (_dcp  != -10.)     dcp        = _dcp;
+  if (_dm21 != 0.)       dm21       = _dm21;
+  if (_dm32 != 0.)       dm32       = _dm32;
+  if (_dm21 != 0. || _dm32 != 0.) dm31 = dm21 + dm32;
+
+  if ( ( NH && (_dm32 < 0) ) || ( !NH && (_dm32 > 0) ) ) { 
     cout << "ERROR! InitOscPars() wrong sign of dm32 " << dm32 << " for hierarchy (0=IH, 1=NH) " 
 	 << NH << ", should be dm32 > 0 for NH and dm32 < 0 for IH."<< endl;
     return false;
   }
-
 
   //------------------------------------------------
   // Pass to the oscillation probability calculator
