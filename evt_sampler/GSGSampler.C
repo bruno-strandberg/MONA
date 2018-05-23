@@ -43,13 +43,16 @@ using namespace GSGS;
  * \param flavor          neutrino flavor
  * \param is_cc           0 - neutral current, 1 - charged current
  * \param nsamples        Number of Monte-Carlo samples to be generated.
+ * \param memory_lim      If more RAM than memory_lim used to store data, trigger write-out
  * \param dbg_scale       Option to scale down the number of interacted events, 
  *                        such that the program can be run with a reduced nr of gSeaGen files
  *                        without getting errors related to not having enough Monte-Carlo events.
  */
 void GSGSampler(TString flux_chain_flist, 
 		TString gsg_flist, 
-		Int_t flavor, Int_t is_cc, Int_t nsamples = 1, Double_t dbg_scale = 1.) {
+		Int_t flavor, Int_t is_cc, Int_t nsamples = 1, 
+		Double_t memory_lim = 2,
+		Double_t dbg_scale = 1.) {
 
   // timers
   TStopwatch OverallTimer, DataReadTimer, DataWriteTimer, SamplerTimer;
@@ -65,10 +68,17 @@ void GSGSampler(TString flux_chain_flist,
   gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
 
   Bool_t initialized = false; //variable to control that init and gSeaGen reading is only done once
+  Double_t gsg_data_size = 0.;
 
   vector<TString> flux_files = NMHUtils::ReadLines(flux_chain_flist);
 
-  for (auto fc_file: flux_files) {
+  //------------------------------------------------------
+  // loop over flux files
+  //------------------------------------------------------
+
+  for (Int_t F = 0; F < flux_files.size(); F++) {
+
+    TString fc_file = flux_files[F];
 
     if ( !GetIntHists(fc_file, flavor, is_cc) ) {
       cout << "ERROR! GSGSampler() problem opening flux histograms from " << fc_file << endl;
@@ -80,7 +90,8 @@ void GSGSampler(TString flux_chain_flist,
       InitVars(flavor, is_cc);
 
       DataReadTimer.Start(kFALSE);
-      if ( !ReadGSGData(gsg_flist, flavor, is_cc) ) {
+      gsg_data_size = ReadGSGData(gsg_flist, flavor, is_cc);
+      if ( gsg_data_size == 0. ) {
 	cout << "ERROR! GSGSampler() problem reading gSeaGen files." << endl;
 	return;
       }
@@ -94,6 +105,10 @@ void GSGSampler(TString flux_chain_flist,
     fhInt_nu ->Scale(1e-6 * fVcan * fRhoSW * dbg_scale);
     fhInt_nub->Scale(1e-6 * fVcan * fRhoSW * dbg_scale);
 
+    //------------------------------------------------------
+    // loop over samples
+    //------------------------------------------------------
+    
     SamplerTimer.Start(kFALSE);
     for (Int_t N = 0; N < nsamples; N++) {
 
@@ -107,7 +122,7 @@ void GSGSampler(TString flux_chain_flist,
       Bool_t SampleOK_nu  = SampleEvents(fhInt_nu,  smeared_nu , fGSGEvts_nu , fSampleEvts_nu , 10);
       Bool_t SampleOK_nub = SampleEvents(fhInt_nub, smeared_nub, fGSGEvts_nub, fSampleEvts_nub, 10);
 
-      StoreForWriting( (SampleOK_nu && SampleOK_nub), smeared_nu, smeared_nub);
+      StoreForWriting( (SampleOK_nu && SampleOK_nub), smeared_nu, smeared_nub, F, N);
 
       if (smeared_nu) delete smeared_nu;
       if (smeared_nub) delete smeared_nub;
@@ -115,11 +130,21 @@ void GSGSampler(TString flux_chain_flist,
     } //end loop over samples
     SamplerTimer.Stop();
 
-  } // end loop over flux files
+    // calculate the RAM used by gsg_data and sample_data; write out data if
+    // too much ram in use or last flux file has been sampled
 
-  DataWriteTimer.Start(kFALSE);
-  WriteToFiles(flavor, is_cc, nsamples);
-  DataWriteTimer.Stop();
+    Double_t sample_data_size = 0.;
+    for (auto E: fExps) { sample_data_size += E.size() * sizeof(evtid); }
+    cout << "NOTICE GSGSampler() RAM under data: " << sample_data_size/1e9 + gsg_data_size << endl;
+
+    if ( ( (sample_data_size/1e9 + gsg_data_size) > memory_lim ) || 
+	 ( F == Int_t( flux_files.size()-1 ) ) ) {
+      DataWriteTimer.Start(kFALSE);
+      WriteToFiles(flavor, is_cc);
+      DataWriteTimer.Stop();
+    }
+
+  } // end loop over flux files
 
   CleanUp();
   
@@ -278,16 +303,29 @@ void GSGS::InitVars(Int_t flavor, Int_t is_cc) {
  * \param gsg_file_list  list of gSeaGen files
  * \param flavor         nu flavor
  * \param is_cc          0 - NC, 1 -CC
- * \return               True if reading successful
+ * \return               Size of data in RAM if reading successful, 0. if unsuccessful
  *
 */
-Bool_t GSGS::ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
+Double_t GSGS::ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
 
   cout << "NOTICE ReadGSGData() started reading GSG data" << endl;
 
+  Double_t gsg_data_size = 0.;
   vector<TString> fnames = NMHUtils::ReadLines(gsg_file_list);
 
-  // loop over file names
+  // create a hash from the input gsg filenames; if a cache for this input has
+  // been created, read data from cache instead of from GSGfiles
+
+  std::string hash_str = "";
+  for (auto f: fnames) hash_str += (std::string)f;
+  TString hash       = (TString)to_string( std::hash<std::string>{}(hash_str) );
+  TString cache_name = "cache/" + hash + "_" + fFlavs[flavor] + "_" + fInts[is_cc] + ".root";
+  if ( NMHUtils::FileExists(cache_name) ) {
+    gsg_data_size = ReadFromCache(cache_name);
+    return gsg_data_size;
+  }
+
+  // no cache --> loop over file names and read data from GSG files
 
   for (auto fname: fnames) {
 
@@ -310,14 +348,14 @@ Bool_t GSGS::ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
     else if ( fVcan != gp.fVcan) {
       cout << "ERROR! ReadGSGData() detector can change from  " << fVcan << " to " << gp.fVcan
     	   << ", exiting." << endl;
-      return false;
+      return 0.;
     }
 
     if (fRhoSW == 0.) fRhoSW = gp.fRho_seawater;
     else if ( fRhoSW != gp.fRho_seawater) {
       cout << "ERROR! ReadGSGData() sea water density change from  " << fRhoSW
 	   << " to " << gp.fRho_seawater << ", exiting." << endl;
-      return false;
+      return 0.;
     }
 
     // check that the corresponding summary file exists
@@ -351,15 +389,152 @@ Bool_t GSGS::ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
       	fGSGEvts_nub[xbin][ybin].push_back( evtid(gp.fRunNr, gp.iEvt, gp.fE_min) );
       }
 
+      gsg_data_size += sizeof(evtid);
+
     } // end loop over events
     
   } //end loop over files
   
-  cout << "NOTICE ReadGSGData() finished reading GSG data" << endl;
-  return true;
+  cout << "NOTICE ReadGSGData() finished reading GSG data, " 
+       << gsg_data_size/1e9 << " gb of RAM used." << endl;
+
+  CacheGSGdata(cache_name);
+
+  return gsg_data_size/1e9;
 
 }
 
+//*****************************************************************
+
+/**
+ * Dev: inline function to write the evtid data to a root tree for faster access than from GSGfiles.
+ */
+void GSGS::CacheGSGdata(TString fname) {
+
+  if ( NMHUtils::FileExists(fname) ) {
+    cout << "NOTICE CacheGSGdata() file " << fname << " exists, not overwriting." << endl;
+    return;
+  }
+
+  Double_t run_nr, evt_nr, e_min, is_nub, en_bin, ct_bin;
+
+  TFile *fout = new TFile(fname, "RECREATE");
+  TTree *tout = new TTree("gsgcache", "Tree with evtid");
+  tout->Branch("run_nr" ,  &run_nr, "run_nr/D");
+  tout->Branch("evt_nr" ,  &evt_nr, "evt_nr/D");
+  tout->Branch("e_min"  ,   &e_min,  "e_min/D");
+  tout->Branch("is_nub" ,  &is_nub, "is_nub/D");
+  tout->Branch("en_bin" ,  &en_bin, "en_bin/D");
+  tout->Branch("ct_bin" ,  &ct_bin, "ct_bin/D");
+
+  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
+    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
+
+      en_bin = ebin;
+      ct_bin = ctbin;
+
+      is_nub = 0.;
+      for (auto evt: fGSGEvts_nu[ebin][ctbin]) {
+	run_nr = evt.run_nr;
+	evt_nr = evt.evt_nr;
+	e_min  = evt.e_min;
+	tout->Fill();
+      }
+
+      is_nub = 1.;
+      for (auto evt: fGSGEvts_nub[ebin][ctbin]) {
+	run_nr = evt.run_nr;
+	evt_nr = evt.evt_nr;
+	e_min  = evt.e_min;
+	tout->Fill();
+      }
+
+    }
+  }
+  
+  TH1D h("can_and_rho","can_and_rho", 5, 0, 5);
+  h.SetBinContent(1, fVcan);
+  h.GetXaxis()->SetBinLabel(1, "Vcan");
+  h.SetBinContent(2, fRhoSW);
+  h.GetXaxis()->SetBinLabel(2, "RhoSW");
+
+  tout->Write();
+  h.Write();
+  fout->Close();
+  delete fout;
+
+}
+
+//*****************************************************************
+
+/**
+ * Dev: function to read data from cache
+ */
+Double_t GSGS::ReadFromCache(TString fname) {
+
+  Double_t gsg_data_size = 0.;
+
+  //-------------------------------------------------------------
+  // open file and get the tree and the histogram
+  //-------------------------------------------------------------
+  TFile *f = new TFile(fname, "READ");
+
+  if ( !f->IsOpen() ) {
+    cout << "ERROR! ReadFromCache() could open file " << fname  << endl;
+    return 0.;
+  }
+
+  TH1D  *h = (TH1D*)f->Get("can_and_rho");
+  TTree *t = (TTree*)f->Get("gsgcache");
+
+  if (t == NULL || h == NULL) {
+    cout << "ERROR! ReadFromCache() could not find data in file " << fname  << endl;
+    return 0.;
+  }
+
+  fVcan  = h->GetBinContent(1);
+  fRhoSW = h->GetBinContent(2);
+
+  Double_t run_nr, evt_nr, e_min, is_nub, en_bin, ct_bin;
+
+  t->SetBranchAddress("run_nr" ,  &run_nr);
+  t->SetBranchAddress("evt_nr" ,  &evt_nr);
+  t->SetBranchAddress("e_min"  ,   &e_min);
+  t->SetBranchAddress("is_nub" ,  &is_nub);
+  t->SetBranchAddress("en_bin" ,  &en_bin);
+  t->SetBranchAddress("ct_bin" ,  &ct_bin);
+
+  //-------------------------------------------------------------
+  // loop over the tree and write the data to vectors
+  //-------------------------------------------------------------
+
+  for (Int_t i = 0; i < t->GetEntries(); i++) {
+
+    t->GetEntry(i);
+
+    if (is_nub < 0.5)  {
+      fhGSG_nu->SetBinContent(en_bin, ct_bin, fhGSG_nu->GetBinContent(en_bin, ct_bin) + 1 );
+      fGSGEvts_nu[(Int_t)en_bin][(Int_t)ct_bin].push_back( evtid(run_nr, evt_nr, e_min) );
+    }
+    else {
+      fhGSG_nub->SetBinContent(en_bin, ct_bin, fhGSG_nub->GetBinContent(en_bin, ct_bin) + 1 );
+      fGSGEvts_nub[(Int_t)en_bin][(Int_t)ct_bin].push_back( evtid(run_nr, evt_nr, e_min) );
+    }
+
+    gsg_data_size += sizeof(evtid);
+
+  }
+
+  f->Close();
+  delete f;
+
+  cout << "NOTICE ReadFromCache() finished reading GSG data, " 
+       << gsg_data_size/1e9 << " gb of RAM used." << endl;
+
+  return gsg_data_size/1e9;
+
+}
+ 
 //*****************************************************************
 
 /**
@@ -465,13 +640,16 @@ Bool_t GSGS::SampleEvents(TH2D *h_expected, TH2D *h_smeared,
  * \param SampleOK     Boolean to indicate whether the sample in fSampleEvts_nu(b) is OK.
  * \param smeared_nu   Pointer to 2D histogram with a Poisson-smeared interaction counts in E,ct bins
  * \param smeared_nub  Pointer to 2D histogram with a Poisson-smeared interaction counts in E,ct bins
+ * \param F            Index of the flux file in the flux file list
+ * \param N            Index of the sample
  *
  */
-void GSGS::StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub) {
+void GSGS::StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub, Int_t F, Int_t N) {
   
-  // create a new vector for this experiment
+  // create a new vector for this experiment; vector for hists of this experiment; name of experiment
   fExps.push_back( vector<evtid>() );
   fExpHists.push_back( vector<TH2D*>() );
+  fExpNames.push_back( "flux" + (TString)to_string(F) + "_sample" + (TString)to_string(N) );
 
   // store the histograms
   fExpHists.back().push_back( (TH2D*)fhInt_nu   ->Clone() );
@@ -505,10 +683,9 @@ void GSGS::StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub)
  *
  * \param flavor  nu flavor
  * \param is_cc   0 - nc, 1 - cc
- * \param Ns      Number of samples per flux file
  *
  */
-void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc, Int_t Ns) {
+void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
 
   cout << "NOTICE WriteToFiles() writing out sampled data" << endl;
 
@@ -529,14 +706,8 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc, Int_t Ns) {
 
   for (Int_t N = 0; N < (Int_t)fExps.size(); N++) {
 
-    Int_t f_idx = N / Ns;          // flux file index
-    Int_t s_idx = N - f_idx * Ns;  // sample index
-
-    TString suffix = "_flux" + (TString)to_string(f_idx) + 
-      "_sample" + (TString)to_string(s_idx) + ".root";
-
-    TString out_name = "output/EvtSample_" + fFlavs[flavor] + "-CC" + suffix;
-    if (is_cc == 0) out_name = "output/EvtSample_allflavs-NC" + suffix;
+    TString out_name = "output/EvtSample_" + fFlavs[flavor] + "-CC_" + fExpNames[N] + ".root";
+    if (is_cc == 0) out_name = "output/EvtSample_allflavs-NC_" + fExpNames[N] + ".root";
 
     files.push_back( new TFile(out_name, "RECREATE") );            //create file
     trees.push_back( sp.fChain->CloneTree(0) );                    //add empty tree
@@ -583,7 +754,7 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc, Int_t Ns) {
 
   } //end loop over summary events
 
-  // write trees and hists; close the files; remove files where sampling failed
+  // write trees and hists; close the files; remove files where sampling failed; reset fExp.. vecs
   
   for (Int_t N = 0; N < (Int_t)fExps.size(); N++) {
 
@@ -606,6 +777,10 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc, Int_t Ns) {
     }
 
   }
+
+  fExps.clear();
+  fExpHists.clear();
+  fExpNames.clear();
 
 }
 

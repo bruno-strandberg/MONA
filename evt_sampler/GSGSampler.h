@@ -13,16 +13,18 @@ namespace GSGS {
   //*****************************************************************
   // functions
   //*****************************************************************
-  Bool_t  GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc);
-  void    InitVars(Int_t flavor, Int_t is_cc);
-  void    CleanUp();
-  Bool_t  ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc);
-  Bool_t  SampleEvents(TH2D *h_expected, TH2D *h_smeared,
-	  	      vector<evtid> **store, vector<evtid> **sample,
-	  	      Int_t low_sample_lim);
-  void    StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub);
-  void    WriteToFiles(Int_t flavor, Int_t is_cc, Int_t Ns);
-  TString GetSummaryName(Int_t flavor, Int_t is_cc, Int_t emin, Int_t emax, Int_t runnr);
+  Bool_t   GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc);
+  void     InitVars(Int_t flavor, Int_t is_cc);
+  void     CleanUp();
+  Double_t ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc);
+  void     CacheGSGdata(TString fname);
+  Double_t ReadFromCache(TString fname);
+  Bool_t   SampleEvents(TH2D *h_expected, TH2D *h_smeared,
+			vector<evtid> **store, vector<evtid> **sample,
+			Int_t low_sample_lim);
+  void     StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub, Int_t F, Int_t N);
+  void     WriteToFiles(Int_t flavor, Int_t is_cc);
+  TString  GetSummaryName(Int_t flavor, Int_t is_cc, Int_t emin, Int_t emax, Int_t runnr);
 
   //*****************************************************************
   // globally used variables in this script
@@ -49,6 +51,8 @@ namespace GSGS {
   vector< vector<evtid> > fExps;
   //! vector of vectors; each vector fExpHists[N] contains pointers to hists associated with fExps[N]
   vector< vector<TH2D*> > fExpHists;
+  //! vector of strings; each string contains the flux file and sample index of an experiment
+  vector< TString > fExpNames;
 
   //! map of flavor numbers and strings
   map < Int_t, TString > fFlavs  = { {0, "elec" },
