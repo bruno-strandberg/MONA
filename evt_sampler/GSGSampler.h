@@ -148,10 +148,26 @@ namespace GSGS {
 
   };
 
+  /**
+   * Function to compare two evtid's without taking evt_nr into account.
+   *
+   * This function is used in get_start_stop to binary_search for a vector range.
+   *
+   * \param lhs   evtid object left-hand-side
+   * \param rhs   evtid object right-hand-side
+   * \return      True if lhs < rhs, False otherwise
+   */
+  bool comp(const evtid &lhs, const evtid &rhs) {
+
+    if      ( lhs.run_nr < rhs.run_nr )  { return true; }
+    else if ( lhs.run_nr == rhs.run_nr ) { return ( lhs.e_min < rhs.e_min ); }
+    else                                 { return false; }
+
+  }
+
   /** 
    * Function to find the first and last index of the elements that correspond to the same gSeaGen
    * file in a sorted vector of evtid's.
-   * .
    *
    * \param evts    Sorted vector of evtid's.
    * \param _run_nr gSeaGen run number.
@@ -163,23 +179,11 @@ namespace GSGS {
    */
   std::pair<Int_t, Int_t> get_start_stop(vector<evtid> evts, Int_t _run_nr, Int_t _e_min) {
 
-    Int_t start = evts.size();
-    Int_t stop  = evts.size();
+    evtid evt(_run_nr, 0, _e_min);
 
-    for (Int_t i = 0; i < (Int_t)evts.size(); i++) {
-
-      if (evts[i].run_nr == _run_nr && evts[i].e_min == _e_min) {
-
-	start = i;
-	stop  = start;
-
-	while ( evts[stop].run_nr == _run_nr && evts[stop].e_min == _e_min ) stop++;
-
-	break;
-
-      }
-
-    } //end for
+    // see http://www.cplusplus.com/reference/algorithm/lower_bound
+    Int_t start = ( std::lower_bound(evts.begin(), evts.end(), evt, GSGS::comp) - evts.begin() );
+    Int_t stop  = ( std::upper_bound(evts.begin(), evts.end(), evt, GSGS::comp) - evts.begin() );
 
     return std::make_pair(start, stop);
 

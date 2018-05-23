@@ -76,7 +76,7 @@ void GSGSampler(TString flux_chain_flist,
   // loop over flux files
   //------------------------------------------------------
 
-  for (Int_t F = 0; F < flux_files.size(); F++) {
+  for (Int_t F = 0; F < (Int_t)flux_files.size(); F++) {
 
     TString fc_file = flux_files[F];
 
@@ -318,8 +318,10 @@ Double_t GSGS::ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
 
   std::string hash_str = "";
   for (auto f: fnames) hash_str += (std::string)f;
+
   TString hash       = (TString)to_string( std::hash<std::string>{}(hash_str) );
   TString cache_name = "cache/" + hash + "_" + fFlavs[flavor] + "_" + fInts[is_cc] + ".root";
+
   if ( NMHUtils::FileExists(cache_name) ) {
     gsg_data_size = ReadFromCache(cache_name);
     return gsg_data_size;
@@ -407,7 +409,8 @@ Double_t GSGS::ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
 //*****************************************************************
 
 /**
- * Dev: inline function to write the evtid data to a root tree for faster access than from GSGfiles.
+ * Function to cache GSG data to vectors.
+ *\param fname  Name of the root file where data is written.
  */
 void GSGS::CacheGSGdata(TString fname) {
 
@@ -468,7 +471,10 @@ void GSGS::CacheGSGdata(TString fname) {
 //*****************************************************************
 
 /**
- * Dev: function to read data from cache
+ * Function to read cached gSeaGen data to program.
+ *
+ * \param fname  Name of the file where the data is stored
+ * \return       Size of the data in RAM if successful, 0. if read-in failed
  */
 Double_t GSGS::ReadFromCache(TString fname) {
 
@@ -505,7 +511,7 @@ Double_t GSGS::ReadFromCache(TString fname) {
   t->SetBranchAddress("ct_bin" ,  &ct_bin);
 
   //-------------------------------------------------------------
-  // loop over the tree and write the data to vectors
+  // loop over the tree and store the data to vectors
   //-------------------------------------------------------------
 
   for (Int_t i = 0; i < t->GetEntries(); i++) {
@@ -712,7 +718,6 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
     files.push_back( new TFile(out_name, "RECREATE") );            //create file
     trees.push_back( sp.fChain->CloneTree(0) );                    //add empty tree
     search_lims.push_back( std::make_pair( 0, fExps[N].size() ) ); //by default search in full range 
-  
   }
 
   // loop over summary events
@@ -743,10 +748,10 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
     // relevant file
 
     for (Int_t N = 0; N < (Int_t)fExps.size(); N++) {
-      
-      if ( std::find( fExps[N].begin() + search_lims[N].first, 
-		      fExps[N].begin() + search_lims[N].second, 
-		      this_evt ) != ( fExps[N].begin() + search_lims[N].second ) ) {
+
+      if ( std::binary_search( fExps[N].begin() + search_lims[N].first, 
+			       fExps[N].begin() + search_lims[N].second, 
+			       this_evt ) ) {
 	trees[N]->Fill();
       }
 
