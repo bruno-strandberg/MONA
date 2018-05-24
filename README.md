@@ -6,6 +6,7 @@ Prerequisities
 ==============
 * ROOT 6
 * To use GSGParser to parse gSeaGen files in .evt format, one also requires Jpp and aanet root6 branch.
+* Python scripts will require docopt package
 
 More info
 =========
@@ -45,14 +46,16 @@ For improvements
 
 * For both NuXsec and AtmFlux I foresee an option to add a scaler graph. The scaler graph can be initiated from a function or from a graph. It should provide a simple way to to scale/skew the crossection/flux.
 
+* GSGSampler.C should output trees with GSG event IDs. These trees should be fed to a different application, that reads in the summary data and GSG samples and identifies events that made it to the end of the chain. In such a way you could disentangle the problem associated with the changing summary file format.
+
+* You should make a separate application that cache's the gSeaGen data.
+
 To-do, ideas
 ------------
 
 * You could try to estimate the effective mass from the effective area, in which case you won't need to parse the gSeaGen files.
 
 * Once the event weight calculation is in place, it might be the time to give another thought to the data format. It may be smart to have a way to attach the weight to the summary files? Needs thought, data sorting-->effective mass-->event weight-->data sorting may not be ideal.
-
-* SummaryParser should have a TChain instead of TTree to allow attaching several files.
 
 * It may be an idea that SummaryParser uses some event class instead of a flat tree. Needs thought, though.
 
@@ -68,3 +71,5 @@ Done
 * allow compilation without aanet/jpp
 
 * the test tests/flux_check_inpol.py illustrates that the interpolation works nicely in cosz and energy directions, no reason to put energy on log scale.
+
+* SummaryParser should have a TChain instead of TTree to allow attaching several files.

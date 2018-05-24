@@ -44,6 +44,7 @@ using namespace GSGS;
  * \param is_cc           0 - neutral current, 1 - charged current
  * \param nsamples        Number of Monte-Carlo samples to be generated.
  * \param memory_lim      If more RAM than memory_lim used to store data, trigger write-out
+ * \param exp_lim         If more experiments than exp_lim in memory, trigger write-out
  * \param dbg_scale       Option to scale down the number of interacted events, 
  *                        such that the program can be run with a reduced nr of gSeaGen files
  *                        without getting errors related to not having enough Monte-Carlo events.
@@ -52,7 +53,8 @@ void GSGSampler(TString flux_chain_flist,
 		TString gsg_flist, 
 		Int_t flavor, Int_t is_cc, Int_t nsamples = 1, 
 		Double_t memory_lim = 2,
-		Double_t dbg_scale = 1.) {
+		Double_t exp_lim    = 10,
+		Double_t dbg_scale  = 1.) {
 
   // timers
   TStopwatch OverallTimer, DataReadTimer, DataWriteTimer, SamplerTimer;
@@ -131,14 +133,14 @@ void GSGSampler(TString flux_chain_flist,
     SamplerTimer.Stop();
 
     // calculate the RAM used by gsg_data and sample_data; write out data if
-    // too much ram in use or last flux file has been sampled
+    // too much ram in use or too many experiments in memory or last flux file has been sampled
 
     Double_t sample_data_size = 0.;
     for (auto E: fExps) { sample_data_size += E.size() * sizeof(evtid); }
     cout << "NOTICE GSGSampler() RAM under data: " << sample_data_size/1e9 + gsg_data_size << endl;
 
     if ( ( (sample_data_size/1e9 + gsg_data_size) > memory_lim ) || 
-	 ( F == Int_t( flux_files.size()-1 ) ) ) {
+	 ( (Double_t)fExps.size() > exp_lim ) || ( F == Int_t( flux_files.size()-1 ) ) ) {
       DataWriteTimer.Start(kFALSE);
       WriteToFiles(flavor, is_cc);
       DataWriteTimer.Stop();

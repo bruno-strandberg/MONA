@@ -59,7 +59,9 @@ def main(args):
             cmd += '"' + gsg_flist + '", '       # gseagen file list
             cmd += str(int(f)) + ", "            # neutrino flavor
             cmd += str(int(i)) + ", "            # neutrino interaction
-            cmd += str(int(args['-n']))          # number of samples per flux file
+            cmd += str(int(args['-n'])) + ", "   # number of samples per flux file
+            cmd += str(2) + ", "      # not more than 2GB of RAM used for data storage simultaneously
+            cmd += str(10)            # not more than 10 experiments simultaneously in RAM
             cmd += ")'"
 
             # create a bash script than can be sent to farm
@@ -74,9 +76,11 @@ def main(args):
 
             script_file.close()
 
-            farm_cmd = "qsub -P P_km3net -l sps=1 -o {0} -e {0} {1}".format(cwd+"/tmp", script_name)
+            # request 16gb of virtual memory, max 5 hours
+            farm_cmd = "qsub -P P_km3net -l sps=1 -l vmem=16G -l ct=5:00:00 -o {0} -e {0} {1}".format(cwd+"/tmp", script_name)
             if args['--execute']:
                 os.system(farm_cmd)
+
 #===========================================================================
 
 if __name__ == "__main__":
