@@ -610,7 +610,7 @@ Bool_t GSGS::SampleEvents(TH2D *h_expected, TH2D *h_smeared,
       Int_t counter = 0;
       Int_t limit   = 1e8;
       
-      while ( sample[xbin][ybin].size() != smeared ) {
+      while ( sample[xbin][ybin].size() != (UInt_t)smeared ) {
 
 	// random event index in store
 	Int_t idx = fRand->Integer( store[xbin][ybin].size() );

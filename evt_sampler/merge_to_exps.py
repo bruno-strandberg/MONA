@@ -34,7 +34,7 @@ merge_log = open('output/merge_log.dat', 'w')
 
 for i, flux_f in enumerate(flux_files):
     
-    # get GSG outputs associated with this flux file
+    # get GSG Sampler outputs associated with this flux file
     search_str = "_flux{}_".format( i )
     sf_subset = [sf for sf in sampler_files if search_str in sf ]
 
@@ -67,7 +67,7 @@ for i, flux_f in enumerate(flux_files):
 
     # determine hierarchy
     mh = "NH"
-    if ("IH" in flux_f): mh = "IH"
+    if ("NH0" in flux_f): mh = "IH"
 
     # create hadd commands, store info to log
     merge_log.write('#====================================================================\n')

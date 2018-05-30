@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This script can be used to call the FluxChain.C macro several times with different (random) oscillation parameter settings. For a single call of FluxChain.C use the root prompt.
+This script can be used to call the FluxChain.C macro several times with different (random) oscillation parameter settings. If nothing but the IDSTR is specified, the macro will call FluxChain.C twice, once with NH, once with IH, with all OscPars at central values. For a single call of FluxChain.C use the root prompt.
  
 Usage:
     flux_caller [-n NR_OF_CONFS] [-p PAR] [-s STEP] [-y YEARS] -i IDSTR
@@ -58,6 +58,15 @@ class osc_p():
         else:
             self.max_IH = _max_NH
 
+    def get_val(self, NH):
+        """
+        Function to return value, depending on hierarchy.
+        """
+        if (NH):
+            return self.val_NH
+        else:
+            return self.val_IH
+
     def get_random_gaus(self, NH):
         """
         Function to get a random value of the parameter following a gaussian density
@@ -107,25 +116,44 @@ def main(args):
     # command list to be executed; logfile where configurations are written
     cmds = []
     outputs = []
-    logfile = open('output/{}_log.dat'.format(args['-i']),'w')
+    logfile = open('output/{}_fluxcaller_log.dat'.format(args['-i']),'w')
 
     # no parameter scanning asked, generate random samples
     if (args['-p'] == None):
-        
-        # create n samples
-        for n in range( 0, int(args['-n']) ):
-            
-            # each sample creates hists with normal and inverted hierarchy
-            for NH in [False, True]:
-                
-                outname = "output/{0}_sample{1}_NH{2}.root".format(args['-i'], n, int(NH))
-                sinsq12 = op['sinsq_th12'].get_random_flat(NH)
-                sinsq23 = op['sinsq_th23'].get_random_flat(NH)
-                sinsq13 = op['sinsq_th13'].get_random_flat(NH)
-                dcp = op['dcp'].get_random_flat(NH)
-                dm21 = op['dm21'].get_random_flat(NH)
-                dm32 = op['dm32'].get_random_flat(NH)
 
+        # if -n specified create n samples        
+        if args['-n'] != None:
+
+            for n in range( 0, int(args['-n']) ):
+                
+                # each sample creates hists with normal and inverted hierarchy
+                for NH in [False, True]:
+                    
+                    outname = "output/{0}_sample{1}_NH{2}.root".format(args['-i'], n, int(NH))
+                    sinsq12 = op['sinsq_th12'].get_random_flat(NH)
+                    sinsq23 = op['sinsq_th23'].get_random_flat(NH)
+                    sinsq13 = op['sinsq_th13'].get_random_flat(NH)
+                    dcp = op['dcp'].get_random_flat(NH)
+                    dm21 = op['dm21'].get_random_flat(NH)
+                    dm32 = op['dm32'].get_random_flat(NH)
+            
+                    cmd = get_fluxchain_cmd(args['-y'], outname, NH, sinsq12, sinsq23, sinsq13,
+                                            dcp, dm21, dm32)
+                    vars_to_log(logfile, cmd, sinsq12, sinsq23, sinsq13, dcp, dm21, dm32)
+                    cmds.append(cmd)
+                    outputs.append(outname)
+
+        # -n not specified, create FluxChain outputs with one normal, one inverted hierarchy
+        else:
+            for NH in [False, True]:
+                outname = "output/{0}_sample{1}_NH{2}.root".format(args['-i'], 0, int(NH))
+                sinsq12 = op['sinsq_th12'].get_val(NH)
+                sinsq23 = op['sinsq_th23'].get_val(NH)
+                sinsq13 = op['sinsq_th13'].get_val(NH)
+                dcp = op['dcp'].get_val(NH)
+                dm21 = op['dm21'].get_val(NH)
+                dm32 = op['dm32'].get_val(NH)
+            
                 cmd = get_fluxchain_cmd(args['-y'], outname, NH, sinsq12, sinsq23, sinsq13,
                                         dcp, dm21, dm32)
                 vars_to_log(logfile, cmd, sinsq12, sinsq23, sinsq13, dcp, dm21, dm32)
