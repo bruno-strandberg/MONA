@@ -2,6 +2,7 @@
 #include "TSystem.h"
 #include "TH2.h"
 #include "TRandom3.h"
+#include "TMath.h"
 
 //*****************************************************************
 // functions
@@ -249,7 +250,10 @@ void InitVars(Int_t flavor, Int_t is_cc) {
  *
  */
 void ReadSummaryData(Int_t flavor, Int_t is_cc) {
-  
+
+  // events outside the can should not be used, as effective mass ignores them as well
+  cout << "DEBUG: Need to ignore events outside the can. The volume size should be written to effmass output and fetched from there." << endl;
+
   TString fnames    = "$NMHDIR/data/mc_end/data_atmnu/summary_" + fFlavs[flavor] + "-CC*.root";
   if (is_cc == 0) fnames = "$NMHDIR/data/mc_end/data_atmnu/summary_elec-NC*.root"; 
   
@@ -261,9 +265,6 @@ void ReadSummaryData(Int_t flavor, Int_t is_cc) {
   for (Int_t evt = 0; evt < fSp->fChain->GetEntries(); evt++ ) {
 
     fSp->fChain->GetEntry(evt);
-
-    // events outside the can should not be used, as effective mass ignores them as well
-    cout << "DEBUG: Need to ignore events outside the can. The volume size should be written to effmass output and fetched from there." << endl;
     
     Double_t energy =  fSp->MC_energy;
     Double_t ct     = -fSp->MC_dir_z ;
@@ -351,7 +352,7 @@ Bool_t SampleEvents(TH2D *h_expected, TH2D *h_smeared,
       Int_t counter = 0;
       Int_t limit   = 1e4;
       
-      while ( sample[xbin][ybin].size() != smeared ) {
+      while ( sample[xbin][ybin].size() != (UInt_t)smeared ) {
 
 	// random event index in store
 	Int_t idx = fRand->Integer( store[xbin][ybin].size() );
