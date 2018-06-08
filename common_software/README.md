@@ -7,6 +7,7 @@ This directory has some generic classes that are used by other scripts in the NM
 * GSGParser     - to parse gSeaGen files, either in .root or .evt format,
 * NuXsec        - a class to get the neutrino interaction cross-section in water,
 * AtmFlux       - a class to get the atmospheric neutrino flux.
+* FileHeader    - a class to create simple headers for ROOT files
 
 Prerequisities
 ==============

@@ -14,3 +14,5 @@ Test scripts
 * data_sorting.py     - script to check that data_sorting/ scripts worked properly.
 
 * evtid_functionality.C - script to check the find and sort algorithms used in evt_sampler/GSGSampler.C
+
+* fileheader.C        - a script to check/demostrate FileHeader functionality.
