@@ -37,6 +37,7 @@ class FileHeader {
 
   void ReadHeader(TString filename);
   void WriteHeader(TFile *f);
+  void AddToFile(TString filename);
   void Print();
 
  private:
@@ -46,8 +47,6 @@ class FileHeader {
   TString fHeaderDir;
   /// Delimiter (hardcoded to '__' in constructor)
   TString fDelim;
-  /// vector of TNamed objects that are written to file when WriteHeader() is called
-  std::vector<TNamed> fList;
  //!< map of parameters for function GetParameter
   std::map< TString, std::map<TString, TString> > fPars;
 

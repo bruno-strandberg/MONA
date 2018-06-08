@@ -39,15 +39,25 @@ void fileheader() {
   cout << "==================Finished==================================" << endl;
   cout << b.GetParameter("fileheader", "sinsq_12") << endl;
 
-  // recreate the file and do one final read-in, read-out
+  // recreate the file and do one more read-in, read-out
   TFile fh2("fileheader.root","RECREATE");
   b.WriteHeader(&fh2);
   fh2.Close();
 
   FileHeader c("fileheader");
   c.ReadHeader("fileheader.root");
-  cout << "==================Printing header c after===================" << endl;
+  cout << "==================Printing header c after read-in===========" << endl;
   c.Print();
   cout << "==================Finished==================================" << endl;
+
+  FileHeader d("replaced");
+  d.AddParameter("NewPar", "69");
+  d.AddToFile("fileheader.root");
+
+  FileHeader e("readreplaced");
+  e.ReadHeader("fileheader.root");
+  cout << "==================Printing replaced header==================" << endl;
+  e.Print();
+  cout << "==================Finished==================================" << endl;  
 
 }

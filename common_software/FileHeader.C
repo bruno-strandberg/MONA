@@ -39,9 +39,6 @@ void FileHeader::Print() {
     }
   }
 
-  cout << "List of TNamed objects: " << endl;
-  for (auto &o: fList) cout << "\t" << o.GetName() << endl;
-
 }
 
 //************************************************************************************
@@ -58,8 +55,6 @@ void FileHeader::AddParameter(TString parameter_name, TString parameter_value) {
   CheckName(parameter_value);
 
   fPars[fAppName].insert( std::make_pair(parameter_name, parameter_value) );
-  TString datastr = fAppName + fDelim + parameter_name + fDelim + parameter_value;
-  fList.push_back( TNamed(datastr, (TString)"header field") );
   
 }
 
@@ -93,7 +88,7 @@ TString FileHeader::GetParameter(TString application_name, TString parameter_nam
 //************************************************************************************
 
 /**
- * Function to write the header to a root file (TFile).
+ * Function to write the header to an open root file (TFile).
  * Example: TFile fout("test.root","RECREATE"); fh.WriteHeader(&fout); fh.Close();
  * \param f Pointer to the opened root file where header should be written.
  */
@@ -103,11 +98,42 @@ void FileHeader::WriteHeader(TFile *f) {
     throw std::invalid_argument( "ERROR! FileHeader::Write() null pointer to the file where header to be written." );
   }
 
+  vector<TNamed> list;
+  for (auto &app: fPars) {
+    for (auto &par: app.second) {
+      TString datastr = app.first + fDelim + par.first + fDelim + par.second;
+      list.push_back( TNamed(datastr, (TString)"header field") );
+    }
+  }
+
   TDirectory *d = f->mkdir(fHeaderDir);
   d->cd();
-  for (auto &l: fList) l.Write();
+  for (auto &l: list) l.Write();
   d->cd();
 
+}
+
+//************************************************************************************
+
+/**
+ * Function to add the header to an existing root file; if the file already contains a header, 
+ * it is replaced.
+ *
+ * \param filename Name of the file where the header is written.
+ */
+void FileHeader::AddToFile(TString filename) {
+
+  TFile f(filename, "update");
+
+  // if previous header exists, delete it
+  if ( f.Get(fHeaderDir) != NULL ) {
+    f.Delete( fHeaderDir + TString(";*") );
+  }
+
+  // write this header to the file
+  WriteHeader(&f);
+  f.Close();
+    
 }
 
 //************************************************************************************
@@ -137,8 +163,6 @@ void FileHeader::ReadHeader(TString filename) {
   for (auto x: *l) {
     TNamed *hf = (TNamed*)d->Get( x->GetName() );
     auto data = SplitDataStr( hf->GetName() );
-
-    fList.push_back( *( (TNamed*)hf->Clone() ) );
     fPars[data.first].insert( std::make_pair(data.second.first, data.second.second) );    
   }
   
