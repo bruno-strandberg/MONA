@@ -260,6 +260,10 @@ void FileHeader::CheckName(TString name) {
     throw std::invalid_argument( "ERROR! FileHeader::CheckName() character combination '" + (string)fDelim + "' is reserved as a delimiter, change " + (string)name );
   }
 
+  if ( name.Length() > (Int_t)fLineLength) {
+    throw std::invalid_argument( "ERROR! FileHeader::CheckName() name '" + (string)name + "' is longer than the maximum line length of " + to_string(fLineLength) );
+  }
+
 }
 
 //************************************************************************************
