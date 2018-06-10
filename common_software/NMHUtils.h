@@ -81,6 +81,7 @@ namespace NMHUtils {
    *  Function to check whether file exists.
    * \param filename Path to the file
    * \param size     File size in MB; If specified, check that file is larger than size (default: 0)
+   * \return False if file does not exist or is smaller than size; True otherwise.
    */
   Bool_t FileExists(TString filename, Double_t size = 0) {
     

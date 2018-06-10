@@ -13,6 +13,7 @@ void fileheader() {
   FileHeader a("fileheader");
   a.AddParameter( "sinsq_12", (TString)to_string(0.297) );
   a.AddParameter( "sinsq_23", (TString)to_string(45) );
+  a.AddParameter( "filename", "some/dir_here/structure.root" );
   cout << "==================Printing header a=========================" << endl;
   a.Print();
   cout << "==================Finished==================================" << endl;
@@ -30,34 +31,35 @@ void fileheader() {
   cout << "==================Printing header b before read-in==========" << endl;
   b.Print();
   cout << "==================Finished==================================" << endl;
-  cout << b.GetParameter("secondapp", "Rcan") << endl;
+  cout << b.GetParameter("this","secondapp", "Rcan") << endl;
 
   // additionally read the header info from the previous file, print again
   b.ReadHeader("fileheader.root");
   cout << "==================Printing header b after read-in===========" << endl;
   b.Print();
   cout << "==================Finished==================================" << endl;
-  cout << b.GetParameter("fileheader", "sinsq_12") << endl;
+  cout << b.GetParameter("fileheader.root","fileheader","sinsq_12") << endl;
 
   // recreate the file and do one more read-in, read-out
-  TFile fh2("fileheader.root","RECREATE");
+  TFile fh2("fileheader2.root","RECREATE");
   b.WriteHeader(&fh2);
   fh2.Close();
 
-  FileHeader c("fileheader");
-  c.ReadHeader("fileheader.root");
+  FileHeader c("readin");
+  c.ReadHeader("fileheader2.root");
   cout << "==================Printing header c after read-in===========" << endl;
   c.Print();
   cout << "==================Finished==================================" << endl;
 
-  FileHeader d("replaced");
+  FileHeader d("updated");
   d.AddParameter("NewPar", "69");
-  d.AddToFile("fileheader.root");
+  d.AddToFile("fileheader2.root", false);
 
-  FileHeader e("readreplaced");
-  e.ReadHeader("fileheader.root");
+  FileHeader e("readupdated");
+  e.ReadHeader("fileheader2.root");
   cout << "==================Printing replaced header==================" << endl;
   e.Print();
   cout << "==================Finished==================================" << endl;  
 
+  system("rm fileheader.root fileheader2.root");
 }

@@ -1,4 +1,5 @@
 #include "FileHeader.h"
+#include "TTree.h"
 #include <iostream>
 #include <stdexcept>
 
@@ -12,13 +13,15 @@ using namespace std;
  */
 FileHeader::FileHeader(TString application_name) {
 
-  fAppName   = application_name;
-  fHeaderDir = "Header";
-  fDelim     = "__";
+  fAppName    = application_name;
+  fHeaderTree = "Header";
+  fDelim      = "__";
+  fLineLength = 1024;
 
   CheckName(application_name);
 
-  fPars.insert( std::make_pair( application_name, std::map<TString, TString>() ) );
+  // "this" is a placeholder for the filename where this header will be written to; it is replaced in WriteHeader()
+  AddToMap("this", application_name);
 
 }
 
@@ -33,9 +36,13 @@ FileHeader::~FileHeader() {}
 void FileHeader::Print() {
   
   for (auto &x: fPars) {
-    cout << "Application: '" << x.first << "' parameters: " << endl;
+    cout << "Output: " << x.first << endl;
     for (auto &y: x.second) {
-      cout << "\t" << y.first << "\t" << y.second << endl;
+      cout << "\t" << "Application: " << y.first << endl;
+      cout << "\t\t" << "Parameters: " << endl;
+      for (auto &z: y.second) {
+	cout << "\t\t" << z.first << "\t" << z.second << endl;
+      }
     }
   }
 
@@ -44,7 +51,7 @@ void FileHeader::Print() {
 //************************************************************************************
 
 /** 
- * Function to add a parameter associated with the current application.
+ * Function to add a parameter associated with the current application and output
  *
  * \param parameter_name   Name of the parameter
  * \param parameter_value  Value of the parameter as a TString ( e.g. (TString)to_string(0.4) ).
@@ -54,32 +61,36 @@ void FileHeader::AddParameter(TString parameter_name, TString parameter_value) {
   CheckName(parameter_name);
   CheckName(parameter_value);
 
-  fPars[fAppName].insert( std::make_pair(parameter_name, parameter_value) );
+  fPars["this"][fAppName].insert( std::make_pair(parameter_name, parameter_value) );
   
 }
 
 //************************************************************************************
 
 /**
- * Function to fetch the parameter from the header of a certain application.
+ * Function to fetch the parameter from the header of a certain output and application.
  *
+ * \param   output_name      Name of the output file the application is associated with
  * \param   application_name Name of the application the parameter is associated with
  * \param   parameter_name   Name of the parameter
  * \return  returns a TString with the parameter value, if found; otherwise empty string
  */
-TString FileHeader::GetParameter(TString application_name, TString parameter_name) {
+TString FileHeader::GetParameter(TString output_name, TString application_name, TString parameter_name) {
 
   TString par_value = "";
 
-  if ( fPars.find(application_name) != fPars.end() ) {
-    if ( fPars[application_name].find(parameter_name) != fPars[application_name].end() ) {
-      par_value = fPars[application_name][parameter_name];
+  if ( fPars.find(output_name) != fPars.end() ) {
+    if ( fPars[output_name].find(application_name) != fPars[output_name].end() ) {
+      if ( fPars[output_name][application_name].find(parameter_name) != fPars[output_name][application_name].end() ) {
+	par_value = fPars[output_name][application_name][parameter_name];
+      }
     }
   }
 
   if (par_value == "") {
     cout << "WARNING! FileHeader::GetParameter() could not find parameter " 
-	 << parameter_name << " for application " << application_name << endl;
+	 << parameter_name << " for output " << output_name << " for application " 
+	 << application_name << endl;
   }
 
   return par_value;
@@ -98,36 +109,57 @@ void FileHeader::WriteHeader(TFile *f) {
     throw std::invalid_argument( "ERROR! FileHeader::Write() null pointer to the file where header to be written." );
   }
 
-  vector<TNamed> list;
-  for (auto &app: fPars) {
-    for (auto &par: app.second) {
-      TString datastr = app.first + fDelim + par.first + fDelim + par.second;
-      list.push_back( TNamed(datastr, (TString)"header field") );
+  CheckName( f->GetName() );
+  
+  TTree *t = new TTree(fHeaderTree,fHeaderTree);
+  Char_t line[fLineLength];
+  t->Branch("HeaderLine", line, "HeaderLine/C");
+
+  for (auto &out: fPars) {
+    for (auto &app: out.second) {
+      for (auto &par: app.second) {
+
+	TString outname = out.first;
+	TString appname = app.first;
+	TString parname = par.first;
+	TString valname = par.second;
+
+	// outname 'this' is replaced with the filename where the header is written
+	if (outname == "this") outname = f->GetName();
+
+	TString out_app_par_str = outname + fDelim + appname + fDelim + parname + fDelim + valname;
+
+	sprintf(line, out_app_par_str);
+	t->Fill();
+      }
     }
   }
 
-  TDirectory *d = f->mkdir(fHeaderDir);
-  d->cd();
-  for (auto &l: list) l.Write();
-  d->cd();
+  t->Write();
 
 }
 
 //************************************************************************************
 
 /**
- * Function to add the header to an existing root file; if the file already contains a header, 
- * it is replaced.
+ * Function to add the header to an existing root file.
  *
- * \param filename Name of the file where the header is written.
+ * \param filename  Name of the file where the header is written.
+ * \param overwrite If set to true, the header is overwritten, otherwise data is added to the header.
  */
-void FileHeader::AddToFile(TString filename) {
+void FileHeader::AddToFile(TString filename, Bool_t overwrite) {
+
+  if (!overwrite) ReadHeader(filename);
 
   TFile f(filename, "update");
 
+  if ( !f.IsOpen() ) {
+    throw std::invalid_argument("ERROR! FileHeader::AddToFile() cannot open file " + (string)filename);
+  }
+
   // if previous header exists, delete it
-  if ( f.Get(fHeaderDir) != NULL ) {
-    f.Delete( fHeaderDir + TString(";*") );
+  if ( f.Get(fHeaderTree) != NULL ) {
+    gDirectory->Delete( fHeaderTree + TString(";*") );
   }
 
   // write this header to the file
@@ -152,29 +184,32 @@ void FileHeader::ReadHeader(TString filename) {
     throw std::invalid_argument("ERROR! FileHeader::ReadHeader() cannot open file " + (string)filename);
   }
 
-  TDirectory *d = f.GetDirectory(fHeaderDir);
-  if ( d == NULL ) {
-    cout << "WARNING! FileHeader::ReadHeader() cannot find directory " << fHeaderDir << " in file " << filename << ", header reading failed." << endl;
+  TTree *t = (TTree*)f.Get(fHeaderTree);
+  if ( t == NULL ) {
+    cout << "WARNING! FileHeader::ReadHeader() cannot find directory " << fHeaderTree << " in file " << filename << ", header reading failed." << endl;
     return;
   }
 
-  TList *l = d->GetListOfKeys();
+  Char_t line[fLineLength];
+  t->SetBranchAddress("HeaderLine", line);
 
-  for (auto x: *l) {
-    TNamed *hf = (TNamed*)d->Get( x->GetName() );
-    auto data = SplitDataStr( hf->GetName() );
-    fPars[data.first].insert( std::make_pair(data.second.first, data.second.second) );    
+  for (Int_t i = 0; i < t->GetEntries(); i++) {
+    t->GetEntry(i);
+    vector<TString> data = SplitDataStr( (TString)line );
+    AddToMap( data[0], data[1], data[2], data[3] );
   }
+
+  f.Close();
   
 }
 
 //************************************************************************************
 
 /**
- *  Private function to check that the application name, parameter name and parameter value 
- *  string conform, throws an exception if they dont.
+ *  Private function to check that the output name,  application name, parameter name 
+ *  and parameter value string conform, throws an exception if they dont.
  *
- *  \param name Name of the application, parameter name or parameter value.
+ *  \param name Name of the output, application, parameter name or parameter value.
  */
 void FileHeader::CheckName(TString name) {
 
@@ -193,10 +228,10 @@ void FileHeader::CheckName(TString name) {
 /**
  * Private function to split a string read from a header file to fields.
  
- * \param datastr Assuming deliminator '__', string in format Application__ParName__ParValue
- * \return a pair, where first element is Application, second element is a pair (ParName, ParValue)
+ * \param datastr Assuming deliminator '__', string in format Output__Application__ParName__ParValue
+ * \return a vector, where element [0] is output, [1] is Application, [2] is ParName, [3] is ParValue
  */
-std::pair< TString, std::pair<TString, TString> > FileHeader::SplitDataStr(TString datastr) {
+vector<TString> FileHeader::SplitDataStr(TString datastr) {
 
   TString remainder = datastr;
   vector<TString> parts;
@@ -209,11 +244,46 @@ std::pair< TString, std::pair<TString, TString> > FileHeader::SplitDataStr(TStri
 
   parts.push_back(remainder);
 
-  if (parts.size() != 3) {
+  if (parts.size() != 4) {
     for (auto &s: parts) cout << "\t" << s << endl;
-    throw std::invalid_argument("ERROR! FileHeader::SplitDataStr() expected 3 parts in " + (string)datastr + ", but got the " + to_string(parts.size()) + " printed above");
+    throw std::invalid_argument("ERROR! FileHeader::SplitDataStr() expected 4 parts in " + (string)datastr + ", but got the " + to_string(parts.size()) + " printed above");
   }
 
-  return std::make_pair( parts[0], std::make_pair(parts[1], parts[2]) );
+  return parts;
+
+}
+
+//************************************************************************************
+
+/** Private function to add elements to the map.
+ *
+ * \param out_name  Name of the output the parameter is associated with
+ * \param app_name  Name of the application the parameter is associated with
+ * \param par_name  Name of the parametre
+ * \param par_value Value of the parameter as TString
+ */
+void FileHeader::AddToMap(TString out_name, TString app_name, TString par_name, TString par_value) {
+
+  // check if fPars already has an entry for this out_name; if not, create it
+  if ( fPars.find(out_name) == fPars.end() ) {
+    
+    // create a map application name <--> parameter map
+    std::map<TString, std::map<TString, TString> > app_par_map;
+
+    // create a pair output name <--> application parameter map
+    fPars.insert( std::make_pair( out_name, app_par_map ) );
+
+  }
+
+  // insert will add an empty map for app_name; insert does not overwrite if map already exists
+  fPars[out_name].insert( std::make_pair( app_name, std::map<TString, TString>() )  );
+
+  // add the par_name, par_value pair to map; insert does not overwrite if map already exists
+  if (par_name != "" && par_value != "") {
+    fPars[out_name][app_name].insert( std::make_pair(par_name, par_value) );
+  }
+  else if ( (par_name == "" && par_value != "") || (par_name != "" && par_value == "") ) {
+    throw std::invalid_argument( "ERROR! FileHeader::AddToMap() both par_name and par_value need to be set or need to be empty." );    
+  }
 
 }

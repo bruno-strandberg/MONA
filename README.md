@@ -50,6 +50,10 @@ For improvements
 
 * You should make a separate application that cache's the gSeaGen data.
 
+* The can size, muon cut etc should be stored in the output of effective mass.
+
+* The above point applied also more generally: the input parameters should be saved to output for different applications, etc FluxChain, GSGSampler, ...
+
 To-do, ideas
 ------------
 

@@ -8,23 +8,50 @@
 
 class FileHeader;
 
-/** A class that provides a minimalistic header functionality for ROOT files with easy access.
+/** A class that provides a minimalistic header functionality for ROOT files.
  *
- *  The class can be used to create 'headers' for any .root file. The idea is simple: it creates a
- *  directory named fHeaderDir (currently hardcoded to 'Header') into the output root file and writes
- *  TNamed objects into this directory, where the name of the TNamed object is in format
- *  ApplicationName__ParameterName__ParameterValue ('__' acts as delim and is configured through
- *  variable fDelim). In this way the header fields can be read without any extra software by just
- *  exploring the root file with TBrowser or in terminal.
+ *  The header is a TTree with character arrays as entries. The individual lines
+ *  can be explored on the command line by e.g. root myfile.root; HeaderTree->Show(i), where i = 0,1,...
  *
- *  Example usage:
- *  FileHeader a("myapp");                    # create header for application 'myapp'
- *  FileHeader.AddParameter("Rcan", "200");   # add parameter for can radius
- *  TFile fout("test.root","RECREATE");       # root file output
- *  //..some other stuff to be written to file..
- *  a.WriteHeader();                          # adds the header
- *  fout.Close();
- * 
+ *  The header data is stored in a map with structure [outputname][application][parameter][value]. Outputname
+ *  is the name of the .root output where the header originates(!) from, application is the name of the application
+ *  or script where the header was created, parameter is the name of a parameter and value is the value of the parameter.
+ *
+ *  With this structure, the header information of each output file can be preserved when:
+ *  1) One uses a chain of applications
+ *  2) One merges (e.g. with hadd) multiple outputs created with the same application.
+ *
+ *  Example case 1: create a header into file fout.root which stores the can radius
+ *
+ *  FileHeader a("myapp"); 
+ *  a.AddParameter("Rcan","190"); 
+ *  TFile f("fout.root","RECREATE"); 
+ *  a.WriteHeader(&f); 
+ *  f.Close()
+ *
+ *  In this case the map will have a field fPars['fout.root']['myapp']['Rcan'] = '190'
+ *
+ *  Example case 2: create a header, read header data from another file, write the header to another file
+ *
+ *  FileHeader b("secondapp"); 
+ *  b.AddParameter("mu_cut","0.05"); 
+ *  b.ReadHeader("fout.root"); 
+ *  TFile f("fnew.root","RECREATE"); 
+ *  b.WriteHeader(&f),
+ *  f.Close();
+ *
+ *  In this case the map will have a field fPars['fout.root']['myapp']['Rcan'] = '190' and 
+ *  fPars['fnew.root']['secondapp']['mu_cut'] = '0.05'
+ *  Note that although header b is written to file fnew.root, the header will also contain data for
+ *  output name fout.root. This allows to trace parameters through chains of applications.
+ *  
+ *  To print the header in the root command line, do
+ *  root;
+ *  .L libnmhsoft.so;
+ *  FileHeader a;
+ *  a.ReadHeader('myfile.root')
+ *  a.Print()
+ *
  */
 class FileHeader {
 
@@ -33,25 +60,28 @@ class FileHeader {
   ~FileHeader();
 
   void    AddParameter(TString parameter_name, TString parameter_value);
-  TString GetParameter(TString application_name, TString parameter_name);
+  TString GetParameter(TString output_name, TString application_name, TString parameter_name);
 
   void ReadHeader(TString filename);
   void WriteHeader(TFile *f);
-  void AddToFile(TString filename);
+  void AddToFile(TString filename, Bool_t overwrite=kFALSE);
   void Print();
 
  private:
   /// Name of the application where Header is initiated
   TString fAppName;
-  /// Name of the dir in output root file where header is written (hardcoded to 'Header' in constructor)
-  TString fHeaderDir;
+  /// Name of the tree where header is written (hardcoded to 'Header' in constructor)
+  TString fHeaderTree;
   /// Delimiter (hardcoded to '__' in constructor)
   TString fDelim;
- //!< map of parameters for function GetParameter
-  std::map< TString, std::map<TString, TString> > fPars;
+  /// Max line length (hardcoded to 1024 characters in constructor)
+  UInt_t  fLineLength;
+ //!< map of parameters for function GetParameter with structure fPars[outputname][application][parameter] = value
+  std::map< TString, std::map< TString, std::map<TString, TString> > > fPars;
 
   void CheckName(TString name);
-  std::pair< TString, std::pair<TString, TString> > SplitDataStr(TString datastr);
+  std::vector<TString> SplitDataStr(TString datastr);
+  void AddToMap(TString out_name, TString app_name, TString par_name="", TString par_value="");
 };
 
 #endif
