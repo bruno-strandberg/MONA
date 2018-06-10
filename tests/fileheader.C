@@ -31,14 +31,17 @@ void fileheader() {
   cout << "==================Printing header b before read-in==========" << endl;
   b.Print();
   cout << "==================Finished==================================" << endl;
-  cout << b.GetParameter("this","secondapp", "Rcan") << endl;
 
   // additionally read the header info from the previous file, print again
   b.ReadHeader("fileheader.root");
   cout << "==================Printing header b after read-in===========" << endl;
   b.Print();
   cout << "==================Finished==================================" << endl;
-  cout << b.GetParameter("fileheader.root","fileheader","sinsq_12") << endl;
+
+  cout << "==================Testing parameter finding=================" << endl;
+  cout << "Sinsq_12 through get parameter            : " << b.GetParameter("sinsq_12","fileheader.root","fileheader") << endl;
+  cout << "Sinsq_12 through get parameter (name only): " << b.GetParameter("sinsq_12") << endl;
+  cout << "Sinsq_12 through find parameter           : " << b.FindParValues("sinsq_12").front().back() << endl;
 
   // recreate the file and do one more read-in, read-out
   TFile fh2("fileheader2.root","RECREATE");

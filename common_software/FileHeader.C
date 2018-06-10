@@ -70,21 +70,34 @@ void FileHeader::AddParameter(TString parameter_name, TString parameter_value) {
 /**
  * Function to fetch the parameter from the header of a certain output and application.
  *
+ * If output_name and application_name are not specified, it will look through the map
+ * and return the value of the first parameter with this name.
+ *
+ * \param   parameter_name   Name of the parameter
  * \param   output_name      Name of the output file the application is associated with
  * \param   application_name Name of the application the parameter is associated with
- * \param   parameter_name   Name of the parameter
  * \return  returns a TString with the parameter value, if found; otherwise empty string
  */
-TString FileHeader::GetParameter(TString output_name, TString application_name, TString parameter_name) {
+TString FileHeader::GetParameter(TString parameter_name, TString output_name, TString application_name) {
 
   TString par_value = "";
 
-  if ( fPars.find(output_name) != fPars.end() ) {
-    if ( fPars[output_name].find(application_name) != fPars[output_name].end() ) {
-      if ( fPars[output_name][application_name].find(parameter_name) != fPars[output_name][application_name].end() ) {
-	par_value = fPars[output_name][application_name][parameter_name];
+  if (output_name != "" && application_name != "") {
+
+    if ( fPars.find(output_name) != fPars.end() ) {
+      if ( fPars[output_name].find(application_name) != fPars[output_name].end() ) {
+	if ( fPars[output_name][application_name].find(parameter_name) != fPars[output_name][application_name].end() ) {
+	  par_value = fPars[output_name][application_name][parameter_name];
+	}
       }
     }
+
+  }
+  else  {
+
+    vector< vector<TString> > pars = FindParValues(parameter_name);
+    if (pars.size() > 0) { par_value = pars.front().back(); }
+
   }
 
   if (par_value == "") {
@@ -94,6 +107,32 @@ TString FileHeader::GetParameter(TString output_name, TString application_name, 
   }
 
   return par_value;
+}
+
+//************************************************************************************
+
+/** 
+ * Function to look up parameters in a map by name only.
+ * \param parameter_name Name of the parameter
+ * \return A vector of vectors; each vector contains 4 TStrings: outname, appname, parname, parvalue
+*/
+vector< vector<TString> > FileHeader::FindParValues(TString parameter_name) {
+
+  vector< vector<TString> > pars_vec;
+
+  for (auto &outs: fPars) {
+    for (auto &apps: outs.second) {
+      for (auto &pars: apps.second) {
+	if ( pars.first.Contains(parameter_name) ) {
+	  vector<TString> par = { outs.first, apps.first, pars.first, pars.second };
+	  pars_vec.push_back(par);
+	}
+      }
+    }
+  }
+
+  return pars_vec;
+
 }
 
 //************************************************************************************
