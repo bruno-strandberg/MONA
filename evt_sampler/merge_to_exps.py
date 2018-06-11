@@ -26,11 +26,11 @@ args = docopt(__doc__)
 
 flavs = ['elec','muon','tau', 'allflavs']
 flux_files    = open(args['-f'], 'r')
-sampler_files = os.popen( "ls output/EvtSample_*" ).read().split()
+sampler_files = os.popen( "ls output/GSGSampler/EvtSample_*" ).read().split()
 shuffle(sampler_files) #this randomizes which samples (same flux file!) are combined into exps
             
 # this file stores the info which files are merged together
-merge_log = open('output/merge_log.dat', 'w')
+merge_log = open('output/Experiments/merge_log.dat', 'w')
 
 for i, flux_f in enumerate(flux_files):
     
@@ -76,7 +76,7 @@ for i, flux_f in enumerate(flux_files):
 
     for n, exp in enumerate(experiments):
 
-        syscmd = "hadd output/Experiment_oscpars{0}_sample_{1}_{2}.root".format(i, n, mh)
+        syscmd = "hadd output/Experiments/Experiment_oscpars{0}_sample_{1}_{2}.root".format(i, n, mh)
         for file in exp:
             syscmd += " {}".format(file)
             

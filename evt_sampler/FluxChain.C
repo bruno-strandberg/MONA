@@ -4,6 +4,7 @@
 #include "AtmFlux.h"
 #include "NuXsec.h"
 #include "NMHUtils.h"
+#include "FileHeader.h"
 #include "TString.h"
 #include "TSystem.h"
 #include "TMath.h"
@@ -18,17 +19,17 @@ using namespace std;
 // functions
 //*****************************************************************
 void   InitClasses();
-Bool_t InitOscPars(Bool_t NH, 
+Bool_t InitOscPars(Bool_t NH, FileHeader &h,
 		   Double_t _sinsq_th12=0., Double_t _sinsq_th23=0., Double_t _sinsq_th13=0., 
 		   Double_t _dcp=-10., Double_t _dm21=0., Double_t _dm32=0.);
 void   SetToPDG(Bool_t NH, 
 		Double_t &sinsq_th12, Double_t &sinsq_th23, Double_t &sinsq_th13, 
 		Double_t &dcp, Double_t &dm21, Double_t &dm32, Double_t &dm31);
 void   InitHists();
-Bool_t ReadMeffHists();
+Bool_t ReadMeffHists(FileHeader &h);
 void   FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsamples);
 void   CleanUp();
-void   WriteToFile(TString output_name);
+void   WriteToFile(TString output_name, FileHeader &h);
 
 //*****************************************************************
 // globally used variables in this script
@@ -81,7 +82,7 @@ Double_t fKg_per_Mton = 1e9;                        //!< kg per MTon (MTon = 1e6
  * \param  output_name   Name of the file where histograms are written.
  * \param  nsamples      Number of samples per filling one bin (recommended > 10).
  * \param  NH            True - normal nu mass hierarchy, False - inverted nu mass hierarchy.
- * \param UseMeff        If true, program will look for effective mass histograms in 
+ * \param  UseMeff       If true, program will look for effective mass histograms in 
  *                       NMHDIR/data/eff_mass to calculate detected number of events for detflux/
  *                       directory. If one inputs the FluxChain output to GSGSampler, meff is not
  *                       necessary.
@@ -108,12 +109,20 @@ void FluxChain(Double_t op_time     = 3.,
 
   gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
+
+  // create header
+  FileHeader h("FluxChain");
+  h.AddParameter("op_time"    , (TString)to_string(op_time) );
+  h.AddParameter("output_name", output_name );
+  h.AddParameter("nsamples"   , (TString)to_string(nsamples) );
+  h.AddParameter("NH"         , (TString)to_string(NH) );
+  h.AddParameter("UseMeff"    , (TString)to_string(UseMeff) );
   
   InitClasses();
-  if ( !InitOscPars(NH, sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32) ) return;
+  if ( !InitOscPars(NH, h, sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32) ) return;
   InitHists();
   if ( UseMeff ) {
-    if ( !ReadMeffHists() ) return;
+    if ( !ReadMeffHists(h) ) return;
   }
  
   for (Int_t f = 0; f < 3; f++) {
@@ -126,7 +135,7 @@ void FluxChain(Double_t op_time     = 3.,
     }
   }
 
-  WriteToFile(output_name);
+  WriteToFile(output_name, h);
   CleanUp();
   
 }
@@ -159,7 +168,7 @@ void InitClasses() {
  * \param dm32         - \f$\Delta m^2_{32}\f$ value; this must be > 0 for NH and < 0 for IH
  *
  */
-Bool_t InitOscPars(Bool_t NH, 
+Bool_t InitOscPars(Bool_t NH, FileHeader &h,
 		   Double_t _sinsq_th12 , Double_t _sinsq_th23, Double_t _sinsq_th13, 
 		   Double_t _dcp, Double_t _dm21, Double_t _dm32) {
 
@@ -185,8 +194,15 @@ Bool_t InitOscPars(Bool_t NH,
   }
 
   //------------------------------------------------
-  // Pass to the oscillation probability calculator
+  // Pass to the oscillation probability calculator, save them to header
   //------------------------------------------------
+  h.AddParameter("sinsq_th12", (TString)to_string(sinsq_th12) );
+  h.AddParameter("sinsq_th23", (TString)to_string(sinsq_th23) );
+  h.AddParameter("sinsq_th13", (TString)to_string(sinsq_th13) );
+  h.AddParameter("dcp"       , (TString)to_string(dcp) );
+  h.AddParameter("dm21_1e5"  , (TString)to_string(dm21*1e5) );
+  h.AddParameter("dm31_1e5"  , (TString)to_string(dm31*1e5) );
+  h.AddParameter("dm32_1e5"  , (TString)to_string(dm32*1e5) );
 
   fProb->SetAngle(1, 2, TMath::ASin( TMath::Sqrt(sinsq_th12) ) );
   fProb->SetAngle(1, 3, TMath::ASin( TMath::Sqrt(sinsq_th13) ) );
@@ -284,7 +300,7 @@ void InitHists() {
 /**
  *  Inline function to read effective mass histograms from $NMHDIR/data/eff_mass/.
  */
-Bool_t ReadMeffHists() {
+Bool_t ReadMeffHists(FileHeader &h) {
 
   for (Int_t f = 0; f < 3; f++) {
     for (Int_t cc = 0; cc < 2; cc++) {
@@ -298,6 +314,9 @@ Bool_t ReadMeffHists() {
 	cout << "ERROR! InitHists() could not find file " << meff_fname << endl;
 	return false;
       }
+
+      // read the header and append to the header of this application
+      h.ReadHeader(meff_fname);
 
       TString hname = "Meff_" + fFlavs[f] + "_" + fItypes[cc];
       fhMeff[f][cc][0] = (TH2D*)meff_file.Get("Meff_nu")->Clone(hname + "_nu");
@@ -419,9 +438,12 @@ void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsa
 /**
  *  Inline function to write to file.
  */
-void WriteToFile(TString output_name) {
+ void WriteToFile(TString output_name, FileHeader &h) {
 
   TFile fout(output_name, "RECREATE");
+
+  h.WriteHeader(&fout);
+
   TDirectory *atmflux = fout.mkdir("atmflux");
   TDirectory *oscflux = fout.mkdir("oscflux");
   TDirectory *intflux = fout.mkdir("intflux");

@@ -9,6 +9,7 @@
 #include "SummaryParser.h"
 #include "GSGParser.h"
 #include "NMHUtils.h"
+#include "FileHeader.h"
 
 //generic cpp
 
@@ -35,7 +36,7 @@ using namespace GSGS;
  *  to the end of the Monte Carlo chain (i.e. into the summary file). The events that made it to the
  *  end are the events that will be stored in the output.
  * 
- *  The code will output a file output/EvtSample_{flavor}-{interaction}_{Nf}_{Ns}.root, where
+ *  The code will output a file output/GSGSampler/EvtSample_{flavor}-{interaction}_{Nf}_{Ns}.root, where
  *  Nf is the sequence number of the flux chain file and Ns is the sample number.
  *
  * \param flux_chain_list a text file with a list of FluxChain.C macro outputs
@@ -124,7 +125,7 @@ void GSGSampler(TString flux_chain_flist,
       Bool_t SampleOK_nu  = SampleEvents(fhInt_nu,  smeared_nu , fGSGEvts_nu , fSampleEvts_nu , 10);
       Bool_t SampleOK_nub = SampleEvents(fhInt_nub, smeared_nub, fGSGEvts_nub, fSampleEvts_nub, 10);
 
-      StoreForWriting( (SampleOK_nu && SampleOK_nub), smeared_nu, smeared_nub, F, N);
+      StoreForWriting( (SampleOK_nu && SampleOK_nub), smeared_nu, smeared_nub, F, N, fc_file);
 
       if (smeared_nu) delete smeared_nu;
       if (smeared_nub) delete smeared_nub;
@@ -652,12 +653,20 @@ Bool_t GSGS::SampleEvents(TH2D *h_expected, TH2D *h_smeared,
  * \param N            Index of the sample
  *
  */
-void GSGS::StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub, Int_t F, Int_t N) {
+void GSGS::StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub, 
+			   Int_t F, Int_t N, TString flux_file) {
   
-  // create a new vector for this experiment; vector for hists of this experiment; name of experiment
+  // create a new vector for this experiment; vector for the hists of this experiment; 
+  // name string for the experiment; header for the experiment
   fExps.push_back( vector<evtid>() );
   fExpHists.push_back( vector<TH2D*>() );
   fExpNames.push_back( "flux" + (TString)to_string(F) + "_sample" + (TString)to_string(N) );
+  fExpHeaders.push_back( new FileHeader("GSGSampler") );
+
+  // append the FluxChain header + some other info
+  fExpHeaders.back()->ReadHeader( flux_file );
+  fExpHeaders.back()->AddParameter( "FluxFile", flux_file );
+  fExpHeaders.back()->AddParameter( "Sample"  , (TString)to_string(N) );
 
   // store the histograms
   fExpHists.back().push_back( (TH2D*)fhInt_nu   ->Clone() );
@@ -714,8 +723,10 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
 
   for (Int_t N = 0; N < (Int_t)fExps.size(); N++) {
 
-    TString out_name = "output/EvtSample_" + fFlavs[flavor] + "-CC_" + fExpNames[N] + ".root";
-    if (is_cc == 0) out_name = "output/EvtSample_allflavs-NC_" + fExpNames[N] + ".root";
+    TString out_name = "output/GSGSampler/EvtSample_" + fFlavs[flavor] + "-CC_" + fExpNames[N] + ".root";
+    if (is_cc == 0) out_name = "output/GSGSampler/EvtSample_allflavs-NC_" + fExpNames[N] + ".root";
+
+    fExpHeaders[N]->AddParameter("Output", out_name);
 
     files.push_back( new TFile(out_name, "RECREATE") );            //create file
     trees.push_back( sp.fChain->CloneTree(0) );                    //add empty tree
@@ -775,8 +786,11 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
       delete h;
     }
 
+    fExpHeaders[N]->WriteHeader( files[N] );
+
     files[N]->Close();
     delete files[N];
+    delete fExpHeaders[N];
 
     if (remove) {
       cout << "NOTICE WriteToFiles() empty tree in " << name << ", removing file." << endl;
@@ -788,6 +802,7 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
   fExps.clear();
   fExpHists.clear();
   fExpNames.clear();
+  fExpHeaders.clear();
 
 }
 

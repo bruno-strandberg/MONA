@@ -16,7 +16,7 @@ Option:
     -s STEP           If -p specified, the step with which the par is scanned. If -p 
                       and -s are specified, then -n is ignored.
     -y YEARS          Number of years of data taking [default: 3]
-    -i IDSTR          Identifier string added as prefix to files in output/
+    -i IDSTR          Identifier string added as prefix to files in output/FluxChain/
 
     -h --help         Show this screen
 """
@@ -116,7 +116,7 @@ def main(args):
     # command list to be executed; logfile where configurations are written
     cmds = []
     outputs = []
-    logfile = open('output/{}_fluxcaller_log.dat'.format(args['-i']),'w')
+    logfile = open('output/FluxChain/{}_fluxcaller_log.dat'.format(args['-i']),'w')
 
     # no parameter scanning asked, generate random samples
     if (args['-p'] == None):
@@ -129,7 +129,7 @@ def main(args):
                 # each sample creates hists with normal and inverted hierarchy
                 for NH in [False, True]:
                     
-                    outname = "output/{0}_sample{1}_NH{2}.root".format(args['-i'], n, int(NH))
+                    outname = "output/FluxChain/{0}_sample{1}_NH{2}.root".format(args['-i'], n, int(NH))
                     sinsq12 = op['sinsq_th12'].get_random_flat(NH)
                     sinsq23 = op['sinsq_th23'].get_random_flat(NH)
                     sinsq13 = op['sinsq_th13'].get_random_flat(NH)
@@ -146,7 +146,7 @@ def main(args):
         # -n not specified, create FluxChain outputs with one normal, one inverted hierarchy
         else:
             for NH in [False, True]:
-                outname = "output/{0}_sample{1}_NH{2}.root".format(args['-i'], 0, int(NH))
+                outname = "output/FluxChain/{0}_sample{1}_NH{2}.root".format(args['-i'], 0, int(NH))
                 sinsq12 = op['sinsq_th12'].get_val(NH)
                 sinsq23 = op['sinsq_th23'].get_val(NH)
                 sinsq13 = op['sinsq_th13'].get_val(NH)
@@ -183,7 +183,7 @@ def main(args):
         n = 0
         p.val_NH = p.min_NH
         while (p.val_NH <= p.max_NH):
-            outname = "output/{0}_step{1}_NH1.root".format(args['-i'], n)
+            outname = "output/FluxChain/{0}_step{1}_NH1.root".format(args['-i'], n)
             cmd = get_fluxchain_cmd(args['-y'], outname, 1, 
                                     op['sinsq_th12'].val_NH, op['sinsq_th23'].val_NH, 
                                     op['sinsq_th13'].val_NH, op['dcp'].val_NH, 
@@ -200,7 +200,7 @@ def main(args):
         n = 0
         p.val_IH = p.min_IH
         while (p.val_IH <= p.max_IH):
-            outname = "output/{0}_step{1}_NH0.root".format(args['-i'], n)
+            outname = "output/FluxChain/{0}_step{1}_NH0.root".format(args['-i'], n)
             cmd = get_fluxchain_cmd(args['-y'], outname, 0, 
                                     op['sinsq_th12'].val_IH, op['sinsq_th23'].val_IH, 
                                     op['sinsq_th13'].val_IH, op['dcp'].val_IH, 
@@ -216,7 +216,7 @@ def main(args):
     # execute the commands; close logfile; write file list
     logfile.close()
 
-    outlist = open('output/{}_output_list.dat'.format(args['-i']), 'w')
+    outlist = open('output/FluxChain/{}_output_list.dat'.format(args['-i']), 'w')
     for o in outputs:
         outlist.write(o + "\n")
     outlist.close()

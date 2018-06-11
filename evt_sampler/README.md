@@ -9,7 +9,7 @@ Prerequisities
 * The scripts require OscProb.
 * The scripts require summary data in analysis format in NMH/data/mc_end/data_atmnu/.
 * The scripts require access to gSeaGen simulation data.
-* If FluxChain.C macro is used to create histograms with detected number of events, effective mass histograms have to be available in NMHDIR/data/eff_mass/ . These can be created with scripts in NMHDIR/eff_mass/.
+* If FluxChain.C macro is used to create histograms with detected number of events, effective mass histograms have to be provided. These are output by NMHDIR/eff_mass/EffMass.C.
 
 Directories
 ===========
@@ -24,15 +24,15 @@ Sampling experiments (use python scripts)
 -----------------------------------------
 * First, knowledge of the interacted neutrino flux at the detector is required. This is calculated by the macro FluxChain.C. Use the python script flux_caller.py (do ```./flux_caller.py -h``` for usage) to create a desired number flux samples with different oscillation parameter values.
 
-* As a result of running the flux_caller.py, several flux output files corresponding to different oscillation parameters are created in output/, alongside an output/{IDSTR}_output_list.dat file listing the created files and a log file output/{IDSTR}_log.dat. 
+* As a result of running the flux_caller.py, several flux output files corresponding to different oscillation parameters are created in output/FluxChain/, alongside an output/FluxChain/{IDSTR}_output_list.dat file listing the created files and a log file output/FluxChain/{IDSTR}_log.dat. 
 
 The flux data can now be used as an input by GSGSampler.C macro, which 1) reads in gSeaGen data 2) creates samples from gSeaGen data depending on the input from a flux file 3) searches the summary data to determine which of the sampled gSeaGen events end up reconstructed and identified.
 
-GSGSampler can be called with the script sampler_caller.py (do ```./sampler_caller.py -h``` for usage). Note that output/{IDSTR}_output_list.dat will be one of the required inputs. This script will run GSGSampler.C on the computing farm at Lyon. Run GSGSampler.C for all flavors and interactions. Once this finishes, there will be root files output/EvtSample_{flavor}-{CC/NC}_flux{F}_sample{N}.root. F corresponds to the sequence index of the input flux file in output/{IDSTR}_output_list.dat, whereas N corresponds to the sample number created with this flux file (for each flux file several samples can/should be created, to study statistical fluctuations related to sampling). For NC events the flavor will be allflav.
+GSGSampler can be called with the script sampler_caller.py (do ```./sampler_caller.py -h``` for usage). The file output/FluxChain/{IDSTR}_output_list.dat will be one of the required inputs. This script will run GSGSampler.C on the computing farm at Lyon. Run GSGSampler.C for all flavors and interactions. Once this finishes, there will be root files output/GSGSampler/EvtSample_{flavor}-{CC/NC}_flux{F}_sample{N}.root. F corresponds to the sequence index of the input flux file in output/FluxChain/{IDSTR}_output_list.dat, whereas N corresponds to the sample number created with this flux file (for each flux file several samples can/should be created, to study statistical fluctuations related to sampling). For NC events the flavor will be allflav.
 
-* After the previous two steps the macro merge_to_exps.py (do ```./merge_to_exps.py -h``` for usage) has to be used to create root files with samples representing experiments. It will require output/{IDSTR}_output_list.dat and output/{IDSTR}_log.dat as input.
+* After the previous two steps the macro merge_to_exps.py (do ```./merge_to_exps.py -h``` for usage) has to be used to create root files with samples representing experiments. It will require output/FluxChain/{IDSTR}_output_list.dat and output/FluxChain/{IDSTR}_log.dat as input.
 
-After running merge_to_exps.py, there are files output/Experiment_oscpars{i}_sample{j}.root available. The index i stands for a combination of oscillation parameters and j for a sample with these oscillation parameters. The oscillation parameters associated with different files are readily available in output/merge_log.dat. No further weighting of the events are required, the events in these files can be treated as been recorded by the detector over a certain running time.
+After running merge_to_exps.py, there are files output/Experiments/Experiment_oscpars{i}_sample{j}.root available. The index i stands for a combination of oscillation parameters and j for a sample with these oscillation parameters. The oscillation parameters associated with different files are readily available in output/Experiments/merge_log.dat. No further weighting of the events are required, the events in these files can be treated as been recorded by the detector over a certain running time.
 
 Standalone (use ROOT macros directly)
 -------------------------------------

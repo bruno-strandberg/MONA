@@ -1,6 +1,7 @@
 #include "TH2.h"
 #include "TRandom3.h"
 #include <map>
+#include "FileHeader.h"
 
 /**
  * Namespace that holds functions and variables used in the GSGSampler.C macro.
@@ -22,7 +23,8 @@ namespace GSGS {
   Bool_t   SampleEvents(TH2D *h_expected, TH2D *h_smeared,
 			vector<evtid> **store, vector<evtid> **sample,
 			Int_t low_sample_lim);
-  void     StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub, Int_t F, Int_t N);
+  void     StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub, 
+			   Int_t F, Int_t N, TString flux_file);
   void     WriteToFiles(Int_t flavor, Int_t is_cc);
   TString  GetSummaryName(Int_t flavor, Int_t is_cc, Int_t emin, Int_t emax, Int_t runnr);
 
@@ -53,6 +55,8 @@ namespace GSGS {
   vector< vector<TH2D*> > fExpHists;
   //! vector of strings; each string contains the flux file and sample index of an experiment
   vector< TString > fExpNames;
+  //! vector of Headers; each header stores the information for the output file of this experiment
+  vector< FileHeader* > fExpHeaders;
 
   //! map of flavor numbers and strings
   map < Int_t, TString > fFlavs  = { {0, "elec" },

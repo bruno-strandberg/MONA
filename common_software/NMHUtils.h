@@ -2,6 +2,8 @@
 #include "TMath.h"
 #include <fstream>
 #include <sys/stat.h>
+#include <stdexcept>
+#include "TH2.h"
 
 /**
  * A namespace that collects miscellaneous useful functions. 
@@ -92,6 +94,79 @@ namespace NMHUtils {
     else {
       return ( (Double_t)buf.st_size*1e-6 > size );
     }
+
+  }
+
+  //****************************************************************************
+
+  /**
+   *  Function to calculate bin-by-bin 'asymmetry' between two histograms.
+   *
+   *  Asymmetry is defined as \f$ A(i) = (N_{h1}^{bin i} - N_{h2}^{bin i})/\sqrt{N_{h1}^{bin i}} \f$.
+   *
+   * \param h1           First histogram
+   * \param h2           Second histogram
+   * \param nametitle    String used as name and title for the created asymmetry histogram
+   * \param ReverseSign  The sign of the numerator is reversed, thus becoming 
+   *                     \f$ (N_{h2}^{bin i} - N_{h1}^{bin i}) \f$.
+   * \param BothDenoms   If false, the asymmetry in bin i is zero if \f$ N_{h1}^{bin i} = 0\f$.
+   *                     If true, the asymmetry in bin i is \f$ -\sqrt{N_{h2}^{bin i}} \f$ if 
+   *                     \f$ N_{h2}^{bin i} > 0\f$ and \f$ N_{h1}^{bin i} = 0\f$. If both are
+   *                     0 the asymmetry is 0.
+   * \return             A pointer to a histgram with bin-by-bin asymmetries.
+   */
+  TH2D* Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
+		  Bool_t ReverseSign = kFALSE, Bool_t BothDenoms = kFALSE) {
+
+    //------------------------------------------------------------
+    // check that both histograms have the same binning
+    //------------------------------------------------------------
+
+    if ( ( h1->GetXaxis()->GetNbins() != h2->GetXaxis()->GetNbins() ) || 
+	 ( h1->GetYaxis()->GetNbins() != h2->GetYaxis()->GetNbins() ) ) {
+      throw std::invalid_argument( "ERROR! NMHUtils::Asymmetry() input histograms bin count mismatch.");
+    }
+
+    for (Int_t i = 1; i <= h1->GetXaxis()->GetNbins(); i++) {
+      if ( h1->GetXaxis()->GetBinLowEdge(i) != h2->GetXaxis()->GetBinLowEdge(i) ) {
+	throw std::invalid_argument( "ERROR! NMHUtils::Asymmetry() input histograms bin low edge mismatch on X axis" );
+      }
+    }
+
+    for (Int_t i = 1; i <= h1->GetYaxis()->GetNbins(); i++) {
+      if ( h1->GetYaxis()->GetBinLowEdge(i) != h2->GetYaxis()->GetBinLowEdge(i) ) {
+	throw std::invalid_argument( "ERROR! NMHUtils::Asymmetry() input histograms bin low edge mismatch on Y axis" );
+      }
+    }
+
+    //------------------------------------------------------------
+    // calculate the asymmetry
+    //------------------------------------------------------------
+
+    TH2D *h_asym = (TH2D*)h1->Clone();
+    h_asym->SetNameTitle(nametitle,nametitle);
+    h_asym->Reset();
+    h_asym->SetDirectory(0);
+    
+    for (Int_t xb = 1; xb <= h_asym->GetXaxis()->GetNbins(); xb++) {
+      for (Int_t yb = 1; yb <= h_asym->GetYaxis()->GetNbins(); yb++) {
+	
+	Double_t N_h1 = h1->GetBinContent(xb, yb);
+	Double_t N_h2 = h2->GetBinContent(xb, yb);	
+	Double_t A    = 0;
+
+	if      (   N_h1 > 0                 ) { A = (N_h1 - N_h2)/TMath::Sqrt(N_h1); }
+	else if ( ( N_h2 > 0 ) && BothDenoms ) { A = (N_h1 - N_h2)/TMath::Sqrt(N_h2); }
+	else                                   { A = 0.;                              }
+	
+	if (ReverseSign) A = -A;
+	
+	h_asym->SetBinContent(xb, yb);
+
+      }
+    }
+
+    return h_asym;
 
   }
 

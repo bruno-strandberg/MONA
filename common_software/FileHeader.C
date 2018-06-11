@@ -82,7 +82,7 @@ void FileHeader::AddParameter(FileHeader &h, TString par_name) {
   CheckName(par_name);
   auto par = h.FindParValues(par_name);
   if ( par.size() > 0 ) {
-    AddToMap(par.front()[0], par.front()[1], par.front()[2], par.front()[3]);
+    AddToMap("this", par.front()[1], par.front()[2], par.front()[3]);
   }
 
 }
@@ -96,7 +96,7 @@ void FileHeader::AddParameter(FileHeader &h, TString par_name) {
  * and return the value of the first parameter with this name.
  *
  * \param   parameter_name   Name of the parameter
- * \param   output_name      Name of the output file the application is associated with
+ * \param   output_name      Name of the output file the parameter is associated with
  * \param   application_name Name of the application the parameter is associated with
  * \return  returns a TString with the parameter value, if found; otherwise empty string
  */
@@ -180,13 +180,10 @@ void FileHeader::WriteHeader(TFile *f) {
     for (auto &app: out.second) {
       for (auto &par: app.second) {
 
-	TString outname = out.first;
+	TString outname = f->GetName();
 	TString appname = app.first;
 	TString parname = par.first;
 	TString valname = par.second;
-
-	// outname 'this' is replaced with the filename where the header is written
-	if (outname == "this") outname = f->GetName();
 
 	TString out_app_par_str = outname + fDelim + appname + fDelim + parname + fDelim + valname;
 
