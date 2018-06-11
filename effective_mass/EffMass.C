@@ -1,8 +1,14 @@
+#include "FileHeader.h"
+#include "TH2.h"
+#include "TFile.h"
+#include "TSystem.h"
+#include "TGraph.h"
 
 /**
  *  This macro uses the output of EffMhists.C to produce effective mass plots.
  *
  * \param  effmhists_file  Output of EffMhists.C macro.
+ * \param  outname         Name of the file where outputs are written
  * \param  rebinX          Rebin X (energy) axis.
  * \param  rebinY          Rebin Y (costheta) axis.
  * \param  upgoing         For angle-averaged Meff curves only consider upgoing
@@ -15,6 +21,24 @@ void EffMass(TString effmhists_file, TString outname,
   //-----------------------------------------
   //Get the histograms from input, rebin, divide, rename
   //-----------------------------------------
+  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
+
+  FileHeader emh("emhheader");                            //read the header from effmhists output
+  emh.ReadHeader(effmhists_file);
+  
+  FileHeader h("EffMass");                                //create header for this application
+  h.AddParameter( "effmhists_file", effmhists_file );     //add the input and output names
+  h.AddParameter( "outname", outname );
+
+  // manually add some header fields from EffMhists header 
+  // if effmhists_file is hadd, there are multiple entries for these - adding them manually
+  // makes the header of this application shorter
+  h.AddParameter( emh, "Rvol" );
+  h.AddParameter( emh, "Zmin" );
+  h.AddParameter( emh, "Zmax" );
+  h.AddParameter( emh, "atmmu_cut" );
+  h.AddParameter( emh, "noise_cut" );
+
   TFile *fin  = new TFile(effmhists_file, "READ");
 
   TH2D *h_gen_nu          = (TH2D*)fin->Get("Generated_scaled_nu");
@@ -124,6 +148,7 @@ void EffMass(TString effmhists_file, TString outname,
   g_gandalf_nub->Write();
   g_shower_nu->Write();
   g_shower_nub->Write();
+  h.WriteHeader(fout);
   fout->Close();
 
   //-----------------------------------------

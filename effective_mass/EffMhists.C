@@ -5,7 +5,7 @@
 #include "TVector3.h"
 #include "TMath.h"
 #include "NMHUtils.h"
-#include <sys/stat.h>
+#include "FileHeader.h"
 
 //*********************************************************************
 //functions
@@ -13,7 +13,7 @@
 TString  ParseInputs(Int_t evt_type, Int_t int_type, Int_t en_low, Int_t run_nr);
 void     InitHists();
 Bool_t   VertexInVol(Double_t vx, Double_t vy, Double_t vz, Double_t Rcan, Double_t zcan_min, Double_t zcan_max);
-void     FillDetected(Int_t veff_option, Double_t atmmu_cut);
+void     FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut);
 void     FillGenerated(Int_t veff_option);
 
 //*********************************************************************
@@ -50,16 +50,25 @@ SummaryParser *fS;
  * \param  en_low        MC neutrino energy start. Either 1 or 3.
  * \param  run_nr        MC run number.
  * \param  atmmu_cut     PID cut to reject atmospheric muons (0 - very strict, 1 - all events pass).
+ * \param  noise_cut     PID cut to reject noise-like events (0 - very strict, 1 - all events pass).
  * \param  veff_option   Select effective volume calculation. 0 - interaction volume, 1 - detector can, 2 - custom volume.
  * \param  rvol          Radius of custom volume.
  * \param  zmin_vol      Minimum z of custom volume.
  * \param  zmax_vol      Maximum z of custom volume.
  *
  */
-void EffMhists(TString summary_file, TString gseagen_file, 
-	       Int_t flavor, Int_t int_type, Int_t en_low, Int_t run_nr,
-	       Double_t atmmu_cut = 1, Int_t veff_option = 1,
-	       Double_t rvol = 0., Double_t zmin_vol = 0., Double_t zmax_vol = 0.) {
+void EffMhists(TString summary_file, 
+	       TString gseagen_file, 
+	       Int_t flavor, 
+	       Int_t int_type, 
+	       Int_t en_low, 
+	       Int_t run_nr,
+	       Double_t atmmu_cut = 1, 
+	       Double_t noise_cut = 1, 
+	       Int_t veff_option  = 1, 
+	       Double_t rvol      = 0., 
+	       Double_t zmin_vol  = 0., 
+	       Double_t zmax_vol  = 0. ) {
 
   if (veff_option >= not_supported) {
     cout << "ERROR! EffectiveMass() veff_option " << veff_option 
@@ -70,8 +79,7 @@ void EffMhists(TString summary_file, TString gseagen_file,
   TString out_name = ParseInputs(flavor, int_type, en_low, run_nr);
   if (out_name == "") return;
 
-  struct stat buf1, buf2;
-  if ( (stat(summary_file, &buf1) != 0) || (stat(summary_file, &buf2) != 0) ) {
+  if ( !NMHUtils::FileExists(summary_file) || !NMHUtils::FileExists(gseagen_file) ) {
     cout << "ERROR! EffMhists() input file(s) missing." << endl;
     return;
   }
@@ -100,7 +108,7 @@ void EffMhists(TString summary_file, TString gseagen_file,
   //------------------------------------------------------
   //loops over summary events and fill 'detected' histograms
   //------------------------------------------------------
-  FillDetected(veff_option, atmmu_cut);
+  FillDetected(veff_option, atmmu_cut, noise_cut);
 
   //------------------------------------------------------
   //fill the 'generated' histograms
@@ -111,6 +119,13 @@ void EffMhists(TString summary_file, TString gseagen_file,
   //write out the histograms. Division of det/gen has to be done 
   //later, this allows easy combining of the outputs.
   //------------------------------------------------------
+
+  FileHeader h("EffMhists");
+  h.AddParameter("Rvol", (TString)to_string(fG->fRcan) );
+  h.AddParameter("Zmin", (TString)to_string(fG->fZcan_min) );
+  h.AddParameter("Zmax", (TString)to_string(fG->fZcan_max) );
+  h.AddParameter("atmmu_cut", (TString)to_string(atmmu_cut) );
+  h.AddParameter("noise_cut", (TString)to_string(noise_cut) );
 
   TFile *fout = new TFile(out_name, "RECREATE");
   fh_gen_nu ->Write();
@@ -123,6 +138,7 @@ void EffMhists(TString summary_file, TString gseagen_file,
   fh_det_shower_nu ->Write();
   fh_det_gandalf_nub->Write();
   fh_det_shower_nub ->Write();
+  h.WriteHeader(fout);
 
   fout->Close();
 
@@ -230,7 +246,7 @@ Bool_t VertexInVol(Double_t vx, Double_t vy, Double_t vz, Double_t R, Double_t z
 //*********************************************************************
 
 // Function that fills 'detected' histograms
-void FillDetected(Int_t veff_option, Double_t atmmu_cut) {
+void FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
 
   //loops over summary events and fill 'detected' histograms
 
@@ -244,7 +260,8 @@ void FillDetected(Int_t veff_option, Double_t atmmu_cut) {
     }
 
     //reject events that look like atmospheric muons
-    if ( fS->PID_muon_score > atmmu_cut ) continue; 
+    if ( fS->PID_muon_score > atmmu_cut  ) continue; 
+    if ( fS->PID_noise_score > noise_cut ) continue; 
 
     //if you wish to set PID cut, do so here
     

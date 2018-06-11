@@ -3,8 +3,8 @@
 This script can be used to call the EffMass.C macro.
  
 Usage:
-    EM_caller.py
-    EMH_caller -h                                                                     
+    EM_caller
+    EM_caller -h                                                                     
                                                                                           
 Option:                                                                                   
     -h --help         Show this screen
@@ -70,7 +70,7 @@ def call_effmass():
             outname  = "combined_output/EffMass_{0}_{1}.root".format(f, inter)
 
             os.system( "hadd {0} output/*{1}*{2}*".format(combname, f, inter) )
-            os.system("root -b -q 'EffMass.C({0}{1}{2},{0}{3}{2})'".format('"',combname,'"', outname))
+            os.system("root -b -q 'EffMass.C+({0}{1}{2},{0}{3}{2})'".format('"',combname,'"', outname))
 
 #*****************************************************************************
 

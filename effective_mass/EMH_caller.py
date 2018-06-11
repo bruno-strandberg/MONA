@@ -3,7 +3,7 @@
 This script can be used to call the EffMhists.C macro.
  
 Usage:
-    EMH_caller -l RUNNR_LOW -u RUNNR_UP -f FLAVOUR... -i INTERACTION... -e E_START... (--local | --farm) [--nmin NMIN] [-c ATMMU_CUT] [-v VEFF_OPT] [--rvol RVOL] [--zmin ZMIN] [--zmax ZMAX]
+    EMH_caller -l RUNNR_LOW -u RUNNR_UP -f FLAVOUR... -i INTERACTION... -e E_START... (--local | --farm) [--nmin NMIN] [-c ATMMU_CUT] [-n NOISE_CUT] [-v VEFF_OPT] [--rvol RVOL] [--zmin ZMIN] [--zmax ZMAX]
     EMH_caller -h                                                                     
                                                                                           
 Option:                                                                                   
@@ -20,6 +20,7 @@ Option:
     ==================FINE TUNING BELOW========================================
 
     -c ATMMU_CUT      PID cut to reject atmospheric muons [default: 1.0]
+    -n NOISE_CUT      PID cut to reject noise-like events [default: 1.0]
     -v VEFF_OPT       Vgen option, 0 - interaction volume, 1 - can, 2 - custom [default: 1]
     --rvol RVOL       Radius of custom volume [default: 0]
     --zmin ZMIN       Z minimum of custom volume [default: 0]
@@ -86,7 +87,7 @@ def execute_effmass_calc(args):
                 continue
 
             cmds.append( get_execution_cmd(summaryf, gseagenf, flavour, interaction, 
-                                           energy, fnr, args['-c'], args['-v'], 
+                                           energy, fnr, args['-c'], args['-n'], args['-v'], 
                                            args['--rvol'], args['--zmin'], args['--zmax']) )
             
             # if run locally execute all commands and clear list
@@ -183,7 +184,7 @@ def gseagen_file_exists(gseagenf, flav, interact, en, fnr):
         
 def get_execution_cmd(sname, gname,
                       flavour, interaction, estart, runnr,
-                      atmmu_cut, veff_o,
+                      atmmu_cut, noise_cut, veff_o,
                       rvol, zmin, zmax):
     """
     This function creates the execution command for the root script.
@@ -197,6 +198,7 @@ def get_execution_cmd(sname, gname,
     syscmd += str(estart) + ","
     syscmd += str(runnr) + ","
     syscmd += str(atmmu_cut) + ","
+    syscmd += str(noise_cut) + ","
     syscmd += str(veff_o) + ","
     syscmd += str(rvol) + ","
     syscmd += str(zmin) + ","
@@ -219,19 +221,19 @@ def submit_farm_job(cmds, njobs):
     scriptf.write('#!/bin/bash\n\n')
 
     cwd = os.getcwd()
-    scriptf.write( "cd /sps/km3net/users/bstrand/Code/Jpp/dev_rootv6\n" )
+    scriptf.write( "cd {0}\n".format( os.environ['JPP_DIR'] ) )
     scriptf.write( "source setenv.sh\n" )
-    scriptf.write( "cd {}\n".format(cwd) )
-    scriptf.write( "source /afs/in2p3.fr/home/b/bstrand/software/cern/root_v6.12.06/bin/thisroot.sh\n" )
+    scriptf.write( "cd {0}\n".format(cwd) )
+    scriptf.write( "source {0}/bin/thisroot.sh\n".format( os.environ['ROOTSYS'] ) )
     scriptf.write( "source /usr/local/shared/bin/irods_env.sh\n" )
-    scriptf.write( "source /sps/km3net/users/bstrand/Code/NMH/setenv.sh\n\n" )
+    scriptf.write( "source {0}/setenv.sh\n\n".format( os.environ['NMHDIR'] ) )
     
     for cmd in cmds:
         scriptf.write(cmd+"\n")
 
     scriptf.close()
 
-    os.system( "qsub -P P_km3net -l sps=1 -o {0} -e {0} {1}".format(cwd+"/tmp", scriptn) )
+    os.system( "qsub -P P_km3net -l sps=1  -l vmem=2G -l ct=5:00:00 -o {0} -e {0} {1}".format(cwd+"/tmp", scriptn) )
 
 #*****************************************************************
 
