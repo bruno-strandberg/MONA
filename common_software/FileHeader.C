@@ -67,6 +67,28 @@ void FileHeader::AddParameter(TString parameter_name, TString parameter_value) {
 
 //************************************************************************************
 
+/** 
+ * Function to include parameter from another FileHeader in this header.
+ *
+ * This function is useful when one wishes to manually add a parameter from another header
+ * instead of reading in the full header to this instance with ReadHeader(). If the parameter
+ * name is present several times, the first found value is added.
+ *
+ * \param h          Reference to another FileHeader instance
+ * \param par_name   Name of the parameter to be included
+*/
+void FileHeader::AddParameter(FileHeader &h, TString par_name) {
+
+  CheckName(par_name);
+  auto par = h.FindParValues(par_name);
+  if ( par.size() > 0 ) {
+    AddToMap(par.front()[0], par.front()[1], par.front()[2], par.front()[3]);
+  }
+
+}
+
+//************************************************************************************
+
 /**
  * Function to fetch the parameter from the header of a certain output and application.
  *

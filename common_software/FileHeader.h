@@ -60,6 +60,7 @@ class FileHeader {
   ~FileHeader();
 
   void    AddParameter(TString parameter_name, TString parameter_value);
+  void    AddParameter(FileHeader &h, TString par_name);
   TString GetParameter(TString parameter_name, TString output_name="", TString application_name="");
   std::vector< std::vector<TString> > FindParValues(TString parameter_name);
 
