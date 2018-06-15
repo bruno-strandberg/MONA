@@ -50,10 +50,6 @@ For improvements
 
 * You should make a separate application that cache's the gSeaGen data.
 
-* The can size, muon cut etc should be stored in the output of effective mass.
-
-* The above point applied also more generally: the input parameters should be saved to output for different applications, etc FluxChain, GSGSampler, ...
-
 To-do, ideas
 ------------
 
@@ -77,3 +73,7 @@ Done
 * the test tests/flux_check_inpol.py illustrates that the interpolation works nicely in cosz and energy directions, no reason to put energy on log scale.
 
 * SummaryParser should have a TChain instead of TTree to allow attaching several files.
+
+* The can size, muon cut etc should be stored in the output of effective mass.
+
+* The above point applied also more generally: the input parameters should be saved to output for different applications, etc FluxChain, GSGSampler, ...

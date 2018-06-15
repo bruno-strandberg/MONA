@@ -12,6 +12,7 @@
 #pragma link C++ class AtmFlux+;
 #pragma link C++ class NuXsec+;
 #pragma link C++ class FileHeader+;
+#pragma link C++ class SummaryEvent+;
 
 
 #endif
