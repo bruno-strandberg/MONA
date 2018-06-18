@@ -8,6 +8,7 @@
    Data format for NMH analysis.
 
    Documentation to-do: Why the interface, why only one track and one shower reco. Why not just aanet.
+   How to change if more/less/different info required
    
  */
 class SummaryEvent : public TObject {

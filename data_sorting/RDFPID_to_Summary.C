@@ -64,9 +64,11 @@ void RDFPID_to_Summary(TString fin_name="", TString fout_name="") {
     out.GetEvt()->Set_MC_dir(PIDR.dir_x, PIDR.dir_y, PIDR.dir_z);
     out.GetEvt()->Set_MC_pos(PIDR.pos_x, PIDR.pos_y, PIDR.pos_z);
 
+    //for quality levels of tracks and showers, see NMH/common_software/README.md
+
     out.GetEvt()->Set_track_energy(PIDR.gandalf_energy_corrected);
     out.GetEvt()->Set_track_bjorkeny(0.);                        //currently gandalf has no bjorkeny
-    out.GetEvt()->Set_track_ql0(PIDR.gandalf_is_good);     
+    out.GetEvt()->Set_track_ql0(PIDR.gandalf_is_good);           
     out.GetEvt()->Set_track_ql1(PIDR.gandalf_loose_is_selected);
     out.GetEvt()->Set_track_ql2(PIDR.gandalf_is_selected);
     out.GetEvt()->Set_track_dir(PIDR.gandalf_dir_x, PIDR.gandalf_dir_y, PIDR.gandalf_dir_z);
