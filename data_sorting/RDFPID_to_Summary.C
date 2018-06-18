@@ -42,7 +42,7 @@ void RDFPID_to_Summary(TString fin_name="", TString fout_name="") {
   // Init the output in analysis format, loop and map variables
   //----------------------------------------------------------------------------
 
-  SummaryParser out(fout_name, kFALSE);
+  SummaryParser out(fout_name, kFALSE); //false means writing mode
 
   Long64_t nentries = PIDR.fChain->GetEntries();
   for (Int_t i = 0; i < nentries; i++) {
