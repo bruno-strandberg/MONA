@@ -1,20 +1,12 @@
-#include "GSGParser.h"
-#include "SummaryParser.h"
-#include "TSystem.h"
-#include <iostream>
-using namespace std;
-
 void data_parsers(TString sum_file="../data/mc_end/data_atmnu/summary_muon-CC_3-100GeV_1.root",
 		  TString gsg_file="../data/mc_start/data_atmnu/gSeaGen_muon-CC_3-100GeV_1.root") {
-
-  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
 
   SummaryParser sp(sum_file);
   GSGParser     gp(gsg_file);
   
-  for (Int_t i = 0; i < sp.fChain->GetEntries(); i++) {
-    sp.GetEntry(i);
-    cout << "MC Energy, dir_z in summary: " << sp.MC_energy << "\t" << sp.MC_dir_z << endl;
+  for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
+    sp.GetTree()->GetEntry(i);
+    cout << "MC Energy, dir_z in summary: " << sp.GetEvt()->Get_MC_energy() << "\t" << sp.GetEvt()->Get_MC_dir().z() << endl;
     if (i > 20) break;
   }
 
