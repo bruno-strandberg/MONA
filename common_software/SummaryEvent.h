@@ -7,9 +7,17 @@
 /**
    Data format for NMH analysis.
 
-   Documentation to-do: Why the interface, why only one track and one shower reco. Why not just aanet.
-   How to change if more/less/different info required
-   
+   It is obvious that for a code to be maintainable, one requires a certain format for the data. At the time when this code was started, there was no clear agreement on what is the data format that is input to the NMH sensitivity analyses. For this reason this event class was defined, the data from ECAP Random Decision Forest PID is converted to this format by scripts in ```NMH/data_sorting/```.
+
+   SummaryEvent consists of double's only. The main reason for this is to fascilitate simple data input to RooFit (where NMH fitting is performed), which works with flat trees. Additionally, such a tree can be easilty inspected/accessed without access to the SummaryEvent class.
+
+   The variables are all private to dis-allow access without the use of the interface (setters/getters). This means the variable names can be changed, if necessary, but for the rest of the code to continue to work the existing interface functions should not be altered. As an exception, fMC_type, fMC_is_CC, fMC_erange_start, fMC_runID are used by their names in NMH/data_sorting/RestoreParity.C; if these are changed, the RestoreParity.C script will need to be checked. New variables and getters/setters can be added freely, this will not break the existing code.
+
+   The NMH sensitivy is itself a very high-level analysis. For this reason there are placeholders only for one track reco track and one shower reco track. It is envisaged that the selection of the 'best' fitted track is done before this analysis and hence this data format does not include several tracks per event as e.g. aanet.
+
+   Similarly, currently there are placeholders for three levels of quality cuts, more can be added. Quality levels (i.e. event selection cuts) should be defined prior to this analysis or when data is written to this format. Example: one may wish to have all reconstructed track events (ql0), reconstructed track events with likelihood higher than some value (ql1), reconstructed tracks with likelihood higher than some value and a certain number of hits (ql2), etc. 
+
+   If a better reco (some DNN) or PID becomes available, this info can either be stored in the existing variables or, if necessary, new variables can be added.
  */
 class SummaryEvent : public TObject {
 
