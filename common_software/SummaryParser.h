@@ -9,7 +9,7 @@
 using namespace std;
 
 /**
-   A small class to read data in SummaryEvent format.
+   A small class to read/write data in SummaryEvent format.
  */
 class SummaryParser {
   
