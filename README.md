@@ -24,7 +24,7 @@ Setup elsewhere
 ---------------
 * TBD
 * ```source setenv.sh```. Optionally, do ```source setenv.sh -a``` to compile against aanet.
-*
+* ```cd common_software/ ; make ```
 
 Sort data
 ----------

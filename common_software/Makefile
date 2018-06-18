@@ -1,12 +1,12 @@
 #Compilation to ROOT library was a gift from Joao Coelho's OscProb package.
 
 #get root CFLAGS and root LIBS
-ROOTCFLAGS    = $(shell root-config --cflags) -fPIC
-ROOTLIBS      = $(shell root-config --nonew --libs) 
+ROOTCFLAGS    = $(shell root-config --cflags)
+ROOTLIBS      = $(shell root-config --libs) 
 
 #set compiler and standard flags
 CXX           = g++
-CXXFLAGS      = -g -Wall -std=c++11
+CXXFLAGS      = -g -Wall -std=c++11 -fPIC
 
 #add the ROOT flags, include dir is current dir
 CXXFLAGS  += $(ROOTCFLAGS)
@@ -25,11 +25,14 @@ HEADERS = $(filter-out $(CURDIR)/LinkDef.h, $(wildcard $(CURDIR)/*.h))
 SOURCES = $(wildcard $(CURDIR)/*.C)
 TARGET_LIB = $(CURDIR)/lib$(PACKAGE).so
 DICTIONARY = $(CURDIR)/dic$(PACKAGE).cxx
+ROOTMAP    = $(CURDIR)/lib$(PACKAGE).rootmap
 
 #for debugging
 #debug:
 #	@echo ${LDFLAGS}
 #	@echo ${CXXFLAGS}
+#	@echo ${SOURCES}
+#	@echo ${HEADERS}
 
 all: $(TARGET_LIB)
 
@@ -43,13 +46,15 @@ $(TARGET_LIB): $(DICTIONARY) $(SOURCES)
 #$^ means prerequesities --> HEADERS and Linkdef
 $(DICTIONARY): $(HEADERS) LinkDef.h
 	@echo "  Making dictionary for $(PACKAGE)..."
-	@rootcint -f $@ -c $^
+	@rootcling -f $@ -rml $(TARGET_LIB) -rmf lib$(PACKAGE).rootmap $^
 
 clean:
 	@echo "  Cleaning $(PACKAGE)..."
 	@rm -f $(TARGET_LIB)
 	@rm -f $(DICTIONARY)
 	@rm -f $(DICTIONARY:%.cxx=%.h)
+	@rm -f *rdict.pcm
+	@rm -f $(ROOTMAP)
 
 .PHONY: clean all
 

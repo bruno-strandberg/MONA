@@ -13,14 +13,14 @@ pid_result_XXX.root is the summary file, which contains all the information from
 
 There are numerous gSeaGen and mupage files. We have *something* like this gSeaGen_<flavor>_<interaction>_<erange>_<runnr>.root, where flavor is muon/elec/tau, interaction is CC or NC, erange is 1--5 or 3--100, runnr is 1--1800.
 
-This scheme persists until PID, however in the pid_result_XXX.root all flavours, interactions, energy ranges and run numbers are merged together, with special variables that help to re-trace the origin of each event.
+This scheme persists until PID, however in the pid_result_XXX.root all flavours, interactions, energy ranges and run numbers are merged together, with special variables that help to re-trace the origin of each event. The merging is a necessary step for data input to ECAP Random Decision Forest PID.
 
 For data sorting and quality purposes, having everything in one file is not optimal. Also, pid_result_XXX.root has about 300 branches, that occasionally change, depending on the version. Writing an analysis code that takes a changing and incomprehensible data format as input is not optimal. For that purpose the data in pid_result_XXX.root is converted to 'analysis' format (a smaller set of variables, organised tree, see below) and split up to match the file scheme used throughout the MC chain.
 
 Analysis format
 ===============
 
-The analysis format is defined in the function NMH/data_sorting/DataReducer::InitOutputTree(), which maps the tree in pid_result_XXX.root to a smaller tree with better variable naming convention. The class NMH/common_software/SummaryParser is set to parse data in the analysis format. The variables of the analysis format are described in SummaryParser documentation.
+The analysis format is defined by the class ```NMH/common_software/SummaryEvent.h/C```. The class ```NMH/common_software/SummaryParser``` is set to read or write data in the analysis format by using the SummaryEvent class. The variables of the analysis format are described in SummaryEvent documentation.
 
 Directories and files
 =====================

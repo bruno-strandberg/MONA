@@ -2,7 +2,6 @@
 #include "GSGSampler.h"
 
 //root
-#include "TSystem.h"
 #include "TStopwatch.h"
 
 //NMH
@@ -67,8 +66,6 @@ void GSGSampler(TString flux_chain_flist,
   SamplerTimer.Reset();
 
   cout << "NOTICE GSGSampler() running for flavor, nc/cc: " << flavor << "\t" << is_cc << endl;
-
-  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
 
   Bool_t initialized = false; //variable to control that init and gSeaGen reading is only done once
   Double_t gsg_data_size = 0.;
@@ -711,8 +708,7 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
   TString fnames = "$NMHDIR/data/mc_end/data_atmnu/summary_" + fFlavs[flavor] + "-CC*.root";
   if (is_cc == 0) fnames = "$NMHDIR/data/mc_end/data_atmnu/summary_elec-NC*.root"; 
 
-  SummaryParser sp;
-  sp.fChain->Add(fnames);
+  SummaryParser sp(fnames);
 
   // create output files and trees; create search limits that indicate which
   // range of the fExps[i] vector should be searched for the given run_nr and e_min
@@ -729,7 +725,7 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
     fExpHeaders[N]->AddParameter("Output", out_name);
 
     files.push_back( new TFile(out_name, "RECREATE") );            //create file
-    trees.push_back( sp.fChain->CloneTree(0) );                    //add empty tree
+    trees.push_back( sp.GetTree()->CloneTree(0) );                //add empty tree
     search_lims.push_back( std::make_pair( 0, fExps[N].size() ) ); //by default search in full range 
   }
 
@@ -738,16 +734,17 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
   Double_t run_nr = -1;
   Double_t e_min  = -1;
 
-  for (Int_t i = 0; i < sp.fChain->GetEntries(); i++) {
+  for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
 
-    sp.fChain->GetEntry(i);
+    sp.GetTree()->GetEntry(i);
+    SummaryEvent *evt = sp.GetEvt();
 
     // if file changes update the limits in the vectors in which the events are searched
 
-    if ( run_nr != sp.MC_runID || e_min != sp.MC_erange_start ) {
+    if ( run_nr != evt->Get_MC_runID() || e_min != evt->Get_MC_erange_start() ) {
 
-      run_nr = sp.MC_runID;
-      e_min  = sp.MC_erange_start;
+      run_nr = evt->Get_MC_runID();
+      e_min  = evt->Get_MC_erange_start();
 
       for (Int_t N = 0; N < (Int_t)fExps.size(); N++) {
 	search_lims[N] = get_start_stop( fExps[N], run_nr, e_min );
@@ -755,7 +752,7 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
 
     }
 
-    evtid this_evt(sp.MC_runID, sp.MC_evtID, sp.MC_erange_start);
+    evtid this_evt(evt->Get_MC_runID(), evt->Get_MC_evtID(), evt->Get_MC_erange_start());
 
     // see if this summary event is in any of the event samples, if so write it out to
     // relevant file

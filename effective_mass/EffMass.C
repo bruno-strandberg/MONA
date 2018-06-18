@@ -1,7 +1,6 @@
 #include "FileHeader.h"
 #include "TH2.h"
 #include "TFile.h"
-#include "TSystem.h"
 #include "TGraph.h"
 
 /**
@@ -21,8 +20,6 @@ void EffMass(TString effmhists_file, TString outname,
   //-----------------------------------------
   //Get the histograms from input, rebin, divide, rename
   //-----------------------------------------
-  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
-
   FileHeader emh("emhheader");                            //read the header from effmhists output
   emh.ReadHeader(effmhists_file);
   

@@ -1,6 +1,5 @@
 #include "SummaryParser.h"
 #include "GSGParser.h"
-#include "TSystem.h"
 #include "TH2.h"
 #include "TVector3.h"
 #include "TMath.h"
@@ -88,9 +87,7 @@ void EffMhists(TString summary_file,
 
   //------------------------------------------------------
   //load shared library, init datafile parsers
-  //------------------------------------------------------
-  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
-  
+  //------------------------------------------------------  
   fS = new SummaryParser(summary_file);
   fG = new GSGParser(gseagen_file);
 
@@ -250,38 +247,40 @@ void FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
 
   //loops over summary events and fill 'detected' histograms
 
-  for (Int_t i = 0; i < fS->fChain->GetEntries(); i++) {
+  for (Int_t i = 0; i < fS->GetTree()->GetEntries(); i++) {
 
-    fS->fChain->GetEntry(i);
-    
+    fS->GetTree()->GetEntry(i);
+    SummaryEvent *evt = fS->GetEvt();
+
     //if volume cut is used exclude events with vertices outside the volume cut
     if (veff_option == can_vol || veff_option == custom_vol) {
-      if ( !VertexInVol(fS->MC_pos_x, fS->MC_pos_y, fS->MC_pos_z, fG->fRcan, fG->fZcan_min, fG->fZcan_max) ) continue;
+      TVector3 pos = evt->Get_MC_pos();
+      if ( !VertexInVol(pos.x(), pos.y(), pos.z(), fG->fRcan, fG->fZcan_min, fG->fZcan_max) ) continue;
     }
 
     //reject events that look like atmospheric muons
-    if ( fS->PID_muon_score > atmmu_cut  ) continue; 
-    if ( fS->PID_noise_score > noise_cut ) continue; 
+    if ( evt->Get_RDF_muon_score() > atmmu_cut  ) continue; 
+    if ( evt->Get_RDF_noise_score() > noise_cut ) continue; 
 
     //if you wish to set PID cut, do so here
     
     //mc_truth
-    if ( fS->MC_type > 0 ) { fh_det_nu ->Fill( fS->MC_energy, -fS->MC_dir_z ); }
-    else                   { fh_det_nub->Fill( fS->MC_energy, -fS->MC_dir_z ); }
+    if ( evt->Get_MC_type() > 0 ) { fh_det_nu ->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
+    else                          { fh_det_nub->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
 
     //gandalf uses MC truth, but checks for reco 'quality cuts'
-    if ((Bool_t)fS->gandalf_ql1) {
+    if ((Bool_t)evt->Get_track_ql1() ) {
 
-      if (fS->MC_type > 0) { fh_det_gandalf_nu ->Fill( fS->MC_energy, -fS->MC_dir_z ); }
-      else                 { fh_det_gandalf_nub->Fill( fS->MC_energy, -fS->MC_dir_z ); }
+      if (evt->Get_MC_type() > 0) { fh_det_gandalf_nu ->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
+      else                        { fh_det_gandalf_nub->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
 
     }
 
     //shower uses MC truth, but checks for reco 'quality cuts'
-    if ((Bool_t)fS->shower_ql1 ) {
+    if ((Bool_t)evt->Get_shower_ql1() ) {
 
-      if (fS->MC_type > 0) { fh_det_shower_nu ->Fill( fS->MC_energy, -fS->MC_dir_z ); }
-      else                 { fh_det_shower_nub->Fill( fS->MC_energy, -fS->MC_dir_z ); }
+      if (evt->Get_MC_type() > 0) { fh_det_shower_nu ->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
+      else                        { fh_det_shower_nub->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
       
     }
     

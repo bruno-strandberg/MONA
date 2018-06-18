@@ -107,7 +107,6 @@ void FluxChain(Double_t op_time     = 3.,
 	       Double_t dm21        = 0., 
 	       Double_t dm32        = 0.) {
 
-  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
 
   // create header

@@ -1,43 +1,46 @@
-#define SummaryParser_cxx
 #include "SummaryParser.h"
-#include <TH2.h>
-#include <TStyle.h>
-#include <TCanvas.h>
+#include <stdexcept>
 
-void SummaryParser::Loop()
-{
-//   In a ROOT session, you can do:
-//      root> .L SummaryParser.C
-//      root> SummaryParser t
-//      root> t.GetEntry(12); // Fill t data members with entry number 12
-//      root> t.Show();       // Show values of entry 12
-//      root> t.Show(16);     // Read and show values of entry 16
-//      root> t.Loop();       // Loop on all entries
-//
+/**
+   Constructor.
+   \param fname     Name of the file to be parsed; wildcard accepted to add multiple files if read mode. In write mode the name of the file to be created where the data is written.
+   \param ReadMode  If true the file opened for reading; if false the file is opened for writing
+ */
+SummaryParser::SummaryParser(TString fname, Bool_t ReadMode) {
 
-//     This is the loop skeleton where:
-//    jentry is the global entry number in the chain
-//    ientry is the entry number in the current Tree
-//  Note that the argument to GetEntry must be:
-//    jentry for TChain::GetEntry
-//    ientry for TTree::GetEntry and TBranch::GetEntry
-//
-//       To read only selected branches, Insert statements like:
-// METHOD1:
-//    fChain->SetBranchStatus("*",0);  // disable all branches
-//    fChain->SetBranchStatus("branchname",1);  // activate branchname
-// METHOD2: replace line
-//    fChain->GetEntry(jentry);       //read all branches
-//by  b_branchname->GetEntry(ientry); //read only this branch
-   if (fChain == 0) return;
+  if (fname == "") {
+    throw std::invalid_argument( "ERROR! SummaryParser::SummaryParser() empty filename as argument." );
+  }
+  
+  fOut   = NULL;
+  fEvt   = new SummaryEvent();
+  fReadMode = ReadMode;
 
-   Long64_t nentries = fChain->GetEntriesFast();
+  if (fReadMode) {
+    fChain = new TChain("summary");
+    fChain->Add(fname);
+    fChain->SetBranchAddress("SummaryEvent", &fEvt);  
+  }
+  else {
+    fOut = new TFile(fname, "RECREATE");
+    fChain = (TChain*)new TTree("summary", "ORCA MC summary tree");
+    fChain->Branch("SummaryEvent", &fEvt, 2); //split level two means the tree is flattened
+  }
 
-   Long64_t nbytes = 0, nb = 0;
-   for (Long64_t jentry=0; jentry<nentries;jentry++) {
-      Long64_t ientry = LoadTree(jentry);
-      if (ientry < 0) break;
-      nb = fChain->GetEntry(jentry);   nbytes += nb;
-      // if (Cut(ientry) < 0) continue;
-   }
+}
+
+/**
+   Destructor.
+ */
+SummaryParser::~SummaryParser() {
+
+  delete fEvt;
+  if (fReadMode) {
+    delete fChain;
+  }
+  else {
+    if ( fOut->IsOpen() ) WriteAndClose(); //write tree and close file if not already done
+    if (fOut) delete fOut; //fChain deleted when fOut is closed (I think...)
+  }
+  
 }

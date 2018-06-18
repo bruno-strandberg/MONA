@@ -1,12 +1,12 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Thu Apr 12 16:32:50 2018 by ROOT version 6.10/02
+// Mon Jun 18 11:54:19 2018 by ROOT version 6.12/06
 // from TTree PID/
 // found on file: ../data/pid_result_10Apr2018.root
 //////////////////////////////////////////////////////////
 
-#ifndef DataReducer_h
-#define DataReducer_h
+#ifndef RDFPIDReader_h
+#define RDFPIDReader_h
 
 #include <TROOT.h>
 #include <TChain.h>
@@ -17,16 +17,16 @@
 /** A ROOT generated class to parse NMH/data/pid_output_XXX.root, with functions for data sorting. 
  *
  *  As explained in NMH/data/README.md, pid_output_XXX.root is not suitable as a sustainable input
- *  to an analysis code. This class helps to convert the data to analysis format. Most of this is
- *  auto-generated, with a few added functions in the .C for data sorting.
+ *  to an analysis code. This class helps to convert the data to analysis format. This class
+ *  is auto generated using the MakeClass() function of TTree's.
  *
  *  When pid_result_XXX.root new version has changed/new branches, the easiest way to update is
- *  to auto-generate again with MakeClass() and copy over the added parts. This is crap,
+ *  to auto-generate again with MakeClass() and copy over the documentation. This is not great,
  *  but the best solution I could think of.
  *
  */
 
-class DataReducer {
+class RDFPIDReader {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
@@ -639,8 +639,8 @@ public :
    TBranch        *b_dusj_dir_x;   //!
    TBranch        *b_dusj_dir_z;   //!
 
-   DataReducer(TTree *tree=0, TString outname="out.root");
-   virtual ~DataReducer();
+   RDFPIDReader(TTree *tree=0);
+   virtual ~RDFPIDReader();
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
@@ -648,22 +648,12 @@ public :
    virtual void     Loop();
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
-
-   //----------------------------------------------------
-   //bstr: added functions to create a more reasonable datafile
-   //----------------------------------------------------
-   void SetBranches();
-   void InitOutputTree();
-   TFile *fout;       //!< Pointer to the output file.
-   TTree *tout;       //!< Pointer to the output tree.
-   TString fOutN;     //!< Name of the output file
-   //----------------------------------------------------
 };
 
 #endif
 
-#ifdef DataReducer_cxx
-DataReducer::DataReducer(TTree *tree, TString outname) : fChain(0) 
+#ifdef RDFPIDReader_cxx
+RDFPIDReader::RDFPIDReader(TTree *tree) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
@@ -675,23 +665,22 @@ DataReducer::DataReducer(TTree *tree, TString outname) : fChain(0)
       f->GetObject("PID",tree);
 
    }
-   fOutN = outname;
    Init(tree);
 }
 
-DataReducer::~DataReducer()
+RDFPIDReader::~RDFPIDReader()
 {
    if (!fChain) return;
    delete fChain->GetCurrentFile();
 }
 
-Int_t DataReducer::GetEntry(Long64_t entry)
+Int_t RDFPIDReader::GetEntry(Long64_t entry)
 {
 // Read contents of entry.
    if (!fChain) return 0;
    return fChain->GetEntry(entry);
 }
-Long64_t DataReducer::LoadTree(Long64_t entry)
+Long64_t RDFPIDReader::LoadTree(Long64_t entry)
 {
 // Set the environment to read one entry
    if (!fChain) return -5;
@@ -704,7 +693,7 @@ Long64_t DataReducer::LoadTree(Long64_t entry)
    return centry;
 }
 
-void DataReducer::Init(TTree *tree)
+void RDFPIDReader::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -1024,7 +1013,7 @@ void DataReducer::Init(TTree *tree)
    Notify();
 }
 
-Bool_t DataReducer::Notify()
+Bool_t RDFPIDReader::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -1035,18 +1024,18 @@ Bool_t DataReducer::Notify()
    return kTRUE;
 }
 
-void DataReducer::Show(Long64_t entry)
+void RDFPIDReader::Show(Long64_t entry)
 {
 // Print contents of entry.
 // If entry is not specified, print current entry
    if (!fChain) return;
    fChain->Show(entry);
 }
-Int_t DataReducer::Cut(Long64_t entry)
+Int_t RDFPIDReader::Cut(Long64_t entry)
 {
 // This function may be called from Loop.
 // returns  1 if entry is accepted.
 // returns -1 otherwise.
    return 1;
 }
-#endif // #ifdef DataReducer_cxx
+#endif // #ifdef RDFPIDReader_cxx

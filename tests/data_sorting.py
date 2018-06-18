@@ -41,7 +41,7 @@ def summarize():
 
 args = docopt(__doc__)
 gSystem.Load("$NMHDIR/common_software/libnmhsoft.so")
-gROOT.ProcessLine(".L $NMHDIR/data_sorting/DataReducer.C+")
+gROOT.ProcessLine(".L $NMHDIR/data_sorting/RDFPIDReader.C+")
 
 summarize()
 
@@ -58,7 +58,7 @@ shower_EvsTh_sum  = TH2D("shower_EvsTh_sum" ,"shower_EvsTh_sum" ,50,0,100,40,-1,
 #=========================================
 pidfile   = TFile(args['-p'],"READ")
 pidtree   = pidfile.Get("PID")
-pp        = DataReducer(pidtree)
+pp        = RDFPIDReader(pidtree)
 
 print("Looping PID tree:")
 for i in range( 0, pp.fChain.GetEntries() ):
@@ -77,10 +77,11 @@ print("Looping over summary files:")
 for fnr,sf in enumerate(summaryfiles):
     if (fnr%100==0): print("File {}".format(fnr) )
     sp = SummaryParser(sf)
-    for i in range( sp.fChain.GetEntries() ):
-        sp.fChain.GetEntry(i)
-        gandalf_EvsTh_sum.Fill(sp.gandalf_energy_nu, sp.gandalf_dir_z)
-        shower_EvsTh_sum.Fill(sp.shower_energy_nu, sp.shower_dir_z)
+    for i in range( sp.GetTree().GetEntries() ):
+        sp.GetTree().GetEntry(i)
+        evt = sp.GetEvt()
+        gandalf_EvsTh_sum.Fill(evt.Get_track_energy(), evt.Get_track_dir().z())
+        shower_EvsTh_sum.Fill(evt.Get_shower_energy(), evt.Get_shower_dir().z())
         
 fout = TFile("fout.root","RECREATE")
 gandalf_EvsTh_pid.Write()
