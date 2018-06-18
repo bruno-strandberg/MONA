@@ -23,7 +23,7 @@ Setup in lyon
 Setup elsewhere
 ---------------
 * TBD
-* ```source setenv.sh```. Optionally, do ```source setenv.sh -a``` to compile against aanet.
+* ```source setenv.sh -a -o /oscprob/dir```. -a sets to compile against aanet (only required when reading gSeaGen files in .evt format). -o sets the oscprob directory that is required for oscillating neutrinos.
 * ```cd common_software/ ; make ```
 
 Sort data
@@ -61,19 +61,19 @@ To-do, ideas
 
 * Interactive python setup script that asks for OscProb, Jpp with root 6, etc, paths and creates the setenv.sh script.
 
-* pid_result conversion to summary format is still painful, especially when summary data format changes. One option would be to define summary data structure in a SummaryEvent() class. This would, however, break compatibility with most things I have written so far and, more importantly, will make accessing/cloning/etc of the data more difficult. Maybe a better option would be to have a script that, after DataReducer.C has run its script, it checks for branches in SummaryParser.h and advises on branches to be added?
-
 Done
 ----
 
-* Need aanet to parse tau gSeaGen files and calculate the effective mass
+* Need aanet to parse tau gSeaGen files and calculate the effective mass --> compiling against aanet
 
-* allow compilation without aanet/jpp
+* allow compilation without aanet/jpp --> controlled by setenv.sh script
 
 * the test tests/flux_check_inpol.py illustrates that the interpolation works nicely in cosz and energy directions, no reason to put energy on log scale.
 
-* SummaryParser should have a TChain instead of TTree to allow attaching several files.
+* SummaryParser should have a TChain instead of TTree to allow attaching several files --> done
 
-* The can size, muon cut etc should be stored in the output of effective mass.
+* The can size, muon cut etc should be stored in the output of effective mass --> handled by FileHeader
 
-* The above point applied also more generally: the input parameters should be saved to output for different applications, etc FluxChain, GSGSampler, ...
+* The above point applied also more generally: the input parameters should be saved to output for different applications, etc FluxChain, GSGSampler, ... --> handled by FileHeader
+
+* pid_result conversion to summary format is still painful, especially when summary data format changes. One option would be to define summary data structure in a SummaryEvent() class. This would, however, break compatibility with most things I have written so far and, more importantly, will make accessing/cloning/etc of the data more difficult. Maybe a better option would be to have a script that, after DataReducer.C has run its script, it checks for branches in SummaryParser.h and advises on branches to be added? --> Improved by creating the SummaryEvent class, which provides better IO.

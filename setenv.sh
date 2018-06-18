@@ -6,13 +6,17 @@
 #==============================================================
 
 aanet='false'
+oscprob=''
 
-while getopts 'a' flag; do
+while getopts 'ao:' flag; do
   case "${flag}" in
     a) aanet='true' ;;
+    o) oscprob="${OPTARG}" ;;
     *) error "Unexpected option ${flag}" ;;
   esac
 done
+
+oscprob="$(readlink -e $oscprob)"
 
 #==============================================================
 # NMHDIR is used in the code to avoid the use of relative path, NMHDIR extraction trick from https://stackoverflow.com/questions/59895/getting-the-source-directory-of-a-bash-script-from-within and Swim
@@ -21,7 +25,7 @@ done
 #==============================================================
 
 export NMHDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export OSCPROBDIR="/home/bstrand/Code/OscProb"
+export OSCPROBDIR="$oscprob"
 
 # only add to path if the directory is not already included
 
@@ -38,13 +42,14 @@ if ! echo $CPATH | grep -q $OSCPROBDIR; then
 fi
 
 if ($aanet -eq 'true'); then
-    echo "Set variables for NMH analysis, set to link against AANET"
     if ! echo $CPATH | grep -q $AADIR; then
 	export CPATH=${CPATH}:${AADIR}:${AADIR}evt
     fi
     export USE_AANET=true
 else
-    echo "Set variables for NMH analysis"
     export USE_AANET=false
 fi
 
+echo "NMH/setenv.sh::compiling against aanet --> $aanet" 
+echo "NMH/setenv.sh::OscProb directory --> $oscprob" 
+echo "NMH/setenv.sh::finished" 
