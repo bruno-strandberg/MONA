@@ -1,13 +1,6 @@
-#include "FileHeader.h"
-#include "TSystem.h"
-#include <iostream>
-#include "TFile.h"
-
 using namespace std;
 
 void fileheader() {
-
-  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
 
   // create a header and add some parameters to it, print it out
   FileHeader a("fileheader");

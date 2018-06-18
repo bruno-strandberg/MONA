@@ -1,14 +1,7 @@
-#include "GSGParser.h"
 #include<iostream>
-#include "TSystem.h"
-#include "TH1.h"
-#include "TCanvas.h"
-
 using namespace std;
 
 void gsgparser() {
-
-  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
 
   GSGParser gp1("../data/mc_start/data_atmnu/gSeaGen_muon-CC_3-100GeV_1.root");
   GSGParser gp2("../data/testing/gSeaGen_muon-CC_3-100GeV_1.evt");

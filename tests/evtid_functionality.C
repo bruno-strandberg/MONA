@@ -1,9 +1,12 @@
-#include "../evt_sampler/GSGSampler.C"
+#include "../evt_sampler/GSGSampler.h"
+#include "TRandom.h"
+#include<iostream>
+#include<vector>
+#include "TStopwatch.h"
 using namespace std;
+using namespace GSGS;
 
 void evtid_functionality() {
-
-  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
 
   //------------------------------------------------------
   // generate some pseudo-events
