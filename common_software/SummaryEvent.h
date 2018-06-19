@@ -92,26 +92,44 @@ class SummaryEvent : public TObject {
   Double_t Get_MC_is_CC()        { return fMC_is_CC; }  
   Double_t Get_MC_is_neutrino()  { return fMC_is_neutrino; }
   Double_t Get_MC_type()         { return fMC_type; }
-  TVector3 Get_MC_dir()          { return TVector3(fMC_dir_x, fMC_dir_y, fMC_dir_z); }
-  TVector3 Get_MC_pos()          { return TVector3(fMC_pos_x, fMC_pos_y, fMC_pos_z); }
+  Double_t Get_MC_dir_x()        { return fMC_dir_x; }
+  Double_t Get_MC_dir_y()        { return fMC_dir_y; }
+  Double_t Get_MC_dir_z()        { return fMC_dir_z; }
+  Double_t Get_MC_pos_x()        { return fMC_pos_x; }
+  Double_t Get_MC_pos_y()        { return fMC_pos_y; }
+  Double_t Get_MC_pos_z()        { return fMC_pos_z; }
   Double_t Get_MC_energy()       { return fMC_energy; }
   Double_t Get_MC_bjorkeny()     { return fMC_bjorkeny; }
+  TVector3 Get_MC_dir()          { return TVector3(fMC_dir_x, fMC_dir_y, fMC_dir_z); }
+  TVector3 Get_MC_pos()          { return TVector3(fMC_pos_x, fMC_pos_y, fMC_pos_z); }
 
-  TVector3 Get_track_dir()       { return TVector3(fTrack_dir_x, fTrack_dir_y, fTrack_dir_z); }
-  TVector3 Get_track_pos()       { return TVector3(fTrack_pos_x, fTrack_pos_y, fTrack_pos_z); }
+  Double_t Get_track_dir_x()     { return fTrack_dir_x; }
+  Double_t Get_track_dir_y()     { return fTrack_dir_y; }
+  Double_t Get_track_dir_z()     { return fTrack_dir_z; }
+  Double_t Get_track_pos_x()     { return fTrack_pos_x; }
+  Double_t Get_track_pos_y()     { return fTrack_pos_y; }
+  Double_t Get_track_pos_z()     { return fTrack_pos_z; }
   Double_t Get_track_energy()    { return fTrack_energy; }
   Double_t Get_track_bjorkeny()  { return fTrack_bjorkeny; }
   Double_t Get_track_ql0()       { return fTrack_ql0; }     
   Double_t Get_track_ql1()       { return fTrack_ql1; }
   Double_t Get_track_ql2()       { return fTrack_ql2; }
+  TVector3 Get_track_dir()       { return TVector3(fTrack_dir_x, fTrack_dir_y, fTrack_dir_z); }
+  TVector3 Get_track_pos()       { return TVector3(fTrack_pos_x, fTrack_pos_y, fTrack_pos_z); }
 
-  TVector3 Get_shower_dir()      { return TVector3(fShower_dir_x, fShower_dir_y, fShower_dir_z); }
-  TVector3 Get_shower_pos()      { return TVector3(fShower_pos_x, fShower_pos_y, fShower_pos_z); }
+  Double_t Get_shower_dir_x()    { return fShower_dir_x; }
+  Double_t Get_shower_dir_y()    { return fShower_dir_y; }
+  Double_t Get_shower_dir_z()    { return fShower_dir_z; }
+  Double_t Get_shower_pos_x()    { return fShower_pos_x; }
+  Double_t Get_shower_pos_y()    { return fShower_pos_y; }
+  Double_t Get_shower_pos_z()    { return fShower_pos_z; }
   Double_t Get_shower_energy()   { return fShower_energy; }
   Double_t Get_shower_bjorkeny() { return fShower_bjorkeny; }
   Double_t Get_shower_ql0()      { return fShower_ql0; }     
   Double_t Get_shower_ql1()      { return fShower_ql1; }
   Double_t Get_shower_ql2()      { return fShower_ql2; }
+  TVector3 Get_shower_dir()      { return TVector3(fShower_dir_x, fShower_dir_y, fShower_dir_z); }
+  TVector3 Get_shower_pos()      { return TVector3(fShower_pos_x, fShower_pos_y, fShower_pos_z); }
 
   Double_t Get_RDF_muon_score()  { return fRDF_muon_score; } 
   Double_t Get_RDF_track_score() { return fRDF_track_score; }
