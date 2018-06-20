@@ -13,6 +13,8 @@
 #pragma link C++ class NuXsec+;
 #pragma link C++ class FileHeader+;
 #pragma link C++ class SummaryEvent+;
+#pragma link C++ class EventFilter+;
+#pragma link C++ class EventSelection+;
 
 
 #endif
