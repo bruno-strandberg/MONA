@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 """
 This script can be used to call the FluxChain.C macro several times with different (random) oscillation parameter settings. If nothing but the IDSTR is specified, the macro will call FluxChain.C twice, once with NH, once with IH, with all OscPars at central values. For a single call of FluxChain.C use the root prompt.
  
 Usage:
-    flux_caller [-n NR_OF_CONFS] [-p PAR] [-s STEP] [-y YEARS] -i IDSTR
+    flux_caller [-n NR_OF_CONFS] [-p PAR] [-s STEP] [-y YEARS] [--meff] -i IDSTR
     flux_caller -h                                                                     
 
 Option:
@@ -16,6 +16,7 @@ Option:
     -s STEP           If -p specified, the step with which the par is scanned. If -p 
                       and -s are specified, then -n is ignored.
     -y YEARS          Number of years of data taking [default: 3]
+    --meff            Use effective mass to calculate detected flux histograms
     -i IDSTR          Identifier string added as prefix to files in output/FluxChain/
 
     -h --help         Show this screen
@@ -137,8 +138,8 @@ def main(args):
                     dm21 = op['dm21'].get_random_flat(NH)
                     dm32 = op['dm32'].get_random_flat(NH)
             
-                    cmd = get_fluxchain_cmd(args['-y'], outname, NH, sinsq12, sinsq23, sinsq13,
-                                            dcp, dm21, dm32)
+                    cmd = get_fluxchain_cmd(args['-y'], outname, NH, args['--meff'],
+                                            sinsq12, sinsq23, sinsq13, dcp, dm21, dm32)
                     vars_to_log(logfile, cmd, sinsq12, sinsq23, sinsq13, dcp, dm21, dm32)
                     cmds.append(cmd)
                     outputs.append(outname)
@@ -154,8 +155,8 @@ def main(args):
                 dm21 = op['dm21'].get_val(NH)
                 dm32 = op['dm32'].get_val(NH)
             
-                cmd = get_fluxchain_cmd(args['-y'], outname, NH, sinsq12, sinsq23, sinsq13,
-                                        dcp, dm21, dm32)
+                cmd = get_fluxchain_cmd(args['-y'], outname, NH, args['--meff'], 
+                                        sinsq12, sinsq23, sinsq13, dcp, dm21, dm32)
                 vars_to_log(logfile, cmd, sinsq12, sinsq23, sinsq13, dcp, dm21, dm32)
                 cmds.append(cmd)
                 outputs.append(outname)
@@ -184,7 +185,7 @@ def main(args):
         p.val_NH = p.min_NH
         while (p.val_NH <= p.max_NH):
             outname = "output/FluxChain/{0}_step{1}_NH1.root".format(args['-i'], n)
-            cmd = get_fluxchain_cmd(args['-y'], outname, 1, 
+            cmd = get_fluxchain_cmd(args['-y'], outname, 1, args['--meff'],
                                     op['sinsq_th12'].val_NH, op['sinsq_th23'].val_NH, 
                                     op['sinsq_th13'].val_NH, op['dcp'].val_NH, 
                                     op['dm21'].val_NH, op['dm32'].val_NH)
@@ -201,7 +202,7 @@ def main(args):
         p.val_IH = p.min_IH
         while (p.val_IH <= p.max_IH):
             outname = "output/FluxChain/{0}_step{1}_NH0.root".format(args['-i'], n)
-            cmd = get_fluxchain_cmd(args['-y'], outname, 0, 
+            cmd = get_fluxchain_cmd(args['-y'], outname, 0, args['--meff'], 
                                     op['sinsq_th12'].val_IH, op['sinsq_th23'].val_IH, 
                                     op['sinsq_th13'].val_IH, op['dcp'].val_IH, 
                                     op['dm21'].val_IH, op['dm32'].val_IH)
@@ -227,7 +228,7 @@ def main(args):
 
 #=========================================================================
 
-def get_fluxchain_cmd(years, outname, NH, sinsq12, sinsq23, sinsq13, dcp, dm21, dm32):
+def get_fluxchain_cmd(years, outname, NH, Meff, sinsq12, sinsq23, sinsq13, dcp, dm21, dm32):
     """
     Function to return a command to execute the FluxChain.C macro.
     """
@@ -237,7 +238,7 @@ def get_fluxchain_cmd(years, outname, NH, sinsq12, sinsq23, sinsq13, dcp, dm21, 
     syscmd += '"' + outname + '", '  # output name
     syscmd += str(20) + ","          # 20-fold oversampling in each bin
     syscmd += str(int(NH)) + ", "    # 0 - IH, 1 - NH
-    syscmd += str(0) + ", "          # 0 - don't use Meff, 1 - use Meff
+    syscmd += str(int(Meff)) + ", "  # 0 - don't use Meff, 1 - use Meff
     syscmd += str(sinsq12) + ", "    # oscillation parameter values
     syscmd += str(sinsq23) + ", "
     syscmd += str(sinsq13) + ", "

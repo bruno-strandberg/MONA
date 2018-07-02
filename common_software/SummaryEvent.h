@@ -11,7 +11,7 @@
 
    SummaryEvent consists of double's only. The main reason for this is to fascilitate simple data input to RooFit (where NMH fitting is performed), which works with flat trees. Additionally, such a tree can be easilty inspected/accessed without access to the SummaryEvent class. The variables are all private to dis-allow access without the use of the interface (setters/getters). The existing function names and variable names should not be changed, but new ones can be added.
 
-   The NMH sensitivy is itself a very high-level analysis. For this reason there are placeholders only for one track reco track and one shower reco track. It is envisaged that the selection of the 'best' fitted track is done before this analysis and hence this data format does not include several tracks per event as e.g. aanet.
+   The NMH sensitivy is itself a very high-level analysis. For this reason there are placeholders only for one track reco and one shower reco. It is envisaged that the selection of the 'best' fitted track is done before this analysis and hence this data format does not include several tracks per event as e.g. aanet.
 
    Similarly, currently there are placeholders for three levels of quality cuts, more can be added. Quality levels (i.e. event selection cuts) should be defined prior to this analysis or when data is written to this format. Example: one may wish to have all reconstructed track events (ql0), reconstructed track events with likelihood higher than some value (ql1), reconstructed tracks with likelihood higher than some value and a certain number of hits (ql2), etc. 
 
