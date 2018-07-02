@@ -16,6 +16,7 @@ class EventSelection : public EventFilter {
   EventSelection(reco reco_type, TString selection_name="", TTree *t = NULL,
 		 Int_t ebins  = 40, Double_t emin  =  1., Double_t emax  = 100.,
 		 Int_t ctbins = 40, Double_t ctmin = -1., Double_t ctmax = 1.);
+  EventSelection(const EventSelection &evsel);
   ~EventSelection();
 
   void Fill(SummaryEvent *evt, Double_t w=1.);

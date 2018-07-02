@@ -20,6 +20,22 @@ EventSelection::EventSelection(reco reco_type, TString selection_name, TTree *t,
 
   TString hname = fSelName + "_E_vs_costh";
   fh_E_costh = new TH2D(hname, hname, ebins, &e_edges[0], ctbins, ctmin, ctmax); 
+  fh_E_costh->SetDirectory(0);
+
+}
+
+//***********************************************************************************
+
+EventSelection::EventSelection(const EventSelection &evsel) : EventFilter(evsel) {
+
+  fRecoType = evsel.fRecoType;
+  fSelName  = evsel.fSelName;
+
+  if (evsel.fTree != NULL) { SetTreeMode(evsel.fTree); }
+  else { fTree = NULL; fTreeFile = NULL; }
+
+  fh_E_costh = (TH2D*)evsel.fh_E_costh->Clone();
+  fh_E_costh->SetDirectory(0);
 
 }
 
