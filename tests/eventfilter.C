@@ -36,4 +36,10 @@ void eventfilter() {
   
   cout << "Filter f2 (expect fail) " << f2.PassesCuts(evt) << endl;
 
+  //-----------------------------------------------------------
+  //Test the default copy constructor
+  //-----------------------------------------------------------
+  EventFilter f3(f2);
+  cout << "Filter f3 (expect fail) " << f3.PassesCuts(evt) << endl;
+
 }
