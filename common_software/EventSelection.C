@@ -38,7 +38,7 @@ EventSelection::~EventSelection() {
 
 //***********************************************************************************
 
-void EventSelection::Fill(SummaryEvent *evt) {
+void EventSelection::Fill(SummaryEvent *evt, Double_t w) {
 
   if ( !PassesCuts(evt) ) return;
 
@@ -69,7 +69,7 @@ void EventSelection::Fill(SummaryEvent *evt) {
   }
 
   // fill all member histograms
-  fh_E_costh->Fill ( energy , -dir.z() );
+  fh_E_costh->Fill ( energy , -dir.z(), w );
 
   // if tree is set, fill this event to the tree
   if (fTree != NULL) fTree->Fill();

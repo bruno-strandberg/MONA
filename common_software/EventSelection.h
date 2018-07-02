@@ -18,7 +18,7 @@ class EventSelection : public EventFilter {
 		 Int_t ctbins = 40, Double_t ctmin = -1., Double_t ctmax = 1.);
   ~EventSelection();
 
-  void Fill(SummaryEvent *evt);
+  void Fill(SummaryEvent *evt, Double_t w=1.);
   void SetTreeMode(TTree *t);
   void WriteToFile(TString fname);
 
