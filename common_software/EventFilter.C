@@ -8,12 +8,13 @@
    See the class description for example usage.
    
    \param getter_ptr Pointer to a getter function of SummaryEvent class
-   \param value      Value that the getter return is compared to
    \param comp_ptr   Pointer to a comparison function.
+   \param value      Value that the getter return is compared to
    \param AndCut     true - treat this cut as 'and' cut; false - treat this cut as 'or' cut
  */
-void EventFilter::AddCut( std::function<Double_t(SummaryEvent&)> getter_ptr, Double_t value,
-			  std::function<bool(double, double)> comp_ptr, Bool_t AndCut) {
+void EventFilter::AddCut( std::function<Double_t(SummaryEvent&)> getter_ptr,
+			  std::function<bool(double, double)> comp_ptr, 
+			  Double_t value, Bool_t AndCut) {
   cutobj this_cut(getter_ptr, value, comp_ptr);
   if (AndCut) fAndCuts.push_back(this_cut);
   else fOrCuts.push_back(this_cut);

@@ -19,8 +19,8 @@ void eventfilter() {
   //create first filter, event expects > 5 GeV energy and up-going direction
   //-----------------------------------------------------------
   EventFilter f1;
-  f1.AddCut(&SummaryEvent::Get_track_energy, 5, std::greater<double>(), true );
-  f1.AddCut(&SummaryEvent::Get_track_dir_z, 0, std::less<double>(), true );
+  f1.AddCut(&SummaryEvent::Get_track_energy, std::greater<double>(), 5, true );
+  f1.AddCut(&SummaryEvent::Get_track_dir_z, std::less<double>(), 0, true );
 
   cout << "Filter f1 (expect pass) " << f1.PassesCuts(evt) << endl;
 
@@ -28,11 +28,11 @@ void eventfilter() {
   //create second filter, additionally as x or y direction > 0
   //-----------------------------------------------------------
   EventFilter f2;
-  f2.AddCut(&SummaryEvent::Get_track_energy, 5, std::greater<double>(), true );
-  f2.AddCut(&SummaryEvent::Get_track_dir_z, 0, std::less<double>(), true );
+  f2.AddCut(&SummaryEvent::Get_track_energy, std::greater<double>(), 5, true );
+  f2.AddCut(&SummaryEvent::Get_track_dir_z, std::less<double>(), 0, true );
 
-  f2.AddCut(&SummaryEvent::Get_track_dir_x, 0, std::greater<double>(), false );
-  f2.AddCut(&SummaryEvent::Get_track_dir_y, 0, std::greater<double>(), false );
+  f2.AddCut(&SummaryEvent::Get_track_dir_x, std::greater<double>(), 0, false );
+  f2.AddCut(&SummaryEvent::Get_track_dir_y, std::greater<double>(), 0, false );
   
   cout << "Filter f2 (expect fail) " << f2.PassesCuts(evt) << endl;
 

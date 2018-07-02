@@ -40,10 +40,10 @@ cutobj(): getter_ptr(0), value(0), comp_ptr(0) {};
    Example usage:
    ```
    EventFilter f;
-   f.AddCut( &SummaryEvent::Get_track_dir_z ,   0, std::less<double>(), true );
-   f.AddCut( &SummaryEvent::Get_track_energy,   5, std::greater_equal<double>(), true );
-   f.AddCut( &SummaryEvent::Get_shower_ql1  , 0.5, std::greater_equal<double>(), false );
-   f.AddCut( &SummaryEvent::Get_track_ql1   ,   1, std::equal<double>(), false );
+   f.AddCut( &SummaryEvent::Get_track_dir_z , std::less<double>()         ,   0, true );
+   f.AddCut( &SummaryEvent::Get_track_energy, std::greater_equal<double>(),   5, true );
+   f.AddCut( &SummaryEvent::Get_shower_ql1  , std::greater_equal<double>(), 0.5, false );
+   f.AddCut( &SummaryEvent::Get_track_ql1   , std::equal<double>()        ,   1, false );
    ```
    In this case, the function `PassesCuts(SummaryEvent *evt)` will return
    ```
@@ -67,8 +67,8 @@ class EventFilter {
   ~EventFilter() {};
   
   Bool_t PassesCuts(SummaryEvent *evt);
-  void   AddCut( std::function<Double_t(SummaryEvent&)> getter_ptr, Double_t value,
-		 std::function<bool(double, double)> comp_ptr, Bool_t AndCut);
+  void   AddCut( std::function<Double_t(SummaryEvent&)> getter_ptr,
+		 std::function<bool(double, double)> comp_ptr, Double_t value, Bool_t AndCut);
 
  private:
 
