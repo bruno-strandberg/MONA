@@ -167,9 +167,6 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
 	
       Double_t N_h1 = h1->GetBinContent(xb, yb);
       Double_t N_h2 = h2->GetBinContent(xb, yb);	
-
-      chi2  += (N_h1 - N_h2) * (N_h1 - N_h2);
-      Nbins += 1;
 	
       Double_t A    = 0;
 
@@ -184,6 +181,10 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
 
       if ( (xc < xlow) || (xc > xhigh) || ( yc < ylow) || ( yc > yhigh ) ) {
 	A = 0.;
+      }
+      else {
+	chi2  += (N_h1 - N_h2) * (N_h1 - N_h2);
+	Nbins += 1;
       }
 
       h_asym->SetBinContent(xb, yb, A);
