@@ -12,7 +12,7 @@ Option:
                       values from -3sigma to 3sigma. For each configuration normal and
                       inverted hierarchy is used.
     -p PAR            Name of the parameter to be scanned. Supported names are
-                      sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32
+                      sinsq_th12, sinsq_th23, sinsq_th13, dcp (Currently NOT supported: dm21, dm32).
     -s STEP           If -p specified, the step with which the par is scanned. If -p 
                       and -s are specified, then -n is ignored.
     -y YEARS          Number of years of data taking [default: 3]
@@ -172,46 +172,42 @@ def main(args):
 
         p = op[ args['-p'] ]
 
-        # if step defined use that, otherwise calculate step from n
+        # if step defined use that, otherwise calculate step from n - same step for both hierarchies
         if (args['-s'] != None):
             step_NH = float(args['-s'])
-            step_IH = step_NH
         else:
             step_NH = (p.max_NH - p.min_NH)/float(args['-n'])
-            step_IH = (p.max_IH - p.min_IH)/float(args['-n'])
 
-        # sample for NH
+        # sample for both hierarchies
         n = 0
         p.val_NH = p.min_NH
         while (p.val_NH <= p.max_NH):
-            outname = "output/FluxChain/{0}_step{1}_NH1.root".format(args['-i'], n)
-            cmd = get_fluxchain_cmd(args['-y'], outname, 1, args['--meff'],
-                                    op['sinsq_th12'].val_NH, op['sinsq_th23'].val_NH, 
-                                    op['sinsq_th13'].val_NH, op['dcp'].val_NH, 
-                                    op['dm21'].val_NH, op['dm32'].val_NH)
-            vars_to_log(logfile, cmd, op['sinsq_th12'].val_NH, op['sinsq_th23'].val_NH, 
+
+            # sample for NH
+            outname_NH = "output/FluxChain/{0}_step{1}_NH1.root".format(args['-i'], n)
+            cmd_NH = get_fluxchain_cmd(args['-y'], outname_NH, 1, args['--meff'],
+                                       op['sinsq_th12'].val_NH, op['sinsq_th23'].val_NH, 
+                                       op['sinsq_th13'].val_NH, op['dcp'].val_NH, 
+                                       op['dm21'].val_NH, op['dm32'].val_NH)
+            vars_to_log(logfile, cmd_NH, op['sinsq_th12'].val_NH, op['sinsq_th23'].val_NH, 
                         op['sinsq_th13'].val_NH, op['dcp'].val_NH, op['dm21'].val_NH, 
                         op['dm32'].val_NH)
-            cmds.append(cmd)
-            outputs.append(outname)
-            p.val_NH += step_NH
-            n += 1
+            cmds.append(cmd_NH)
+            outputs.append(outname_NH)
 
-        # sample for IH
-        n = 0
-        p.val_IH = p.min_IH
-        while (p.val_IH <= p.max_IH):
-            outname = "output/FluxChain/{0}_step{1}_NH0.root".format(args['-i'], n)
-            cmd = get_fluxchain_cmd(args['-y'], outname, 0, args['--meff'], 
-                                    op['sinsq_th12'].val_IH, op['sinsq_th23'].val_IH, 
-                                    op['sinsq_th13'].val_IH, op['dcp'].val_IH, 
-                                    op['dm21'].val_IH, op['dm32'].val_IH)
-            vars_to_log(logfile, cmd, op['sinsq_th12'].val_IH, op['sinsq_th23'].val_IH, 
-                        op['sinsq_th13'].val_IH, op['dcp'].val_IH, op['dm21'].val_IH, 
+            # sample for IH with identical parameters, except mass splittings
+            outname_IH = "output/FluxChain/{0}_step{1}_NH0.root".format(args['-i'], n)
+            cmd_IH = get_fluxchain_cmd(args['-y'], outname_IH, 0, args['--meff'], 
+                                       op['sinsq_th12'].val_NH, op['sinsq_th23'].val_NH, 
+                                       op['sinsq_th13'].val_NH, op['dcp'].val_NH, 
+                                       op['dm21'].val_IH, op['dm32'].val_IH)
+            vars_to_log(logfile, cmd_IH, op['sinsq_th12'].val_NH, op['sinsq_th23'].val_NH, 
+                        op['sinsq_th13'].val_NH, op['dcp'].val_NH, op['dm21'].val_IH, 
                         op['dm32'].val_IH)
-            cmds.append(cmd)
-            outputs.append(outname)
-            p.val_IH += step_IH
+            cmds.append(cmd_IH)
+            outputs.append(outname_IH)
+
+            p.val_NH += step_NH
             n += 1
             
     # execute the commands; close logfile; write file list
