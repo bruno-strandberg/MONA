@@ -43,7 +43,7 @@ cutobj(): getter_ptr(0), value(0), comp_ptr(0) {};
    f.AddCut( &SummaryEvent::Get_track_dir_z , std::less<double>()         ,   0, true );
    f.AddCut( &SummaryEvent::Get_track_energy, std::greater_equal<double>(),   5, true );
    f.AddCut( &SummaryEvent::Get_shower_ql1  , std::greater_equal<double>(), 0.5, false );
-   f.AddCut( &SummaryEvent::Get_track_ql1   , std::equal<double>()        ,   1, false );
+   f.AddCut( &SummaryEvent::Get_track_ql1   , std::equal_to<double>()     ,   1, false );
    ```
    In this case, the function `PassesCuts(SummaryEvent *evt)` will return
    ```
