@@ -11,46 +11,58 @@
 #include "FileHeader.h"
 
 //generic cpp
+#include <stdexcept>
 
 using namespace GSGS;
 
 /**
- *  Function to create a sample of Monte-Carlo events.
- *
- *  This function creates a sample of Monte-Carlo events for a given flavor and interaction type.
- *  Each FluxChain.C output file contains histograms in TDirectory intflux/, each histogram holds
- *  the number of interacted neutrino events per specific flavor and interaction type in a certain
- *  operation time per MTon. The histograms are scaled by the can size and water density, after that
- *  each (E, ct) bin will hold the number of interacted events inside the detector can. These numbers
- *  are in turn Poisson-smeared to simulate statistical fluctuations.
- *
- *  In ORCA Monte-Carlo chain, interacting events are simulated at gSeaGen level. The gSeaGen data
- *  from the files in gsg_flist are read into vectors, each (E, ct) bin will have an associated
- *  vector that will hold the Monte-Carlo event IDs (see struct evtid) available in that bin. Then,
- *  N number of random event ID's are sampled from the vector, where N is the Poisson-smeared
- *  number of expected interacted events from the intflux histogram.
- *
- *  After sampling, a loop over all summary files for this flavor and interaction type are performed.
- *  The purpose of the loop is to check which of the sampled interacted (=gSeaGen) events made it 
- *  to the end of the Monte Carlo chain (i.e. into the summary file). The events that made it to the
- *  end are the events that will be stored in the output.
- * 
- *  The code will output a file output/GSGSampler/EvtSample_{flavor}-{interaction}_{Nf}_{Ns}.root, where
- *  Nf is the sequence number of the flux chain file and Ns is the sample number.
- *
- * \param flux_chain_list a text file with a list of FluxChain.C macro outputs
- * \param gsg_flist       a text file with a list of gSeaGen files
- * \param flavor          neutrino flavor
- * \param is_cc           0 - neutral current, 1 - charged current
- * \param nsamples        Number of Monte-Carlo samples to be generated.
- * \param memory_lim      If more RAM than memory_lim used to store data, trigger write-out
- * \param exp_lim         If more experiments than exp_lim in memory, trigger write-out
- * \param dbg_scale       Option to scale down the number of interacted events, 
- *                        such that the program can be run with a reduced nr of gSeaGen files
- *                        without getting errors related to not having enough Monte-Carlo events.
+   Function to create a sample of Monte-Carlo events.
+ 
+   This function creates a sample of Monte-Carlo events for a given flavor and interaction type.
+   Each FluxChain.C output file contains histograms in TDirectory intflux/, each histogram holds
+   the number of interacted neutrino events per specific flavor and interaction type in a certain
+   operation time per MTon. The histograms are scaled by the can size and water density, after that
+   each (E, ct) bin will hold the number of interacted events inside the detector can. These numbers
+   are in turn Poisson-smeared to simulate statistical fluctuations.
+ 
+   In ORCA Monte-Carlo chain, interacting events are simulated at gSeaGen level. The gSeaGen data
+   from the files in `gsg_flist` are read into vectors, each (E, ct) bin will have an associated
+   vector that will hold the Monte-Carlo event IDs (see struct evtid) available in that bin. Then,
+   N number of random event ID's are sampled from the vector, where N is the Poisson-smeared
+   number of expected interacted events from the intflux histogram.
+ 
+   After sampling, a loop over all summary files in `summary_flist` for this flavor and interaction
+   type are performed. The purpose of the loop is to check which of the sampled interacted 
+   (=gSeaGen) events made it to the end of the Monte Carlo chain (i.e. into the summary file). 
+   The events that made it to the end are the events that will be stored in the output.
+  
+   For each gSeaGen file the corresponding summary file is sought in `summary_flist`. If the summary
+   file cannot be found in the summary file list, or the file is in the list but cannot be found on
+   the computer, the gSeaGen file is ignored. File identification is based on the name
+   suffix used in the summary files, for example format `summary_muon-CC_1-5GeV_430.root` is
+   expected.
+
+   Having summary files in `summary_flist` that do not have a corresponding gSeaGen file in
+   `gsg_flist` has no effect on the outcome.
+
+   The code will output a file output/GSGSampler/EvtSample_{flavor}-{interaction}_{Nf}_{Ns}.root, 
+   where Nf is the sequence number of the flux chain file and Ns is the sample number.
+ 
+   \param flux_chain_list a text file with a list of FluxChain.C macro outputs
+   \param gsg_flist       a text file with a list of gSeaGen files. 
+   \param summary_flist   a text file with a list of summary files
+   \param flavor          neutrino flavor
+   \param is_cc           0 - neutral current, 1 - charged current
+   \param nsamples        Number of Monte-Carlo samples to be generated.
+   \param memory_lim      If more RAM than memory_lim used to store data, trigger write-out
+   \param exp_lim         If more experiments than exp_lim in memory, trigger write-out
+   \param dbg_scale       Option to scale down the number of interacted events, 
+   such that the program can be run with a reduced nr of gSeaGen files
+                         without getting errors related to not having enough Monte-Carlo events.
  */
 void GSGSampler(TString flux_chain_flist, 
 		TString gsg_flist, 
+		TString summary_flist,
 		Int_t flavor, Int_t is_cc, Int_t nsamples = 1, 
 		Double_t memory_lim = 2,
 		Double_t exp_lim    = 10,
@@ -90,7 +102,7 @@ void GSGSampler(TString flux_chain_flist,
       InitVars(flavor, is_cc);
 
       DataReadTimer.Start(kFALSE);
-      gsg_data_size = ReadGSGData(gsg_flist, flavor, is_cc);
+      gsg_data_size = ReadGSGData(gsg_flist, summary_flist, flavor, is_cc);
       if ( gsg_data_size == 0. ) {
 	cout << "ERROR! GSGSampler() problem reading gSeaGen files." << endl;
 	return;
@@ -140,7 +152,7 @@ void GSGSampler(TString flux_chain_flist,
     if ( ( (sample_data_size/1e9 + gsg_data_size) > memory_lim ) || 
 	 ( (Double_t)fExps.size() > exp_lim ) || ( F == Int_t( flux_files.size()-1 ) ) ) {
       DataWriteTimer.Start(kFALSE);
-      WriteToFiles(flavor, is_cc);
+      WriteToFiles(summary_flist, flavor, is_cc);
       DataWriteTimer.Stop();
     }
 
@@ -300,18 +312,21 @@ void GSGS::InitVars(Int_t flavor, Int_t is_cc) {
  * The data are read into vectors fGSGEvts_nu and fGSGEvts_nub. Additionally, the can size and
  * sea water density fVcan and fRho_seawater are set.
  *
- * \param gsg_file_list  list of gSeaGen files
- * \param flavor         nu flavor
- * \param is_cc          0 - NC, 1 -CC
- * \return               Size of data in RAM if reading successful, 0. if unsuccessful
+ * \param gsg_file_list      list of gSeaGen files
+ * \param summary_file_list  list of corresponding summary files
+ * \param flavor             nu flavor
+ * \param is_cc              0 - NC, 1 -CC
+ * \return                   Size of data in RAM if reading successful, 0. if unsuccessful
  *
 */
-Double_t GSGS::ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
+Double_t GSGS::ReadGSGData(TString gsg_file_list, TString summary_file_list, 
+			   Int_t flavor, Int_t is_cc) {
 
   cout << "NOTICE ReadGSGData() started reading GSG data" << endl;
 
   Double_t gsg_data_size = 0.;
-  vector<TString> fnames = NMHUtils::ReadLines(gsg_file_list);
+  vector<TString> fnames        = NMHUtils::ReadLines(gsg_file_list);
+  vector<TString> summary_files = NMHUtils::ReadLines(summary_file_list);
 
   // create a hash from the input gsg filenames; if a cache for this input has
   // been created, read data from cache instead of from GSGfiles
@@ -360,12 +375,11 @@ Double_t GSGS::ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc) {
       return 0.;
     }
 
-    // check that the corresponding summary file exists
+    // check that the corresponding summary file exists; if not skip this gsg file
 
-    TString summary_file = GetSummaryName(flavor, is_cc, gp.fE_min, gp.fE_max, gp.fRunNr);
-    if ( !NMHUtils::FileExists( summary_file ) ) {
-      cout << "WARNING! ReadGSGData() cannot find summary file " << summary_file
-	   << ", skipping gSeaGen file " << fname << endl;
+    TString sf = FindSummaryFile(summary_files, flavor, is_cc, gp.fE_min, gp.fE_max, gp.fRunNr);
+    if ( sf == "" ) {
+      cout << "WARNING! ReadGSGData() skipping gSeaGen file " << fname << endl;
       continue;
     }
 
@@ -699,16 +713,28 @@ void GSGS::StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub,
  * \param is_cc   0 - nc, 1 - cc
  *
  */
-void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
+void GSGS::WriteToFiles(TString summary_file_list, Int_t flavor, Int_t is_cc) {
 
   cout << "NOTICE WriteToFiles() writing out sampled data" << endl;
 
   // select relevant summary files and add to the summary parser
 
-  TString fnames = "$NMHDIR/data/mc_end/data_atmnu/summary_" + fFlavs[flavor] + "-CC*.root";
-  if (is_cc == 0) fnames = "$NMHDIR/data/mc_end/data_atmnu/summary_elec-NC*.root"; 
+  SummaryParser *sp = NULL;
 
-  SummaryParser sp(fnames);
+  TString searchstr = "summary_" + fFlavs[flavor] + "-CC";
+  if (is_cc == 0) searchstr = "summary_elec-NC";
+  vector<TString> sumfiles = NMHUtils::ReadLines(summary_file_list);
+
+  for (auto &fname: sumfiles) {
+    if ( fname.Contains(searchstr) ) {
+      if (sp == NULL) { sp = new SummaryParser(fname); }
+      else            { sp->GetTree()->Add(fname);     }
+    }
+  }
+
+  if ( sp == NULL ) {
+    throw std::invalid_argument( "ERROR! WriteToFiles() no summary files selected." );
+  }
 
   // create output files and trees; create search limits that indicate which
   // range of the fExps[i] vector should be searched for the given run_nr and e_min
@@ -725,7 +751,7 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
     fExpHeaders[N]->AddParameter("Output", out_name);
 
     files.push_back( new TFile(out_name, "RECREATE") );            //create file
-    trees.push_back( sp.GetTree()->CloneTree(0) );                //add empty tree
+    trees.push_back( sp->GetTree()->CloneTree(0) );                //add empty tree
     search_lims.push_back( std::make_pair( 0, fExps[N].size() ) ); //by default search in full range 
   }
 
@@ -734,10 +760,10 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
   Double_t run_nr = -1;
   Double_t e_min  = -1;
 
-  for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
+  for (Int_t i = 0; i < sp->GetTree()->GetEntries(); i++) {
 
-    sp.GetTree()->GetEntry(i);
-    SummaryEvent *evt = sp.GetEvt();
+    sp->GetTree()->GetEntry(i);
+    SummaryEvent *evt = sp->GetEvt();
 
     // if file changes update the limits in the vectors in which the events are searched
 
@@ -801,6 +827,7 @@ void GSGS::WriteToFiles(Int_t flavor, Int_t is_cc) {
   fExpNames.clear();
   fExpHeaders.clear();
 
+  if (sp) delete sp;
 }
 
 //*****************************************************************
@@ -845,21 +872,46 @@ void GSGS::CleanUp() {
 /**
  *  Inline function to generate summary file name.
  *
- * \param flavor   nu flavor
- * \param is_cc    0 - NC, 1 - CC
- * \param emin     gSeaGen energy range start
- * \param emax     gSeaGen energy range stop
- * \param runnr    gSeaGen run number
- * \return         summary file name as generated by NMHDIR/data_sorting/RestoreParity.C
+ * \param summary_files   vector with summary file names
+ * \param flavor          nu flavor
+ * \param is_cc           0 - NC, 1 - CC
+ * \param emin            gSeaGen energy range start
+ * \param emax            gSeaGen energy range stop
+ * \param runnr           gSeaGen run number
+ * \return                summary file as found in the input vector and on the machine; if not found empty string returned.
  */
-TString GSGS::GetSummaryName(Int_t flavor, Int_t is_cc, Int_t emin, Int_t emax, Int_t runnr) {
+TString GSGS::FindSummaryFile(const vector<TString> &summary_files, 
+			      Int_t flavor, Int_t is_cc, Int_t emin, Int_t emax, Int_t runnr) {
 
   TString suffix = fInts[is_cc] + "_" + (TString)to_string(emin) + "-" + (TString)to_string(emax) + 
     "GeV_" + (TString)to_string(runnr) + ".root";
    
   TString flav = fFlavs[flavor];
   if (is_cc == 0) flav = fFlavs[0];
-  
-  TString dir = getenv("NMHDIR");
-  return dir + "/data/mc_end/data_atmnu/summary_" + flav + "-" + suffix;  
+
+  // this is the expected summary file name
+  TString searchstr = "summary_" + flav + "-" + suffix;
+
+  // search for the expected summary file name in the input vector
+  TString sumf = "";
+  for (auto &fname: summary_files) {
+    if ( fname.Contains(searchstr) ) {
+      sumf = fname;
+      break;
+    }
+  }
+
+  if (sumf == "") {
+    cout << "WARNING! FindSummaryFile() could not find summary file " << searchstr
+	 << " in input file list." << endl;
+  }
+  else if ( !NMHUtils::FileExists( sumf ) ) {
+    cout << "WARNING! FindSummaryFile() cannot find summary file " << sumf
+	 << " on the machine." << endl;
+    sumf = "";
+  }
+
+  // if not found returns empty string, otherwise returns the summary file as found in the vector
+  return sumf;
+
 }

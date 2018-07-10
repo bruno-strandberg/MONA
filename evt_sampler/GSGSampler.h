@@ -17,7 +17,7 @@ namespace GSGS {
   Bool_t   GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc);
   void     InitVars(Int_t flavor, Int_t is_cc);
   void     CleanUp();
-  Double_t ReadGSGData(TString gsg_file_list, Int_t flavor, Int_t is_cc);
+  Double_t ReadGSGData(TString gsg_file_list, TString summary_file_list, Int_t flavor, Int_t is_cc);
   void     CacheGSGdata(TString fname);
   Double_t ReadFromCache(TString fname);
   Bool_t   SampleEvents(TH2D *h_expected, TH2D *h_smeared,
@@ -25,8 +25,9 @@ namespace GSGS {
 			Int_t low_sample_lim);
   void     StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub, 
 			   Int_t F, Int_t N, TString flux_file);
-  void     WriteToFiles(Int_t flavor, Int_t is_cc);
-  TString  GetSummaryName(Int_t flavor, Int_t is_cc, Int_t emin, Int_t emax, Int_t runnr);
+  void     WriteToFiles(TString summary_file_list, Int_t flavor, Int_t is_cc);
+  TString  FindSummaryFile(const vector<TString> &summary_files, 
+			   Int_t flavor, Int_t is_cc, Int_t emin, Int_t emax, Int_t runnr);
 
   //*****************************************************************
   // globally used variables in this script
