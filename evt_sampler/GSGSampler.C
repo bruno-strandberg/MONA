@@ -328,11 +328,12 @@ Double_t GSGS::ReadGSGData(TString gsg_file_list, TString summary_file_list,
   vector<TString> fnames        = NMHUtils::ReadLines(gsg_file_list);
   vector<TString> summary_files = NMHUtils::ReadLines(summary_file_list);
 
-  // create a hash from the input gsg filenames; if a cache for this input has
+  // create a hash from the input gsg and summary filenames; if a cache for this input has
   // been created, read data from cache instead of from GSGfiles
 
   std::string hash_str = "";
   for (auto f: fnames) hash_str += (std::string)f;
+  for (auto f: summary_files) hash_str += (std::string)f;
 
   TString hash       = (TString)to_string( std::hash<std::string>{}(hash_str) );
   TString cache_name = "cache/" + hash + "_" + fFlavs[flavor] + "_" + fInts[is_cc] + ".root";
