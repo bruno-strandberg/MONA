@@ -1,7 +1,9 @@
 #ifndef EventFilter_h
 #define EventFilter_h
 #include "SummaryEvent.h"
+
 #include<vector>
+#include <functional>
 
 /**
    Structure for use in `EventFilter` that stores info necessary to define a cut on a `SummaryEvent`.
