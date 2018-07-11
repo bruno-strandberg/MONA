@@ -118,6 +118,7 @@ void EffMhists(TString summary_file,
   //------------------------------------------------------
 
   FileHeader h("EffMhists");
+  h.AddParameter("veff_option", (TString)to_string(veff_option) );
   h.AddParameter("Rvol", (TString)to_string(fG->fRcan) );
   h.AddParameter("Zmin", (TString)to_string(fG->fZcan_min) );
   h.AddParameter("Zmax", (TString)to_string(fG->fZcan_max) );
