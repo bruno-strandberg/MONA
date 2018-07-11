@@ -319,7 +319,7 @@ Bool_t ReadMeffHists(FileHeader &h) {
 
       TString hname = "Meff_" + fFlavs[f] + "_" + fItypes[cc];
       fhMeff[f][cc][0] = (TH2D*)meff_file.Get("Meff_nu")->Clone(hname + "_nu");
-      fhMeff[f][cc][1] = (TH2D*)meff_file.Get("Meff_nu")->Clone(hname + "_nub");
+      fhMeff[f][cc][1] = (TH2D*)meff_file.Get("Meff_nub")->Clone(hname + "_nub");
       fhMeff[f][cc][0]->SetDirectory(0); //detach these histograms from meff_file
       fhMeff[f][cc][1]->SetDirectory(0);
     
