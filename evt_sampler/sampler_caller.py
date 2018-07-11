@@ -3,7 +3,7 @@
 This script can be used to call the GSGSampler.C macro and execute it on the farm.
  
 Usage:
-    sampler_caller -f FLAVOR... -i INTERACTION... -a FLUX_LIST [-n SAMPLES] [--execute]
+    sampler_caller -f FLAVOR... -i INTERACTION... -a FLUX_LIST [-n SAMPLES] [--execute] [--gsgdir GSGDIR] [--sumdir SUMDIR]
     sampler_caller -h                                                                     
 
 Option:
@@ -13,6 +13,8 @@ Option:
                       flux_caller.py outputs such a file.
     -n SAMPLES        Samples per flux file [default: 5]
     --execute         To send to farm, otherwise only scripts created
+    --gsgdir GSGDIR   Directory where gSeaGen files are sought [default: ../data/mc_start/data_atmnu/]
+    --sumdir SUMDIR   Directory where summary files are sought [default: ../data/mc_end/data_atmnu/]
     -h --help         Show this screen
 
 """
@@ -25,8 +27,8 @@ from docopt import docopt
 
 def main(args):
 
-    nmhdir  = os.environ['NMHDIR']
-    gsg_dir = nmhdir + "/data/mc_start/data_atmnu/"  #gseagen files on sps dir
+    gsg_dir = os.path.abspath(args['--gsgdir'])  #gseagen files
+    sum_dir = os.path.abspath(args['--sumdir'])  #summary files
     flavs   = {0:"elec", 1:"muon", 2:"tau"}
     ints    = {0:"NC", 1:"CC"}
 
@@ -48,15 +50,18 @@ def main(args):
             root = os.environ['ROOTSYS']
             nmh  = os.environ['NMHDIR']
 
-            # create the list of gsg files
+            # create the list of gsg files, flux files and summary files
             gsg_flist = "{0}/tmp/{1}_{2}_gsg_flist.dat".format( cwd, flav, inter )
+            sum_flist = "{0}/tmp/{1}_{2}_sum_flist.dat".format( cwd, flav, inter )
             flux_file_list = "{0}/{1}".format(cwd, args['-a'])
-            os.system( "ls {0}*{1}*{2}* > {3}".format(gsg_dir, flav, inter, gsg_flist) )
+            os.system( "ls {0}/*{1}*{2}* > {3}".format(gsg_dir, flav, inter, gsg_flist) )
+            os.system( "ls {0}/*{1}*{2}* > {3}".format(sum_dir, flav, inter, sum_flist) )
 
             # create the command to execute GSGSampler
             cmd  = "root -b -q 'GSGSampler.C+("
             cmd += '"' + flux_file_list + '", '  # flux file list
             cmd += '"' + gsg_flist + '", '       # gseagen file list
+            cmd += '"' + sum_flist + '", '       # summary file list
             cmd += str(int(f)) + ", "            # neutrino flavor
             cmd += str(int(i)) + ", "            # neutrino interaction
             cmd += str(int(args['-n'])) + ", "   # number of samples per flux file
