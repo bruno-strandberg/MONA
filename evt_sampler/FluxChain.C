@@ -26,7 +26,8 @@ void   SetToPDG(Bool_t NH,
 		Double_t &sinsq_th12, Double_t &sinsq_th23, Double_t &sinsq_th13, 
 		Double_t &dcp, Double_t &dm21, Double_t &dm32, Double_t &dm31);
 void   InitHists();
-Bool_t ReadMeffHists(FileHeader &h);
+Bool_t ReadMeffHists(FileHeader &h, TString meff_elec_cc, TString meff_muon_cc, 
+		     TString meff_tau_cc, TString meff_elec_nc);
 void   FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsamples);
 void   CleanUp();
 void   WriteToFile(TString output_name, FileHeader &h);
@@ -66,46 +67,50 @@ Double_t fKg_per_Mton = 1e9;                        //!< kg per MTon (MTon = 1e6
 //*****************************************************************
 
 /**
- *  This routine creates a file with E vs costheta histograms with expected numbers of nu events.
- *
- *  The output root file will have directories atmflux, oscflux, intflux, detflux and meff. Eech
- *  of the flux directories contains E vs costheta histograms for {flavor}_{nc/cc}_{nu/nub} (12 in
- *  total), each bin will indicate the number of neutrinos of this type after op_time years.
- *  Directory atmflux/ has histograms with atmospheric neutrinos. oscflux/ shows atmflux/ histograms
- *  after oscillation through Earth, intflux/ shows oscflux/ histograms after nu + H2O xsec is taken
- *  into account, detflux/ shows intflux/ histograms after effective mass is taken into account.
- *  meff/ directory displays the effective mass histograms used for the generation of detflux/
- *  histograms. In the region of fast oscillations it is necessary to sample each bin several times,
- *  parameter nsamples determines how many samples per bin are calculated.
- *
- * \param  op_time       Operation time in years.
- * \param  output_name   Name of the file where histograms are written.
- * \param  nsamples      Number of samples per filling one bin (recommended > 10).
- * \param  NH            True - normal nu mass hierarchy, False - inverted nu mass hierarchy.
- * \param  UseMeff       If true, program will look for effective mass histograms in 
- *                       NMHDIR/data/eff_mass to calculate detected number of events for detflux/
- *                       directory. If one inputs the FluxChain output to GSGSampler, meff is not
- *                       necessary.
- * \param sinsq_th12   - \f$\sin^2\theta_{12}\f$ value. If 0., PDG value is used.
- * \param sinsq_th23   - \f$\sin^2\theta_{23}\f$ value. If 0., PDG value is used.
- * \param sinsq_th13   - \f$\sin^2\theta_{13}\f$ value. If 0., PDG value is used.
- * \param dcp          - \f$\delta_{CP}\f$ value in \f$\pi\f$'s, as given by PDG group (e.g 1.38).
- *                       If -10, PDG value is used.
- * \param dm21         - \f$\Delta m^2_{21}\f$ value. If 0., PDG value is used.
- * \param dm32         - \f$\Delta m^2_{32}\f$ value; this must be > 0 for NH and < 0 for IH.
- *                       If 0., PDG value is used.
+   This routine creates a file with E vs costheta histograms with expected numbers of nu events.
+ 
+   The output root file will have directories atmflux, oscflux, intflux, detflux and meff. Eech
+   of the flux directories contains E vs costheta histograms for {flavor}_{nc/cc}_{nu/nub} (12 in
+   total), each bin will indicate the number of neutrinos of this type after op_time years.
+   Directory atmflux/ has histograms with atmospheric neutrinos. oscflux/ shows atmflux/ histograms
+   after oscillation through Earth, intflux/ shows oscflux/ histograms after nu + H2O xsec is taken
+   into account, detflux/ shows intflux/ histograms after effective mass is taken into account.
+   meff/ directory displays the effective mass histograms used for the generation of detflux/
+   histograms. In the region of fast oscillations it is necessary to sample each bin several times,
+   parameter nsamples determines how many samples per bin are calculated.
+ 
+   \param  op_time       Operation time in years.
+   \param  output_name   Name of the file where histograms are written.
+   \param  nsamples      Number of samples per filling one bin (recommended > 10).
+   \param  NH            True - normal nu mass hierarchy, False - inverted nu mass hierarchy.
+   \param  UseMeff       If true, program will look for effective mass histograms in the input files to calculate detected number of events for detflux/ directory. If one inputs the FluxChain output to GSGSampler, meff is not necessary. If false, the input effective mass strings can be empty.
+   \param meff_elec_cc   ROOT file with effective mass hists for elec-CC (create with `EffMass.C`)
+   \param meff_muon_cc   ROOT file with effective mass hists for muon-CC (create with `EffMass.C`)
+   \param meff_tau_cc    ROOT file with effective mass hists for tau-CC (create with `EffMass.C`)
+   \param meff_elec_nc   ROOT file with effective mass hists for NC (create with `EffMass.C`)
+   \param sinsq_th12     \f$\sin^2\theta_{12}\f$ value. If 0., PDG value is used.
+   \param sinsq_th23     \f$\sin^2\theta_{23}\f$ value. If 0., PDG value is used.
+   \param sinsq_th13     \f$\sin^2\theta_{13}\f$ value. If 0., PDG value is used.
+   \param dcp            \f$\delta_{CP}\f$ value in \f$\pi\f$'s, as given by PDG group (e.g 1.38). If -10, PDG value is used.
+   \param dm21           \f$\Delta m^2_{21}\f$ value. If 0., PDG value is used.
+   \param dm32           \f$\Delta m^2_{32}\f$ value; this must be > 0 for NH and < 0 for IH. If 0., PDG value is used.
+
  */
-void FluxChain(Double_t op_time     = 3.,
-	       TString  output_name = "flux_chain_out.root",
-	       Int_t    nsamples    = 50,
-	       Bool_t   NH          = true,
-	       Bool_t   UseMeff     = false,
-	       Double_t sinsq_th12  = 0., 
-	       Double_t sinsq_th23  = 0., 
-	       Double_t sinsq_th13  = 0., 
-	       Double_t dcp         = -10., 
-	       Double_t dm21        = 0., 
-	       Double_t dm32        = 0.) {
+void FluxChain(Double_t op_time      = 3.,
+	       TString  output_name  = "flux_chain_out.root",
+	       Int_t    nsamples     = 50,
+	       Bool_t   NH           = true,
+	       Bool_t   UseMeff      = false,
+	       TString  meff_elec_cc = "../data/eff_mass/EffMass_elec_CC.root",
+	       TString  meff_muon_cc = "../data/eff_mass/EffMass_muon_CC.root",
+	       TString  meff_tau_cc  = "../data/eff_mass/EffMass_tau_CC.root",
+	       TString  meff_elec_nc = "../data/eff_mass/EffMass_elec_NC.root",
+	       Double_t sinsq_th12   = 0., 
+	       Double_t sinsq_th23   = 0., 
+	       Double_t sinsq_th13   = 0., 
+	       Double_t dcp          = -10., 
+	       Double_t dm21         = 0., 
+	       Double_t dm32         = 0.) {
 
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
 
@@ -121,7 +126,7 @@ void FluxChain(Double_t op_time     = 3.,
   if ( !InitOscPars(NH, h, sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32) ) return;
   InitHists();
   if ( UseMeff ) {
-    if ( !ReadMeffHists(h) ) return;
+    if ( !ReadMeffHists(h, meff_elec_cc, meff_muon_cc, meff_tau_cc, meff_elec_nc) ) return;
   }
  
   for (Int_t f = 0; f < 3; f++) {
@@ -299,14 +304,17 @@ void InitHists() {
 /**
  *  Inline function to read effective mass histograms from $NMHDIR/data/eff_mass/.
  */
-Bool_t ReadMeffHists(FileHeader &h) {
+Bool_t ReadMeffHists(FileHeader &h, TString meff_elec_cc, TString meff_muon_cc, 
+		     TString meff_tau_cc, TString meff_elec_nc) {
+
+  vector<TString> meff_filenames = {meff_elec_cc, meff_muon_cc, meff_tau_cc};
 
   for (Int_t f = 0; f < 3; f++) {
     for (Int_t cc = 0; cc < 2; cc++) {
 
       // for nc events the effective mass is identical for all flavors, only elec_NC simulated
-      TString meff_fname = "$NMHDIR/data/eff_mass/EffMass_" + fFlavs[f] + "_CC.root";
-      if (cc == 0) meff_fname = "$NMHDIR/data/eff_mass/EffMass_elec_NC.root";
+      TString meff_fname = meff_filenames[f];
+      if (cc == 0) meff_fname = meff_elec_nc;
     
       TFile meff_file(meff_fname, "READ");
       if ( !meff_file.IsOpen() ) {

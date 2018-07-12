@@ -3,23 +3,28 @@
 This script can be used to call the FluxChain.C macro several times with different (random) oscillation parameter settings. If nothing but the IDSTR is specified, the macro will call FluxChain.C twice, once with NH, once with IH, with all OscPars at central values. For a single call of FluxChain.C use the root prompt.
  
 Usage:
-    flux_caller [-n NR_OF_CONFS] [-p PAR] [-s STEP] [-y YEARS] [--meff] -i IDSTR
+    flux_caller [-n NR_OF_CONFS] [-p PAR] [-s STEP] [-y YEARS] [--meff] [--ecc MEFF_ELEC_CC] [--mcc MEFF_MUON_CC] [--tcc MEFF_TAU_CC] [--enc MEFF_ELEC_NC] -i IDSTR
     flux_caller -h                                                                     
 
 Option:
-    -n NR_OF_CONFS    Number of randomly sampled oscillation parameter configurations. 
-                      If -p specified, then the number of scan steps in the parameter
-                      values from -3sigma to 3sigma. For each configuration normal and
-                      inverted hierarchy is used.
-    -p PAR            Name of the parameter to be scanned. Supported names are
-                      sinsq_th12, sinsq_th23, sinsq_th13, dcp (Currently NOT supported: dm21, dm32).
-    -s STEP           If -p specified, the step with which the par is scanned. If -p 
-                      and -s are specified, then -n is ignored.
-    -y YEARS          Number of years of data taking [default: 3]
-    --meff            Use effective mass to calculate detected flux histograms
-    -i IDSTR          Identifier string added as prefix to files in output/FluxChain/
+    -n NR_OF_CONFS      Number of randomly sampled oscillation parameter configurations. 
+                        If -p specified, then the number of scan steps in the parameter
+                        values from -3sigma to 3sigma. For each configuration normal and
+                        inverted hierarchy is used.
+    -p PAR              Name of the parameter to be scanned. Supported names are
+                        sinsq_th12, sinsq_th23, sinsq_th13, dcp (Currently NOT supported: dm21, dm32).
+    -s STEP             If -p specified, the step with which the par is scanned. If -p 
+                        and -s are specified, then -n is ignored.
+    -y YEARS            Number of years of data taking [default: 3]
+    --meff              Use effective mass to calculate detected flux histograms
+    --ecc MEFF_ELEC_CC  Elec-CC Meff file [default: ../data/eff_mass/EffMass_elec_CC.root]
+    --mcc MEFF_MUON_CC  Muon-CC Meff file [default: ../data/eff_mass/EffMass_muon_CC.root]
+    --tcc MEFF_TAU_CC   Tau-CC Meff file [default: ../data/eff_mass/EffMass_tau_CC.root]
+    --enc MEFF_ELEC_NC  Elec-NC Meff file [default: ../data/eff_mass/EffMass_elec_NC.root]
+    -i IDSTR            Identifier string added as prefix to files in output/FluxChain/
 
-    -h --help         Show this screen
+    -h --help           Show this screen
+
 """
 
 import sys
@@ -138,7 +143,7 @@ def main(args):
                     dm21 = op['dm21'].get_random_flat(NH)
                     dm32 = op['dm32'].get_random_flat(NH)
             
-                    cmd = get_fluxchain_cmd(args['-y'], outname, NH, args['--meff'],
+                    cmd = get_fluxchain_cmd(args, outname, NH,
                                             sinsq12, sinsq23, sinsq13, dcp, dm21, dm32)
                     vars_to_log(logfile, cmd, sinsq12, sinsq23, sinsq13, dcp, dm21, dm32)
                     cmds.append(cmd)
@@ -155,7 +160,7 @@ def main(args):
                 dm21 = op['dm21'].get_val(NH)
                 dm32 = op['dm32'].get_val(NH)
             
-                cmd = get_fluxchain_cmd(args['-y'], outname, NH, args['--meff'], 
+                cmd = get_fluxchain_cmd(args, outname, NH,
                                         sinsq12, sinsq23, sinsq13, dcp, dm21, dm32)
                 vars_to_log(logfile, cmd, sinsq12, sinsq23, sinsq13, dcp, dm21, dm32)
                 cmds.append(cmd)
@@ -185,7 +190,7 @@ def main(args):
 
             # sample for NH
             outname_NH = "output/FluxChain/{0}_step{1}_NH1.root".format(args['-i'], n)
-            cmd_NH = get_fluxchain_cmd(args['-y'], outname_NH, 1, args['--meff'],
+            cmd_NH = get_fluxchain_cmd(args, outname_NH, 1,
                                        op['sinsq_th12'].val_NH, op['sinsq_th23'].val_NH, 
                                        op['sinsq_th13'].val_NH, op['dcp'].val_NH, 
                                        op['dm21'].val_NH, op['dm32'].val_NH)
@@ -197,7 +202,7 @@ def main(args):
 
             # sample for IH with identical parameters, except mass splittings
             outname_IH = "output/FluxChain/{0}_step{1}_NH0.root".format(args['-i'], n)
-            cmd_IH = get_fluxchain_cmd(args['-y'], outname_IH, 0, args['--meff'], 
+            cmd_IH = get_fluxchain_cmd(args, outname_IH, 0,
                                        op['sinsq_th12'].val_NH, op['sinsq_th23'].val_NH, 
                                        op['sinsq_th13'].val_NH, op['dcp'].val_NH, 
                                        op['dm21'].val_IH, op['dm32'].val_IH)
@@ -224,18 +229,29 @@ def main(args):
 
 #=========================================================================
 
-def get_fluxchain_cmd(years, outname, NH, Meff, sinsq12, sinsq23, sinsq13, dcp, dm21, dm32):
+def get_fluxchain_cmd(args, outname, NH, sinsq12, sinsq23, sinsq13, dcp, dm21, dm32):
     """
     Function to return a command to execute the FluxChain.C macro.
     """
 
+    years        = args['-y']
+    Meff         = args['--meff']
+    meff_elec_cc = os.path.abspath(args['--ecc'])
+    meff_muon_cc = os.path.abspath(args['--mcc'])
+    meff_tau_cc  = os.path.abspath(args['--tcc'])
+    meff_elec_nc = os.path.abspath(args['--enc'])
+
     syscmd  = "root -b -q 'FluxChain.C+("
-    syscmd += str(years) + ", "      # 3 years running time
-    syscmd += '"' + outname + '", '  # output name
-    syscmd += str(20) + ","          # 20-fold oversampling in each bin
-    syscmd += str(int(NH)) + ", "    # 0 - IH, 1 - NH
-    syscmd += str(int(Meff)) + ", "  # 0 - don't use Meff, 1 - use Meff
-    syscmd += str(sinsq12) + ", "    # oscillation parameter values
+    syscmd += str(years) + ", "        # 3 years running time
+    syscmd += '"' + outname + '", '    # output name
+    syscmd += str(20) + ","            # 20-fold oversampling in each bin
+    syscmd += str(int(NH)) + ", "      # 0 - IH, 1 - NH
+    syscmd += str(int(Meff)) + ", "    # 0 - don't use Meff, 1 - use Meff
+    syscmd += '"' + str(meff_elec_cc) + '", ' # elec-CC eff mass file
+    syscmd += '"' + str(meff_muon_cc) + '", ' # muon-CC eff mass file
+    syscmd += '"' + str(meff_tau_cc)  + '", ' # tau-CC eff mass file
+    syscmd += '"' + str(meff_elec_nc) + '", ' # elec-NC eff mass file
+    syscmd += str(sinsq12) + ", "      # oscillation parameter values
     syscmd += str(sinsq23) + ", "
     syscmd += str(sinsq13) + ", "
     syscmd += str(dcp) + ", "
