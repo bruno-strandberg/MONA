@@ -21,7 +21,7 @@ Option:
 
     -c ATMMU_CUT      PID cut to reject atmospheric muons [default: 1.0]
     -n NOISE_CUT      PID cut to reject noise-like events [default: 1.0]
-    -v VEFF_OPT       Vgen option, 0 - interaction volume, 1 - can, 2 - custom [default: 1]
+    -v VEFF_OPT       Vgen option, 0 - can, 1 - custom [default: 0]
     --rvol RVOL       Radius of custom volume [default: 0]
     --zmin ZMIN       Z minimum of custom volume [default: 0]
     --zmax ZMAX       Z maximum of custom volume [default: 0]

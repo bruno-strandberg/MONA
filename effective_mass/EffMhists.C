@@ -6,6 +6,8 @@
 #include "NMHUtils.h"
 #include "FileHeader.h"
 
+#include <stdexcept>
+
 //*********************************************************************
 //functions
 
@@ -18,20 +20,15 @@ void     FillGenerated(Int_t veff_option);
 //*********************************************************************
 //global histograms and variables
 
-enum effvol_options { interaction_vol = 0, can_vol, custom_vol, not_supported };
+enum effvol_options { can_vol = 0, custom_vol, not_supported };
 
 //initialised in InitHists()
 TH2D *fh_gen_nu;
 TH2D *fh_gen_nub;
 TH2D *fh_gen_scaled_nu;
 TH2D *fh_gen_scaled_nub;
-
 TH2D *fh_det_nu;
 TH2D *fh_det_nub;
-TH2D *fh_det_gandalf_nu;
-TH2D *fh_det_shower_nu;
-TH2D *fh_det_gandalf_nub;
-TH2D *fh_det_shower_nub;
 
 //gseagen and summary file parsers
 GSGParser     *fG;
@@ -40,21 +37,21 @@ SummaryParser *fS;
 //*********************************************************************
 
 /**
- *  This routine fills effective mass histograms.
- *
- * \param  summary_file  Summary file with reconstructed neutrino events.
- * \param  gseagen_file  GSeaGen file where all of the generated MC events are.
- * \param  flavor        Neutrino flavor. 0 - electron, 1 - muon, 2 - tauon.
- * \param  int_type      Interaction type. 0 - NC, 1 - CC.
- * \param  en_low        MC neutrino energy start. Either 1 or 3.
- * \param  run_nr        MC run number.
- * \param  atmmu_cut     PID cut to reject atmospheric muons (0 - very strict, 1 - all events pass).
- * \param  noise_cut     PID cut to reject noise-like events (0 - very strict, 1 - all events pass).
- * \param  veff_option   Select effective volume calculation. 0 - interaction volume, 1 - detector can, 2 - custom volume.
- * \param  rvol          Radius of custom volume.
- * \param  zmin_vol      Minimum z of custom volume.
- * \param  zmax_vol      Maximum z of custom volume.
- *
+   This routine fills histograms for effective mass calculation and works together with `EffMass.C`.
+ 
+   \param  summary_file  Summary file with reconstructed neutrino events.
+   \param  gseagen_file  GSeaGen file where all of the generated MC events are.
+   \param  flavor        Neutrino flavor. 0 - electron, 1 - muon, 2 - tauon.
+   \param  int_type      Interaction type. 0 - NC, 1 - CC.
+   \param  en_low        MC neutrino energy start. Either 1 or 3.
+   \param  run_nr        MC run number.
+   \param  atmmu_cut     PID cut to reject atmospheric muons (0 - very strict, 1 - all events pass).
+   \param  noise_cut     PID cut to reject noise-like events (0 - very strict, 1 - all events pass).
+   \param  veff_option   Select effective volume calculation. 0 - detector can, 1 - custom volume.
+   \param  rvol          Radius of custom volume.
+   \param  zmin_vol      Minimum z of custom volume.
+   \param  zmax_vol      Maximum z of custom volume.
+ 
  */
 void EffMhists(TString summary_file, 
 	       TString gseagen_file, 
@@ -64,7 +61,7 @@ void EffMhists(TString summary_file,
 	       Int_t run_nr,
 	       Double_t atmmu_cut = 1, 
 	       Double_t noise_cut = 1, 
-	       Int_t veff_option  = 1, 
+	       Int_t veff_option  = 0, 
 	       Double_t rvol      = 0., 
 	       Double_t zmin_vol  = 0., 
 	       Double_t zmax_vol  = 0. ) {
@@ -132,10 +129,6 @@ void EffMhists(TString summary_file,
   fh_gen_scaled_nub->Write();
   fh_det_nu ->Write();
   fh_det_nub->Write();
-  fh_det_gandalf_nu->Write();
-  fh_det_shower_nu ->Write();
-  fh_det_gandalf_nub->Write();
-  fh_det_shower_nub ->Write();
   h.WriteHeader(fout);
 
   fout->Close();
@@ -149,10 +142,6 @@ void EffMhists(TString summary_file,
   delete fh_gen_scaled_nub;
   delete fh_det_nu;
   delete fh_det_nub;
-  delete fh_det_gandalf_nu;
-  delete fh_det_shower_nu;
-  delete fh_det_gandalf_nub;
-  delete fh_det_shower_nub;
   
   delete fS;
   delete fG;
@@ -214,20 +203,11 @@ void InitHists() {
   fh_gen_scaled_nub->SetNameTitle("Generated_scaled_nub","Generated_scaled_nub");
 
   // 'detected' histograms
-
   fh_det_nu          = (TH2D*)fh_gen_nu->Clone("Detected_nu");
-  fh_det_gandalf_nu  = (TH2D*)fh_gen_nu->Clone("Detected_gandalf_nu");
-  fh_det_shower_nu   = (TH2D*)fh_gen_nu->Clone("Detected_shower_nu");
   fh_det_nu->SetNameTitle("Detected_nu" ,"Detected_nu");
-  fh_det_gandalf_nu->SetNameTitle("Detected_gandalf_nu","Detected_gandalf_nu");
-  fh_det_shower_nu ->SetNameTitle("Detected_shower_nu" ,"Detected_shower_nu");
 
   fh_det_nub         = (TH2D*)fh_gen_nu->Clone("Detected_nub");
-  fh_det_gandalf_nub = (TH2D*)fh_gen_nu->Clone("Detected_gandalf_nub");
-  fh_det_shower_nub  = (TH2D*)fh_gen_nu->Clone("Detected_shower_nub");
   fh_det_nub->SetNameTitle("Detected_nub","Detected_nub");
-  fh_det_gandalf_nub->SetNameTitle("Detected_gandalf_nub","Detected_gandalf_nub");
-  fh_det_shower_nub ->SetNameTitle("Detected_shower_nub" ,"Detected_shower_nub");
   
 }
 
@@ -253,11 +233,13 @@ void FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
     fS->GetTree()->GetEntry(i);
     SummaryEvent *evt = fS->GetEvt();
 
-    //if volume cut is used exclude events with vertices outside the volume cut
-    if (veff_option == can_vol || veff_option == custom_vol) {
-      TVector3 pos = evt->Get_MC_pos();
-      if ( !VertexInVol(pos.x(), pos.y(), pos.z(), fG->fRcan, fG->fZcan_min, fG->fZcan_max) ) continue;
-    }
+    // Do not cut on vertex of 'detected' events, this cannot be emulated in experimental data
+    // still need to think about this...
+
+    // if (veff_option == can_vol || veff_option == custom_vol) {
+    //   TVector3 pos = evt->Get_MC_pos();
+    //   if ( !VertexInVol(pos.x(), pos.y(), pos.z(), fG->fRcan, fG->fZcan_min, fG->fZcan_max) ) continue;
+    // }
 
     //reject events that look like atmospheric muons
     if ( evt->Get_RDF_muon_score() > atmmu_cut  ) continue; 
@@ -265,25 +247,9 @@ void FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
 
     //if you wish to set PID cut, do so here
     
-    //mc_truth
+    // fill nu and nubar 'detected' histograms
     if ( evt->Get_MC_type() > 0 ) { fh_det_nu ->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
     else                          { fh_det_nub->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
-
-    //gandalf uses MC truth, but checks for reco 'quality cuts'
-    if ((Bool_t)evt->Get_track_ql1() ) {
-
-      if (evt->Get_MC_type() > 0) { fh_det_gandalf_nu ->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
-      else                        { fh_det_gandalf_nub->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
-
-    }
-
-    //shower uses MC truth, but checks for reco 'quality cuts'
-    if ((Bool_t)evt->Get_shower_ql1() ) {
-
-      if (evt->Get_MC_type() > 0) { fh_det_shower_nu ->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
-      else                        { fh_det_shower_nub->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
-      
-    }
     
   }
 
@@ -319,8 +285,8 @@ void FillGenerated(Int_t veff_option) {
   Double_t scale = 0;
   Double_t rho   = fG->fRho_seawater;
   
-  if (veff_option == interaction_vol) scale = fG->fVint * rho;
-  else if (veff_option == can_vol || veff_option == custom_vol) scale = fG->fVcan * rho;
+  if (veff_option == can_vol || veff_option == custom_vol) scale = fG->fVcan * rho;
+  else { throw std::invalid_argument( "ERROR! FillGenerated() unknown volume option." ); }
 
   fh_gen_scaled_nu ->Scale( 1./scale );
   fh_gen_scaled_nub->Scale( 1./scale );
