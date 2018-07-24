@@ -19,7 +19,8 @@ class EventSelection : public EventFilter {
 
  public:
   
-  enum reco {mc_truth, track, shower}; //!< enum to determine which reco type is used in filling hists
+  /// enum to determine which reco type is used in filling hists
+  enum reco {mc_truth, track, shower};
 
   EventSelection(reco reco_type, TString selection_name="", TTree *t = NULL,
 		 Int_t ebins  = 40, Double_t emin  =  1., Double_t emax  = 100.,
