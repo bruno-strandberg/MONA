@@ -40,6 +40,10 @@ Developments
 For improvements
 ----------------
 
+* Instead of mc_end, mc_start, you should have some discriminating name, eg mc_end_ECAP_PID_XXX, mc_start_LOI
+
+* AtmFlux option enumerator should be part of the class, as in EventSelection.
+
 * NuXsec uses data in a specific format. Would be nice to have something that can use GENIE output directly (not urgent).
 
 * AtmFlux::ReadHondaFlux() makes a small approximation for the ranges abs(cosz) > 0.95 (not sure this can be easily improved, though).
@@ -54,10 +58,6 @@ To-do, ideas
 ------------
 
 * You could try to estimate the effective mass from the effective area, in which case you won't need to parse the gSeaGen files.
-
-* Once the event weight calculation is in place, it might be the time to give another thought to the data format. It may be smart to have a way to attach the weight to the summary files? Needs thought, data sorting-->effective mass-->event weight-->data sorting may not be ideal.
-
-* It may be an idea that SummaryParser uses some event class instead of a flat tree. Needs thought, though.
 
 * Interactive python setup script that asks for OscProb, Jpp with root 6, etc, paths and creates the setenv.sh script.
 
@@ -77,3 +77,5 @@ Done
 * The above point applied also more generally: the input parameters should be saved to output for different applications, etc FluxChain, GSGSampler, ... --> handled by FileHeader
 
 * pid_result conversion to summary format is still painful, especially when summary data format changes. One option would be to define summary data structure in a SummaryEvent() class. This would, however, break compatibility with most things I have written so far and, more importantly, will make accessing/cloning/etc of the data more difficult. Maybe a better option would be to have a script that, after DataReducer.C has run its script, it checks for branches in SummaryParser.h and advises on branches to be added? --> Improved by creating the SummaryEvent class, which provides better IO.
+
+* It may be an idea that SummaryParser uses some event class instead of a flat tree -> uses SummaryEvent.
