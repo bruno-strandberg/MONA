@@ -1,5 +1,19 @@
 #include "EventFilter.h"
 
+/**
+   Constructor.
+
+   \param reco_type Type of reconstruction variables written to observables fEnergy, fDir, fPos, fBy, e.g. EventFilter::track.
+ */
+EventFilter::EventFilter(reco reco_type) {
+  fRecoType = reco_type;
+}
+
+//***************************************************************************************
+
+/** Destructor */
+EventFilter::~EventFilter() {}
+
 //***************************************************************************************
 
 /**
@@ -61,4 +75,41 @@ Bool_t EventFilter::PassesCuts(SummaryEvent *evt) {
 
   return (PassesAndCuts && PassesOrCuts);
 
+}
+
+//***************************************************************************************
+
+/** 
+    Function that copies variables from a ```SummaryEvent``` to member observables, depending on reco type.
+
+    \param evt  Pointer to a summary event.
+
+*/
+void EventFilter::SetObservables(SummaryEvent *evt) {
+
+  switch (fRecoType) {
+
+  case mc_truth:
+    fEnergy   = evt->Get_MC_energy();
+    fBy       = evt->Get_MC_bjorkeny();
+    fDir      = evt->Get_MC_dir();
+    fPos      = evt->Get_MC_pos();
+    break;
+    
+  case track:
+    fEnergy   = evt->Get_track_energy();
+    fBy       = evt->Get_track_bjorkeny();
+    fDir      = evt->Get_track_dir();
+    fPos      = evt->Get_track_pos();
+    break;
+    
+  case shower:
+    fEnergy   = evt->Get_shower_energy();
+    fBy       = evt->Get_shower_bjorkeny();
+    fDir      = evt->Get_shower_dir();
+    fPos      = evt->Get_shower_pos();
+    break;
+    
+  }
+  
 }

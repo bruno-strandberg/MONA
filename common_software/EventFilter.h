@@ -59,24 +59,40 @@ cutobj(): getter_ptr(0), value(0), comp_ptr(0) {};
    'and' cut or an 'or' cut. As long as only double's are used in `SummaryEvent`, the standard library
    functions `std::less<double>()` , ... etc are the comparison operators to pass.
 
+   Additionally, the class has variables for observables energy, position, direction and bjorken-y, and
+   a variable to determine which reconstruction type (e.g. track, shower, mc_truth) is used to set the
+   observables. The observables are typically used in inheriting classes (```EventSelection``` and 
+   ```DetResponse```) in filling data structures.
+
    Future developments: if SummaryEvent is changed to consist also of other variable types than
    doubles, then this class needs to be templated.
  */
 class EventFilter {
 
  public:
-  EventFilter() {};
-  ~EventFilter() {};
+
+  /// enum to determine which reco type is used in filling hists in inheriting classes
+  enum reco {mc_truth, track, shower};
+  
+  EventFilter(reco reco_type = EventFilter::mc_truth);
+  ~EventFilter();
   
   Bool_t PassesCuts(SummaryEvent *evt);
+  void   SetObservables(SummaryEvent *evt);
   void   AddCut( std::function<Double_t(SummaryEvent&)> getter_ptr,
 		 std::function<bool(double, double)> comp_ptr, Double_t value, Bool_t AndCut);
 
+  reco     fRecoType;    //!< variable to determine which reco type is used
+  Double_t fEnergy;      //!< energy observable for inheriting classes, depending on reco type
+  TVector3 fPos;         //!< position observable for inheriting classes, depending on reco type
+  TVector3 fDir;         //!< direction observable for inheriting classes, depending on reco type
+  Double_t fBy;          //!< bjorken-y observable for inheriting classes, depending on reco type
+  
  private:
-
+  
   std::vector<cutobj> fAndCuts; //!< vector with 'and' cuts
   std::vector<cutobj> fOrCuts;  //!< vector with 'or' cuts
-
+  
 };
 
 #endif

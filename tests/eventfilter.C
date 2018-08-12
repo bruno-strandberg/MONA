@@ -27,7 +27,7 @@ void eventfilter() {
   //-----------------------------------------------------------
   //create second filter, additionally as x or y direction > 0
   //-----------------------------------------------------------
-  EventFilter f2;
+  EventFilter f2(EventFilter::shower);
   f2.AddCut(&SummaryEvent::Get_track_energy, std::greater<double>(), 5, true );
   f2.AddCut(&SummaryEvent::Get_track_dir_z, std::less<double>(), 0, true );
 
@@ -41,5 +41,6 @@ void eventfilter() {
   //-----------------------------------------------------------
   EventFilter f3(f2);
   cout << "Filter f3 (expect fail) " << f3.PassesCuts(evt) << endl;
-
+  cout << "f2 and f3 should have matching reco type shower (2): " << f2.fRecoType << "\t" << f3.fRecoType << endl;
+  
 }

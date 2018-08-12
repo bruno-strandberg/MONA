@@ -19,9 +19,6 @@ class EventSelection : public EventFilter {
 
  public:
   
-  /// enum to determine which reco type is used in filling hists
-  enum reco {mc_truth, track, shower};
-
   EventSelection(reco reco_type, TString selection_name="", TTree *t = NULL,
 		 Int_t ebins  = 40, Double_t emin  =  1., Double_t emax  = 100.,
 		 Int_t ctbins = 40, Double_t ctmin = -1., Double_t ctmax = 1.);
@@ -36,7 +33,6 @@ class EventSelection : public EventFilter {
   TH2D*   Get_h_E_costh() { return fh_E_costh; } //!< Get the pointer to E_costh histo
 
  private:
-  reco           fRecoType;       //!< variable to determine which reco type is used
   TString        fSelName;        //!< name of the selection
   TFile         *fTreeFile;       //!< the temp file the tree will be associated with
   TTree         *fTree;           //!< tree with selected events

@@ -21,9 +21,8 @@ using namespace std;
  */
 EventSelection::EventSelection(reco reco_type, TString selection_name, TTree *t,
 			       Int_t ebins, Double_t emin, Double_t emax,
-			       Int_t ctbins, Double_t ctmin, Double_t ctmax) {
+			       Int_t ctbins, Double_t ctmin, Double_t ctmax) : EventFilter(reco_type) {
 
-  fRecoType = reco_type;
   fSelName  = selection_name;
 
   if (t != NULL) SetTreeMode(t);
@@ -48,7 +47,6 @@ EventSelection::EventSelection(reco reco_type, TString selection_name, TTree *t,
  */
 EventSelection::EventSelection(const EventSelection &evsel) : EventFilter(evsel) {
 
-  fRecoType = evsel.fRecoType;
   fSelName  = evsel.fSelName;
 
   if (evsel.fTree != NULL) { SetTreeMode(evsel.fTree); }
@@ -88,34 +86,10 @@ void EventSelection::Fill(SummaryEvent *evt, Double_t w) {
 
   if ( !PassesCuts(evt) ) return;
 
-  // here the correct variables from a reco need to be selected for filling histograms
-  Double_t energy = 0;
-  TVector3 dir, pos;
-
-  switch (fRecoType) {
-
-  case mc_truth:
-    energy    = evt->Get_MC_energy();
-    //bjorken_y = evt->Get_MC_bjorkeny();
-    dir       = evt->Get_MC_dir();
-    pos       = evt->Get_MC_pos();
-    break;
-  case track:
-    energy    = evt->Get_track_energy();
-    //bjorken_y = evt->Get_track_bjorkeny();
-    dir       = evt->Get_track_dir();
-    pos       = evt->Get_track_pos();
-    break;
-  case shower:
-    energy    = evt->Get_shower_energy();
-    //bjorken_y = evt->Get_shower_bjorkeny();
-    dir       = evt->Get_shower_dir();
-    pos       = evt->Get_shower_pos();
-    break;
-  }
+  SetObservables(evt);
 
   // fill all member histograms
-  fh_E_costh->Fill ( energy , -dir.z(), w );
+  fh_E_costh->Fill ( fEnergy , -fDir.z(), w );
 
   // if tree is set, fill this event to the tree
   if (fTree != NULL) fTree->Fill();
