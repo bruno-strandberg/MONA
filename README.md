@@ -1,38 +1,43 @@
 Main page {#mainpage}
 ===================
-Work in progress.
+This software provides some tools for estimating the ORCA sensitivity to neutrino mass ordering. It relies on Monte-Carlo data from ORCA simulation chain (see `data/README.md` for a brief description of the simulation chain). The directory `NMH/common_software` holds classes that are used by various applications for recurring tasks. Other directories hold code for some specific analysis.
 
 Prerequisities
 ==============
 * ROOT 6
-* To use GSGParser to parse gSeaGen files in .evt format, one also requires Jpp and aanet root6 branch.
-* Python scripts will require docopt package
+* To use `GSGParser` to parse `gSeaGen` files in `.evt` format, one also requires `Jpp` and `aanet` compiled against `ROOT 6`
+* Python scripts will require `docopt` package
 
 More info
 =========
 * Regarding the data format(s) used in the analysis, consult NMH/data/README.md and NMH/data_sorting/README.md.
-* Each subdirectory holds a README.md file that describes what the code can be used for.
+* Each subdirectory holds a `README.md` file that describes what the code can be used for.
 
 How to use
 ==========
 
-Setup in lyon
+Setup in lyon and elsewhere
 -------------
 * TBD
-
-Setup elsewhere
----------------
-* TBD
-* ```source setenv.sh -a -o /oscprob/dir```. -a sets to compile against aanet (only required when reading gSeaGen files in .evt format). -o sets the oscprob directory that is required for oscillating neutrinos.
+* ```source setenv.sh -a -o /oscprob/dir```. `-a` sets to compile against `aanet` (only required when reading `gSeaGen` files in `.evt` format). `-o` sets the `OscProb` directory that is required for oscillating neutrinos.
 * ```cd common_software/ ; make ```
 
 Sort data
 ----------
-The starting point is the file NMH/data/pid_result_XXX.root. This needs to be converted to analysis format. Data sorting/conversion is handled by macros in NMH/data_sorting/. Consult NMH/data_sorting/README.md
+The starting point is the file `NMH/data/pid_result_XXX.root`. This needs to be converted to analysis format. Data sorting/conversion is handled by macros in `NMH/data_sorting/`. Consult `NMH/data_sorting/README.md`
 
 Effective mass
 --------------
-2D effective mass histograms can be created with the scripts in NMH/effective_mass. Consult NMH/data_sorting/README.md. The combined outputs of the effective mass scripts are stored in data/eff_mass. There should be a file per each neutrino flavor, CC and electron NC.
+2D effective mass histograms can be created with the scripts in `NMH/effective_mass`. Consult `NMH/data_sorting/README.md`. The combined outputs of the effective mass scripts are stored in `data/eff_mass`. There should be a file per each neutrino flavor, CC and electron NC.
+
+Create experiment samples
+-------------------------
+The code in directory `NMH/evt_sampler/` can be used to create samples of Monte-Carlo data that look like event recorded by the detector over a certain amount of time. See `NMH/evt_sampler/README.md` for further information.
+
+Asymmetry
+---------
+The code in directory `NMH/asymmetry` can be used to estimate the asymmetry between normal and inverted hierarchy. Documentation is pending.
+
 
 Developments
 ============

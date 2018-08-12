@@ -1,13 +1,19 @@
 Common software
 ===============
 
-This directory has some generic classes that are used by other scripts in the NMH directory. The following classes can be used stand-alone:
+This directory has some generic classes that are used by other scripts in the NMH directory. The classes are documented in the source files, here very brief summaries are provided.
 
-* SummaryParser - to parse summary files the analysis format as described below,
-* GSGParser     - to parse gSeaGen files, either in .root or .evt format,
-* NuXsec        - a class to get the neutrino interaction cross-section in water,
-* AtmFlux       - a class to get the atmospheric neutrino flux.
-* FileHeader    - a class to create simple headers for ROOT files
+* `SummaryEvent`    - a class that defines the summary data format for this analysis
+* `SummaryParser`   - a class to parse summary files in the analysis format (`SummaryEvent`)
+* `NuXsec`          - a class to get the neutrino interaction cross-section in water
+* `NMHUtils`        - a misc collection of useful functions, e.g. for asymmetry calculation and for calculating logarithmic bins
+* `GSGParser`       - a class to parse `gSeaGen` files, either in `.root` or `.evt` format
+* `GSGHeaderReader` - a class that is used only in `GSGParser` to read the `gSeaGen` header in `.root` format
+* `FileHeader`      - a class to create simple headers for `ROOT` files
+* `EventSelection`  - a class to define event selections (e.g. to select 'track' events and fill them to histograms)
+* `EventFilter`     - a class that defines an event filter for inheriting classes, such as `EventSelection` and `DetResponse`
+* `DetResponse`     - a class that defines the detector response from MC data
+* `AtmFlux`         - a class to get the atmospheric neutrino flux
 
 Prerequisities
 ==============
@@ -18,13 +24,14 @@ How to run
 ==============
 
 The classes can be used in root by doing:
-1. > root
-2. > .L libnmhsoft.so
-3. > SummaryParser sp("/path/to/summary_file/")
+```
+root
+SummaryParser sp("/path/to/summary_file/")
+```
 
 The classes can also be used in compiled root macros, compiled programs etc., just like any other ROOT class.
 
-The usage of data parsers is illustrated in NMH/examples/data_parsers.C. If there is gSeaGen data and summary data in mc_end and mc_start, one can, in the examples directory, do '''root data_parsers.C+ '''.
+The usage of data parsers is illustrated in `NMH/examples/data_parsers.C`. If there is `gSeaGen` data and summary data in `../data/mc_end` and `../data/mc_start`, one can, in the examples directory, do ```root data_parsers.C+```.
 
 The analysis data format
 ========================
