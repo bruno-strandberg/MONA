@@ -38,7 +38,7 @@ void Asymmetry(TString summary_files, TString NH_IH_pairs_list, TString idstr=""
   FillSimHists();
 
   // init event selections, fill them and calculate the asymmetries
-  InitEvtSels_1( NH_IH_pairs.size() );  
+  InitEvtSels_1( NH_IH_pairs.size() );
   FillSelections();
   GetAsymmetries(NH_IH_pairs, idstr);
 

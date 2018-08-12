@@ -46,6 +46,7 @@ TH2D    *fhOscFlux[3][2][2];   //!< oscillated flux histograms
 TH2D    *fhIntFlux[3][2][2];   //!< interacted flux histograms
 TH2D    *fhDetFlux[3][2][2];   //!< detected flux histograms
 TH2D       *fhMeff[3][2][2];   //!< effective mass histograms
+TH2D    *fhOscProb[3][3][2][2];//!< oscillation probabilities in format[flavor_in][flavor_out][is_cc][is_nb]
 
 map < Int_t, TString > fFlavs  = { {0, "elec" },   //!< map of flavor numbers and strings
 				   {1, "muon" },
@@ -81,7 +82,7 @@ Double_t fKg_per_Mton = 1e9;                        //!< kg per MTon (MTon = 1e6
  
    \param  op_time       Operation time in years.
    \param  output_name   Name of the file where histograms are written.
-   \param  nsamples      Number of samples per filling one bin (recommended > 10).
+   \param  nsamples      Number of samples per filling one bin (recommended > 10). If set to 1 then bin central values are used.
    \param  NH            True - normal nu mass hierarchy, False - inverted nu mass hierarchy.
    \param  UseMeff       If true, program will look for effective mass histograms in the input files to calculate detected number of events for detflux/ directory. If one inputs the FluxChain output to GSGSampler, meff is not necessary. If false, the input effective mass strings can be empty.
    \param meff_elec_cc   ROOT file with effective mass hists for elec-CC (create with `EffMass.C`)
@@ -98,7 +99,7 @@ Double_t fKg_per_Mton = 1e9;                        //!< kg per MTon (MTon = 1e6
  */
 void FluxChain(Double_t op_time      = 3.,
 	       TString  output_name  = "flux_chain_out.root",
-	       Int_t    nsamples     = 50,
+	       Int_t    nsamples     = 20,
 	       Bool_t   NH           = true,
 	       Bool_t   UseMeff      = false,
 	       TString  meff_elec_cc = "../data/eff_mass/EffMass_elec_CC.root",
@@ -292,6 +293,12 @@ void InitHists() {
 	fhOscFlux[f][cc][nb]->Sumw2();
 	fhIntFlux[f][cc][nb]->Sumw2();
 	fhDetFlux[f][cc][nb]->Sumw2();
+
+	for (Int_t _f = 0; _f < 3; _f++) {
+	  TString oscprobn = "oscprob_" + fFlavs[f] + "_to_" + fFlavs[_f] + "_" + fItypes[cc] + "_" + fPtypes[nb];
+	  fhOscProb[f][_f][cc][nb] = new TH2D(oscprobn, oscprobn, ebins, &e_edges[0], ctbins, ctlow, cthigh);
+	  fhOscProb[f][_f][cc][nb]->Sumw2();
+	}
        
       }
     }
@@ -377,6 +384,12 @@ void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsa
 	Double_t ct = fRand->Uniform( ct_low, ct_high );
 	Double_t en = fRand->Uniform( en_low, en_high );
 	
+	// as an exception, if there is only one sample, use bin center
+	if (nsamples == 1) {
+	  ct = h->GetYaxis()->GetBinCenter( ybin );
+	  en = h->GetXaxis()->GetBinCenter( xbin );
+	}
+
 	// calculate and set the neutrino path
 	fPrem->FillPath(ct);
 	fProb->SetPath( fPrem->GetNuPath() );
@@ -398,8 +411,9 @@ void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsa
 	sumw += weight;
 	
 	// oscillated neutrino count in operation time (in units 1/m^2)
-	Double_t osc_flux = ( atm_flux_e * fProb->Prob(0, flav, en) +
-			      atm_flux_m * fProb->Prob(1, flav, en) );
+	Double_t prob_elec = fProb->Prob(0, flav, en);
+	Double_t prob_muon = fProb->Prob(1, flav, en);
+	Double_t osc_flux = ( atm_flux_e * prob_elec + atm_flux_m * prob_muon );
 
 	// interacted neutrino count in operation time (in units 1/MTon)
 	Double_t int_flux = osc_flux * fXsec->GetXsec(en)/fMN * fKg_per_Mton;
@@ -414,6 +428,8 @@ void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsa
 	fhOscFlux[flav][is_cc][is_nb]->Fill( en, ct, osc_flux * weight );
 	fhIntFlux[flav][is_cc][is_nb]->Fill( en, ct, int_flux * weight );
 	fhDetFlux[flav][is_cc][is_nb]->Fill( en, ct, det_flux * weight );
+	fhOscProb[0][flav][is_cc][is_nb]->Fill( en, ct, prob_elec * weight);
+	fhOscProb[1][flav][is_cc][is_nb]->Fill( en, ct, prob_muon * weight);
 
       } // end loop over samples
 
@@ -421,18 +437,26 @@ void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsa
       Double_t oflux = fhOscFlux[flav][is_cc][is_nb]->GetBinContent( xbin, ybin );
       Double_t iflux = fhIntFlux[flav][is_cc][is_nb]->GetBinContent( xbin, ybin );
       Double_t dflux = fhDetFlux[flav][is_cc][is_nb]->GetBinContent( xbin, ybin );
+      Double_t oprob_elec = fhOscProb[0][flav][is_cc][is_nb]->GetBinContent( xbin, ybin );
+      Double_t oprob_muon = fhOscProb[1][flav][is_cc][is_nb]->GetBinContent( xbin, ybin );
       
       fhOscFlux[flav][is_cc][is_nb]->SetBinContent( xbin, ybin, oflux/sumw );
       fhIntFlux[flav][is_cc][is_nb]->SetBinContent( xbin, ybin, iflux/sumw );
       fhDetFlux[flav][is_cc][is_nb]->SetBinContent( xbin, ybin, dflux/sumw );
+      fhOscProb[0][flav][is_cc][is_nb]->SetBinContent( xbin, ybin, oprob_elec/sumw );
+      fhOscProb[1][flav][is_cc][is_nb]->SetBinContent( xbin, ybin, oprob_muon/sumw );
 
       // also do this for errors
       Double_t oflux_err = fhOscFlux[flav][is_cc][is_nb]->GetBinError( xbin, ybin );
       Double_t iflux_err = fhIntFlux[flav][is_cc][is_nb]->GetBinError( xbin, ybin );
       Double_t dflux_err = fhDetFlux[flav][is_cc][is_nb]->GetBinError( xbin, ybin );
+      Double_t eprob_err = fhOscProb[0][flav][is_cc][is_nb]->GetBinError( xbin, ybin );
+      Double_t mprob_err = fhOscProb[1][flav][is_cc][is_nb]->GetBinError( xbin, ybin );
       fhOscFlux[flav][is_cc][is_nb]->SetBinError( xbin, ybin, oflux_err/sumw );
       fhIntFlux[flav][is_cc][is_nb]->SetBinError( xbin, ybin, iflux_err/sumw );
       fhDetFlux[flav][is_cc][is_nb]->SetBinError( xbin, ybin, dflux_err/sumw );
+      fhOscProb[0][flav][is_cc][is_nb]->SetBinError( xbin, ybin, eprob_err/sumw );
+      fhOscProb[1][flav][is_cc][is_nb]->SetBinError( xbin, ybin, mprob_err/sumw );
 
     } // end loop over xbins
     
@@ -456,6 +480,7 @@ void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsa
   TDirectory *intflux = fout.mkdir("intflux");
   TDirectory *detflux = fout.mkdir("detflux");
   TDirectory *meff    = fout.mkdir("meff");
+  TDirectory *oscprob = fout.mkdir("oscprob");
   
   for (Int_t f = 0; f < 3; f++) {
     for (Int_t cc = 0; cc < 2; cc++) {
@@ -470,6 +495,8 @@ void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsa
 	fhDetFlux[f][cc][nb]->Write();
 	meff->cd();
 	if (fhMeff[f][cc][nb]) fhMeff[f][cc][nb]->Write();
+	oscprob->cd();
+	for (Int_t _f = 0; _f < 3; _f++) fhOscProb[f][_f][cc][nb]->Write();
       }
     }
   }
@@ -499,6 +526,7 @@ void CleanUp() {
 	delete fhIntFlux[f][cc][nb];
 	delete fhDetFlux[f][cc][nb];
 	if (fhMeff[f][cc][nb]) delete fhMeff[f][cc][nb];
+	for (Int_t _f = 0; _f < 3; _f++) delete fhOscProb[f][_f][cc][nb];
       }
     }
   }
