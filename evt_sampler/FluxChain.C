@@ -309,7 +309,15 @@ void InitHists() {
 //*****************************************************************
 
 /**
- *  Inline function to read effective mass histograms from $NMHDIR/data/eff_mass/.
+   Inline function to read effective mass histograms.
+
+   \param h             Address of a FileHeader instance for information storage
+   \param meff_elec_cc  Name of the effective mass file for elec CC
+   \param meff_muon_cc  Name of the effective mass file for muon CC
+   \param meff_tau_cc   Name of the effective mass file for tau CC
+   \param meff_elec_nc  Name of the effective mass file for elec NC
+
+   \return True if effective mass histograms successfully found, False otherwise.
  */
 Bool_t ReadMeffHists(FileHeader &h, TString meff_elec_cc, TString meff_muon_cc, 
 		     TString meff_tau_cc, TString meff_elec_nc) {
@@ -350,7 +358,13 @@ Bool_t ReadMeffHists(FileHeader &h, TString meff_elec_cc, TString meff_muon_cc,
 //*****************************************************************
 
 /**
- *  Inline function to fill E vs costheta histograms.
+   Inline function to fill E vs costheta histograms of this macro.
+
+   \param op_time   Operation time
+   \param flav      Nu flavor
+   \param is_cc     CC or NC event
+   \param is_nb     nu or nubar
+   \param nsamples  Number of over-samples per bin
  */
 void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsamples) {
   
@@ -467,7 +481,10 @@ void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsa
 //*****************************************************************
 
 /**
- *  Inline function to write to file.
+   Inline function to write histograms to file.
+
+   \param output_name   Name of the output file
+   \param h             Reference to a FileHeader instance that is written to output
  */
  void WriteToFile(TString output_name, FileHeader &h) {
 
@@ -508,7 +525,7 @@ void FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsa
 //*****************************************************************
 
 /**
- *  Inline function to clean up dynamic memory.
+   Inline function to clean up dynamic memory.
  */
 void CleanUp() {
 

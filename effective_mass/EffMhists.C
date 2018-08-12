@@ -150,7 +150,17 @@ void EffMhists(TString summary_file,
 
 //*********************************************************************
 
-// This routine parses the inputs to create the output file name.
+/**
+   This function creates the output filename for given inputs.
+
+   \param flavor    Neutrino flavor
+   \param int_type  Interaction type (nc/cc)
+   \param en_low    Start of energy range of gSeaGen simulation
+   \param run_nr    gSeaGen run number
+
+   \return          Output effective mass file name; returns empty if inputs not supported.
+
+ */
 TString ParseInputs(Int_t flavor, Int_t int_type, Int_t en_low, Int_t run_nr) {
 
   map < Int_t, TString > f_to_name = { {0, "elec" }, 
@@ -188,7 +198,9 @@ TString ParseInputs(Int_t flavor, Int_t int_type, Int_t en_low, Int_t run_nr) {
 
 //*********************************************************************
 
-// This routine initialises the (global) histograms
+/**
+   Function that initialised the histograms used globally in this macro.
+ */
 void InitHists() {
 
   // 'generated' histograms
@@ -213,7 +225,19 @@ void InitHists() {
 
 //*********************************************************************
 
-// Function to check whether vertex is inside a volume
+/**
+   Function to check whether vertex is inside a volume
+
+   \param vx     Vertex x
+   \param vy     Vertex y
+   \param vz     Vertex z
+   \param R      Volume radius
+   \param z_min  Minimum z coordinate of the volume
+   \param z_max  Maximum z coordinate of the volume
+
+   \return True if vertex inside volume, false otherwise.
+
+ */
 Bool_t VertexInVol(Double_t vx, Double_t vy, Double_t vz, Double_t R, Double_t z_min, Double_t z_max) {
 
   Double_t r_vtx = TMath::Sqrt(vx*vx + vy*vy);
@@ -223,7 +247,13 @@ Bool_t VertexInVol(Double_t vx, Double_t vy, Double_t vz, Double_t R, Double_t z
 
 //*********************************************************************
 
-// Function that fills 'detected' histograms
+/**
+   Function that fills the 'detected' histograms of this macro.
+
+   \param veff_option   Volume constraint option
+   \param atmmu_cut     Atmospheric muon cut
+   \param noise_cut     Noise cut
+ */
 void FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
 
   //loops over summary events and fill 'detected' histograms
@@ -257,7 +287,11 @@ void FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
 
 //*********************************************************************
 
-// Function that fills 'generated' histograms, generation vol either interaction volume or can.
+/**
+   Function that fills the 'generated' histograms of this macro
+
+   \param veff_option   Volume constraint option
+ */
 void FillGenerated(Int_t veff_option) {
 
   //loop over generated MC events
