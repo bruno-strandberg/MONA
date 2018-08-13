@@ -86,7 +86,7 @@ void EventSelection::Fill(SummaryEvent *evt, Double_t w) {
 
   if ( !PassesCuts(evt) ) return;
 
-  SetObservables(evt);
+  SetObservables(evt); //implemented in EventFilter.C
 
   // fill all member histograms
   fh_E_costh->Fill ( fEnergy , -fDir.z(), w );
