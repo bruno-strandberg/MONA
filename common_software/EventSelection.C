@@ -21,12 +21,17 @@ using namespace std;
  */
 EventSelection::EventSelection(reco reco_type, TString selection_name, TTree *t,
 			       Int_t ebins, Double_t emin, Double_t emax,
-			       Int_t ctbins, Double_t ctmin, Double_t ctmax) : EventFilter(reco_type) {
+			       Int_t ctbins, Double_t ctmin, Double_t ctmax,
+			       Int_t bybins, Double_t bymin, Double_t bymax) : EventFilter(reco_type) {
 
   fSelName  = selection_name;
 
   if (t != NULL) SetTreeMode(t);
   else { fTree = NULL; fTreeFile = NULL; }
+
+  //----------------------------------------------
+  //init 2D hist
+  //----------------------------------------------
 
   std::vector<Double_t> e_edges = NMHUtils::GetLogBins(ebins, emin, emax);
 
@@ -34,6 +39,25 @@ EventSelection::EventSelection(reco reco_type, TString selection_name, TTree *t,
   fh_E_costh = new TH2D(hname, hname, ebins, &e_edges[0], ctbins, ctmin, ctmax); 
   fh_E_costh->SetDirectory(0);
 
+  //----------------------------------------------
+  //for 3D hist constructor all axes need to be defined the same way
+  //----------------------------------------------
+
+  TAxis ct_axis( ctbins, ctmin, ctmax );
+  TAxis by_axis( bybins, bymin, bymax );
+  
+  vector<Double_t> ct_edges, by_edges;
+  
+  for (Int_t ctbin = 1; ctbin <= ct_axis.GetNbins() + 1; ctbin++) {
+    ct_edges.push_back( ct_axis.GetBinLowEdge(ctbin) );
+  }
+
+  for (Int_t bybin = 1; bybin <= by_axis.GetNbins() + 1; bybin++) {
+    by_edges.push_back( by_axis.GetBinLowEdge(bybin) );
+  }
+ 
+  fh_E_costh_by = new TH3D(hname, hname, ebins, &e_edges[0], ctbins, &ct_edges[0], bybins, &by_edges[0]);
+  fh_E_costh_by->SetDirectory(0);
 }
 
 //***********************************************************************************
@@ -55,6 +79,8 @@ EventSelection::EventSelection(const EventSelection &evsel) : EventFilter(evsel)
   fh_E_costh = (TH2D*)evsel.fh_E_costh->Clone();
   fh_E_costh->SetDirectory(0);
 
+  fh_E_costh_by = (TH3D*)evsel.fh_E_costh_by->Clone();
+  fh_E_costh_by->SetDirectory(0);
 }
 
 //***********************************************************************************
@@ -65,6 +91,7 @@ EventSelection::EventSelection(const EventSelection &evsel) : EventFilter(evsel)
 EventSelection::~EventSelection() {
 
   if (fh_E_costh) delete fh_E_costh;
+  if (fh_E_costh_by) delete fh_E_costh_by;
 
   if (fTreeFile) {
     fTreeFile->Close();
@@ -89,7 +116,8 @@ void EventSelection::Fill(SummaryEvent *evt, Double_t w) {
   SetObservables(evt); //implemented in EventFilter.C
 
   // fill all member histograms
-  fh_E_costh->Fill ( fEnergy , -fDir.z(), w );
+  fh_E_costh->Fill( fEnergy , -fDir.z(), w );
+  fh_E_costh_by->Fill( fEnergy, -fDir.z(), fBy, w );
 
   // if tree is set, fill this event to the tree
   if (fTree != NULL) fTree->Fill();
@@ -133,6 +161,7 @@ void EventSelection::WriteToFile(TString fname) {
   
   fTree->Write();
   fh_E_costh->Write();
+  fh_E_costh_by->Write();
 
   fTreeFile->Close();
   delete fTreeFile;

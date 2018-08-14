@@ -4,6 +4,7 @@
 #include "SummaryEvent.h"
 #include "EventFilter.h"
 #include "TH2.h"
+#include "TH3.h"
 #include "TTree.h"
 #include "TFile.h"
 
@@ -21,7 +22,8 @@ class EventSelection : public EventFilter {
   
   EventSelection(reco reco_type, TString selection_name="", TTree *t = NULL,
 		 Int_t ebins  = 40, Double_t emin  =  1., Double_t emax  = 100.,
-		 Int_t ctbins = 40, Double_t ctmin = -1., Double_t ctmax = 1.);
+		 Int_t ctbins = 40, Double_t ctmin = -1., Double_t ctmax = 1.,
+		 Int_t bybins =  1, Double_t bymin =  0., Double_t bymax = 1.);
   EventSelection(const EventSelection &evsel);
   ~EventSelection();
 
@@ -29,14 +31,16 @@ class EventSelection : public EventFilter {
   void SetTreeMode(TTree *t);
   void WriteToFile(TString fname);
 
-  TString Get_SelName()   { return fSelName;   } //!< Get the selection name
-  TH2D*   Get_h_E_costh() { return fh_E_costh; } //!< Get the pointer to E_costh histo
+  TString Get_SelName()      { return fSelName;      } //!< Get the selection name
+  TH2D*   Get_h_E_costh()    { return fh_E_costh;    } //!< Get the pointer to E_costh histo
+  TH3D*   Get_h_E_costh_by() { return fh_E_costh_by; } //!< Get the pointer to E_costh_by histo
 
  private:
   TString        fSelName;        //!< name of the selection
   TFile         *fTreeFile;       //!< the temp file the tree will be associated with
   TTree         *fTree;           //!< tree with selected events
   TH2D          *fh_E_costh;      //!< Energy vs CosTheta histogram
+  TH3D          *fh_E_costh_by;   //!< Energy vs CosTheta vs by histogram
 
 };
 
