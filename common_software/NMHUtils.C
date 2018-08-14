@@ -37,6 +37,32 @@ vector<Double_t> NMHUtils::GetLogBins(Int_t nbins, Double_t low, Double_t high) 
 
 //****************************************************************************
 
+/** 
+    Function to get bin edges that can be input to TH1/2/3.
+    
+    Useful when constructing TH3 histgrams with E-axis on a log scale (see `NMHUtils::GetLogBins`) and cos-theta and bjorken-y on linear scales.
+
+    \param nbins   Number of bins
+    \param low     Lowest value on the axis
+    \param high    Highest value on the axis
+    \return        Vector with bin low edges
+
+*/
+vector<Double_t> NMHUtils::GetBins(Int_t nbins, Double_t low, Double_t high) {
+
+  TAxis axis( nbins, low, high );
+  vector<Double_t> edges;
+  
+  for (Int_t bin = 1; bin <= axis.GetNbins() + 1; bin++) {
+    edges.push_back( axis.GetBinLowEdge(bin) );
+  }
+
+  return edges;
+
+}
+
+//****************************************************************************
+
 /** A function that reads the lines of a plain-text file to a vector.
  *
  *  Empty lines and lines starting with # are ignored.

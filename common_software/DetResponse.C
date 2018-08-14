@@ -23,20 +23,9 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
   // initialize axes for histograms
   //----------------------------------------------------------
   
-  vector<Double_t> e_edges = NMHUtils::GetLogBins(ebins, emin, emax);  
-
-  TAxis ct_axis( ctbins, ctmin, ctmax );
-  TAxis by_axis( bybins, bymin, bymax );
-
-  vector<Double_t> ct_edges, by_edges;
-  
-  for (Int_t ctbin = 1; ctbin <= ct_axis.GetNbins() + 1; ctbin++) {
-    ct_edges.push_back( ct_axis.GetBinLowEdge(ctbin) );
-  }
-
-  for (Int_t bybin = 1; bybin <= by_axis.GetNbins() + 1; bybin++) {
-    by_edges.push_back( by_axis.GetBinLowEdge(bybin) );
-  }
+  vector<Double_t> e_edges  = NMHUtils::GetLogBins(ebins, emin, emax);  
+  vector<Double_t> ct_edges = NMHUtils::GetBins(ctbins, ctmin, ctmax);
+  vector<Double_t> by_edges = NMHUtils::GetBins(bybins, bymin, bymax);
   
   //----------------------------------------------------------
   // initialize histograms

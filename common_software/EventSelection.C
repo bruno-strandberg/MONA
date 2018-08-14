@@ -43,18 +43,8 @@ EventSelection::EventSelection(reco reco_type, TString selection_name, TTree *t,
   //for 3D hist constructor all axes need to be defined the same way
   //----------------------------------------------
 
-  TAxis ct_axis( ctbins, ctmin, ctmax );
-  TAxis by_axis( bybins, bymin, bymax );
-  
-  vector<Double_t> ct_edges, by_edges;
-  
-  for (Int_t ctbin = 1; ctbin <= ct_axis.GetNbins() + 1; ctbin++) {
-    ct_edges.push_back( ct_axis.GetBinLowEdge(ctbin) );
-  }
-
-  for (Int_t bybin = 1; bybin <= by_axis.GetNbins() + 1; bybin++) {
-    by_edges.push_back( by_axis.GetBinLowEdge(bybin) );
-  }
+  vector<Double_t> ct_edges = NMHUtils::GetBins(ctbins, ctmin, ctmax);
+  vector<Double_t> by_edges = NMHUtils::GetBins(bybins, bymin, bymax);
  
   fh_E_costh_by = new TH3D(hname, hname, ebins, &e_edges[0], ctbins, &ct_edges[0], bybins, &by_edges[0]);
   fh_E_costh_by->SetDirectory(0);

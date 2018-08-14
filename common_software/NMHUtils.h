@@ -13,6 +13,7 @@ using namespace std;
 namespace NMHUtils {
 
   vector<Double_t> GetLogBins(Int_t nbins, Double_t low, Double_t high);
+  vector<Double_t> GetBins(Int_t nbins, Double_t low, Double_t high);
   vector<TString>  ReadLines(TString input_file);
   Bool_t           FileExists(TString filename, Double_t size = 0);
 
