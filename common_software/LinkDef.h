@@ -7,6 +7,7 @@
 //when you do root, .L libnmhsoft.so, you get access to the classes listed below.
 //If you run a compiled macro and include before it does not matter
 #pragma link C++ enum AtmFluxOpt;
+#pragma link C++ namespace NMHUtils+;
 #pragma link C++ class GSGParser+;
 #pragma link C++ class SummaryParser+;
 #pragma link C++ class AtmFlux+;
@@ -16,6 +17,7 @@
 #pragma link C++ class EventFilter+;
 #pragma link C++ class EventSelection+;
 #pragma link C++ class DetResponse+;
+#pragma link C++ class TrueB+;
 
 
 #endif

@@ -4,7 +4,9 @@
 #include "EventFilter.h"
 #include "SummaryEvent.h"
 
+#include "TCanvas.h"
 #include "TH3.h"
+#include "TList.h"
 
 #include <vector>
 #include <map>
@@ -12,7 +14,7 @@
 /**
    class to store E_true, ct_true, by_true bins that contribute to E_reco, ct_reco, by_reco bin
  */
-struct TrueB {
+struct TrueB : public TObject {
   
   Int_t    fFlav;        //!< flavor index
   Int_t    fIsCC;        //!< is cc
@@ -62,11 +64,11 @@ struct TrueB {
   };
   
   /** 
-   * Operator to find a bin in a vector by using std::find.
+      Operator to find a bin in a vector by using std::find.
 
-   * \param rhs instance of TrueB that this object is compared to
-   * \return true if the bins match, false otherwise
-   */
+      \param rhs instance of TrueB that this object is compared to
+      \return true if the bins match, false otherwise
+  */
   bool operator == (const TrueB& rhs) const {
     return ( ( this->fFlav == rhs.fFlav ) && 
 	     ( this->fIsCC == rhs.fIsCC ) && 
@@ -75,7 +77,19 @@ struct TrueB {
 	     ( this->fCt_true_bin == rhs.fCt_true_bin ) &&
 	     ( this->fBy_true_bin == rhs.fBy_true_bin ) );
   }
-  
+
+  /**
+     Stream operator for cout.
+  */
+  friend std::ostream &operator << ( std::ostream &output, const TrueB &tb ) { 
+    output << "Flavor, is-cc, is-nb; true e, ct, by bin; N, frac true, frac reco: "
+	   << tb.fFlav << ' ' << tb.fIsCC << ' ' << tb.fIsNB << ' '
+	   << tb.fE_true_bin << ' ' << tb.fCt_true_bin << ' ' << tb.fBy_true_bin << ' '
+	   << tb.fN << ' ' << tb.fFracTrue << ' ' << tb.fFracReco;
+    return output;
+  }
+
+  ClassDef(TrueB, 1)
 };
 
 //==========================================================================================
@@ -90,12 +104,16 @@ class DetResponse : public EventFilter {
   	      Int_t ebins  = 40, Double_t emin  =  1., Double_t emax  = 100.,
   	      Int_t ctbins = 40, Double_t ctmin = -1., Double_t ctmax = 1.,
   	      Int_t bybins =  1, Double_t bymin =  0., Double_t bymax = 1.);
+  DetResponse(const DetResponse &detresp);
   ~DetResponse();
 
   std::vector<TrueB>& GetBinWeights(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   void Fill(SummaryEvent *evt);
   void Normalise();
-  
+  void WriteToFile(TString filename);
+  void ReadFromFile(TString filename);
+  TCanvas* DisplayResponse(Double_t e_reco, Double_t ct_reco);
+  TH3D* GetHist3D() { return fRespH; } //!< Return pointer to the 3D histogram with selected reco events
  private:
 
   TString fRespName; //!< name to identify the response
@@ -113,9 +131,11 @@ class DetResponse : public EventFilter {
   /// map from gSeaGen MC_type (Geant4 particle code) to flavor
   std::map<Int_t, Int_t>   fType_to_Flav = { {12, 0}, {14, 1}, {16, 2}, {13, 3}, {0, 4} };
   
-  TH3D    *fhSim[5][2][2];      //!< total numbers of simulated events
+  TH3D    *fhSim[5][2][2];      //!< total numbers of simulated events [flavor][nc/cc][nu/nub]
   TH3D    *fRespH;              //!< 3D histogram to help with binning functionality
-  std::vector<TrueB> ***fResp;  //!< Response structure in 3D in [Ereco][CTreco][BYreco] = vector<TrueB>
+  std::vector<TrueB> ***fResp;  //!< Response structure in 3D in [Ereco][CTreco][BYreco] = vector<TrueB> {contributing bins}
+
+  TList fHeap;
   
 };
 

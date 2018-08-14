@@ -2,6 +2,9 @@
 #include "NMHUtils.h"
 
 #include "TAxis.h"
+#include "TFile.h"
+#include "TTree.h"
+#include "TH2.h"
 
 #include<iostream>
 using namespace std;
@@ -42,7 +45,7 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
   for (auto &f: fFlavs) {
     for (auto &i: fInts) {
       for (auto &p: fPols) {
-	TString hname = "hsim_" + f.second + "_" + i.second + "_" + p.second;
+	TString hname = "hsim_" + f.second + "_" + i.second + "_" + p.second + "_" + fRespName;
 	fhSim[f.first][i.first][p.first] = new TH3D(hname, hname,
 						    ebins , &e_edges[0],
 						    ctbins, &ct_edges[0],
@@ -77,6 +80,43 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
 
 //*********************************************************************************
 
+/**
+   Copy constructor.
+
+   Without explicit cloning of the root histograms the destruction causes a seg fault.
+ */
+DetResponse::DetResponse(const DetResponse &detresp) : EventFilter(detresp) {
+
+  fRespName = detresp.fRespName;
+  fEbins    = detresp.fEbins;
+  fCtbins   = detresp.fCtbins;
+  fBybins   = detresp.fBybins;
+
+  for (auto f: fFlavs) {
+    for (auto i: fInts) {
+      for (auto p: fPols) {
+	fhSim[f.first][i.first][p.first] = (TH3D*)detresp.fhSim[f.first][i.first][p.first]->Clone();
+      }
+    }
+  }
+
+  fRespH = (TH3D*)detresp.fRespH->Clone();
+  
+  fResp = new vector<TrueB>** [fEbins]();
+  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
+    fResp[ebin] = new vector<TrueB>* [fCtbins]();
+    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
+      fResp[ebin][ctbin] = new vector<TrueB> [fBybins]();
+      for (Int_t bybin = 0; bybin < fBybins; bybin++) {
+	fResp[ebin][ctbin][bybin] = detresp.fResp[ebin][ctbin][bybin];
+      }
+    }
+  }
+
+}
+
+//*********************************************************************************
+
 /** Destructor. */
 DetResponse::~DetResponse() {
   
@@ -98,6 +138,10 @@ DetResponse::~DetResponse() {
     }
   }
   
+  TIter next(&fHeap);
+  TObject *obj = NULL;
+  while ( (obj = next() ) ) if (obj) delete obj;
+
 }
 
 //*********************************************************************************
@@ -109,12 +153,12 @@ void DetResponse::Fill(SummaryEvent *evt) {
   // of simulated events per E_true, costh_true, by_true bin
   //-----------------------------------------------------------------------
   
-  Int_t flav  = fType_to_Flav[ (Int_t)evt->Get_MC_type() ];
+  Int_t flav  = fType_to_Flav[ (Int_t)TMath::Abs( evt->Get_MC_type() ) ];
   Int_t is_cc = evt->Get_MC_is_CC();
   Int_t is_nb = (Int_t)(evt->Get_MC_type() < 0 );
 
   // for atm muons and noise use only one histogram
-  if ( evt->Get_MC_is_neutrino() ) {
+  if ( evt->Get_MC_is_neutrino() < 0.5 ) {
     is_cc = 0;
     is_nb = 0;
   }
@@ -181,4 +225,143 @@ std::vector<TrueB>& DetResponse::GetBinWeights(Double_t E_reco, Double_t ct_reco
   Int_t bybin = fRespH->GetZaxis()->FindBin(by_reco);
 
   return fResp[ebin][ctbin][bybin];
+}
+
+//*********************************************************************************
+
+void DetResponse::WriteToFile(TString filename) {
+
+  TFile fout(filename, "RECREATE");
+  TTree tout("detresponse","Detector response data");
+
+  TrueB *tb = new TrueB();
+  Int_t E_reco_bin, ct_reco_bin, by_reco_bin;
+
+  tout.Branch("E_reco_bin" , &E_reco_bin , "E_reco_bin/I");
+  tout.Branch("ct_reco_bin", &ct_reco_bin, "ct_reco_bin/I");
+  tout.Branch("by_reco_bin", &by_reco_bin, "by_reco_bin/I");
+  tout.Branch("TrueB", &tb, 2);
+
+  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
+    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
+      for (Int_t bybin = 0; bybin < fBybins; bybin++) {
+
+	E_reco_bin  = ebin;
+	ct_reco_bin = ctbin;
+	by_reco_bin = bybin;
+
+	for (auto true_bin: fResp[ebin][ctbin][bybin]) {
+	  *tb = true_bin;
+	  tout.Fill();
+	}
+
+      }
+    }
+  }
+
+  tout.Write();
+
+  for (auto f: fFlavs) {
+    for (auto i: fInts) {
+      for (auto p: fPols) {
+	// write without fRespName for easier read-in
+	TString hname = f.second + "_" + i.second + "_" + p.second;
+	fhSim[f.first][i.first][p.first]->Write(hname);
+      }
+    }
+  }
+
+  fRespH->Write("hresp");
+
+  fout.Close();
+  delete tb;
+  
+}
+
+//*********************************************************************************
+
+void DetResponse::ReadFromFile(TString filename) {
+
+  TFile fin(filename, "READ");
+  TTree *tin = (TTree*)fin.Get("detresponse");
+
+  TrueB *tb = new TrueB();
+  Int_t E_reco_bin, ct_reco_bin, by_reco_bin;
+
+  tin->SetBranchAddress("E_reco_bin", &E_reco_bin);
+  tin->SetBranchAddress("ct_reco_bin", &ct_reco_bin);
+  tin->SetBranchAddress("by_reco_bin", &by_reco_bin);
+  tin->SetBranchAddress("TrueB", &tb);
+
+  for (Int_t i = 0; i < tin->GetEntries(); i++) {
+    tin->GetEntry(i);
+    fResp[E_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueB(*tb) );
+  }
+
+  for (auto f: fFlavs) {
+    for (auto i: fInts) {
+      for (auto p: fPols) {
+	TString hname1 = f.second + "_" + i.second + "_" + p.second; //name in file
+	TString hname2 = "hsim_" + f.second + "_" + i.second + "_" + p.second + "_" + fRespName; //name for instance
+	fhSim[f.first][i.first][p.first] = (TH3D*)fin.Get(hname1)->Clone();
+	fhSim[f.first][i.first][p.first]->SetDirectory(0);
+	fhSim[f.first][i.first][p.first]->SetNameTitle(hname2, hname2);
+      }
+    }
+  }
+
+  fRespH = (TH3D*)fin.Get("hresp")->Clone();
+  fRespH->SetDirectory(0);
+  fRespH->SetNameTitle("hresp_" + fRespName, "hresp_" + fRespName);
+
+  delete tb;
+  fin.Close();
+}
+
+//*********************************************************************************
+
+TCanvas* DetResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco) {
+
+  TH2D *h_rb  = (TH2D*)fRespH->Project3D("yx")->Clone();
+  TH2D* h_tbs = (TH2D*)fRespH->Project3D("yx")->Clone();
+  h_rb->Reset();
+  h_tbs->Reset();
+  h_rb->SetDirectory(0);
+  h_tbs->SetDirectory(0);
+  TString suffix = "_Ereco=" + (TString)to_string(e_reco) + "_ctreco=" + (TString)to_string(ct_reco);
+  h_rb->SetNameTitle("reco_bin"+suffix,"reco_bin"+suffix);
+  h_tbs->SetNameTitle("true_bins"+suffix,"true_bins"+suffix);
+
+  Int_t ebin  = h_rb->GetXaxis()->FindBin(e_reco);
+  Int_t ctbin = h_rb->GetYaxis()->FindBin(ct_reco);
+
+  // sum over bjorken-y
+  for (Int_t bybin = 0; bybin < fBybins; bybin++) {
+        
+    vector<TrueB>& true_bins = fResp[ebin][ctbin][bybin];
+    if (true_bins.size() == 0) continue; //ignore underflow and overflow
+
+    h_rb->SetBinContent( ebin, ctbin, h_rb->GetBinContent(ebin, ctbin) + 1 );
+
+    for (auto &tb: true_bins) {
+      h_tbs->SetBinContent( tb.fE_true_bin, tb.fCt_true_bin, 
+			    h_tbs->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin) + tb.fFracReco );
+    }
+
+  }
+
+  TCanvas *c1 = new TCanvas("DispResponse"+suffix,"DispResponse"+suffix, 1000, 600);
+  c1->Divide(2,1);
+  c1->cd(1);
+  c1->GetPad(1)->SetLogx();
+  h_rb->Draw("colz");
+  c1->cd(2);
+  c1->GetPad(2)->SetLogx();
+  h_tbs->Draw("colz");
+
+  fHeap.Add(h_rb);
+  fHeap.Add(h_tbs);
+  fHeap.Add(c1);
+
+  return c1;
 }
