@@ -255,7 +255,9 @@ Bool_t GSGParser::NextEvtEvent() {
   Neutrino_D3       = fEvtFile->evt.mc_trks[0].dir.z;
   Neutrino_E        = fEvtFile->evt.mc_trks[0].E;
   Neutrino_PdgCode  = fEvtFile->evt.mc_trks[0].type;
-  
+  By                = fEvtFile->evt.mc_trks[0].getusr( "by" );
+  InterId           = fEvtFile->evt.mc_trks[0].getusr( "cc" );
+ 
   return nextLoaded;
 }
 #else
