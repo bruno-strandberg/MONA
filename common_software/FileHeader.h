@@ -8,51 +8,46 @@
 
 class FileHeader;
 
-/** A class that provides a minimalistic header functionality for ROOT files.
- *
- *  The header is a TTree with character arrays as entries. The individual lines
- *  can be explored on the command line by e.g. root myfile.root; HeaderTree->Show(i), where i = 0,1,...
- *
- *  The header data is stored in a map with structure [outputname][application][parameter][value]. Outputname
- *  is the name of the .root output where the header originates(!) from, application is the name of the application
- *  or script where the header was created, parameter is the name of a parameter and value is the value of the parameter.
- *
- *  With this structure, the header information of each output file can be preserved when:
- *  1) One uses a chain of applications
- *  2) One merges (e.g. with hadd) multiple outputs created with the same application.
- *
- *  Example case 1: create a header into file fout.root which stores the can radius
- *
- *  FileHeader a("myapp"); 
- *  a.AddParameter("Rcan","190"); 
- *  TFile f("fout.root","RECREATE"); 
- *  a.WriteHeader(&f); 
- *  f.Close()
- *
- *  In this case the map will have a field fPars['fout.root']['myapp']['Rcan'] = '190'
- *
- *  Example case 2: create a header, read header data from another file, write the header to another file
- *
- *  FileHeader b("secondapp"); 
- *  b.AddParameter("mu_cut","0.05"); 
- *  b.ReadHeader("fout.root"); 
- *  TFile f("fnew.root","RECREATE"); 
- *  b.WriteHeader(&f),
- *  f.Close();
- *
- *  In this case the map will have a field fPars['fout.root']['myapp']['Rcan'] = '190' and 
- *  fPars['fnew.root']['secondapp']['mu_cut'] = '0.05'
- *  Note that although header b is written to file fnew.root, the header will also contain data for
- *  output name fout.root. This allows to trace parameters through chains of applications.
- *  
- *  To print the header in the root command line, do
- *  root;
- *  .L libnmhsoft.so;
- *  FileHeader a;
- *  a.ReadHeader('myfile.root')
- *  a.Print()
- *
- */
+/** 
+    A class that provides a minimalistic header functionality for ROOT files.
+ 
+    The header is a `TTree` with character arrays as entries. The individual lines can be explored on the command line by e.g. `root myfile.root; HeaderTree->Show(i)`, where i = 0,1,...
+    
+    The header data is stored in a map with structure [outputname][application][parameter][value]. Outputname is the name of the `.root` output where the header originates(!) from, application is the name of the application or script where the header was created, parameter is the name of a parameter and value is the value of the parameter.
+ 
+    With this structure, the header information of each output file can be preserved when:
+    1) One uses a chain of applications
+    2) One merges (e.g. with hadd) multiple outputs created with the same application.
+    
+    Example case 1: create a header into file fout.root which stores the can radius
+    ```
+    FileHeader a("myapp"); 
+    a.AddParameter("Rcan","190"); 
+    TFile f("fout.root","RECREATE"); 
+    a.WriteHeader(&f); 
+    f.Close()
+    ```
+    In this case the map will have a field fPars['fout.root']['myapp']['Rcan'] = '190'
+ 
+    Example case 2: create a header, read header data from another file, write the header to another file
+    ```
+    FileHeader b("secondapp"); 
+    b.AddParameter("mu_cut","0.05"); 
+    b.ReadHeader("fout.root"); 
+    TFile f("fnew.root","RECREATE"); 
+    b.WriteHeader(&f),
+    f.Close();
+    ```
+    In this case the map will have a field fPars['fout.root']['myapp']['Rcan'] = '190' and fPars['fnew.root']['secondapp']['mu_cut'] = '0.05'. Note that although header `b` is written to file `fnew.root`, the header will also contain data for output name `fout.root`. This allows to trace parameters through chains of applications.
+   
+    To print the header in the root command line, do
+    ```
+    root;
+    FileHeader a;
+    a.ReadHeader('myfile.root')
+    a.Print()
+    ```
+*/
 class FileHeader {
 
  public:
