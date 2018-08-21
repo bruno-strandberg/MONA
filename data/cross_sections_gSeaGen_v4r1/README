@@ -1,3 +1,9 @@
+
+=============================================================
+TBD: convert this to .md format; add info about by_dists.root
+=============================================================
+
+
 These root files contain TGraphs representing the cross-sections used in gSeaGen v4r1.
 
 gSeaGen v4r1 is used for the 2016 9m ORCA production (see http://wiki.km3net.de/index.php/Simulations/ORCA_productions#ORCA115_9m_Layout_2016).

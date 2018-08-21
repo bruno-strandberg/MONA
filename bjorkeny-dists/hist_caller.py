@@ -28,7 +28,7 @@ def create_root_cmd(gsg_file_list, output_name):
     This function creates the root command to execute Create_BY_hists.C+
     """
     
-    syscmd  = "root -b -q 'Create_BY_hists.C+("
+    syscmd  = "root -b -q '{}/Create_BY_hists.C+(".format(cwd)
     syscmd += '"' + gsg_file_list + '",'
     syscmd += '"' + output_name + '"'
     syscmd += ")'"

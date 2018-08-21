@@ -99,7 +99,7 @@ void Create_BY_hists(TString gsg_files, TString outname="output.root") {
   for (auto f: fPDGtoFlav) {
     for (auto i: fInts) {
       for (auto p: fPols) {
-	if (i.first == 0 && f.first != 0) continue; // for NC only write elec
+	if (i.first == 0 && f.second != 0) continue; // for NC only write elec
 	fHists[f.second][i.first][p.first]->Write();
       }
     }

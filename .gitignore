@@ -6,3 +6,4 @@ common_software/dic*
 *.pcm
 *.rootmap
 */tmp/
+*.dat
