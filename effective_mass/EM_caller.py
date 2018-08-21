@@ -3,11 +3,13 @@
 This script can be used to call the EffMass.C macro.
  
 Usage:
-    EM_caller
+    EM_caller [--missing]
     EM_caller -h                                                                     
                                                                                           
-Option:                                                                                   
+Option:        
+    --missing         Only print summary info and missing EffMhists.C outputs, if any
     -h --help         Show this screen
+    
 """
 
 import sys
@@ -94,10 +96,14 @@ def copy_to_datadir():
 
 #*****************************************************************************
 if __name__ == "__main__":
+    args = docopt(__doc__)
+
     missing = get_missing_files()
     summarize()
-    call_effmass()
-    copy_to_datadir()
 
-    #for m in missing:
-    #    print m
+    if ( args['--missing'] ):
+        for m in missing:
+            print m
+    else:
+        call_effmass()
+        copy_to_datadir()
