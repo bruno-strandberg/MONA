@@ -1,8 +1,16 @@
+Cross-section data
+==================
 
-=============================================================
-TBD: convert this to .md format; add info about by_dists.root
-=============================================================
+This directory contains root files with neutrino cross-section data that is used by the class `NMHDIR/common_software/NuXsec`. There are two files
 
+* `xsec.root` holds `TGraph`'s with neutrino interaction cross-section data. This file was extracted by Dr. M. Jongen (see below) and is pointed to by the default constructor of `NuXsec`.
+* `by_dists.root` holds neutrino energy vs bjorken-y distributions. This file was created by the scripts in `NMHDIR/bjorkeny-dists`, see `NMHDIR/bjorkeny-dists/README.md` for more info. The default constructor of `NuXsec` points to this file.
+
+
+Info from Dr. M. Jongen regarding `xsec.root`
+============================================
+
+Comment from B. Strandberg: this info and the file `xsec.root` was found from [http://git.km3net.de/mjongen/NikhefOrca].
 
 These root files contain TGraphs representing the cross-sections used in gSeaGen v4r1.
 
@@ -38,6 +46,3 @@ The scripts with which this was done are included in this folder. They can be ru
 - first do 'source setenv_gSeaGen.sh' to set up the environment for this gSeaGen version
 - then do './make_cs.sh' to make a root file called 'xsec_full.root' containing the information from the gSeaGen xml files. It contains TGraphs of the cross-section for all individual subprocesses.
 - then do 'root -b -q -l extract_total_cs.C' to extract only the total CC and NC cross-section TGraphs from 'xsec_full.root'. These are saved to the final output file called 'xsec.root' (this last step is just to save disk space)
-
-
-
