@@ -1,6 +1,6 @@
 #include "SummaryParser.h"
 #include "GSGParser.h"
-#include "TH2.h"
+#include "TH3.h"
 #include "TVector3.h"
 #include "TMath.h"
 #include "NMHUtils.h"
@@ -23,12 +23,12 @@ void     FillGenerated(Int_t veff_option);
 enum effvol_options { can_vol = 0, custom_vol, not_supported };
 
 //initialised in InitHists()
-TH2D *fh_gen_nu;
-TH2D *fh_gen_nub;
-TH2D *fh_gen_scaled_nu;
-TH2D *fh_gen_scaled_nub;
-TH2D *fh_det_nu;
-TH2D *fh_det_nub;
+TH3D *fh_gen_nu;
+TH3D *fh_gen_nub;
+TH3D *fh_gen_scaled_nu;
+TH3D *fh_gen_scaled_nub;
+TH3D *fh_det_nu;
+TH3D *fh_det_nub;
 
 //gseagen and summary file parsers
 GSGParser     *fG;
@@ -203,22 +203,42 @@ TString ParseInputs(Int_t flavor, Int_t int_type, Int_t en_low, Int_t run_nr) {
  */
 void InitHists() {
 
-  // 'generated' histograms
-  vector<Double_t> low_edges = NMHUtils::GetLogBins(120, 1, 100);
+  // 'generated' histograms. Use fine binning here, as re-running this macro is time-consuming
+  // suitable rebinning can be defined in `EffMass.C`
 
-  fh_gen_nu  = new TH2D("Generated_nu", "Generated_nu", 120, &low_edges[0], 200, -1, 1);
-  fh_gen_nub        = (TH2D*)fh_gen_nu->Clone("Generated_nub");
-  fh_gen_scaled_nu  = (TH2D*)fh_gen_nu->Clone("Generated_scaled_nu");
-  fh_gen_scaled_nub = (TH2D*)fh_gen_nu->Clone("Generated_scaled_nub");
+  Int_t    ebins  = 120 ;
+  Double_t emin   =   1.;
+  Double_t emax   = 100.;
+
+  Int_t    ctbins = 200 ;
+  Double_t ctmin  =  -1.;
+  Double_t ctmax  =   1.;
+
+  Int_t    bybins =   8 ;
+  Double_t bymin  =   0.;
+  Double_t bymax  =   1.;
+  
+  vector<Double_t> e_edges  = NMHUtils::GetLogBins(ebins, emin, emax);
+  vector<Double_t> ct_edges = NMHUtils::GetBins(ctbins, ctmin, ctmax);
+  vector<Double_t> by_edges = NMHUtils::GetBins(bybins, bymin, bymax);
+  
+  fh_gen_nu  = new TH3D("Generated_nu", "Generated_nu", 
+			ebins, &e_edges[0], 
+			ctbins, &ct_edges[0], 
+			bybins, &by_edges[0]);
+
+  fh_gen_nub        = (TH3D*)fh_gen_nu->Clone("Generated_nub");
+  fh_gen_scaled_nu  = (TH3D*)fh_gen_nu->Clone("Generated_scaled_nu");
+  fh_gen_scaled_nub = (TH3D*)fh_gen_nu->Clone("Generated_scaled_nub");
   fh_gen_nub       ->SetNameTitle("Generated_nub","Generated_nub");
   fh_gen_scaled_nu ->SetNameTitle("Generated_scaled_nu" ,"Generated_scaled_nu");
   fh_gen_scaled_nub->SetNameTitle("Generated_scaled_nub","Generated_scaled_nub");
 
   // 'detected' histograms
-  fh_det_nu          = (TH2D*)fh_gen_nu->Clone("Detected_nu");
+  fh_det_nu          = (TH3D*)fh_gen_nu->Clone("Detected_nu");
   fh_det_nu->SetNameTitle("Detected_nu" ,"Detected_nu");
 
-  fh_det_nub         = (TH2D*)fh_gen_nu->Clone("Detected_nub");
+  fh_det_nub         = (TH3D*)fh_gen_nu->Clone("Detected_nub");
   fh_det_nub->SetNameTitle("Detected_nub","Detected_nub");
   
 }
@@ -278,8 +298,8 @@ void FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
     //if you wish to set PID cut, do so here
     
     // fill nu and nubar 'detected' histograms
-    if ( evt->Get_MC_type() > 0 ) { fh_det_nu ->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
-    else                          { fh_det_nub->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z() ); }
+    if ( evt->Get_MC_type() > 0 ) { fh_det_nu ->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z(), evt->Get_MC_bjorkeny() ); }
+    else                          { fh_det_nub->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z(), evt->Get_MC_bjorkeny() ); }
     
   }
 
@@ -304,12 +324,12 @@ void FillGenerated(Int_t veff_option) {
     }
 
     if (fG->Neutrino_PdgCode > 0) { 
-      fh_gen_nu ->Fill(fG->Neutrino_E, -fG->Neutrino_D3); 
-      fh_gen_scaled_nu ->Fill(fG->Neutrino_E, -fG->Neutrino_D3); 
+      fh_gen_nu ->Fill(fG->Neutrino_E, -fG->Neutrino_D3, fG->By ); 
+      fh_gen_scaled_nu ->Fill(fG->Neutrino_E, -fG->Neutrino_D3, fG->By ); 
     }
     else { 
-      fh_gen_nub->Fill(fG->Neutrino_E, -fG->Neutrino_D3);
-      fh_gen_scaled_nub->Fill(fG->Neutrino_E, -fG->Neutrino_D3);
+      fh_gen_nub->Fill(fG->Neutrino_E, -fG->Neutrino_D3, fG->By );
+      fh_gen_scaled_nub->Fill(fG->Neutrino_E, -fG->Neutrino_D3, fG->By );
     }
   }
 

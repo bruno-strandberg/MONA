@@ -1,5 +1,5 @@
 #include "FileHeader.h"
-#include "TH2.h"
+#include "TH3.h"
 #include "TFile.h"
 #include "TGraph.h"
 
@@ -8,14 +8,15 @@
  *
  * \param  effmhists_file  Output of EffMhists.C macro.
  * \param  outname         Name of the file where outputs are written
- * \param  rebinX          Rebin X (energy) axis.
- * \param  rebinY          Rebin Y (costheta) axis.
+ * \param  rebinX          Rebin X (energy) axis, default 3 leads to 40 E bins
+ * \param  rebinY          Rebin Y (costheta) axis, default 5 leads to 40 ct bins
+ * \param  rebinZ          Rebin Z (bjorken-y) axis, default 2 leads to 4 by bins
  * \param  upgoing         For angle-averaged Meff curves only consider upgoing
  *
  */
 
 void EffMass(TString effmhists_file, TString outname, 
-	     Int_t rebinX = 3, Int_t rebinY = 5, Bool_t upgoing = kTRUE) {
+	     Int_t rebinX = 3, Int_t rebinY = 5, Int_t rebinZ = 2, Bool_t upgoing = kTRUE) {
 
   //-----------------------------------------
   //Get the histograms from input, rebin, divide, rename
@@ -38,15 +39,15 @@ void EffMass(TString effmhists_file, TString outname,
 
   TFile *fin  = new TFile(effmhists_file, "READ");
 
-  TH2D *h_gen_nu          = (TH2D*)fin->Get("Generated_scaled_nu");
-  TH2D *h_gen_nub         = (TH2D*)fin->Get("Generated_scaled_nub");
-  TH2D *h_det_nu          = (TH2D*)fin->Get("Detected_nu");
-  TH2D *h_det_nub         = (TH2D*)fin->Get("Detected_nub");
+  TH3D *h_gen_nu          = (TH3D*)fin->Get("Generated_scaled_nu");
+  TH3D *h_gen_nub         = (TH3D*)fin->Get("Generated_scaled_nub");
+  TH3D *h_det_nu          = (TH3D*)fin->Get("Detected_nu");
+  TH3D *h_det_nub         = (TH3D*)fin->Get("Detected_nub");
 
-  h_gen_nu         ->Rebin2D(rebinX, rebinY);
-  h_gen_nub        ->Rebin2D(rebinX, rebinY);
-  h_det_nu         ->Rebin2D(rebinX, rebinY);          
-  h_det_nub        ->Rebin2D(rebinX, rebinY);         
+  h_gen_nu         ->Rebin3D(rebinX, rebinY, rebinZ);
+  h_gen_nub        ->Rebin3D(rebinX, rebinY, rebinZ);
+  h_det_nu         ->Rebin3D(rebinX, rebinY, rebinZ);          
+  h_det_nub        ->Rebin3D(rebinX, rebinY, rebinZ);         
 
   h_det_nu         ->Divide(h_gen_nu);
   h_det_nub        ->Divide(h_gen_nub);
@@ -70,9 +71,11 @@ void EffMass(TString effmhists_file, TString outname,
     Double_t nbins           = 0;
 
     for (Int_t ctbin = 1; ctbin <= ct_max_bin; ctbin++) {
-      int_nu          += h_det_nu ->GetBinContent(ebin, ctbin);
-      int_nub         += h_det_nub->GetBinContent(ebin, ctbin);
-      nbins++;
+      for (Int_t bybin = 1; bybin <= h_det_nu->GetZaxis()->GetNbins(); bybin++) {
+	int_nu          += h_det_nu ->GetBinContent(ebin, ctbin, bybin);
+	int_nub         += h_det_nub->GetBinContent(ebin, ctbin, bybin);
+	nbins++;
+      }
     }
 
     Int_t point     = g_nu->GetN();

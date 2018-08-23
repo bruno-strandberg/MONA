@@ -3,11 +3,12 @@
 This script can be used to call the EffMass.C macro.
  
 Usage:
-    EM_caller [--missing]
+    EM_caller [--missing] [--nohadd]
     EM_caller -h                                                                     
                                                                                           
 Option:        
     --missing         Only print summary info and missing EffMhists.C outputs, if any
+    --nohadd          Do not re-combine EffMhists outputs, but use the ones already in combined_output/
     -h --help         Show this screen
     
 """
@@ -59,7 +60,7 @@ def summarize():
                 
 #*****************************************************************************
 
-def call_effmass():
+def call_effmass(nohadd):
 
     flavors  = ["elec", "muon", "tau"]
     inters   = ["NC", "CC"]
@@ -71,7 +72,15 @@ def call_effmass():
             combname = "combined_output/EffMhists_{0}_{1}.root".format(f, inter)
             outname  = "combined_output/EffMass_{0}_{1}.root".format(f, inter)
 
-            os.system( "hadd {0} output/*{1}*{2}*".format(combname, f, inter) )
+            # if hadd of EffMhists outputs not requested, check that the combined
+            # output exists in combined_output/ dir
+            if (nohadd):
+                if ( not os.path.isfile(combname) ):
+                    raise ValueError("File {} missing".format(combname) )
+            else:
+                os.system( "hadd {0} output/*{1}*{2}*".format(combname, f, inter) )
+
+
             os.system("root -b -q 'EffMass.C+({0}{1}{2},{0}{3}{2})'".format('"',combname,'"', outname))
 
 #*****************************************************************************
@@ -105,5 +114,5 @@ if __name__ == "__main__":
         for m in missing:
             print m
     else:
-        call_effmass()
+        call_effmass(args['--nohadd'])
         copy_to_datadir()
