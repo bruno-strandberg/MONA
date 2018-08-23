@@ -12,7 +12,7 @@
 using namespace std;
 
 /**
-   Namespace with global variables and functions for macro Create_BY_hists
+   Namespace with global variables and functions for macro Create_BY_hists.C
  */
 namespace BYHIST {
 
