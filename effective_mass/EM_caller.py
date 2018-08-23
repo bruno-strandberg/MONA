@@ -90,7 +90,11 @@ def copy_to_datadir():
     filenames = ["combined_output/EffMass_elec_CC.root",
                  "combined_output/EffMass_muon_CC.root",
                  "combined_output/EffMass_tau_CC.root",
-                 "combined_output/EffMass_elec_NC.root"]
+                 "combined_output/EffMass_elec_NC.root",
+                 "combined_output/EffMhists_elec_CC.root",
+                 "combined_output/EffMhists_muon_CC.root",
+                 "combined_output/EffMhists_tau_CC.root"
+                 "combined_output/EffMhists_elec_NC.root"]
 
     copy_data = raw_input("Update files in NMH/data/eff_mass/ (typically Y) [Y/N] ?")
     
