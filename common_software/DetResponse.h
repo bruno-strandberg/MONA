@@ -12,7 +12,9 @@
 #include <map>
 
 /**
-   class to store E_true, ct_true, by_true bins that contribute to E_reco, ct_reco, by_reco bin
+   class to store E_true, ct_true, by_true bins that contribute to E_reco, ct_reco, by_reco bin.
+
+   The function `DetResponse::GetBinWeights` returns a vector of `TrueB` objects that can be subsequently used to map 'detected' events from E_true, ct_true, by_true to E_reco, ct_reco, by_reco.
  */
 struct TrueB : public TObject {
   
@@ -95,7 +97,48 @@ struct TrueB : public TObject {
 //==========================================================================================
 
 /**
-   Class description here.
+   This class implements the detector response structure.
+
+   The response is realised in the class member `fResp[E_reco_bin][ct_reco_bin][by_reco_bin] = vector<TrueB>{...}`. Each `TrueB` object in the vector stores a weight for each `E_true, ct_true, by_true` bin that contributes to the reconstruction bin. In this way, the expected number of 'detected' events in the reconstruction bin can be calculated as \f$ \rm Detected_{reco} = \sum\limits_{i=0}^{true\:bins} Detected_{true} * Weight_{true} \f$.
+
+   This class implements a detector response for a selection of events. In some sense it is a counterpart of the `EventSelection` class. Like `EventSelection`, this class inherits from `EventFilter`. `EventFilter` allows the user to define a custom filter of `SummaryEvent`'s through the `EventFilter::AddCut` function. Envisaged usage is such that for each `EventSelection` object, one can define a `DetResponse` counterpart, using the same cuts and reconstruction variables. The `DetResponse` structure helps to map 'detected' events (as defined in `FluxChain.C`) from [E_true][ct_true][by_true] to [E_reco][ct_reco][by_reco].
+
+   Example usage:
+   ```
+   //---------------------------------------------------
+   // setup the response
+   //---------------------------------------------------
+   DetResponse dr(DetResponse::track, "response_tracks"); // init response that uses track reco variables (see EventFilter::SetObservables)
+   dr.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   ,  0.5, true ); // select events with quality level 1
+   dr.AddCut( &SummaryEvent::Get_RDF_track_score , std::greater<double>()   ,  0.6, true ); // select events with track score > 0.6
+   dr.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05, true ); // select events with atm. muon score < 0.05
+
+   //---------------------------------------------------
+   // fill the response
+   //---------------------------------------------------
+   SummaryParser sp( getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root");        // init summary parser
+   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {                                 // loop over events and fill
+       sp.GetTree()->GetEntry(i);
+       SummaryEvent *evt = sp.GetEvt();
+       dr.Fill(evt);
+   }
+
+   //---------------------------------------------------
+   // get the true bins that contribute to one reco bin with E = 10, ct = -0.8, by = 0.2
+   // then the total number of expected events in that reco bin can be calculated
+   //---------------------------------------------------
+   auto true_bins = dr.GetBinWeights(10, -0.8, 0.2);
+
+   Double_t n_reco = 0;
+   for (auto b: true_bins) {
+   n_reco += b.fFracTrue * GetDetectedTrue(b.fFlav, b.fIsCC, b.fIsNB, fE_true_bin, fCt_true_bin, fBy_true_bin);
+   }
+   ```
+
+   Note that `GetDetectedTrue()` is pseudo-code - this function needs to be implemented in the code that uses the `DetResponse`. It returns the number of 'detected' events (interacted per Mton * effective mass) for a given (flavor, is_cc, is_nubar, true energy, cos-theta and bjorken-y) combination. For example, such info is stored in the output histograms of `FluxChain.C` in directory `detflux`.
+
+   NB! The binning of the true detected events needs to match the binning used for the `DetResponse`!
+
  */
 class DetResponse : public EventFilter {
 
@@ -108,19 +151,23 @@ class DetResponse : public EventFilter {
   ~DetResponse();
 
   std::vector<TrueB>& GetBinWeights(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
+  std::vector<TrueB>& GetBinWeights(SummaryEvent *evt);
   void Fill(SummaryEvent *evt);
-  void Normalise();
   void WriteToFile(TString filename);
   void ReadFromFile(TString filename);
   TCanvas* DisplayResponse(Double_t e_reco, Double_t ct_reco);
   TH3D* GetHist3D() { return fRespH; } //!< Return pointer to the 3D histogram with selected reco events
+
  private:
 
-  TString fRespName; //!< name to identify the response
+  void Normalise();
   
-  Int_t fEbins;      //!< number of reco energy bins
-  Int_t fCtbins;     //!< number of reco cos-theta bins
-  Int_t fBybins;     //!< number of reco bjorken-y bins
+  TString fRespName;   //!< name to identify the response
+  Bool_t  fNormalised; //!< boolean to check that normalisation is called
+  
+  Int_t fEbins;        //!< number of reco energy bins
+  Int_t fCtbins;       //!< number of reco cos-theta bins
+  Int_t fBybins;       //!< number of reco bjorken-y bins
 
   /// map to create histogram names, flavors
   std::map<Int_t, TString> fFlavs = { {0, "elec"}, {1, "muon"}, {2, "tau"}, {3, "atmmu"}, {4, "noise"} };
@@ -132,8 +179,8 @@ class DetResponse : public EventFilter {
   std::map<Int_t, Int_t>   fType_to_Flav = { {12, 0}, {14, 1}, {16, 2}, {13, 3}, {0, 4} };
   
   TH3D    *fhSim[5][2][2];      //!< total numbers of simulated events [flavor][nc/cc][nu/nub]
-  TH3D    *fRespH;              //!< 3D histogram to help with binning functionality
-  std::vector<TrueB> ***fResp;  //!< Response structure in 3D in [Ereco][CTreco][BYreco] = vector<TrueB> {contributing bins}
+  TH3D    *fRespH;              //!< 3D histogram to help with binning functionality; stores the events with reco observables that pass cuts
+  std::vector<TrueB> ***fResp;  //!< Response structure in 3D in [Ereco][CTreco][BYreco] = vector<TrueB> {contributing true bins}
 
   TList fHeap;
   

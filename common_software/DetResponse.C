@@ -7,9 +7,22 @@
 #include "TH2.h"
 
 #include<iostream>
+#include <stdexcept>
 using namespace std;
 
 /** Constructor.
+
+    \param reco_type         Type of reco variables used to fill the response, e.g. DetResponse::track; See `EventFilter`
+    \param resp_name         Name of the response
+    \param ebins             Number of energy bins
+    \param emin              Energy minimum
+    \param emax              Energy maximum
+    \param ctbins            Number of cos-theta bins
+    \param ctmin             cos-theta minimum
+    \param ctmax             cos-theta maximum
+    \param bybins            Number of bjorken-y bins
+    \param bymin             bjorken-y minimum
+    \param bymax             bjorken-y maximum
     
  */
 DetResponse::DetResponse(reco reco_type, TString resp_name,
@@ -17,8 +30,9 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
 			 Int_t ctbins, Double_t ctmin, Double_t ctmax ,
 			 Int_t bybins, Double_t bymin, Double_t bymax ) : EventFilter(reco_type) {
   
-  fRespName = resp_name;
-
+  fRespName   = resp_name;
+  fNormalised = false;
+  
   //----------------------------------------------------------
   // initialize axes for histograms
   //----------------------------------------------------------
@@ -76,10 +90,11 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
  */
 DetResponse::DetResponse(const DetResponse &detresp) : EventFilter(detresp) {
 
-  fRespName = detresp.fRespName;
-  fEbins    = detresp.fEbins;
-  fCtbins   = detresp.fCtbins;
-  fBybins   = detresp.fBybins;
+  fRespName   = detresp.fRespName;
+  fNormalised = detresp.fNormalised;
+  fEbins      = detresp.fEbins;
+  fCtbins     = detresp.fCtbins;
+  fBybins     = detresp.fBybins;
 
   for (auto f: fFlavs) {
     for (auto i: fInts) {
@@ -135,8 +150,17 @@ DetResponse::~DetResponse() {
 
 //*********************************************************************************
 
+/**
+   This function fills a `SummaryEvent` to the response structure.
+   
+   \param SummaryEvent    Pointer to a summary event
+ */
 void DetResponse::Fill(SummaryEvent *evt) {
 
+  if (fNormalised) {
+    throw std::invalid_argument( "ERROR! DetResponse::Fill() cannot fill an already normalised response!" );
+  }
+  
   //-----------------------------------------------------------------------
   // determine event type and fill hists that count the number
   // of simulated events per E_true, costh_true, by_true bin
@@ -183,8 +207,16 @@ void DetResponse::Fill(SummaryEvent *evt) {
 
 //*********************************************************************************
 
+/**
+   This function normalises the response and needs to be called after all `SummaryEvent`'s have been filled to the response.
+ */
 void DetResponse::Normalise() {
 
+  if (fNormalised) {
+    cout << "WARNING! DetResponse::Normalise() response already normalised, exiting function." << endl;
+    return;
+  }
+  
   for (Int_t ebin = 0; ebin < fEbins; ebin++) {
     for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
       for (Int_t bybin = 0; bybin < fBybins; bybin++) {
@@ -202,13 +234,26 @@ void DetResponse::Normalise() {
       }
     }
   }
-  
+
+  fNormalised = true; //set the flag to indicate that the response is normalised
 }
 
 //*********************************************************************************
 
+/**
+   Returns a vector of `TrueB`'s (true e, cos-theta, by-bins) that contribute to this e_reco, ct_reco, by_reco bin. 
+
+   NB! When parsing actual `SummaryEvent`'s, it is recommended to use `DetResponse::GetBinWeights(SummaryEvent *evt)`. This guarantees that the correct reco variables are used to look up the return vector.
+   
+   \param e_reco    Reconstructed energy
+   \param t_reco    Reconstructed cos-theta
+   \param by_reco   Reconstructed bjorken-y
+   \return          vector of `TrueB`'s that contribute to the reco bin.
+ */
 std::vector<TrueB>& DetResponse::GetBinWeights(Double_t E_reco, Double_t ct_reco, Double_t by_reco) {
 
+  if (!fNormalised) Normalise();
+  
   Int_t ebin  = fRespH->GetXaxis()->FindBin(E_reco);
   Int_t ctbin = fRespH->GetYaxis()->FindBin(ct_reco);
   Int_t bybin = fRespH->GetZaxis()->FindBin(by_reco);
@@ -218,8 +263,31 @@ std::vector<TrueB>& DetResponse::GetBinWeights(Double_t E_reco, Double_t ct_reco
 
 //*********************************************************************************
 
+/**
+   Returns a vector of `TrueB`'s (true e, cos-theta, by-bins) that contribute to this event.
+   
+   \param evt       Pointer to a summary event
+   \return          vector of `TrueB`'s that contribute to the reco bin of this event.
+ */
+std::vector<TrueB>& DetResponse::GetBinWeights(SummaryEvent *evt) {
+
+  SetObservables(evt);
+  return GetBinWeights( fEnergy, -fDir.z(), fBy );
+  
+}
+
+//*********************************************************************************
+
+/**
+   Function to write the response to file.
+
+   \param filename  Name of the output file.
+
+ */
 void DetResponse::WriteToFile(TString filename) {
 
+  if (!fNormalised) Normalise();
+  
   TFile fout(filename, "RECREATE");
   TTree tout("detresponse","Detector response data");
 
@@ -269,6 +337,11 @@ void DetResponse::WriteToFile(TString filename) {
 
 //*********************************************************************************
 
+/**
+   Function to read the response from file.
+
+   \param filename   Name of the file where the response is stored.
+ */
 void DetResponse::ReadFromFile(TString filename) {
 
   TFile fin(filename, "READ");
@@ -305,12 +378,23 @@ void DetResponse::ReadFromFile(TString filename) {
 
   delete tb;
   fin.Close();
+
+  fNormalised = true;
 }
 
 //*********************************************************************************
 
+/**
+   Function to visualise the response in 2D.
+
+   \param e_reco    Reconstructed energy
+   \param ct_reco   Reconstructed bjorken-y
+   \return          Pointer to a canvas where the visualisation is drawn.
+ */
 TCanvas* DetResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco) {
 
+  if (!fNormalised) Normalise();
+  
   TH2D *h_rb  = (TH2D*)fRespH->Project3D("yx")->Clone();
   TH2D* h_tbs = (TH2D*)fRespH->Project3D("yx")->Clone();
   h_rb->Reset();
