@@ -17,10 +17,10 @@ Option:
                         and -s are specified, then -n is ignored.
     -y YEARS            Number of years of data taking [default: 3]
     --meff              Use effective mass to calculate detected flux histograms
-    --ecc MEFF_ELEC_CC  Elec-CC Meff file [default: ../data/eff_mass/EffMass_elec_CC.root]
-    --mcc MEFF_MUON_CC  Muon-CC Meff file [default: ../data/eff_mass/EffMass_muon_CC.root]
-    --tcc MEFF_TAU_CC   Tau-CC Meff file [default: ../data/eff_mass/EffMass_tau_CC.root]
-    --enc MEFF_ELEC_NC  Elec-NC Meff file [default: ../data/eff_mass/EffMass_elec_NC.root]
+    --ecc MEFF_ELEC_CC  Elec-CC Meff file [default: ../data/eff_mass/EffMhists_elec_CC.root]
+    --mcc MEFF_MUON_CC  Muon-CC Meff file [default: ../data/eff_mass/EffMhists_muon_CC.root]
+    --tcc MEFF_TAU_CC   Tau-CC Meff file [default: ../data/eff_mass/EffMhists_tau_CC.root]
+    --enc MEFF_ELEC_NC  Elec-NC Meff file [default: ../data/eff_mass/EffMhists_elec_NC.root]
     -i IDSTR            Identifier string added as prefix to files in output/FluxChain/
 
     -h --help           Show this screen
