@@ -1,5 +1,6 @@
 #include "DetResponse.h"
 #include "NMHUtils.h"
+#include "FileHeader.h"
 
 #include "TAxis.h"
 #include "TFile.h"
@@ -57,7 +58,7 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
     }
   }
 
-  fRespH = new TH3D("hresp_" + fRespName, "hresp_" + fRespName,
+  fHResp = new TH3D("hresp_" + fRespName, "hresp_" + fRespName,
 		    ebins , &e_edges[0],
 		    ctbins, &ct_edges[0],
 		    bybins, &by_edges[0]);
@@ -67,17 +68,11 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
   // bin [0] is underflow, bin[ axis->GetNbins() ] is the last counting bin (hence dimension length +1),
   // bin[ axis->GetNbins()+1 ] is overflow (hence dimension length + 2)
   //----------------------------------------------------------
-  fEbins  = fRespH->GetXaxis()->GetNbins() + 2;
-  fCtbins = fRespH->GetYaxis()->GetNbins() + 2;
-  fBybins = fRespH->GetZaxis()->GetNbins() + 2;
+  fEbins  = fHResp->GetXaxis()->GetNbins() + 2;
+  fCtbins = fHResp->GetYaxis()->GetNbins() + 2;
+  fBybins = fHResp->GetZaxis()->GetNbins() + 2;
 
-  fResp = new vector<TrueB>** [fEbins]();
-  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
-    fResp[ebin] = new vector<TrueB>* [fCtbins]();
-    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
-      fResp[ebin][ctbin] = new vector<TrueB> [fBybins]();
-    }
-  }
+  InitResponse(fEbins, fCtbins, fBybins);
   
 }
 
@@ -104,13 +99,12 @@ DetResponse::DetResponse(const DetResponse &detresp) : EventFilter(detresp) {
     }
   }
 
-  fRespH = (TH3D*)detresp.fRespH->Clone();
-  
-  fResp = new vector<TrueB>** [fEbins]();
+  fHResp = (TH3D*)detresp.fHResp->Clone();  
+
+  InitResponse(fEbins, fCtbins, fBybins);
+
   for (Int_t ebin = 0; ebin < fEbins; ebin++) {
-    fResp[ebin] = new vector<TrueB>* [fCtbins]();
     for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
-      fResp[ebin][ctbin] = new vector<TrueB> [fBybins]();
       for (Int_t bybin = 0; bybin < fBybins; bybin++) {
 	fResp[ebin][ctbin][bybin] = detresp.fResp[ebin][ctbin][bybin];
       }
@@ -124,15 +118,9 @@ DetResponse::DetResponse(const DetResponse &detresp) : EventFilter(detresp) {
 /** Destructor. */
 DetResponse::~DetResponse() {
   
-  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
-    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
-      if (fResp[ebin][ctbin]) delete[] fResp[ebin][ctbin];
-    }
-    if (fResp[ebin]) delete[] fResp[ebin];
-  }
-  delete[] fResp;
+  CleanResponse();
 
-  if (fRespH) delete fRespH;
+  if (fHResp) delete fHResp;
 
   for (auto &f: fFlavs) {
     for (auto &i: fInts) {
@@ -145,6 +133,43 @@ DetResponse::~DetResponse() {
   TIter next(&fHeap);
   TObject *obj = NULL;
   while ( (obj = next() ) ) if (obj) delete obj;
+
+}
+
+//*********************************************************************************
+
+/**
+   Private function to initialise the member `fResp` structure.
+   \param ebins  Number of energy bins
+   \param ctbins Number of cos-theta bins
+   \param bybins Number of bjorken-y bins
+ */
+void DetResponse::InitResponse(Int_t ebins, Int_t ctbins, Int_t bybins) {
+
+  fResp = new vector<TrueB>** [ebins]();
+  for (Int_t ebin = 0; ebin < ebins; ebin++) {
+    fResp[ebin] = new vector<TrueB>* [ctbins]();
+    for (Int_t ctbin = 0; ctbin < ctbins; ctbin++) {
+      fResp[ebin][ctbin] = new vector<TrueB> [bybins]();
+    }
+  }
+
+}
+
+//*********************************************************************************
+
+/**
+   Private function to de-allocate memory of the member `fResp` structure
+ */
+void DetResponse::CleanResponse() {
+
+  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
+    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
+      if (fResp[ebin][ctbin]) delete[] fResp[ebin][ctbin];
+    }
+    if (fResp[ebin]) delete[] fResp[ebin];
+  }
+  delete[] fResp;
 
 }
 
@@ -186,15 +211,15 @@ void DetResponse::Fill(SummaryEvent *evt) {
 
   SetObservables(evt); //implemented in EventFilter.C
 
-  fRespH->Fill(fEnergy, -fDir.z(), fBy);
+  fHResp->Fill(fEnergy, -fDir.z(), fBy);
 
-  Int_t  e_true_bin = fRespH->GetXaxis()->FindBin(  evt->Get_MC_energy()   );
-  Int_t ct_true_bin = fRespH->GetYaxis()->FindBin( -evt->Get_MC_dir_z()    );
-  Int_t by_true_bin = fRespH->GetZaxis()->FindBin(  evt->Get_MC_bjorkeny() );
+  Int_t  e_true_bin = fHResp->GetXaxis()->FindBin(  evt->Get_MC_energy()   );
+  Int_t ct_true_bin = fHResp->GetYaxis()->FindBin( -evt->Get_MC_dir_z()    );
+  Int_t by_true_bin = fHResp->GetZaxis()->FindBin(  evt->Get_MC_bjorkeny() );
 
-  Int_t  e_reco_bin = fRespH->GetXaxis()->FindBin(  fEnergy   );
-  Int_t ct_reco_bin = fRespH->GetYaxis()->FindBin( -fDir.z()  );
-  Int_t by_reco_bin = fRespH->GetZaxis()->FindBin(  fBy       );
+  Int_t  e_reco_bin = fHResp->GetXaxis()->FindBin(  fEnergy   );
+  Int_t ct_reco_bin = fHResp->GetYaxis()->FindBin( -fDir.z()  );
+  Int_t by_reco_bin = fHResp->GetZaxis()->FindBin(  fBy       );
 
   TrueB tbin(flav, is_cc, is_nb, e_true_bin, ct_true_bin, by_true_bin);
   std::vector<TrueB>& true_bins = fResp[e_reco_bin][ct_reco_bin][by_reco_bin];
@@ -226,7 +251,7 @@ void DetResponse::Normalise() {
 	for (auto &tb: true_bins) {
 	  TH3D *hsim = fhSim[tb.fFlav][tb.fIsCC][tb.fIsNB];
 	  Double_t nsim  = hsim->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin);
-	  Double_t nreco = fRespH->GetBinContent(ebin, ctbin, bybin);
+	  Double_t nreco = fHResp->GetBinContent(ebin, ctbin, bybin);
 	  tb.fFracTrue = tb.fFracTrue/nsim;
 	  tb.fFracReco = tb.fFracReco/nreco;
 	}
@@ -254,9 +279,9 @@ std::vector<TrueB>& DetResponse::GetBinWeights(Double_t E_reco, Double_t ct_reco
 
   if (!fNormalised) Normalise();
   
-  Int_t ebin  = fRespH->GetXaxis()->FindBin(E_reco);
-  Int_t ctbin = fRespH->GetYaxis()->FindBin(ct_reco);
-  Int_t bybin = fRespH->GetZaxis()->FindBin(by_reco);
+  Int_t ebin  = fHResp->GetXaxis()->FindBin(E_reco);
+  Int_t ctbin = fHResp->GetYaxis()->FindBin(ct_reco);
+  Int_t bybin = fHResp->GetZaxis()->FindBin(by_reco);
 
   return fResp[ebin][ctbin][bybin];
 }
@@ -287,6 +312,12 @@ std::vector<TrueB>& DetResponse::GetBinWeights(SummaryEvent *evt) {
 void DetResponse::WriteToFile(TString filename) {
 
   if (!fNormalised) Normalise();
+
+  FileHeader h("DetResponse");
+  h.AddParameter( "fRespName", fRespName);
+  h.AddParameter( "fEbins"   , (TString)to_string(fEbins) );
+  h.AddParameter( "fCtbins"  , (TString)to_string(fCtbins) );
+  h.AddParameter( "fBybins"  , (TString)to_string(fBybins) );
   
   TFile fout(filename, "RECREATE");
   TTree tout("detresponse","Detector response data");
@@ -328,7 +359,9 @@ void DetResponse::WriteToFile(TString filename) {
     }
   }
 
-  fRespH->Write("hresp");
+  fHResp->Write("hresp");
+
+  h.WriteHeader(&fout);
 
   fout.Close();
   delete tb;
@@ -343,6 +376,22 @@ void DetResponse::WriteToFile(TString filename) {
    \param filename   Name of the file where the response is stored.
  */
 void DetResponse::ReadFromFile(TString filename) {
+
+  // if the detresponse is read from file, the binning is changed to match that
+  // of the detresponse that is being read in
+  FileHeader h("for_read_in");
+  h.ReadHeader(filename);
+
+  fRespName   = h.GetParameter("fRespName");
+  fNormalised = true;
+  fEbins      = std::stoi( (string)h.GetParameter("fEbins")  );
+  fCtbins     = std::stoi( (string)h.GetParameter("fCtbins") );
+  fBybins     = std::stoi( (string)h.GetParameter("fBybins") );
+
+  CleanResponse();
+  InitResponse(fEbins, fCtbins, fBybins);
+
+  // read in the true bin data to the response
 
   TFile fin(filename, "READ");
   TTree *tin = (TTree*)fin.Get("detresponse");
@@ -360,6 +409,8 @@ void DetResponse::ReadFromFile(TString filename) {
     fResp[E_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueB(*tb) );
   }
 
+  // get the histgrams
+
   for (auto f: fFlavs) {
     for (auto i: fInts) {
       for (auto p: fPols) {
@@ -372,14 +423,13 @@ void DetResponse::ReadFromFile(TString filename) {
     }
   }
 
-  fRespH = (TH3D*)fin.Get("hresp")->Clone();
-  fRespH->SetDirectory(0);
-  fRespH->SetNameTitle("hresp_" + fRespName, "hresp_" + fRespName);
+  fHResp = (TH3D*)fin.Get("hresp")->Clone();
+  fHResp->SetDirectory(0);
+  fHResp->SetNameTitle("hresp_" + fRespName, "hresp_" + fRespName);
 
   delete tb;
   fin.Close();
 
-  fNormalised = true;
 }
 
 //*********************************************************************************
@@ -395,8 +445,8 @@ TCanvas* DetResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco) {
 
   if (!fNormalised) Normalise();
   
-  TH2D *h_rb  = (TH2D*)fRespH->Project3D("yx")->Clone();
-  TH2D* h_tbs = (TH2D*)fRespH->Project3D("yx")->Clone();
+  TH2D *h_rb  = (TH2D*)fHResp->Project3D("yx")->Clone();
+  TH2D* h_tbs = (TH2D*)fHResp->Project3D("yx")->Clone();
   h_rb->Reset();
   h_tbs->Reset();
   h_rb->SetDirectory(0);

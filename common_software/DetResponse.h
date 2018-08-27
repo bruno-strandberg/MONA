@@ -152,14 +152,19 @@ class DetResponse : public EventFilter {
 
   std::vector<TrueB>& GetBinWeights(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   std::vector<TrueB>& GetBinWeights(SummaryEvent *evt);
-  void Fill(SummaryEvent *evt);
-  void WriteToFile(TString filename);
-  void ReadFromFile(TString filename);
-  TCanvas* DisplayResponse(Double_t e_reco, Double_t ct_reco);
-  TH3D* GetHist3D() { return fRespH; } //!< Return pointer to the 3D histogram with selected reco events
+  void                Fill(SummaryEvent *evt);
+  void                WriteToFile(TString filename);
+  void                ReadFromFile(TString filename);
+  TCanvas*            DisplayResponse(Double_t e_reco, Double_t ct_reco);
+  /// Return pointer to the 3D histogram with selected reco events
+  TH3D*               GetHist3D() { return fHResp; }
+  /// Get response name
+  TString             Get_RespName() { return fRespName; }
 
  private:
 
+  void InitResponse(Int_t ebins, Int_t ctbins, Int_t bybins);
+  void CleanResponse();
   void Normalise();
   
   TString fRespName;   //!< name to identify the response
@@ -179,7 +184,7 @@ class DetResponse : public EventFilter {
   std::map<Int_t, Int_t>   fType_to_Flav = { {12, 0}, {14, 1}, {16, 2}, {13, 3}, {0, 4} };
   
   TH3D    *fhSim[5][2][2];      //!< total numbers of simulated events [flavor][nc/cc][nu/nub]
-  TH3D    *fRespH;              //!< 3D histogram to help with binning functionality; stores the events with reco observables that pass cuts
+  TH3D    *fHResp;              //!< 3D histogram to help with binning functionality; stores the events with reco observables that pass cuts
   std::vector<TrueB> ***fResp;  //!< Response structure in 3D in [Ereco][CTreco][BYreco] = vector<TrueB> {contributing true bins}
 
   TList fHeap;
