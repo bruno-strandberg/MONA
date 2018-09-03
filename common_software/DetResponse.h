@@ -24,12 +24,13 @@ struct TrueB : public TObject {
   Int_t    fE_true_bin;  //!< true energy bin index
   Int_t    fCt_true_bin; //!< true costheta bin index
   Int_t    fBy_true_bin; //!< true bjorken-y bin index
-  Double_t fN;           //!< total number of MC events from this bin that passed the selection
-  Double_t fFracTrue;    //!< fraction of events from true bin that contribute to RecoB
-  Double_t fFracReco;    //!< relative signal contribution of true bin to RecoB
+  Double_t fW;           //!< fraction of events (weight) from true 'detected' bin that contribute to 'detected' reco bin
+  Double_t fWE;          //!< MC statistical error of the weight
+  Double_t fFracReco;    //!< relative signal contribution of true bin to RecoB, used for `DetResponse::DisplayRespnse`
+
 
   /** Default constructor. */
-  TrueB(): fFlav(0), fIsCC(0), fIsNB(0), fE_true_bin(0), fCt_true_bin(0), fBy_true_bin(0), fN(0), fFracTrue(0), fFracReco(0) {};
+ TrueB(): fFlav(0), fIsCC(0), fIsNB(0), fE_true_bin(0), fCt_true_bin(0), fBy_true_bin(0), fW(0), fWE(0), fFracReco(0) {};
   
   /** Constructor.
       \param flav   Flavor (see DetResponse::fFlavs)
@@ -48,10 +49,10 @@ struct TrueB : public TObject {
     fCt_true_bin = ctbin;
     fBy_true_bin = bybin;
 
-    //counters are initialized to 1
-    fN        = 1;
-    fFracTrue = 1;
+    //counters are initialized to 1 and error to 0. These converted to weights/error in `DetResponse::Normalise`
+    fW        = 1;
     fFracReco = 1;
+    fWE       = 0.;
     
   };
   
@@ -60,8 +61,7 @@ struct TrueB : public TObject {
 
   /** Function to increment member counters */
   void Increment() {
-    fN++;
-    fFracTrue++;
+    fW++;
     fFracReco++;
   };
   
@@ -84,10 +84,10 @@ struct TrueB : public TObject {
      Stream operator for cout.
   */
   friend std::ostream &operator << ( std::ostream &output, const TrueB &tb ) { 
-    output << "Flavor, is-cc, is-nb; true e, ct, by bin; N, frac true, frac reco: "
+    output << "Flavor, is-cc, is-nb; true e, ct, by bin; weight, weight err, frac reco: "
 	   << tb.fFlav << ' ' << tb.fIsCC << ' ' << tb.fIsNB << ' '
 	   << tb.fE_true_bin << ' ' << tb.fCt_true_bin << ' ' << tb.fBy_true_bin << ' '
-	   << tb.fN << ' ' << tb.fFracTrue << ' ' << tb.fFracReco;
+	   << tb.fW << ' ' << tb.fWE << ' ' << tb.fFracReco;
     return output;
   }
 
@@ -130,9 +130,13 @@ struct TrueB : public TObject {
    auto true_bins = dr.GetBinWeights(10, -0.8, 0.2);
 
    Double_t n_reco = 0;
+   Double_t n_reco_err = 0;
    for (auto b: true_bins) {
-   n_reco += b.fFracTrue * GetDetectedTrue(b.fFlav, b.fIsCC, b.fIsNB, fE_true_bin, fCt_true_bin, fBy_true_bin);
+   Double_t n_true = GetDetectedTrue(b.fFlav, b.fIsCC, b.fIsNB, b.fE_true_bin, b.fCt_true_bin, b.fBy_true_bin); 
+   n_reco     += b.fW * n_true;
+   n_reco_err += TMath::Power(b.fWE * n_true, 2);
    }
+   n_reco_err = TMath::Sqrt(n_reco_err);
    ```
 
    Note that `GetDetectedTrue()` is pseudo-code - this function needs to be implemented in the code that uses the `DetResponse`. It returns the number of 'detected' events (interacted per Mton * effective mass) for a given (flavor, is_cc, is_nubar, true energy, cos-theta and bjorken-y) combination. For example, such info is stored in the output histograms of `FluxChain.C` in directory `detflux`.

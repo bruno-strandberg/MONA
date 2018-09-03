@@ -249,11 +249,35 @@ void DetResponse::Normalise() {
 	std::vector<TrueB>& true_bins = fResp[ebin][ctbin][bybin];
 
 	for (auto &tb: true_bins) {
+
+	  //------------------------------------------------------------
+	  // calculate the weight (fW) and weight MC error (fWE)
+	  //------------------------------------------------------------
+
+	  // histogram with total number of simulated events in E_true, ct_true, by_true bins
 	  TH3D *hsim = fhSim[tb.fFlav][tb.fIsCC][tb.fIsNB];
+
+	  // total number of simulated events in E_true, ct_true, by_true bin
 	  Double_t nsim  = hsim->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin);
+
+	  // fW is at this point the number of events from true bin that entered reco bin. The
+	  // error is calculated from standard error propagation for fW = fW/nsim
+	  tb.fWE = TMath::Sqrt( tb.fW * ( nsim + tb.fW )/TMath::Power(nsim, 3) );
+
+	  // now convert fW to a weight
+	  tb.fW = tb.fW/nsim;
+
+	  //------------------------------------------------------------
+	  // calculate the fraction the events from true bin make up from the reco bin
+	  // this is used in `DetResponse::DisplayResponse`, the sum over fFracReco for each reco bin = 1
+	  //------------------------------------------------------------
+
+	  // total number of events in E_reco, ct_reco, by_reco bin
 	  Double_t nreco = fHResp->GetBinContent(ebin, ctbin, bybin);
-	  tb.fFracTrue = tb.fFracTrue/nsim;
+
+	  // the fraction
 	  tb.fFracReco = tb.fFracReco/nreco;
+
 	}
 	
       }

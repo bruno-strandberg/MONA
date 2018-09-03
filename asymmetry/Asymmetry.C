@@ -436,6 +436,8 @@ void ASYM::FillFromResponse() {
 
 	    Double_t bc_NH = 0;
 	    Double_t bc_IH = 0;
+	    Double_t bc_NH_err = 0;
+	    Double_t bc_IH_err = 0;
 	    for (auto &tb: true_bins) {
 	      TH3D *detected_NH, *detected_IH;
 	      Int_t flav = tb.fFlav;
@@ -450,12 +452,17 @@ void ASYM::FillFromResponse() {
 		detected_IH = std::get<IH_nub> (fFluxHists[pair_index][flav]); 
 	      }
 
-	      bc_NH += tb.fFracTrue * detected_NH->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin);
-	      bc_IH += tb.fFracTrue * detected_IH->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin);
+	      bc_NH += tb.fW * detected_NH->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin);
+	      bc_IH += tb.fW * detected_IH->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin);
+
+	      bc_NH_err += TMath::Power( tb.fWE * detected_NH->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin), 2 );
+	      bc_IH_err += TMath::Power( tb.fWE * detected_IH->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin), 2 );
 	    }
 
 	    resph_NH->SetBinContent(ebin, ctbin, bybin, bc_NH);
+	    resph_NH->SetBinError(ebin, ctbin, bybin, TMath::Sqrt(bc_NH_err));
 	    resph_IH->SetBinContent(ebin, ctbin, bybin, bc_IH);
+	    resph_IH->SetBinError(ebin, ctbin, bybin, TMath::Sqrt(bc_IH_err));
 
 	  } // end loop over z bins
 	} // end loop over y bins

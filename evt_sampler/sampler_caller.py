@@ -49,6 +49,7 @@ def main(args):
             jpp  = os.environ['JPP_DIR']
             root = os.environ['ROOTSYS']
             nmh  = os.environ['NMHDIR']
+            oscp = os.environ['OSCPROBDIR']
 
             # create the list of gsg files, flux files and summary files
             gsg_flist = "{0}/tmp/{1}_{2}_gsg_flist.dat".format( cwd, flav, inter )
@@ -76,7 +77,7 @@ def main(args):
             script_file.write('#!/bin/bash\n\n')
             script_file.write('cd {0}\nsource setenv.sh\ncd {1}\n'.format(jpp, cwd)) #jpp
             script_file.write('source {}/bin/thisroot.sh\n'.format(root))            #root
-            script_file.write('source {}/setenv.sh -a\n\n'.format(nmh))              #nmh
+            script_file.write('source {}/setenv.sh -a -o {}\n\n'.format(nmh, oscp))  #nmh
             script_file.write(cmd)
 
             script_file.close()
