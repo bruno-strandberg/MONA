@@ -141,7 +141,7 @@ struct TrueB : public TObject {
 
    Note that `GetDetectedTrue()` is pseudo-code - this function needs to be implemented in the code that uses the `DetResponse`. It returns the number of 'detected' events (interacted per Mton * effective mass) for a given (flavor, is_cc, is_nubar, true energy, cos-theta and bjorken-y) combination. For example, such info is stored in the output histograms of `FluxChain.C` in directory `detflux`.
 
-   NB! The binning of the true detected events needs to match the binning used for the `DetResponse`!
+   NB! The binning of the true detected events needs to match the binning used for the `DetResponse` and the detector response should always span the full width of the simulation. I.e., if events are simulated in the range from 1--100 GeV and -1 to 1 cos theta, then the detector response needs to cover the full range.
 
  */
 class DetResponse : public EventFilter {

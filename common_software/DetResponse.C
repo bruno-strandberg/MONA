@@ -16,14 +16,14 @@ using namespace std;
     \param reco_type         Type of reco variables used to fill the response, e.g. DetResponse::track; See `EventFilter`
     \param resp_name         Name of the response
     \param ebins             Number of energy bins
-    \param emin              Energy minimum
-    \param emax              Energy maximum
+    \param emin              Energy minimum, should match the minimum energy of simulated (gSeaGen) events
+    \param emax              Energy maximum, should match the maximum energy of simulated (gSeaGen) events
     \param ctbins            Number of cos-theta bins
-    \param ctmin             cos-theta minimum
-    \param ctmax             cos-theta maximum
+    \param ctmin             cos-theta minimum, should match the minimum cos-theta of simulated (gSeaGen) events
+    \param ctmax             cos-theta maximum, should match the maximum cos-theta of simulated (gSeaGen) events
     \param bybins            Number of bjorken-y bins
-    \param bymin             bjorken-y minimum
-    \param bymax             bjorken-y maximum
+    \param bymin             bjorken-y minimum, should match the minimum bjorken-y of simulated (gSeaGen) events
+    \param bymax             bjorken-y maximum, should match the maximum bjorken-y of simulated (gSeaGen) events
     
  */
 DetResponse::DetResponse(reco reco_type, TString resp_name,
