@@ -1,7 +1,8 @@
 #include "AtmFlux.h"
 #include <fstream>
 #include "TMath.h"
-#include<sstream>
+#include <sstream>
+#include <stdexcept>
 
 //*************************************************************************
 
@@ -24,14 +25,11 @@ AtmFlux::AtmFlux(UInt_t opt, Bool_t debug) {
   //======================================================
   //init the map options vs filenames
   //======================================================
-
-  Bool_t InitOK = true;
   
   TString nmhdir = getenv("NMHDIR");
 
   if ( nmhdir == "" ) {
-    cout << "ERROR! AtmFlux::AtmFlux() $NMHDIR not set (source setenv.sh), init failed." << endl;
-    InitOK = false;
+    throw std::invalid_argument("ERROR! AtmFlux::AtmFlux() $NMHDIR not set (source setenv.sh), init failed.");
   }
   
   TString datadir = nmhdir + "/data/honda_flux/";
@@ -50,21 +48,18 @@ AtmFlux::AtmFlux(UInt_t opt, Bool_t debug) {
   //======================================================
   
   if ( fFileMap.find(opt) == fFileMap.end() ) {
-    cout << "ERROR! AtmFlux::AtmFlux() option " << opt
-	 << " not supported, init failed." << endl;
-    InitOK = false;
+    throw std::invalid_argument("ERROR! AtmFlux::AtmFlux() option " + to_string(opt) + 
+				" not supported, init failed.");
   }
 
   //======================================================
   //read in the data
   //======================================================
 
-  if (InitOK) {
-    if ( !ReadHondaFlux( fFileMap[opt], debug ) ) {
-      cout << "ERROR! AtmFlux::AtmFlux() reading fluxes from file failed." << endl;
-    }    
-  }
-  
+  if ( !ReadHondaFlux( fFileMap[opt], debug ) ) {
+    throw std::invalid_argument("ERROR! AtmFlux::AtmFlux() reading fluxes from file failed.");
+  }    
+
 }
 
 //*************************************************************************
