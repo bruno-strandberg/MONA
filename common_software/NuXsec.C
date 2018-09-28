@@ -164,7 +164,7 @@ Double_t NuXsec::GetBYfrac(Double_t E, Double_t by) {
   }
 
   if ( !f_h_by ) {
-    throw std::invalid_argument( "ERROR! NuXsec::GetBYfrac() histgram pointer not set! Did you run Selectinteraction(...)?");
+    throw std::invalid_argument( "ERROR! NuXsec::GetBYfrac() histgram pointer not set! Did you run SelectInteraction(...)?");
   }
 
   Int_t ebin  = f_h_by->GetXaxis()->FindBin(E);
