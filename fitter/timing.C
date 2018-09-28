@@ -3,6 +3,7 @@
 #include "TDatime.h"
 #include "TH3.h"
 #include "TFile.h"
+#include "TStopwatch.h"
 
 #include "DetResponse.h"
 #include "FitFunction.h"
@@ -66,6 +67,8 @@ void timing() {
 
   double p[] = {0.297, 0.0215, 0.425, 1.38, 7.37e-5, 2.56e-3};
 
+  TStopwatch timer;
+
   for (Int_t ebin = 1; ebin <= hdet_tracks->GetXaxis()->GetNbins(); ebin++) {
     for (Int_t ctbin = 1; ctbin <= hdet_tracks->GetYaxis()->GetNbins(); ctbin++) {
       for (Int_t bybin = 1; bybin <= hdet_tracks->GetZaxis()->GetNbins(); bybin++) {
@@ -83,6 +86,8 @@ void timing() {
   }
   
   cout << "NOTICE: Finished filling histograms" << endl;
+  cout << "NOTICE: Time for filling hists " << (Double_t)timer.RealTime() << endl;
+  
 
   TFile fout("timing.root","RECREATE");
   hdet_tracks->Write();
