@@ -201,6 +201,25 @@ void DetResponse::Fill(SummaryEvent *evt) {
     is_nb = 0;
   }
 
+  // exclude events that are outside of the simulation range
+  Double_t nebins  = fhSim[flav][is_cc][is_nb]->GetXaxis()->GetNbins();
+  Double_t emin    = fhSim[flav][is_cc][is_nb]->GetXaxis()->GetBinLowEdge(1);
+  Double_t emax    = fhSim[flav][is_cc][is_nb]->GetXaxis()->GetBinUpEdge(nebins);
+
+  Double_t nctbins = fhSim[flav][is_cc][is_nb]->GetYaxis()->GetNbins();
+  Double_t ctmin   = fhSim[flav][is_cc][is_nb]->GetYaxis()->GetBinLowEdge(1);
+  Double_t ctmax   = fhSim[flav][is_cc][is_nb]->GetYaxis()->GetBinUpEdge(nctbins);
+
+  Double_t nbybins = fhSim[flav][is_cc][is_nb]->GetZaxis()->GetNbins();
+  Double_t bymin   = fhSim[flav][is_cc][is_nb]->GetZaxis()->GetBinLowEdge(1);
+  Double_t bymax   = fhSim[flav][is_cc][is_nb]->GetZaxis()->GetBinUpEdge(nbybins);
+
+  if (  evt->Get_MC_energy()   < emin  ||  evt->Get_MC_energy()   >= emax  ||
+       -evt->Get_MC_dir_z()    < ctmin || -evt->Get_MC_dir_z()    >= ctmax ||
+        evt->Get_MC_bjorkeny() < bymin ||  evt->Get_MC_bjorkeny() >= bymax ) {
+    return;
+  }
+
   fhSim[flav][is_cc][is_nb]->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir_z(), evt->Get_MC_bjorkeny() );
 
   //-----------------------------------------------------------------------
