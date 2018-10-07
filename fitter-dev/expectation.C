@@ -13,7 +13,7 @@
 #include <iostream>
 using namespace std;
 
-void timing() {
+void expectation() {
 
   gROOT->ProcessLine(".L FitFunction.C+");
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
@@ -89,7 +89,7 @@ void timing() {
   cout << "NOTICE: Time for filling hists " << (Double_t)timer.RealTime() << endl;
   
 
-  TFile fout("timing.root","RECREATE");
+  TFile fout("expectation_values.root","RECREATE");
   hdet_tracks->Write();
   hdet_showers->Write();
   fout.Close();
