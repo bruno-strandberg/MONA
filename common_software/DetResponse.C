@@ -63,6 +63,16 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
 		    ctbins, &ct_edges[0],
 		    bybins, &by_edges[0]);
 
+  fhAtmMuCount1y = new TH3D("hAtmMuCount1y_" + fRespName, "hAtmMuCount1y_" + fRespName,
+			    ebins , &e_edges[0],
+			    ctbins, &ct_edges[0],
+			    bybins, &by_edges[0]);
+
+  fhNoiseCount1y = new TH3D("hNoiseCount1y_" + fRespName, "hNoiseCount1y_" + fRespName,
+			    ebins , &e_edges[0],
+			    ctbins, &ct_edges[0],
+			    bybins, &by_edges[0]);
+
   //----------------------------------------------------------
   // calculate the binning for the fResp structure and init fResp
   // bin [0] is underflow, bin[ axis->GetNbins() ] is the last counting bin (hence dimension length +1),
@@ -99,7 +109,9 @@ DetResponse::DetResponse(const DetResponse &detresp) : EventFilter(detresp) {
     }
   }
 
-  fHResp = (TH3D*)detresp.fHResp->Clone();  
+  fHResp = (TH3D*)detresp.fHResp->Clone();
+  fhAtmMuCount1y = (TH3D*)detresp.fhAtmMuCount1y->Clone();
+  fhNoiseCount1y = (TH3D*)detresp.fhNoiseCount1y->Clone();
 
   InitResponse(fEbins, fCtbins, fBybins);
 
@@ -121,6 +133,8 @@ DetResponse::~DetResponse() {
   CleanResponse();
 
   if (fHResp) delete fHResp;
+  if (fhAtmMuCount1y) delete fhAtmMuCount1y;
+  if (fhNoiseCount1y) delete fhNoiseCount1y;
 
   for (auto &f: fFlavs) {
     for (auto &i: fInts) {
@@ -186,22 +200,49 @@ void DetResponse::Fill(SummaryEvent *evt) {
     throw std::invalid_argument( "ERROR! DetResponse::Fill() cannot fill an already normalised response!" );
   }
   
-  //-----------------------------------------------------------------------
-  // determine event type and fill hists that count the number
-  // of simulated events per E_true, costh_true, by_true bin
-  //-----------------------------------------------------------------------
-  
-  Int_t flav  = fType_to_Flav[ (Int_t)TMath::Abs( evt->Get_MC_type() ) ];
-  Int_t is_cc = evt->Get_MC_is_CC();
-  Int_t is_nb = (Int_t)(evt->Get_MC_type() < 0 );
+  // determine event type (either neutrinos or other)  
+  UInt_t flav  = fType_to_Supported.at( (UInt_t)TMath::Abs( evt->Get_MC_type() ) );
+  UInt_t is_cc = evt->Get_MC_is_CC();
+  UInt_t is_nb = (UInt_t)(evt->Get_MC_type() < 0 );
 
-  // for atm muons and noise use only one histogram
-  if ( evt->Get_MC_is_neutrino() < 0.5 ) {
-    is_cc = 0;
-    is_nb = 0;
+
+  // logic for dealing with neutrino events
+  if (flav <= TAU) {
+    FillNuEvents(flav, is_cc, is_nb, evt);
   }
+  // logic for dealing with other (atmospheric muons, noise) events
+  else {
 
+    // if event does not pass the cuts return
+    if ( !PassesCuts(evt) ) return;
+
+    // set the reconstruction observables
+    SetObservables(evt); //implemented in EventFilter.C
+  
+    if      ( flav == ATMMU ) fhAtmMuCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
+    else if ( flav == NOISE ) fhNoiseCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
+    else {
+      throw std::invalid_argument( "ERROR! DetResponse::Fill() unknown particle with flavor " + to_string(flav) );
+    }
+
+  }
+ 
+}
+
+//*********************************************************************************
+
+/**
+   Internal function to fill neutrino `SummaryEvent`'s to the response structure.
+   \param flav   Neutrino flavor
+   \param is_cc  cc interaction flag
+   \param is_nb  is nu-bar flag
+   \param evt    Pointer to summary event
+ */
+void DetResponse::FillNuEvents(UInt_t flav, UInt_t is_cc, UInt_t is_nb, SummaryEvent *evt) {
+
+  //-----------------------------------------------------------------------
   // exclude events that are outside of the simulation range
+  //-----------------------------------------------------------------------
   Double_t nebins  = fhSim[flav][is_cc][is_nb]->GetXaxis()->GetNbins();
   Double_t emin    = fhSim[flav][is_cc][is_nb]->GetXaxis()->GetBinLowEdge(1);
   Double_t emax    = fhSim[flav][is_cc][is_nb]->GetXaxis()->GetBinUpEdge(nebins);
@@ -216,10 +257,13 @@ void DetResponse::Fill(SummaryEvent *evt) {
 
   if (  evt->Get_MC_energy()   < emin  ||  evt->Get_MC_energy()   >= emax  ||
        -evt->Get_MC_dir_z()    < ctmin || -evt->Get_MC_dir_z()    >= ctmax ||
-        evt->Get_MC_bjorkeny() < bymin ||  evt->Get_MC_bjorkeny() >= bymax ) {
+	evt->Get_MC_bjorkeny() < bymin ||  evt->Get_MC_bjorkeny() >= bymax ) {
     return;
   }
 
+  //-----------------------------------------------------------------------
+  // fill the histogram that counts the total number of simulated events
+  //-----------------------------------------------------------------------
   fhSim[flav][is_cc][is_nb]->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir_z(), evt->Get_MC_bjorkeny() );
 
   //-----------------------------------------------------------------------
@@ -246,7 +290,7 @@ void DetResponse::Fill(SummaryEvent *evt) {
 
   if ( index == true_bins.end() ) true_bins.push_back(tbin);
   else index->Increment();
-  
+
 }
 
 //*********************************************************************************
@@ -309,9 +353,7 @@ void DetResponse::Normalise() {
 //*********************************************************************************
 
 /**
-   Returns a vector of `TrueB`'s (true e, cos-theta, by-bins) that contribute to this e_reco, ct_reco, by_reco bin. 
-
-   NB! When parsing actual `SummaryEvent`'s, it is recommended to use `DetResponse::GetBinWeights(SummaryEvent *evt)`. This guarantees that the correct reco variables are used to look up the return vector.
+   Returns a vector of `TrueB`'s (true e, cos-theta, by-bins) that contribute to this e_reco, ct_reco, by_reco bin for neutrino events. 
    
    \param e_reco    Reconstructed energy
    \param t_reco    Reconstructed cos-theta
@@ -332,7 +374,7 @@ std::vector<TrueB>& DetResponse::GetBinWeights(Double_t E_reco, Double_t ct_reco
 //*********************************************************************************
 
 /**
-   Returns a vector of `TrueB`'s (true e, cos-theta, by-bins) that contribute to this event.
+   Returns a vector of `TrueB`'s (true e, cos-theta, by-bins) that contribute to this event for neutrino events.
    
    \param evt       Pointer to a summary event
    \return          vector of `TrueB`'s that contribute to the reco bin of this event.
@@ -342,6 +384,46 @@ std::vector<TrueB>& DetResponse::GetBinWeights(SummaryEvent *evt) {
   SetObservables(evt);
   return GetBinWeights( fEnergy, -fDir.z(), fBy );
   
+}
+
+//*********************************************************************************
+
+/**
+   Returns the number of atmospheric muon events in 1 year in the bin specified by the reconstruction variables.
+   
+   \param e_reco    Reconstructed energy
+   \param t_reco    Reconstructed cos-theta
+   \param by_reco   Reconstructed bjorken-y
+   \return          a pair with the atmospheric muon count in 1 year (first) and the MC statistical error (second)
+ */
+std::pair<Double_t, Double_t> DetResponse::GetAtmMuCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco) {
+
+  Int_t ebin  = fhAtmMuCount1y->GetXaxis()->FindBin(E_reco);
+  Int_t ctbin = fhAtmMuCount1y->GetYaxis()->FindBin(ct_reco);
+  Int_t bybin = fhAtmMuCount1y->GetZaxis()->FindBin(by_reco);
+  
+  return std::make_pair( fhAtmMuCount1y->GetBinContent(ebin, ctbin, bybin), fhAtmMuCount1y->GetBinError(ebin, ctbin, bybin) );
+
+}
+
+//*********************************************************************************
+
+/**
+   Returns the number of noise events in 1 year in the bin specified by the reconstruction variables.
+   
+   \param e_reco    Reconstructed energy
+   \param t_reco    Reconstructed cos-theta
+   \param by_reco   Reconstructed bjorken-y
+   \return          a pair with noise count in 1 year (first) and the MC statistical error (second)
+ */
+std::pair<Double_t, Double_t> DetResponse::GetNoiseCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco) {
+
+  Int_t ebin  = fhNoiseCount1y->GetXaxis()->FindBin(E_reco);
+  Int_t ctbin = fhNoiseCount1y->GetYaxis()->FindBin(ct_reco);
+  Int_t bybin = fhNoiseCount1y->GetZaxis()->FindBin(by_reco);
+  
+  return std::make_pair( fhNoiseCount1y->GetBinContent(ebin, ctbin, bybin), fhNoiseCount1y->GetBinError(ebin, ctbin, bybin) );
+
 }
 
 //*********************************************************************************
@@ -403,6 +485,8 @@ void DetResponse::WriteToFile(TString filename) {
   }
 
   fHResp->Write("hresp");
+  fhAtmMuCount1y->Write("atmmucount");
+  fhNoiseCount1y->Write("noisecount");
 
   h.WriteHeader(&fout);
 
@@ -470,6 +554,14 @@ void DetResponse::ReadFromFile(TString filename) {
   fHResp->SetDirectory(0);
   fHResp->SetNameTitle("hresp_" + fRespName, "hresp_" + fRespName);
 
+  fhAtmMuCount1y = (TH3D*)fin.Get("atmmucount")->Clone();
+  fhAtmMuCount1y->SetDirectory(0);
+  fhAtmMuCount1y->SetNameTitle("hAtmMuCount1y_" + fRespName, "hAtmMuCount1y_" + fRespName);
+
+  fhNoiseCount1y = (TH3D*)fin.Get("noisecount")->Clone();
+  fhNoiseCount1y->SetDirectory(0);
+  fhNoiseCount1y->SetNameTitle("hNoiseCount1y_" + fRespName, "hNoiseCount1y_" + fRespName);
+
   delete tb;
   fin.Close();
 
@@ -496,7 +588,7 @@ TCanvas* DetResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco) {
   h_tbs->SetDirectory(0);
   TString suffix = "_Ereco=" + (TString)to_string(e_reco) + "_ctreco=" + (TString)to_string(ct_reco);
   h_rb->SetNameTitle("reco_bin"+suffix,"reco_bin"+suffix);
-  h_tbs->SetNameTitle("true_bins"+suffix,"true_bins"+suffix);
+  h_tbs->SetNameTitle("true_bins"+suffix,"true bins (only #nu) over all flavors, "+suffix);
 
   Int_t ebin  = h_rb->GetXaxis()->FindBin(e_reco);
   Int_t ctbin = h_rb->GetYaxis()->FindBin(ct_reco);

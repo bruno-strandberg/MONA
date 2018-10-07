@@ -35,20 +35,19 @@ void expectation() {
   drs.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05, true );
   drs.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(),  0.5, true );
 
-  // SummaryParser sp("../data/ORCA_MC_summary_all_10Apr2018.root");
-  // for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
-  //   sp.GetTree()->GetEntry(i);
-  //   SummaryEvent *evt = sp.GetEvt();
-  //   if (evt->Get_MC_is_neutrino() < 0.5) continue;
-  //   drt.Fill(evt);
-  //   drs.Fill(evt);
-  // }
+  SummaryParser sp("../data/ORCA_MC_summary_all_10Apr2018.root");
+  for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
+    sp.GetTree()->GetEntry(i);
+    SummaryEvent *evt = sp.GetEvt();
+    drt.Fill(evt);
+    drs.Fill(evt);
+  }
 
-  // drt.WriteToFile("track_response_timing.root");
-  // drs.WriteToFile("shower_response_timing.root");
+  drt.WriteToFile("track_response_timing.root");
+  drs.WriteToFile("shower_response_timing.root");
 
-  drt.ReadFromFile("track_response_timing.root");
-  drs.ReadFromFile("shower_response_timing.root");
+  // drt.ReadFromFile("track_response_timing.root");
+  // drs.ReadFromFile("shower_response_timing.root");
   
   cout << "NOTICE: Finished filling response" << endl;
 
