@@ -1,0 +1,127 @@
+#ifndef FitUtil_h
+#define FitUtil_h
+
+// NMH and OscProb
+#include "DetResponse.h"
+#include "AtmFlux.h"
+#include "NuXsec.h"
+#include "PMNS_Fast.h"
+#include "PremModel.h"
+
+// Root
+#include "TH3.h"
+
+// RooFit
+#include "RooRealVar.h"
+#include "RooRealProxy.h"
+#include "RooArgSet.h"
+
+// standard cpp
+#include <map>
+
+class FitUtil {
+
+ public:
+
+  // constructors/destructors
+
+  /** Default constructor. */
+  FitUtil() {};
+
+  FitUtil(Double_t op_time, TH3 *h_template, 
+	  TString meffh_elec_cc, TString meffh_muon_cc,
+	  TString meffh_tau_cc, TString meffh_elec_nc);
+  ~FitUtil();
+
+  // public functions
+  Double_t PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp);
+  Double_t RecoEvts(DetResponse *resp,
+		    Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+		    Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
+		    Double_t Dcp, Double_t Dm21, Double_t Dm31);
+
+  // setters/getters
+  RooArgSet   GetSet()         { return fParSet; }
+  RooArgSet   GetObs()         { return fObsSet; }
+  TH3D*       GetBinningHist() { return fHB;     }
+
+ private:
+
+  //------------------------------------------------------------------
+  // private functions
+  //------------------------------------------------------------------
+  
+  Double_t TrueEvts(Int_t ebin_true, Int_t ctbin_true, Int_t bybin_true, UInt_t flav, UInt_t iscc, UInt_t isnb,
+		    Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
+		    Double_t Dcp, Double_t Dm21, Double_t Dm31);
+  void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
+  void InitCacheHists(TH3D *h_template);
+  void FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time);
+  void ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
+		  Double_t Dcp, Double_t Dm21, Double_t Dm31);
+  void ReadMeffHists(TH3D *h_template, TString meffh_elec_cc, TString meffh_muon_cc, 
+		     TString meffh_tau_cc, TString meffh_elec_nc);
+
+  //------------------------------------------------------------------
+  // constants for detected neutrino count calculation
+  //------------------------------------------------------------------
+
+  const double fMp = 1.672621898e-27;                     //!< proton mass in kg
+  const double fMn = 1.674927471e-27;                     //!< neutron mass in kg
+  const double fMN = (fMp+fMn)/2;                         //!< nucleon-average mass
+  const double fSec_per_y   = 365.2421897 * 24 * 60 * 60; //!< seconds in a tropical year
+  const double fKg_per_MTon = 1e9;                        //!< kg per MTon (MTon = 1e6 Ton; Ton = 1e3 kg)
+
+  static const UInt_t fFlavs = 3;                         //!< number of flavors
+  static const UInt_t fInts  = 2;                         //!< number of interactions (CC/NC)
+  static const UInt_t fPols  = 2;                         //!< number of polarisations (nu/nub)
+
+  enum flavors {ELEC = 0, MUON, TAU};                     //!< enum for flavors
+
+  //------------------------------------------------------------------
+  // private members for detected neutrino count calculation
+  //------------------------------------------------------------------
+
+  Double_t            fOpTime;                      //!< operation time
+  TH3D               *fHB;                          //!< a template histogram that defines the binning
+  AtmFlux            *fFlux;                        //!< atm flux calculator
+  NuXsec             *fXsec;                        //!< xsec calculator
+  OscProb::PMNS_Fast *fProb;                        //!< oscillation probability calculator
+  OscProb::PremModel *fPrem;                        //!< earth model
+
+  //------------------------------------------------------------------
+  // private members for caching
+  //------------------------------------------------------------------
+
+  TH2D *fhFluxCache[fFlavs][fPols];         //!< atm flux cache with struct. [flav][is_nub]
+  TH2D *fhOscCache [fFlavs][fFlavs][fPols]; //!< osc prob cache with struct. [flav_in][flav_out][isnb]
+  TH1D *fhXsecCache[fFlavs][fInts][fPols];  //!< xsec cache with struct. [flav][is_cc][isnb]
+  TH3D *fhMeff     [fFlavs][fInts][fPols];  //!< effective mass hists with struct. [flav][is_cc][is_nub]
+
+  Double_t f_cache_sinsqth12;    //!< cached theta12 value
+  Double_t f_cache_sinsqth13;    //!< cached theta13 value
+  Double_t f_cache_sinsqth23;    //!< cached theta23 value
+  Double_t f_cache_dcp ;         //!< cached delta-cp value
+  Double_t f_cache_dm21;         //!< cached dm21 value
+  Double_t f_cache_dm31;         //!< cached dm31 value
+
+  //------------------------------------------------------------------
+  // variables that need to be recognized by the RooFit minimizer
+  //------------------------------------------------------------------
+
+  RooRealVar *fE_reco;    //!< reconstructed energy observable
+  RooRealVar *fCt_reco;   //!< reconstructed cos-theta observable
+  RooRealVar *fBy_reco;   //!< reconstructed bjorken-y observable
+  RooRealVar *fSinsqTh12; //!< sin^2 theta-12 parameter
+  RooRealVar *fSinsqTh13; //!< sin^2 theta-13 parameter
+  RooRealVar *fSinsqTh23; //!< sin^2 theta-23 parameter
+  RooRealVar *fDcp;      //!< delta-cp in \f$\pi$\f's, as given by the PDG group (e.g. 1.38) parameter
+  RooRealVar *fDm21;     //!< small mass-splitting-square parameter in eV^2
+  RooRealVar *fDm31;     //!< large mass-splitting-square parameter in eV^2
+
+  RooArgSet   fParSet;   //!< set that includes all variables (observables+parameters)
+  RooArgSet   fObsSet;   //!< set that includes only observables (Energy, cos-theta, bjorken-y)
+
+};
+
+#endif

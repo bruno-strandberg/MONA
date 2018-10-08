@@ -1,0 +1,98 @@
+#include "FitUtil.h"
+#include "FitPDF.h"
+#include "DetResponse.h"
+#include "SummaryParser.h"
+
+#include "TH3.h"
+#include "TFile.h"
+
+#include <iostream>
+
+using namespace RooFit;
+using namespace std;
+
+int main() {
+
+  //----------------------------------------------------------
+  // detector response for tracks and showers
+  //----------------------------------------------------------
+  DetResponse drt(DetResponse::track, "track_response", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  drt.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   ,  0.5, true );
+  drt.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   ,  0.5, true );
+  drt.AddCut( &SummaryEvent::Get_RDF_track_score , std::greater<double>()   ,  0.6, true );
+  drt.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05, true );
+  drt.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );
+
+  DetResponse drs(DetResponse::shower, "shower_response", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  drs.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   ,  0.5, true );
+  drs.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   ,  0.5, true );
+  drs.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(),  0.6, true );
+  drs.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05, true );
+  drs.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(),  0.5, true );
+
+  // SummaryParser sp("../data/ORCA_MC_summary_all_10Apr2018.root");
+  // for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
+  //   if (i % 100000 == 0) cout << "Event: " << i << endl;
+  //   sp.GetTree()->GetEntry(i);
+  //   SummaryEvent *evt = sp.GetEvt();
+  //   drt.Fill(evt);
+  //   drs.Fill(evt);
+  // }
+
+  // drt.WriteToFile("track_response_timing.root");
+  // drs.WriteToFile("shower_response_timing.root");
+
+  drt.ReadFromFile("track_response_timing.root");
+  drs.ReadFromFile("shower_response_timing.root");
+
+  cout << "NOTICE: Finished filling responses" << endl;
+
+  //----------------------------------------------------------
+  // set up the PDFs for some easy calculation
+  //----------------------------------------------------------
+  FitUtil *fitutil = new FitUtil(3, drt.GetHist3D(), 
+				 "../data/eff_mass/EffMhists_elec_CC.root", 
+				 "../data/eff_mass/EffMhists_muon_CC.root", 
+				 "../data/eff_mass/EffMhists_tau_CC.root", 
+				 "../data/eff_mass/EffMhists_elec_NC.root");
+
+  FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &drt);  
+  FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, &drs);
+
+  TH3D *hdet_tracks  = (TH3D*)drt.GetHist3D()->Clone("detected_tracks");
+  TH3D *hdet_showers = (TH3D*)drs.GetHist3D()->Clone("detected_showers");
+  hdet_tracks->Reset();
+  hdet_showers->Reset();
+
+  //----------------------------------------------------------
+  // fill the track and shower histograms - should be EXACTLY as before..
+  //----------------------------------------------------------
+
+  double p[] = {0.297, 0.0215, 0.425, 1.38, 7.37e-5, 2.56e-3};
+
+  for (Int_t ebin = 1; ebin <= hdet_tracks->GetXaxis()->GetNbins(); ebin++) {
+    for (Int_t ctbin = 1; ctbin <= hdet_tracks->GetYaxis()->GetNbins(); ctbin++) {
+      for (Int_t bybin = 1; bybin <= hdet_tracks->GetZaxis()->GetNbins(); bybin++) {
+
+        Double_t E  = hdet_tracks->GetXaxis()->GetBinCenter( ebin );
+        Double_t ct = hdet_tracks->GetYaxis()->GetBinCenter( ctbin );
+        Double_t by = hdet_tracks->GetZaxis()->GetBinCenter( bybin );
+
+        double x[] = {E, ct, by};
+
+        hdet_tracks->SetBinContent( ebin, ctbin, bybin, pdf_tracks.operator()(x, p) );
+        hdet_showers->SetBinContent( ebin, ctbin, bybin, pdf_showers.operator()(x, p) );
+      }
+    }
+  }
+
+  TFile fout("expectation_values.root","RECREATE");
+  hdet_tracks->Write();
+  hdet_showers->Write();
+  fout.Close();
+
+}
+
+void Fit() {
+  main();
+}
