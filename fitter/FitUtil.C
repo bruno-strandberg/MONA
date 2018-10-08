@@ -268,20 +268,21 @@ void FitUtil::ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqT
 
 	      //====================DEBUG=======================================================
 
-	      //cout << "Will try to fill path for " << ct << endl;
+	      cout << "Will try to fill path for " << ct << endl;
 
 	      // set oscillation path and is-nu-bar flag
 	      fPrem->FillPath( ct );	      
 
-	      //cout << "Filled the path for ct " << ct << endl;
+	      cout << "Filled the path for ct " << ct << endl;
 
 	      vector< OscProb::NuPath > path = fPrem->GetNuPath();
+	      cout << path.size() << endl;
 
-	      //cout << "Read the path for ct " << ct << endl;
+	      cout << "Read the path for ct " << ct << endl;
 
 	      fProb->SetPath ( path );
 
-	      //cout << "Set the path..." << endl;
+	      cout << "Set the path..." << endl;
 
 	      fProb->SetIsNuBar( isnb );
 
