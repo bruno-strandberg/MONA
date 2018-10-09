@@ -2,7 +2,6 @@
 #include <iostream>
 
 #include "TFile.h"
-#include "NuPath.h"
 
 using namespace std;
 
@@ -266,27 +265,10 @@ void FitUtil::ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqT
 	      Double_t E  = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinCenter(ebin);
 	      Double_t ct = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinCenter(ctbin);
 
-	      //====================DEBUG=======================================================
-
-	      cout << "Will try to fill path for " << ct << endl;
-
 	      // set oscillation path and is-nu-bar flag
 	      fPrem->FillPath( ct );	      
-
-	      cout << "Filled the path for ct " << ct << endl;
-
-	      vector< OscProb::NuPath > path = fPrem->GetNuPath();
-	      cout << path.size() << endl;
-
-	      cout << "Read the path for ct " << ct << endl;
-
-	      fProb->SetPath ( path );
-
-	      cout << "Set the path..." << endl;
-
+	      fProb->SetPath ( fPrem->GetNuPath() );
 	      fProb->SetIsNuBar( isnb );
-
-	      //====================DEBUG=======================================================
 
 	      fhOscCache[f_in][f_out][isnb]->SetBinContent(ebin, ctbin, fProb->Prob(f_in, f_out, E) );
 

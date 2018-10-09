@@ -5,6 +5,7 @@
 
 #include "TH3.h"
 #include "TFile.h"
+#include "TStopwatch.h"
 
 #include <iostream>
 
@@ -70,6 +71,8 @@ int main() {
 
   double p[] = {0.297, 0.0215, 0.425, 1.38, 7.37e-5, 2.56e-3};
 
+  TStopwatch timer;
+
   for (Int_t ebin = 1; ebin <= hdet_tracks->GetXaxis()->GetNbins(); ebin++) {
     for (Int_t ctbin = 1; ctbin <= hdet_tracks->GetYaxis()->GetNbins(); ctbin++) {
       for (Int_t bybin = 1; bybin <= hdet_tracks->GetZaxis()->GetNbins(); bybin++) {
@@ -85,6 +88,8 @@ int main() {
       }
     }
   }
+
+  cout << "NOTICE: time for filling histograms " << (Double_t)timer.RealTime() << endl;
 
   TFile fout("expectation_values.root","RECREATE");
   hdet_tracks->Write();
