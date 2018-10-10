@@ -40,13 +40,23 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
   f_cache_dcp       = 0;
   f_cache_dm21      = 0;
   f_cache_dm31      = 0;
-  
+
+  fOscCalls    = 0;
+  fOscCalcTime = new TStopwatch();
+  fOscCalcTime->Stop(); fOscCalcTime->Reset();
+
 }
 
 //***************************************************************************
 
 /** Destructor.*/
 FitUtil::~FitUtil() {
+
+  cout << "FitUtil::~FitUtil() total oscillator calls: " << fOscCalls << endl;
+  cout << "FitUtil::~FitUtil() duration of oscillation calculations [s]: "
+       << (Double_t)fOscCalcTime->RealTime() << endl;
+
+  if (fOscCalcTime) delete fOscCalcTime;
 
   if (fHB)   delete fHB;
   if (fFlux) delete fFlux;
@@ -103,10 +113,10 @@ void FitUtil::InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t
   fDm31      = new RooRealVar(     "Dm31",         "dm31^2", 2.56*1e-3, 2.42*1e-3, 2.69*1e-3);;   
 
   // add observables to the observables set
-  fObsSet.add( RooArgSet( *fE_reco, *fCt_reco, *fBy_reco ) );
+  fObsList.add( RooArgList(*fE_reco, *fCt_reco, *fBy_reco) );
 
   // add all variables to the parameter set
-  fParSet.add( fObsSet );
+  fParSet.add( fObsList );
   fParSet.add( RooArgSet( *fSinsqTh12, *fSinsqTh13, *fSinsqTh23, *fDcp, *fDm21, *fDm31) );
   
 }
@@ -235,6 +245,8 @@ void FitUtil::ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqT
   if (SinsqTh12 != f_cache_sinsqth12 || SinsqTh13 != f_cache_sinsqth13 || SinsqTh23 != f_cache_sinsqth23 || 
       Dcp != f_cache_dcp || Dm21 != f_cache_dm21 || Dm31 != f_cache_dm31) {
 
+    fOscCalcTime->Start(kFALSE);
+
     // set the cache variables
     f_cache_sinsqth12 = SinsqTh12;
     f_cache_sinsqth13 = SinsqTh13;
@@ -272,12 +284,16 @@ void FitUtil::ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqT
 
 	      fhOscCache[f_in][f_out][isnb]->SetBinContent(ebin, ctbin, fProb->Prob(f_in, f_out, E) );
 
+	      fOscCalls++;
+
 	    } // end loop over cos-theta bins
 	  } //end loop over energy bins
 
 	} // end loop over isnb
       } // end loop over flavor_out
     } // end loop over flavor_in
+
+    fOscCalcTime->Stop();
 
   }
   // osc pars have not changed, return

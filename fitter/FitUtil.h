@@ -10,11 +10,13 @@
 
 // Root
 #include "TH3.h"
+#include "TStopwatch.h"
 
 // RooFit
 #include "RooRealVar.h"
 #include "RooRealProxy.h"
 #include "RooArgSet.h"
+#include "RooArgList.h"
 
 // standard cpp
 #include <map>
@@ -41,9 +43,9 @@ class FitUtil {
 		    Double_t Dcp, Double_t Dm21, Double_t Dm31);
 
   // setters/getters
-  RooArgSet   GetSet()         { return fParSet; }
-  RooArgSet   GetObs()         { return fObsSet; }
-  TH3D*       GetBinningHist() { return fHB;     }
+  RooArgSet   GetSet()         { return fParSet;  }
+  RooArgList  GetObs()         { return fObsList; }
+  TH3D*       GetBinningHist() { return fHB;      }
 
  private:
 
@@ -106,6 +108,12 @@ class FitUtil {
   Double_t f_cache_dm31;         //!< cached dm31 value
 
   //------------------------------------------------------------------
+  // private members for monitoring performance
+  //------------------------------------------------------------------
+  Long64_t    fOscCalls;
+  TStopwatch *fOscCalcTime;
+
+  //------------------------------------------------------------------
   // variables that need to be recognized by the RooFit minimizer
   //------------------------------------------------------------------
 
@@ -120,7 +128,7 @@ class FitUtil {
   RooRealVar *fDm31;     //!< large mass-splitting-square parameter in eV^2
 
   RooArgSet   fParSet;   //!< set that includes all variables (observables+parameters)
-  RooArgSet   fObsSet;   //!< set that includes only observables (Energy, cos-theta, bjorken-y)
+  RooArgList  fObsList;  //!< list (ordered!) that includes only observables (Energy, cos-theta, bjorken-y)
 
 };
 

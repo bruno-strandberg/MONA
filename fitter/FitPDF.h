@@ -31,6 +31,7 @@ public:
   FitPDF(const FitPDF& other, const char* name=0);
 
   double operator() (double *x, double *p);
+  DetResponse* GetResponse() { return fResponse; }
 
 protected:
 

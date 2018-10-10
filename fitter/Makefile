@@ -18,7 +18,7 @@ LDFLAGS   += $(ROOTLIBS) $(NMHLIBS)
 
 # define the target, headers, sources; LinkDef needs to come last in dict generation, hence filtered
 PACKAGE = fitter
-HEADERS = $(filter-out LinkDef.h, $(wildcard *.h))
+HEADERS = $(filter-out LinkDef.h Fitter.h, $(wildcard *.h))
 SOURCES = $(wildcard *.C)
 TARGET  = $(PACKAGE)
 DICTIONARY = dic$(PACKAGE).cxx
