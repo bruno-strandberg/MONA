@@ -3,6 +3,7 @@
 
 #include "RooRealVar.h"
 #include "RooArgSet.h"
+#include "RooArgList.h"
 #include "RooRealProxy.h"
 #include <map>
 
@@ -22,7 +23,7 @@ class FitUtil {
   Double_t GetValue(const std::map<TString, RooRealProxy*> &parmap);
 
   RooArgSet   GetSet()                    { return fParSet; }
-  RooArgSet   GetObs()                    { return fObsSet; }
+  RooArgList  GetObs()                    { return fObsList; }
 
  private:
 
@@ -31,7 +32,7 @@ class FitUtil {
   RooRealVar *a;
   RooRealVar *b;
   RooArgSet   fParSet;
-  RooArgSet   fObsSet;
+  RooArgList  fObsList;
 
 };
 

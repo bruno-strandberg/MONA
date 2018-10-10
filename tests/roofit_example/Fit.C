@@ -14,6 +14,8 @@
 #include "RooSimultaneous.h"
 
 #include <iostream>
+#include <map>
+#include <string>
 
 using namespace RooFit;
 using namespace std;
@@ -64,23 +66,23 @@ int main() {
   FitPDF fpdf1("mypdf1","mypdf1", &futil);
   FitPDF fpdf2("mypdf2","mypdf2", &futil);
 
-  // import data to RooFit
-  RooDataHist rf_h1("rf_h1", "rf_h1", futil.GetObs(), Import(h1) );
-  RooDataHist rf_h2("rf_h2", "rf_h2", futil.GetObs(), Import(h2) );
-
   // create categories
-  RooCategory cats("toydata", "my toy data");
-  cats.defineType("hist1");
-  cats.defineType("hist2");
+  std::string cat1 = "hist1";
+  std::string cat2 = "hist2";
 
-  // combine data
-  RooDataHist combData("combData", "combined data", futil.GetObs(), Index(cats), 
-		      Import("hist1", rf_h1), Import("hist2", rf_h2) );
+  RooCategory cats("toydata", "my toy data");
+  cats.defineType(cat1.c_str());
+  cats.defineType(cat2.c_str());
+
+  // import data to RooFit
+  std::map<std::string, TH1*> hist_map = { {cat1, &h1}, {cat2, &h2} };
+
+  RooDataHist combData("combData", "combined data", futil.GetObs(), cats, hist_map );
   
   // create a simultaneous pdf
   RooSimultaneous simPdf("simPdf", "simultaneous pdf", cats);
-  simPdf.addPdf(fpdf1, "hist1");
-  simPdf.addPdf(fpdf2, "hist2");
+  simPdf.addPdf(fpdf1, cat1.c_str());
+  simPdf.addPdf(fpdf2, cat2.c_str());
 
   // fit
   RooFitResult *roofit_result = simPdf.fitTo(combData, Save(kTRUE));

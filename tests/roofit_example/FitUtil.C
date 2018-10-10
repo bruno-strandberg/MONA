@@ -15,7 +15,7 @@ FitUtil::FitUtil() {
   fParSet.add( RooArgSet(*Ereco, *Ctreco, *a, *b) );
 
   // only observables need to enter this list!
-  fObsSet.add( RooArgSet( *Ereco, *Ctreco ) );
+  fObsList.add( RooArgList( *Ereco, *Ctreco ) );
 
 }
 
