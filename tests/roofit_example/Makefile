@@ -1,26 +1,30 @@
-#Compilation to ROOT library was a gift from Joao Coelho's OscProb package.
 
-#get root CFLAGS and root LIBS
+#=================================================================
+# setup cxx flags and library flags
+#=================================================================
 ROOTCFLAGS    = $(shell root-config --cflags)
 ROOTLIBS      = $(shell root-config --libs) 
 ROOTLIBS     += -lRooFit -lRooFitCore
 
-#set compiler and standard flags
 CXX           = g++
 CXXFLAGS      = -g -Wall -std=c++11 -fPIC
 
-#add the ROOT flags, include dir is current dir
 CXXFLAGS  += $(ROOTCFLAGS)
 LDFLAGS   += $(ROOTLIBS)
 
-#for the rootcint command LinkDef.h needs to come last, that's why it is included
-#only when Dictionary is created
-PACKAGE = fit
-HEADERS = $(filter-out $(CURDIR)/LinkDef.h, $(wildcard $(CURDIR)/*.h))
-SOURCES = $(wildcard $(CURDIR)/*.C)
-TARGET  = $(CURDIR)/$(PACKAGE)
-DICTIONARY = $(CURDIR)/dic$(PACKAGE).cxx
-ROOTMAP    = $(CURDIR)/lib$(PACKAGE).rootmap
+#=================================================================
+# setup programs to be compiled
+#=================================================================
+
+PACKAGE1 = simfit
+PACKAGE2 = compfit
+HEADERS  = $(filter-out LinkDef.h, $(wildcard *.h)) #same header files for both 
+SOURCES1 = $(filter-out Compfit.C, $(wildcard *.C))
+SOURCES2 = $(filter-out Simfit.C, $(wildcard *.C))
+TARGET1  = $(PACKAGE1)
+TARGET2  = $(PACKAGE2)
+DICTIONARY = dicfits.cxx
+ROOTMAP    = libfits.rootmap
 
 #for debugging
 #debug:
@@ -29,23 +33,24 @@ ROOTMAP    = $(CURDIR)/lib$(PACKAGE).rootmap
 #	@echo ${SOURCES}
 #	@echo ${HEADERS}
 
-all: $(TARGET)
+all: $(TARGET1) $(TARGET2)
 
-#target depends on dictionary (->depends on headers and linkdef) and sources
-#$^ means prerequesities --> $^ = $HEADERS Linkdef.h $SOURCES
-$(TARGET): $(DICTIONARY) $(SOURCES)
-	@echo "  Building $(PACKAGE)..."
+$(TARGET1): $(DICTIONARY) $(SOURCES1)
+	@echo "  Building $(PACKAGE1)..."
 	@g++ -O3 -o $@ $^ $(LDFLAGS) $(CXXFLAGS)
 
-#$@ means file name of the target of the rule (dic$PACAGE)
-#$^ means prerequesities --> HEADERS and Linkdef
+$(TARGET2): $(DICTIONARY) $(SOURCES2)
+	@echo "  Building $(PACKAGE2)..."
+	@g++ -O3 -o $@ $^ $(LDFLAGS) $(CXXFLAGS)
+
 $(DICTIONARY): $(HEADERS) LinkDef.h
-	@echo "  Making dictionary for $(PACKAGE)..."
-	@rootcling -f $@ -rml $(TARGET) -rmf lib$(PACKAGE).rootmap $^
+	@echo "  Making dictionary for..."
+	@rootcling -f $@ -rml $(TARGET1) -rml $(TARGET2) -rmf $(ROOTMAP) $^
 
 clean:
-	@echo "  Cleaning $(PACKAGE)..."
-	@rm -f $(TARGET)
+	@echo "  Cleaning..."
+	@rm -f $(TARGET1)
+	@rm -f $(TARGET2)
 	@rm -f $(DICTIONARY)
 	@rm -f $(DICTIONARY:%.cxx=%.h)
 	@rm -f *rdict.pcm
