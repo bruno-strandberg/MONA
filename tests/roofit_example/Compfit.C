@@ -10,6 +10,7 @@
 
 #include "RooDataHist.h"
 #include "RooFitResult.h"
+#include "RooGenericPdf.h"
 
 #include <iostream>
 
@@ -66,11 +67,26 @@ int main() {
   RooDataHist rf_h1("rf_h1", "rf_h1", futil.GetObs(), Import(h1) );
 
   // perform fit in RooFit and save the result for printing
-  RooFitResult *roofit_result = fpdf.fitTo(rf_h1, Save(kTRUE));
+  RooFitResult *roofit_result = fpdf.chi2FitTo(rf_h1, Save(kTRUE));
   RooArgSet final (roofit_result->floatParsFinal() );
 
+  cout << "******************************************************************" << endl;
+  cout << "Finished fitting with RooFit method 1" << endl;
+  cout << "******************************************************************" << endl;
+
   //-----------------------------------------------------
-  // do the same fit in ROOT
+  // set up the fitting with roofit using the basics for comparison
+  //-----------------------------------------------------
+  RooGenericPdf genPDF("genPDF", "(a+b)*Ereco+a*b*Ctreco", futil.GetSet());
+  RooFitResult *roofit_result2 = genPDF.chi2FitTo(rf_h1, Save(kTRUE));
+  RooArgSet final2 (roofit_result2->floatParsFinal() );
+
+  cout << "******************************************************************" << endl;
+  cout << "Finished fitting with RooFit method 2" << endl;
+  cout << "******************************************************************" << endl;
+    
+  //-----------------------------------------------------
+  // do the fit in ROOT
   //-----------------------------------------------------
 
   TF2 *func = new TF2("fitfunc", fpdf, 0, 10, 0, 10, 2);
@@ -84,12 +100,19 @@ int main() {
   //-----------------------------------------------------
 
   cout << "******************************************************************" << endl;
-  cout << "ROOFIT Parameter a initial value, fitted value: "
+  cout << "ROOFIT FitPDF Parameter a initial value, fitted value: "
        << apar << "\t" << ((RooRealVar*)final.find("a"))->getVal() << endl;
-  cout << "ROOFIT Parameter b initial value, fitted value: " 
+  cout << "ROOFIT FitPDF Parameter b initial value, fitted value: " 
        << bpar << "\t" << ((RooRealVar*)final.find("b"))->getVal() << endl;
   cout << "******************************************************************" << endl;
 
+  cout << "******************************************************************" << endl;
+  cout << "ROOFIT genPDF Parameter a initial value, fitted value: "
+       << apar << "\t" << ((RooRealVar*)final2.find("a"))->getVal() << endl;
+  cout << "ROOFIT genPDF Parameter b initial value, fitted value: " 
+       << bpar << "\t" << ((RooRealVar*)final2.find("b"))->getVal() << endl;
+  cout << "******************************************************************" << endl;
+  
   cout << "******************************************************************" << endl;
   cout << "ROOT Parameter a initial value, fitted value: "
        << apar << "\t" << root_result->Parameter(0) << endl;
