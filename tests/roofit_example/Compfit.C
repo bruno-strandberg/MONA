@@ -1,0 +1,99 @@
+#include "FitUtil.h"
+#include "FitPDF.h"
+
+#include "TH2.h"
+#include "TFile.h"
+#include "TF2.h"
+#include "TRandom3.h"
+#include "TFitResult.h"
+#include "TFitResultPtr.h"
+
+#include "RooDataHist.h"
+#include "RooFitResult.h"
+
+#include <iostream>
+
+using namespace RooFit;
+using namespace std;
+
+int main() {
+  
+  //-----------------------------------------------------
+  // create data
+  //-----------------------------------------------------
+
+  TH2D h1("h1","h1", 16, 0.5, 2.5, 16, 0.5, 2.5);
+
+  FitUtil futil;
+
+  Double_t apar = 8.2;
+  Double_t bpar = 4.3;
+
+  for (Int_t xbin = 1; xbin <= h1.GetXaxis()->GetNbins(); xbin++) {
+    for (Int_t ybin = 1; ybin <= h1.GetYaxis()->GetNbins(); ybin++) {
+
+      Double_t E  = h1.GetXaxis()->GetBinCenter(xbin);
+      Double_t ct = h1.GetYaxis()->GetBinCenter(ybin);
+
+      Double_t bc1 = futil.GetValue(E, ct, apar, bpar);
+
+      h1.SetBinContent(xbin, ybin, bc1);
+
+    }
+  }
+
+  //-----------------------------------------------------
+  // set up the fitting with roofit
+  //-----------------------------------------------------
+
+  TRandom3 fRand(0);
+  Double_t e = fRand.Uniform(-0.3, 0.3); // to add some error to the fitted pars
+
+  // set guess values for the parameters
+  ( (RooRealVar*)futil.GetSet().find("a") )->setVal(apar + e*apar);
+  ( (RooRealVar*)futil.GetSet().find("b") )->setVal(bpar + e*bpar);
+
+  // init the pdf
+  FitPDF fpdf("mypdf","mypdf", &futil);
+
+  // import data to RooFit - at this point RooFit will infer which variables defined in FitUtil
+  // are observables and which are parameters
+  RooDataHist rf_h1("rf_h1", "rf_h1", futil.GetObs(), Import(h1) );
+
+  // perform fit in RooFit and save the result for printing
+  RooFitResult *roofit_result = fpdf.fitTo(rf_h1, Save(kTRUE));
+  RooArgSet final (roofit_result->floatParsFinal() );
+
+  //-----------------------------------------------------
+  // do the same fit in ROOT
+  //-----------------------------------------------------
+
+  TF2 *func = new TF2("fitfunc", fpdf, 0, 10, 0, 10, 2);
+  func->SetParameters(apar + e*apar, bpar + e*bpar);
+  func->SetParNames("a","b");
+
+  TFitResultPtr root_result = h1.Fit("fitfunc", "VNS");
+
+  //-----------------------------------------------------
+  // print comparison
+  //-----------------------------------------------------
+
+  cout << "******************************************************************" << endl;
+  cout << "ROOFIT Parameter a initial value, fitted value: "
+       << apar << "\t" << ((RooRealVar*)final.find("a"))->getVal() << endl;
+  cout << "ROOFIT Parameter b initial value, fitted value: " 
+       << bpar << "\t" << ((RooRealVar*)final.find("b"))->getVal() << endl;
+  cout << "******************************************************************" << endl;
+
+  cout << "******************************************************************" << endl;
+  cout << "ROOT Parameter a initial value, fitted value: "
+       << apar << "\t" << root_result->Parameter(0) << endl;
+  cout << "ROOT Parameter b initial value, fitted value: " 
+       << bpar << "\t" << root_result->Parameter(1) << endl;
+  cout << "******************************************************************" << endl;
+
+  TFile fout("fitted-hist.root", "RECREATE");
+  h1.Write();
+  fout.Close();
+
+}

@@ -18,13 +18,12 @@ LDFLAGS   += $(ROOTLIBS)
 
 PACKAGE1 = simfit
 PACKAGE2 = compfit
-HEADERS  = $(filter-out LinkDef.h, $(wildcard *.h)) #same header files for both 
+HEADERS  = $(wildcard *.h)                             #same header files for both (Compfit/Simfit only .C file)
 SOURCES1 = $(filter-out Compfit.C, $(wildcard *.C))
 SOURCES2 = $(filter-out Simfit.C, $(wildcard *.C))
 TARGET1  = $(PACKAGE1)
 TARGET2  = $(PACKAGE2)
 DICTIONARY = dicfits.cxx
-ROOTMAP    = libfits.rootmap
 
 #for debugging
 #debug:
@@ -32,6 +31,10 @@ ROOTMAP    = libfits.rootmap
 #	@echo ${CXXFLAGS}
 #	@echo ${SOURCES}
 #	@echo ${HEADERS}
+
+#=================================================================
+# build commands
+#=================================================================
 
 all: $(TARGET1) $(TARGET2)
 
@@ -43,9 +46,9 @@ $(TARGET2): $(DICTIONARY) $(SOURCES2)
 	@echo "  Building $(PACKAGE2)..."
 	@g++ -O3 -o $@ $^ $(LDFLAGS) $(CXXFLAGS)
 
-$(DICTIONARY): $(HEADERS) LinkDef.h
-	@echo "  Making dictionary for..."
-	@rootcling -f $@ -rml $(TARGET1) -rml $(TARGET2) -rmf $(ROOTMAP) $^
+$(DICTIONARY): $(HEADERS)
+	@echo "  Making the dictionary..."
+	@rootcling -f $@ $^
 
 clean:
 	@echo "  Cleaning..."
@@ -54,7 +57,6 @@ clean:
 	@rm -f $(DICTIONARY)
 	@rm -f $(DICTIONARY:%.cxx=%.h)
 	@rm -f *rdict.pcm
-	@rm -f $(ROOTMAP)
 
 .PHONY: clean all
 
