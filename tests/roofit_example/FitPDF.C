@@ -63,6 +63,8 @@ Double_t FitPDF::evaluate() const {
 
 } 
 
+//*******************************************************************************
+
 /** Implemented so that I can also use this class with ROOT TF1/2/3 fitting*/
 double FitPDF::operator()(double *x, double *p) {
 

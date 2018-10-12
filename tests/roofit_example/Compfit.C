@@ -16,6 +16,11 @@
 using namespace RooFit;
 using namespace std;
 
+/**
+   This program performs a fit to a simple 2D histogram with ROOT and with RooFit.
+
+   It utilises the classes `FitUtil` and `FitPDF` to define a probability density function for RooFit and a TF2 for fitting with ROOT.
+ */
 int main() {
   
   //-----------------------------------------------------

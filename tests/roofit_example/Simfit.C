@@ -20,6 +20,11 @@
 using namespace RooFit;
 using namespace std;
 
+/**
+   This program performs a simultaneous fit to two 2D histograms in RooFit.
+
+   It utilises the classes `FitUtil` and `FitPDF` for setting up probability density functions in RooFit.
+ */
 int main() {
   
   //-----------------------------------------------------

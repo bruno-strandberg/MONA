@@ -27,12 +27,12 @@ class FitUtil {
 
  private:
 
-  RooRealVar *Ereco;
-  RooRealVar *Ctreco;
-  RooRealVar *a;
-  RooRealVar *b;
-  RooArgSet   fParSet;
-  RooArgList  fObsList;
+  RooRealVar *Ereco;      //!< x-axis observable energy
+  RooRealVar *Ctreco;     //!< y-axis observable cos-theta
+  RooRealVar *a;          //!< model parameter
+  RooRealVar *b;          //!< model parameter
+  RooArgSet   fParSet;    //!< set of observables+parameters
+  RooArgList  fObsList;   //!< set of observables
 
 };
 
