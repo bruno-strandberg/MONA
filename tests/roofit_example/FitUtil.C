@@ -43,7 +43,7 @@ FitUtil::~FitUtil() {
     \return           Model value
 */
 Double_t FitUtil::GetValue(Double_t Ereco, Double_t ctreco, Double_t a, Double_t b) {
-  return (a+b) * Ereco + a * b * ctreco;
+  return (a+b) * Ereco + (a-b) * ctreco;
 }
 
 //***************************************************************************
