@@ -20,12 +20,12 @@ endif
 
 #for the rootcint command LinkDef.h needs to come last, that's why it is included
 #only when Dictionary is created
-PACKAGE = nmhsoft
-HEADERS = $(filter-out $(CURDIR)/LinkDef.h, $(wildcard $(CURDIR)/*.h))
-SOURCES = $(wildcard $(CURDIR)/*.C)
-TARGET_LIB = $(CURDIR)/lib$(PACKAGE).so
-DICTIONARY = $(CURDIR)/dic$(PACKAGE).cxx
-ROOTMAP    = $(CURDIR)/lib$(PACKAGE).rootmap
+PACKAGE    = nmhsoft
+HEADERS    = $(filter-out LinkDef.h, $(wildcard *.h))
+SOURCES    = $(wildcard *.C)
+TARGET_LIB = lib$(PACKAGE).so
+DICTIONARY = dic$(PACKAGE).cxx
+ROOTMAP    = lib$(PACKAGE).rootmap
 
 #for debugging
 #debug:
@@ -46,7 +46,7 @@ $(TARGET_LIB): $(DICTIONARY) $(SOURCES)
 #$^ means prerequesities --> HEADERS and Linkdef
 $(DICTIONARY): $(HEADERS) LinkDef.h
 	@echo "  Making dictionary for $(PACKAGE)..."
-	@rootcling -f $@ -rml $(TARGET_LIB) -rmf lib$(PACKAGE).rootmap $^
+	@rootcling -f $@ -rml $(TARGET_LIB) -rmf $(ROOTMAP) $^
 
 clean:
 	@echo "  Cleaning $(PACKAGE)..."

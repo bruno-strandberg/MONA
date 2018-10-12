@@ -1,8 +1,11 @@
 #include "EventSelection.h"
 #include "NMHUtils.h"
+
 #include "TRandom3.h"
 #include "TVector3.h"
-#include<vector>
+
+#include <vector>
+#include <iostream>
 
 using namespace std;
 
@@ -155,7 +158,11 @@ void EventSelection::WriteToFile(TString fname) {
 
   fTreeFile->Close();
   delete fTreeFile;
-  
-  system((TString)"mv " + tmp_fname + " " + fname);
+
+  TString syscmd = (TString)"mv " + tmp_fname + " " + fname;
+  Int_t   sysret = system(syscmd);
+  if (sysret != 0) {
+    cout << "WARNING! EventSelection::WriteToFile() system command " << syscmd << " returned " << sysret << endl;
+  }
 
 }
