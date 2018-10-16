@@ -171,6 +171,8 @@ class DetResponse : public EventFilter {
 
   std::vector<TrueB>& GetBinWeights(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   std::vector<TrueB>& GetBinWeights(SummaryEvent *evt);
+  Double_t            GetTBWeight(Int_t ebin_true, Int_t ctbin_true, Int_t bybin_true,
+				  UInt_t flav, UInt_t iscc, UInt_t isnb);
   std::pair<Double_t, Double_t> GetAtmMuCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   std::pair<Double_t, Double_t> GetNoiseCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   void                Fill(SummaryEvent *evt);
@@ -209,6 +211,7 @@ class DetResponse : public EventFilter {
   std::map<UInt_t, UInt_t>   fType_to_Supported = { {12, ELEC}, {14, MUON}, {16, TAU}, {13, ATMMU}, {0, NOISE} };
   
   TH3D    *fhSim[3][2][2];      //!< total numbers of simulated events [flavor][nc/cc][nu/nub]
+  TH3D    *fhSel[3][2][2];      //!< numbers of simulated events that passed the selection [flavor][nc/cc][nu/nub]
   TH3D    *fhAtmMuCount1y;      //!< atmospheric muon count in 1 year
   TH3D    *fhNoiseCount1y;      //!< noise event count in 1 year
   TH3D    *fHResp;              //!< 3D histogram to help with binning functionality; stores the events with reco observables that pass cuts
