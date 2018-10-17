@@ -276,15 +276,27 @@ void DetResponse::FillNuEvents(UInt_t flav, UInt_t is_cc, UInt_t is_nb, SummaryE
 
   //-----------------------------------------------------------------------
   // if the event does not pass cuts return; otherwise set the observables depending
-  // on the selected reco type of this class and fill the detector response
+  // on the selected reco type of this class
   //-----------------------------------------------------------------------
   if ( !PassesCuts(evt) ) return;
-
-  fhSel[flav][is_cc][is_nb]->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir_z(), evt->Get_MC_bjorkeny() );
   
   SetObservables(evt); //implemented in EventFilter.C
-  
+
+  //-----------------------------------------------------------------------
+  // fill the histogram that counts the events selected for reco by nu type (fhSel); need to exclude
+  // events that enter underflow/overflow. Fill fHResp with reco variables.
+  //-----------------------------------------------------------------------
+  if (  fEnergy  >= emin  &&  fEnergy  < emax  &&
+       -fDir.z() >= ctmin && -fDir.z() < ctmax &&
+	fBy      >= bymin &&  fBy      < bymax ) {
+    fhSel[flav][is_cc][is_nb]->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir_z(), evt->Get_MC_bjorkeny() );
+  }
+
   fHResp->Fill(fEnergy, -fDir.z(), fBy);
+
+  //-----------------------------------------------------------------------
+  // finally fill the event to the response structure fResp
+  //-----------------------------------------------------------------------
 
   Int_t  e_true_bin = fHResp->GetXaxis()->FindBin(  evt->Get_MC_energy()   );
   Int_t ct_true_bin = fHResp->GetYaxis()->FindBin( -evt->Get_MC_dir_z()    );
