@@ -49,14 +49,8 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
   for (auto &f: fFlavs) {
     for (auto &i: fInts) {
       for (auto &p: fPols) {
-	TString hname_sim = "hsim_" + f.second + "_" + i.second + "_" + p.second + "_" + fRespName;
-	TString hname_sel = "hsel_" + f.second + "_" + i.second + "_" + p.second + "_" + fRespName;
-	fhSim[f.first][i.first][p.first] = new TH3D(hname_sim, hname_sim,
-						    ebins , &e_edges[0],
-						    ctbins, &ct_edges[0],
-						    bybins, &by_edges[0]);
-
-	fhSel[f.first][i.first][p.first] = new TH3D(hname_sel, hname_sel,
+	TString hname = "hsim_" + f.second + "_" + i.second + "_" + p.second + "_" + fRespName;
+	fhSim[f.first][i.first][p.first] = new TH3D(hname, hname,
 						    ebins , &e_edges[0],
 						    ctbins, &ct_edges[0],
 						    bybins, &by_edges[0]);
@@ -111,7 +105,6 @@ DetResponse::DetResponse(const DetResponse &detresp) : EventFilter(detresp) {
     for (auto i: fInts) {
       for (auto p: fPols) {
 	fhSim[f.first][i.first][p.first] = (TH3D*)detresp.fhSim[f.first][i.first][p.first]->Clone();
-	fhSel[f.first][i.first][p.first] = (TH3D*)detresp.fhSel[f.first][i.first][p.first]->Clone();
       }
     }
   }
@@ -146,8 +139,7 @@ DetResponse::~DetResponse() {
   for (auto &f: fFlavs) {
     for (auto &i: fInts) {
       for (auto &p: fPols) {
-  	if (fhSim[f.first][i.first][p.first]) delete fhSim[f.first][i.first][p.first];
-	if (fhSel[f.first][i.first][p.first]) delete fhSel[f.first][i.first][p.first];
+  	delete fhSim[f.first][i.first][p.first];
       }
     }
   }
@@ -276,27 +268,13 @@ void DetResponse::FillNuEvents(UInt_t flav, UInt_t is_cc, UInt_t is_nb, SummaryE
 
   //-----------------------------------------------------------------------
   // if the event does not pass cuts return; otherwise set the observables depending
-  // on the selected reco type of this class
+  // on the selected reco type of this class and fill the detector response
   //-----------------------------------------------------------------------
   if ( !PassesCuts(evt) ) return;
-  
+
   SetObservables(evt); //implemented in EventFilter.C
 
-  //-----------------------------------------------------------------------
-  // fill the histogram that counts the events selected for reco by nu type (fhSel); need to exclude
-  // events that enter underflow/overflow. Fill fHResp with reco variables.
-  //-----------------------------------------------------------------------
-  if (  fEnergy  >= emin  &&  fEnergy  < emax  &&
-       -fDir.z() >= ctmin && -fDir.z() < ctmax &&
-	fBy      >= bymin &&  fBy      < bymax ) {
-    fhSel[flav][is_cc][is_nb]->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir_z(), evt->Get_MC_bjorkeny() );
-  }
-
   fHResp->Fill(fEnergy, -fDir.z(), fBy);
-
-  //-----------------------------------------------------------------------
-  // finally fill the event to the response structure fResp
-  //-----------------------------------------------------------------------
 
   Int_t  e_true_bin = fHResp->GetXaxis()->FindBin(  evt->Get_MC_energy()   );
   Int_t ct_true_bin = fHResp->GetYaxis()->FindBin( -evt->Get_MC_dir_z()    );
@@ -500,10 +478,8 @@ void DetResponse::WriteToFile(TString filename) {
     for (auto i: fInts) {
       for (auto p: fPols) {
 	// write without fRespName for easier read-in
-	TString hname_sim = "hsim_" + f.second + "_" + i.second + "_" + p.second;
-	TString hname_sel = "hsel_" + f.second + "_" + i.second + "_" + p.second;
-	fhSim[f.first][i.first][p.first]->Write(hname_sim);
-	fhSel[f.first][i.first][p.first]->Write(hname_sel);
+	TString hname = f.second + "_" + i.second + "_" + p.second;
+	fhSim[f.first][i.first][p.first]->Write(hname);
       }
     }
   }
@@ -565,20 +541,11 @@ void DetResponse::ReadFromFile(TString filename) {
   for (auto f: fFlavs) {
     for (auto i: fInts) {
       for (auto p: fPols) {
-
-	// name in file and for instance
-	TString hname_sim_file = "hsim_" + f.second + "_" + i.second + "_" + p.second;
-	TString hname_sim_inst = "hsim_" + f.second + "_" + i.second + "_" + p.second + "_" + fRespName;
-	fhSim[f.first][i.first][p.first] = (TH3D*)fin.Get(hname_sim_file)->Clone();
+	TString hname1 = f.second + "_" + i.second + "_" + p.second; //name in file
+	TString hname2 = "hsim_" + f.second + "_" + i.second + "_" + p.second + "_" + fRespName; //name for instance
+	fhSim[f.first][i.first][p.first] = (TH3D*)fin.Get(hname1)->Clone();
 	fhSim[f.first][i.first][p.first]->SetDirectory(0);
-	fhSim[f.first][i.first][p.first]->SetNameTitle(hname_sim_inst, hname_sim_inst);
-
-	// same for hists with 'selected' events
-	TString hname_sel_file = "hsel_" + f.second + "_" + i.second + "_" + p.second;
-	TString hname_sel_inst = "hsel_" + f.second + "_" + i.second + "_" + p.second + "_" + fRespName;
-	fhSel[f.first][i.first][p.first] = (TH3D*)fin.Get(hname_sel_file)->Clone();
-	fhSel[f.first][i.first][p.first]->SetDirectory(0);
-	fhSel[f.first][i.first][p.first]->SetNameTitle(hname_sel_inst, hname_sel_inst);
+	fhSim[f.first][i.first][p.first]->SetNameTitle(hname2, hname2);
       }
     }
   }
@@ -598,53 +565,6 @@ void DetResponse::ReadFromFile(TString filename) {
   delete tb;
   fin.Close();
 
-}
-
-//*********************************************************************************
-
-/**
-   Function that returns the overall fraction of events in true bin that contribute to the reco data.
-
-   This function helps to calculate the integral of reconstructed events.
-
-   \param ebin_true    True energy bin
-   \param ctbin_true   True cos-theta bin
-   \param bybin_true   True bjorken-y bin
-   \param flav         Nu flavor (0 - elec, 1 - muon, 2 - tau)
-   \param iscc         is charged-current flag
-   \param isnb         is nu-bar flag
-   \return             Fraction of events from the true bin that contribute to reco data.
- */
-Double_t DetResponse::GetTBWeight(Int_t ebin_true, Int_t ctbin_true, Int_t bybin_true,
-				  UInt_t flav, UInt_t iscc, UInt_t isnb) {
-
-  if ( ( ebin_true  < 1 || ebin_true  > fHResp->GetXaxis()->GetNbins() ) ||
-       ( ctbin_true < 1 || ctbin_true > fHResp->GetYaxis()->GetNbins() ) ||
-       ( bybin_true < 1 || bybin_true > fHResp->GetZaxis()->GetNbins() ) ) {
-    throw std::invalid_argument( "ERROR! DetResponse::GetTBWeight() bin out of range " + to_string(ebin_true)
-				 + " " + to_string(ctbin_true) + " " + to_string(bybin_true) );
-  }
-
-  if ( flav > TAU || iscc > 1 || isnb > 1) {
-    throw std::invalid_argument( "ERROR! DetResponse::GetTBWeight() unknown nu event " + to_string(flav) +
-				 " " + to_string(iscc) + " " + to_string(isnb) );
-  }
-
-  Double_t sim = fhSim[flav][iscc][isnb]->GetBinContent(ebin_true, ctbin_true, bybin_true);
-  Double_t sel = fhSel[flav][iscc][isnb]->GetBinContent(ebin_true, ctbin_true, bybin_true);
-  Double_t frac;
-
-  if (sim > 0.) { frac = sel/sim; }
-  else          { frac = 0.;      }
-
-  // error calculation, if needed in the future...
-  // Double_t sim_err = TMath::Sqrt(sim);
-  // Double_t sel_err = TMath::Sqrt(sel);
-  // Double_t err = TMath::Sqrt( TMath::Power(sel_err, 2)/TMath::Power(sim, 2) +
-  // 			      TMath::Power(sel, 2) * TMath::Power(sim_err, 2)/TMath::Power(sim, 4) );
-
-  return frac;
-  
 }
 
 //*********************************************************************************
