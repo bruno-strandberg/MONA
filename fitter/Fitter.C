@@ -8,6 +8,7 @@
 #include "SummaryParser.h"
 #include "SummaryEvent.h"
 #include "NMHUtils.h"
+#include "FileHeader.h"
 
 // root headers
 #include "TH3.h"
@@ -51,6 +52,61 @@ int main(int argc, char **argv) {
   FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, fSHres);
 
   //----------------------------------------------------------
+  // cheat - leave only theta-23 as free parameter, see how that goes...
+  //----------------------------------------------------------
+  FileHeader h("fitter");
+  h.ReadHeader(pars.expdata_file);
+
+  // Double_t sinsqth12 = stod( (string)h.GetParameter("sinsq_th12") );
+  // Double_t sinsqth13 = stod( (string)h.GetParameter("sinsq_th13") );
+  // Double_t sinsqth23 = stod( (string)h.GetParameter("sinsq_th23") );
+  // Double_t dcp       = stod( (string)h.GetParameter("dcp") );
+  // Double_t dm21      = stod( (string)h.GetParameter("dm21_1e5") ) * 1e-5;
+  // Double_t dm31      = stod( (string)h.GetParameter("dm31_1e5") ) * 1e-5;
+
+  // Double_t sinsqth12 = 0.297;
+  // Double_t sinsqth13 = 0.0215;
+  // Double_t sinsqth23 = 0.425;
+  // Double_t dcp       = 1.38;
+  // Double_t dm21      = 7.37e-5;
+  // Double_t dm31      = 2.56e-3;
+
+  // Double_t sinsqth12 = 0.297;
+  // Double_t sinsqth13 = 0.0216;
+  // Double_t sinsqth23 = 0.589;
+  // Double_t dcp       = 1.31;
+  // Double_t dm21      = 7.37e-5;
+  // Double_t dm31      = -2.4663e-3;
+
+  // Double_t sinsqth12 = TMath::Power( TMath::Sin( 33.4 * TMath::Pi()/180. ), 2 );
+  // Double_t sinsqth13 = TMath::Power( TMath::Sin( 8.32 * TMath::Pi()/180. ), 2 );
+  // Double_t sinsqth23 = TMath::Power( TMath::Sin( 45   * TMath::Pi()/180. ), 2 );
+  // Double_t dcp       = 1.;
+  // Double_t dm32      = 2.44e-3;
+  // Double_t dm21      = 7.53e-5;
+  // Double_t DM        = dm32 + 0.5*dm21;
+  // Double_t dm31      =  DM + 0.5*dm21; //NH
+  // Double_t dm31      = -DM + 0.5*dm21; //IH
+    
+  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh12") )->setVal( sinsqth12 );
+  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh12") )->setConstant( kTRUE );
+
+  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh13") )->setVal( sinsqth13 );
+  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh13") )->setConstant( kTRUE );
+
+  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setVal( sinsqth23 );
+  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setConstant( kTRUE );
+
+  // ( (RooRealVar*)fitutil->GetSet().find("dcp") )->setVal( dcp );
+  // ( (RooRealVar*)fitutil->GetSet().find("dcp") )->setConstant( kTRUE );
+
+  // ( (RooRealVar*)fitutil->GetSet().find("Dm21") )->setVal( dm21 );
+  // ( (RooRealVar*)fitutil->GetSet().find("Dm21") )->setConstant( kTRUE );
+
+  // ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setVal( dm31 );
+  // ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setConstant( kTRUE );
+
+  //----------------------------------------------------------
   // set up data for simultaneous fitting
   //----------------------------------------------------------
   std::map<string, TH1* > hist_map = { { (string)fTRsel->Get_SelName() , fTRsel->Get_h_E_costh_by() }, 
@@ -78,7 +134,8 @@ int main(int argc, char **argv) {
 
   cout << "NOTICE main() finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
-  //FillExpectationValues(&pdf_tracks, &pdf_showers);
+  //FillExpectationValues(&pdf_tracks, &pdf_showers, sinsqth12, sinsqth13, sinsqth23, dcp, dm21, dm31);
+  
   Cleanup();
   if (fitutil) delete fitutil;
  
@@ -251,7 +308,8 @@ void Fitter::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t
 
 //**********************************************************************************
 
-void Fitter::FillExpectationValues(FitPDF *track_pdf, FitPDF *shower_pdf) {
+void Fitter::FillExpectationValues(FitPDF *track_pdf, FitPDF *shower_pdf, Double_t sinsqth12, Double_t sinsqth13,
+				   Double_t sinsqth23, Double_t dcp, Double_t dm21, Double_t dm31) {
 
   TH3D *hdet_tracks  = (TH3D*)track_pdf->GetResponse()->GetHist3D()->Clone("detected_tracks");
   TH3D *hdet_showers = (TH3D*)shower_pdf->GetResponse()->GetHist3D()->Clone("detected_showers");
@@ -262,7 +320,7 @@ void Fitter::FillExpectationValues(FitPDF *track_pdf, FitPDF *shower_pdf) {
   // fill the track and shower histograms - should be EXACTLY as before..
   //----------------------------------------------------------
 
-  double p[] = {0.297, 0.0215, 0.425, 1.38, 7.37e-5, 2.56e-3};
+  double p[] = {sinsqth12, sinsqth13, sinsqth23, dcp, dm21, dm31};
 
   TStopwatch timer;
 
@@ -282,7 +340,7 @@ void Fitter::FillExpectationValues(FitPDF *track_pdf, FitPDF *shower_pdf) {
     }
   }
 
-  cout << "NOTICE main() time for filling histograms " << (Double_t)timer.RealTime() << endl;
+  cout << "NOTICE FillExpectationValues() time for filling histograms " << (Double_t)timer.RealTime() << endl;
 
   TFile fout("expectation_values.root","RECREATE");
   hdet_tracks->Write();

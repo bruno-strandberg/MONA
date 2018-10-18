@@ -70,6 +70,34 @@ Double_t FitPDF::evaluate() const {
 
 //*******************************************************************************
 
+/** This funcion helps RooFit to decide which integration technique to use*/
+Int_t FitPDF::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* /*rangeName*/) const {
+
+  if ( matchArgs( allVars, analVars, fFitUtil->GetObs() ) ) { return I_E_CT_BY; }
+  else                                                      { return (Int_t)I_NUMERIC; }
+
+}
+
+//*******************************************************************************
+
+/** depending on the code returned by analyticalIntegral return the integral*/
+Double_t FitPDF::analyticalIntegral(Int_t code, const char* rangeName) const {
+
+  Double_t integral = 0.;
+  
+  if ( code == I_E_CT_BY ) {
+    integral = fFitUtil->PdfIntegrate(fProxies, fResponse, rangeName);
+  }
+  else {
+    integral = 0.;
+  }
+
+  return integral;
+  
+}
+
+//*******************************************************************************
+
 /** Implementation of this function allows the class to be used with TF1/TF2/TF3
 
     \param x  Observable array (reconstructed E, cos-theta, bjorken-y)

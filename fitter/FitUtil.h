@@ -35,12 +35,18 @@ class FitUtil {
 	  TString meffh_tau_cc, TString meffh_elec_nc);
   ~FitUtil();
 
+  //------------------------------------------------------------------
   // public functions
+  //------------------------------------------------------------------
   Double_t PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp);
   Double_t RecoEvts(DetResponse *resp,
 		    Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
 		    Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
 		    Double_t Dcp, Double_t Dm21, Double_t Dm31);
+  Double_t PdfIntegrate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp, const char* rangeName);
+  Double_t GetIntegral(DetResponse *resp,
+		       Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
+		       Double_t Dcp, Double_t Dm21, Double_t Dm31);
 
   // setters/getters
   RooArgSet   GetSet()         { return fParSet;  }

@@ -66,7 +66,7 @@ FitUtil::~FitUtil() {
 
   // remove cache hists
   for (UInt_t f = 0; f < fFlavs; f++) {
-    for (UInt_t isnb = 0; isnb < fInts; isnb++) {
+    for (UInt_t isnb = 0; isnb < fPols; isnb++) {
 
       // osc
       for (UInt_t fout = 0; fout < fFlavs; fout++) {
@@ -475,6 +475,25 @@ Double_t FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, De
 
 //***************************************************************************
 
+/** Development: will need to think about the range here!*/
+Double_t FitUtil::PdfIntegrate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp,
+			       const char* rangeName) {
+
+  // get the parameter values from the proxies
+
+  Double_t SinsqTh12 = *( parmap.at( (TString)fSinsqTh12->GetName() ) );
+  Double_t SinsqTh13 = *( parmap.at( (TString)fSinsqTh13->GetName() ) );
+  Double_t SinsqTh23 = *( parmap.at( (TString)fSinsqTh23->GetName() ) );
+  Double_t Dcp       = *( parmap.at( (TString)fDcp->GetName() ) );
+  Double_t Dm21      = *( parmap.at( (TString)fDm21->GetName() ) );
+  Double_t Dm31      = *( parmap.at( (TString)fDm31->GetName() ) );
+
+  return GetIntegral(resp, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
+  
+}
+
+//***************************************************************************
+
 Double_t FitUtil::RecoEvts(DetResponse *resp, 
 			   Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
 			   Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
@@ -521,3 +540,35 @@ Double_t FitUtil::RecoEvts(DetResponse *resp,
   return det_count;
 
 }
+
+//***************************************************************************
+
+/**
+   Development - will also need to think about the integration range!
+ */
+Double_t FitUtil::GetIntegral(DetResponse *resp,
+			      Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
+			      Double_t Dcp, Double_t Dm21, Double_t Dm31) {
+  
+  Double_t integral = 0.;
+  TH3D *hb = resp->GetHist3D();
+  
+  for (Int_t ebin = 1; ebin <= hb->GetXaxis()->GetNbins(); ebin++) {
+    for (Int_t ctbin = 1; ctbin <= hb->GetYaxis()->GetNbins(); ctbin++) {
+      for (Int_t bybin = 1; bybin <= hb->GetZaxis()->GetNbins(); bybin++) {
+
+        Double_t E  = hb->GetXaxis()->GetBinCenter( ebin );
+        Double_t ct = hb->GetYaxis()->GetBinCenter( ctbin );
+        Double_t by = hb->GetZaxis()->GetBinCenter( bybin );
+
+	integral += RecoEvts(resp, E, ct, by, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
+	
+      }
+    }
+  }
+  
+  return integral;
+  
+}
+
+//***************************************************************************

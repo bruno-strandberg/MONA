@@ -33,12 +33,17 @@ public:
   double operator() (double *x, double *p);
   DetResponse* GetResponse() { return fResponse; }
 
+  Int_t    getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
+  Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
+  
 protected:
 
   Double_t evaluate() const;
 
 private:
 
+  enum integrations {I_NUMERIC = 0, I_E_CT_BY};
+  
   void CheckBinning(TH3 *h1, TH3 *h2);
 
   FitUtil     *fFitUtil;  //!< pointer to the fit utility that can be shared between several `FitPDF` instances
