@@ -7,8 +7,8 @@ using namespace std;
 
 /** Constructor*/
 FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
-		 TString meffh_elec_cc, TString meffh_muon_cc,
-		 TString meffh_tau_cc, TString meffh_elec_nc) {
+		 Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax,
+		 TString meffh_elec_cc, TString meffh_muon_cc, TString meffh_tau_cc, TString meffh_elec_nc) {
 
   fOpTime = op_time;
 
@@ -22,14 +22,19 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
   fProb = new OscProb::PMNS_Fast;
   fPrem = new OscProb::PremModel;
 
-  Double_t emin  = fHB->GetXaxis()->GetBinLowEdge(1);
-  Double_t emax  = fHB->GetXaxis()->GetBinUpEdge( fHB->GetXaxis()->GetNbins() );
-  Double_t ctmin = fHB->GetYaxis()->GetBinLowEdge(1);
-  Double_t ctmax = fHB->GetYaxis()->GetBinUpEdge( fHB->GetYaxis()->GetNbins() );
-  Double_t bymin = fHB->GetZaxis()->GetBinLowEdge(1);
-  Double_t bymax = fHB->GetZaxis()->GetBinUpEdge( fHB->GetZaxis()->GetNbins() );
+  // calculate the observable ranges to match exactly bin edges, set ranges for integration
+  auto ENr = GetRange( emin , emax , fHB->GetXaxis() );
+  auto CTr = GetRange( ctmin, ctmax, fHB->GetYaxis() );
+  auto BYr = GetRange( bymin, bymax, fHB->GetZaxis() );
 
-  InitFitVars(emin, emax, ctmin, ctmax, bymin, bymax);
+  fEbin_min  = get<MINBIN>(ENr);
+  fEbin_max  = get<MAXBIN>(ENr);
+  fCtbin_min = get<MINBIN>(CTr);
+  fCtbin_max = get<MAXBIN>(CTr);
+  fBybin_min = get<MINBIN>(BYr);
+  fBybin_max = get<MAXBIN>(BYr);
+  
+  InitFitVars(get<MIN>(ENr), get<MAX>(ENr), get<MIN>(CTr), get<MAX>(CTr), get<MIN>(BYr), get<MAX>(BYr));
   InitCacheHists(fHB);
   ReadMeffHists(fHB, meffh_elec_cc, meffh_muon_cc, meffh_tau_cc, meffh_elec_nc);
   FillFluxAndXsecCache(fFlux, fXsec, fOpTime);
@@ -92,6 +97,29 @@ FitUtil::~FitUtil() {
     if (v) delete v;
   }
 
+}
+
+//***************************************************************************
+
+std::tuple<Double_t, Double_t, Int_t, Int_t> FitUtil::GetRange(Double_t _min, Double_t _max, TAxis *axis) {
+
+  Int_t bin_min = 1;
+  Int_t bin_max = axis->GetNbins();
+  Double_t min  = axis->GetBinLowEdge( bin_min );
+  Double_t max  = axis->GetBinUpEdge( bin_max );
+  
+  if ( _min > min ) {
+    bin_min = axis->FindBin( _min );
+    min = axis->GetBinLowEdge( bin_min );
+  }
+
+  if ( _max < max ) {
+    bin_max = axis->FindBin(_max) - 1;
+    max = axis->GetBinUpEdge( bin_max );
+  }
+  
+  return std::make_tuple(min, max, bin_min, bin_max);
+  
 }
 
 //***************************************************************************
@@ -553,9 +581,9 @@ Double_t FitUtil::GetIntegral(DetResponse *resp,
   Double_t integral = 0.;
   TH3D *hb = resp->GetHist3D();
   
-  for (Int_t ebin = 1; ebin <= hb->GetXaxis()->GetNbins(); ebin++) {
-    for (Int_t ctbin = 1; ctbin <= hb->GetYaxis()->GetNbins(); ctbin++) {
-      for (Int_t bybin = 1; bybin <= hb->GetZaxis()->GetNbins(); bybin++) {
+  for (Int_t ebin = fEbin_min; ebin <= fEbin_max; ebin++) {
+    for (Int_t ctbin = fCtbin_min; ctbin <= fCtbin_max; ctbin++) {
+      for (Int_t bybin = fBybin_min; bybin <= fBybin_max; bybin++) {
 
         Double_t E  = hb->GetXaxis()->GetBinCenter( ebin );
         Double_t ct = hb->GetYaxis()->GetBinCenter( ctbin );

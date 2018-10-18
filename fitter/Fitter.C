@@ -42,7 +42,8 @@ int main(int argc, char **argv) {
   //----------------------------------------------------------
   // set up the PDFs for fitting
   //----------------------------------------------------------
-  FitUtil *fitutil = new FitUtil(3, fTRres->GetHist3D(), 
+  FitUtil *fitutil = new FitUtil(3, fTRres->GetHist3D(),
+				 1, 100, -1, 0, 0, 1,
 				 (TString)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_CC.root", 
 				 (TString)getenv("NMHDIR") + "/data/eff_mass/EffMhists_muon_CC.root", 
 				 (TString)getenv("NMHDIR") + "/data/eff_mass/EffMhists_tau_CC.root", 
@@ -128,9 +129,7 @@ int main(int argc, char **argv) {
   cout << "NOTICE main() started fitting" << endl;
   TStopwatch timer;
 
-  // limit the range in cos-theta and... fit
-  ( (RooRealVar*)fitutil->GetSet().find("ct_reco") )->setRange("R1", -1, 0);
-  simPdf.fitTo( combData, Range("R1") );
+  simPdf.fitTo( combData );
 
   cout << "NOTICE main() finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 

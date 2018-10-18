@@ -30,9 +30,9 @@ class FitUtil {
   /** Default constructor. */
   FitUtil() {};
 
-  FitUtil(Double_t op_time, TH3 *h_template, 
-	  TString meffh_elec_cc, TString meffh_muon_cc,
-	  TString meffh_tau_cc, TString meffh_elec_nc);
+  FitUtil(Double_t op_time, TH3 *h_template,
+	  Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax,
+	  TString meffh_elec_cc, TString meffh_muon_cc, TString meffh_tau_cc, TString meffh_elec_nc);
   ~FitUtil();
 
   //------------------------------------------------------------------
@@ -69,7 +69,9 @@ class FitUtil {
 		  Double_t Dcp, Double_t Dm21, Double_t Dm31);
   void ReadMeffHists(TH3D *h_template, TString meffh_elec_cc, TString meffh_muon_cc, 
 		     TString meffh_tau_cc, TString meffh_elec_nc);
-
+  std::tuple<Double_t, Double_t, Int_t, Int_t> GetRange(Double_t min, Double_t max, TAxis *axis);
+  enum rangeret { MIN=0, MAX, MINBIN, MAXBIN };           //!< enum for function `GetRange` return
+    
   //------------------------------------------------------------------
   // constants for detected neutrino count calculation
   //------------------------------------------------------------------
@@ -113,6 +115,16 @@ class FitUtil {
   Double_t f_cache_dm21;         //!< cached dm21 value
   Double_t f_cache_dm31;         //!< cached dm31 value
 
+  //------------------------------------------------------------------
+  // private members for determining the integration range and oscillation calculation range
+  //------------------------------------------------------------------
+  Int_t fEbin_min;               //!< minimum energy bin number included
+  Int_t fEbin_max;               //!< maximum energy bin number included
+  Int_t fCtbin_min;              //!< minimum cos-theta bin number included
+  Int_t fCtbin_max;              //!< minimum cos-theta bin number included
+  Int_t fBybin_min;              //!< minimum bjorken-y bin number included
+  Int_t fBybin_max;              //!< minimum bjorken-y bin number included
+  
   //------------------------------------------------------------------
   // private members for monitoring performance
   //------------------------------------------------------------------
