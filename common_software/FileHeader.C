@@ -187,7 +187,7 @@ void FileHeader::WriteHeader(TFile *f) {
 
 	TString out_app_par_str = outname + fDelim + appname + fDelim + parname + fDelim + valname;
 
-	sprintf(line, out_app_par_str);
+	sprintf(line, "%s", (const char*)out_app_par_str);
 	t->Fill();
       }
     }

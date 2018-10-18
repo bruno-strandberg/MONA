@@ -27,8 +27,26 @@ class SummaryParser {
    void           WriteAndClose() { fOut->cd(); fChain->Write(); fOut->Close(); };
 
    // getters
-   TChain*        GetTree() { return fChain; }      //!< tchain fetcher
-   SummaryEvent*  GetEvt()  { return fEvt;   }      //!< event structure fetcher
+
+   /** Function to fetch the pointer to the `fChain` class member.
+       \return Pointer to the `fChain` class member.
+    */
+   TChain*        GetTree()        { return fChain; }
+
+   /** Function to fetch the pointer to the `fEvt` class member.
+
+       NB! When using this, first do `GetTree()->GetEntry(i)` to read the event `i` to `fEvt`.
+
+       \return Pointer to the `fEvt` class member.
+      
+    */
+   SummaryEvent*  GetEvt()         { return fEvt;   }      //!< event structure fetcher
+
+   /** Function to fetch the pointer to the `fEvt` class member, which also calls `GetEntry(i)` on `fChain`.
+       \param i     Event number
+       \return      Pointer to the `fEvt` class member corresponding to the event number `i`.
+    */
+   SummaryEvent*  GetEvt(Int_t i)  { if (fChain) fChain->GetEntry(i); return fEvt; }
 
 };
 
