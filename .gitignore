@@ -5,6 +5,7 @@ playground/
 # ignore specific file extensions
 common_software/dic*
 tests/roofit_example/dic*
+fitter/dic*
 *.so
 *~
 *_C.d
