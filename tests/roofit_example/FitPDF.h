@@ -6,6 +6,10 @@
 #include "RooCategoryProxy.h"
 #include "RooAbsReal.h"
 #include "RooAbsCategory.h"
+#include "RooArgSet.h"
+
+#include "TH2.h"
+
 #include "FitUtil.h"
 
 #include <map>
@@ -29,7 +33,7 @@ public:
   /** Default constructor */
   FitPDF() {} ; 
 
-  FitPDF(const char *name, const char *title, FitUtil *futil);
+  FitPDF(const char *name, const char *title, FitUtil *futil, TH2D *h=NULL);
   FitPDF(const FitPDF& other, const char* name=0);
 
   /** Clone function */
@@ -38,8 +42,14 @@ public:
 
   double operator() (double *x, double *p);
 
+  Int_t    getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
+  Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
+  
 protected:
 
+  /// pointer to the fitted histogram for integration
+  TH2 *fh;
+  
   /// pointer to the fit utility that can be shared between several FitPDF instances
   FitUtil *fFitUtil;
   /// map of proxies to the RooRealVar's that the PDF depends on

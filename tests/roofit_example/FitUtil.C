@@ -6,10 +6,10 @@ using namespace std;
 /** Constructor*/
 FitUtil::FitUtil() {
 
-  Ereco  = new RooRealVar("Ereco"  ,"Ereco" , 1, 0, 20);
-  Ctreco = new RooRealVar("Ctreco" ,"Ctreco", 1, 0, 20);
-  a      = new RooRealVar("a","a", 1, -10, 10);
-  b      = new RooRealVar("b","b", 1, -10, 10);
+  Ereco  = new RooRealVar("Ereco"  ,"Ereco" , 1, -200, 200);
+  Ctreco = new RooRealVar("Ctreco" ,"Ctreco", 1, -200, 200);
+  a      = new RooRealVar("a","a", 1, -100, 100);
+  b      = new RooRealVar("b","b", 1, -100, 100);
 
   // all variables need to enter this list!
   fParSet.add( RooArgSet(*Ereco, *Ctreco, *a, *b) );

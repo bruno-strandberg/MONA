@@ -60,7 +60,7 @@ int main() {
   ( (RooRealVar*)futil.GetSet().find("b") )->setVal(bpar + e*bpar);
 
   // init the pdf
-  FitPDF fpdf("mypdf","mypdf", &futil);
+  FitPDF fpdf("mypdf","mypdf", &futil, &h1);
 
   // import data to RooFit - at this point RooFit will infer which variables defined in FitUtil
   // are observables and which are parameters
