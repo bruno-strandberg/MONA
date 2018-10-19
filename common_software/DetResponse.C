@@ -323,12 +323,11 @@ void DetResponse::Normalise() {
 	  // total number of simulated events in E_true, ct_true, by_true bin
 	  Double_t nsim  = hsim->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin);
 
-	  // fW is at this point the number of events from true bin that entered reco bin. The
-	  // error is calculated from standard error propagation for fW = fW/nsim
-	  tb.fWE = TMath::Sqrt( tb.fW * ( nsim + tb.fW )/TMath::Power(nsim, 3) );
-
-	  // now convert fW to a weight
+	  // fW is at this point the number of events from true bin that entered reco bin; convert to weight
 	  tb.fW = tb.fW/nsim;
+
+	  // calculate the error of the weight from the relative poisson error of the true bin
+	  tb.fWE = tb.fW * TMath::Sqrt( nsim )/nsim;
 
 	  //------------------------------------------------------------
 	  // calculate the fraction the events from true bin make up from the reco bin
