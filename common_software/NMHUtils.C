@@ -143,16 +143,16 @@ Bool_t NMHUtils::FileExists(TString filename, Double_t size) {
  * \return             A std::tuple with elements: 
  *                     0) a pointer to a histgram with bin-by-bin asymmetries;
  *                     1) the quantity \f$ \sqrt{\sum_{i} A_i^2} \f$ (combined asymmetry); 
+ *                     2) the quantity \f$ \Delta A$ (error on combined asymmetry);
  *                     3) the quantity \f$ ( \sum_{bin i} (N_{h1}^i - N_{h2}^i)^2 ) \f$
  *                       (the actual chi2 between the two histograms)
  *                     4) the number of considered bins (degress of freedom)
  *                     
  */
-std::tuple<TH2D*, Double_t, Double_t, Double_t> 
+std::tuple<TH2D*, Double_t, Double_t, Double_t>
 NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
 		    Double_t xlow, Double_t xhigh,
-		    Double_t ylow, Double_t yhigh,
-		    Bool_t ReverseSign, Bool_t BothDenoms) {
+		    Double_t ylow, Double_t yhigh) {
   
   //------------------------------------------------------------
   // check that both histograms have the same binning
@@ -184,23 +184,31 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
   h_asym->Reset();
   h_asym->SetDirectory(0);
 
-  Double_t asym  = 0.;
-  Double_t chi2  = 0.;
-  Double_t Nbins = 0.;
+  Double_t asym     = 0.;
+  Double_t asym_err = 0.;
+  Double_t Nbins    = 0.;
 
   for (Int_t xb = 1; xb <= h_asym->GetXaxis()->GetNbins(); xb++) {
     for (Int_t yb = 1; yb <= h_asym->GetYaxis()->GetNbins(); yb++) {
 	
       Double_t N_h1 = h1->GetBinContent(xb, yb);
       Double_t N_h2 = h2->GetBinContent(xb, yb);	
+      Double_t N_h1_err = h1->GetBinError(xb, yb);
+      Double_t N_h2_err = h2->GetBinError(xb, yb);	
 	
-      Double_t A    = 0;
+      Double_t A     = 0;
+      Double_t A_err = 0;
 
-      if      (   N_h1 > 0                 ) { A = (N_h1 - N_h2)/TMath::Sqrt(N_h1); }
-      else if ( ( N_h2 > 0 ) && BothDenoms ) { A = (N_h1 - N_h2)/TMath::Sqrt(N_h2); }
-      else                                   { A = 0.;                              }
-	
-      if (ReverseSign) A = -A;
+      if ( N_h1 > 0 ) { 
+        A = (N_h1 - N_h2)/TMath::Sqrt(N_h1); 
+        A_err = std::pow(0.5*(N_h1 + N_h2) / std::pow(N_h1, 1.5), 2.) * std::pow(N_h1_err, 2.) +
+                std::pow(-1 / std::sqrt(N_h1), 2.) * std::pow(N_h2_err, 2.);
+        A_err = std::sqrt(A_err);
+      }
+      else { 
+        A = 0.; 
+        A_err = 0.;
+      }
 	
       Double_t xc = h_asym->GetXaxis()->GetBinCenter(xb);
       Double_t yc = h_asym->GetYaxis()->GetBinCenter(yb);
@@ -209,19 +217,20 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
 	A = 0.;
       }
       else {
-	chi2  += (N_h1 - N_h2) * (N_h1 - N_h2);
 	Nbins += 1;
       }
 
       h_asym->SetBinContent(xb, yb, A);
 
       asym += A * A;
+      asym_err += A * A * A_err * A_err; // The denominator is a function of all bins, so it is done outside of the for-loop, below. 
 
     }
   }
 
   asym = TMath::Sqrt( asym );
+  asym_err = 1. / asym * TMath::Sqrt( asym_err );
 
-  return std::make_tuple(h_asym, asym, chi2, Nbins);
+  return std::make_tuple(h_asym, asym, asym_err, Nbins);
 
 }
