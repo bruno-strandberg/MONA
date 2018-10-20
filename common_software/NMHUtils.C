@@ -134,19 +134,11 @@ Bool_t NMHUtils::FileExists(TString filename, Double_t size) {
  * \param xhigh        X-bins with centers above xhigh are excluded
  * \param ylow         Y-bins with centers below ylow are excluded
  * \param yhigh        Y-bins with centers above yhigh are excluded
- * \param ReverseSign  The sign of the numerator is reversed, thus becoming 
- *                     \f$ (N_{h2}^{bin i} - N_{h1}^{bin i}) \f$.
- * \param BothDenoms   If false, the asymmetry in bin i is zero if \f$ N_{h1}^{bin i} = 0\f$.
- *                     If true, the asymmetry in bin i is \f$ -\sqrt{N_{h2}^{bin i}} \f$ if 
- *                     \f$ N_{h2}^{bin i} > 0\f$ and \f$ N_{h1}^{bin i} = 0\f$. If both are
- *                     0 the asymmetry is 0.
  * \return             A std::tuple with elements: 
  *                     0) a pointer to a histgram with bin-by-bin asymmetries;
  *                     1) the quantity \f$ \sqrt{\sum_{i} A_i^2} \f$ (combined asymmetry); 
  *                     2) the quantity \f$ \Delta A$ (error on combined asymmetry);
- *                     3) the quantity \f$ ( \sum_{bin i} (N_{h1}^i - N_{h2}^i)^2 ) \f$
- *                       (the actual chi2 between the two histograms)
- *                     4) the number of considered bins (degress of freedom)
+ *                     3) the number of considered bins (degress of freedom)
  *                     
  */
 std::tuple<TH2D*, Double_t, Double_t, Double_t>
