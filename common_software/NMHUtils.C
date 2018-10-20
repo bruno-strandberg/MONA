@@ -226,3 +226,34 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
   return std::make_tuple(h_asym, asym, asym_err, Nbins);
 
 }
+
+
+//****************************************************************************
+
+/**
+ *  Function calculate the value and error propagated on it for N values that are 
+ *  summed quadratically.
+ *
+ *  Sum is defined as \f$ S = \sqrt{ \Sigma_i x_i^2 \f$ for values \f${x_1, ..., x_N} }\f$
+ *  with errors \f${\Delta x_1, ..., \Delta x_N } \f$.
+ *
+ * \param values       Vector of length N with the values to be summed
+ * \param errors       Vector of length N with the errors to be propagated
+ * \return             A std::tuple with elements:
+ *                     0) The square-root of the sum of squares of the values
+ *                     1) The propagated error of the sum.
+ */
+std::tuple<Double_t, Double_t> NMHUtils::SquaredSumErrorProp(std::vector<Double_t> values, std::vector<Double_t> errors) {
+  Double_t size = values.size();
+  Double_t total_value = 0;
+  Double_t total_error = 0;
+  for (int i = 0; i < size; i++) {
+    total_value += values[i] * values[i];
+    total_error += values[i] * values[i] * errors[i] * errors[i];
+  }
+
+  total_value = std::sqrt(total_value);
+  total_error = 1 / total_value * std::sqrt(total_error);
+
+  return std::make_tuple(total_value, total_error);
+}

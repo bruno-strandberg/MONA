@@ -21,6 +21,8 @@ namespace NMHUtils {
     Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
 	      Double_t xlow = -1e10, Double_t xhigh = 1e10,
 	      Double_t ylow = -1e10, Double_t yhigh = 1e10);
+  std::tuple<Double_t, Double_t> 
+    SquaredSumErrorProp(std::vector<double> values, std::vector<double> errors);
 };
 
 #endif
