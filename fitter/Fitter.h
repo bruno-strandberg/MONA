@@ -23,8 +23,6 @@ namespace Fitter {
   void InitRespsAndSels();
   void FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response);
   void FillSelections();
-  void FillExpectationValues(FitPDF *track_pdf, FitPDF *shower_pdf, Double_t sinsqth12, Double_t sinsqth13,
-			     Double_t sinsqth23, Double_t dcp, Double_t dm21, Double_t dm31);
   void Cleanup();
   
   // binning variables

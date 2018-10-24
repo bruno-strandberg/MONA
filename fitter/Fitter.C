@@ -132,8 +132,6 @@ int main(int argc, char **argv) {
   simPdf.fitTo( combData );
 
   cout << "NOTICE main() finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
-
-  //FillExpectationValues(&pdf_tracks, &pdf_showers, sinsqth12, sinsqth13, sinsqth23, dcp, dm21, dm31);
   
   Cleanup();
   if (fitutil) delete fitutil;
@@ -303,49 +301,6 @@ void Fitter::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t
   }
 
   cout << "NOTICE Fitter::FillRespsAndSels() Selections filled" << endl;
-}
-
-//**********************************************************************************
-
-void Fitter::FillExpectationValues(FitPDF *track_pdf, FitPDF *shower_pdf, Double_t sinsqth12, Double_t sinsqth13,
-				   Double_t sinsqth23, Double_t dcp, Double_t dm21, Double_t dm31) {
-
-  TH3D *hdet_tracks  = (TH3D*)track_pdf->GetResponse()->GetHist3D()->Clone("detected_tracks");
-  TH3D *hdet_showers = (TH3D*)shower_pdf->GetResponse()->GetHist3D()->Clone("detected_showers");
-  hdet_tracks->Reset();
-  hdet_showers->Reset();
-
-  //----------------------------------------------------------
-  // fill the track and shower histograms - should be EXACTLY as before..
-  //----------------------------------------------------------
-
-  double p[] = {sinsqth12, sinsqth13, sinsqth23, dcp, dm21, dm31};
-
-  TStopwatch timer;
-
-  for (Int_t ebin = 1; ebin <= hdet_tracks->GetXaxis()->GetNbins(); ebin++) {
-    for (Int_t ctbin = 1; ctbin <= hdet_tracks->GetYaxis()->GetNbins(); ctbin++) {
-      for (Int_t bybin = 1; bybin <= hdet_tracks->GetZaxis()->GetNbins(); bybin++) {
-
-        Double_t E  = hdet_tracks->GetXaxis()->GetBinCenter( ebin );
-        Double_t ct = hdet_tracks->GetYaxis()->GetBinCenter( ctbin );
-        Double_t by = hdet_tracks->GetZaxis()->GetBinCenter( bybin );
-
-        double x[] = {E, ct, by};
-
-        hdet_tracks->SetBinContent( ebin, ctbin, bybin, track_pdf->operator()(x, p) );
-        hdet_showers->SetBinContent( ebin, ctbin, bybin, shower_pdf->operator()(x, p) );
-      }
-    }
-  }
-
-  cout << "NOTICE FillExpectationValues() time for filling histograms " << (Double_t)timer.RealTime() << endl;
-
-  TFile fout("expectation_values.root","RECREATE");
-  hdet_tracks->Write();
-  hdet_showers->Write();
-  fout.Close();
-
 }
 
 //**********************************************************************************
