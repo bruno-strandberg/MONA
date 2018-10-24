@@ -36,37 +36,38 @@ class FitUtil {
   ~FitUtil();
 
   //------------------------------------------------------------------
-  // public functions
+  // public functions that are called in `FitPDF`
   //------------------------------------------------------------------
-  Double_t PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp);
-  Double_t RecoEvts(DetResponse *resp,
-		    Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
-		    Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
-		    Double_t Dcp, Double_t Dm21, Double_t Dm31);
-  Double_t PdfIntegrate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp, const char* rangeName);
-  Double_t GetIntegral(DetResponse *resp,
-		       Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
-		       Double_t Dcp, Double_t Dm21, Double_t Dm31);
+  Double_t PdfEvaluate (const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp);
+  TH3D*    PdfGetExpValHist(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp, const char* rangeName);
 
   // setters/getters
   RooArgSet   GetSet()         { return fParSet;  }
   RooArgList  GetObs()         { return fObsList; }
   TH3D*       GetBinningHist() { return fHB;      }
-
+  
+  // DEV: this should become private; kept public at the moment for comparisons with ROOT
+  std::pair<Double_t, Double_t> RecoEvts(DetResponse *resp,
+					 Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+					 Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
+					 Double_t Dcp, Double_t Dm21, Double_t Dm31);
  private:
 
   //------------------------------------------------------------------
   // private functions
   //------------------------------------------------------------------
+
+  std::pair<Double_t, Double_t> TrueEvts(Int_t ebin_true, Int_t ctbin_true, Int_t bybin_true,
+					 UInt_t flav, UInt_t iscc, UInt_t isnb,
+					 Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
+					 Double_t Dcp, Double_t Dm21, Double_t Dm31);
+
+  void ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
+		  Double_t Dcp, Double_t Dm21, Double_t Dm31);
   
-  Double_t TrueEvts(Int_t ebin_true, Int_t ctbin_true, Int_t bybin_true, UInt_t flav, UInt_t iscc, UInt_t isnb,
-		    Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
-		    Double_t Dcp, Double_t Dm21, Double_t Dm31);
   void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
   void InitCacheHists(TH3D *h_template);
   void FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time);
-  void ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
-		  Double_t Dcp, Double_t Dm21, Double_t Dm31);
   void ReadMeffHists(TH3D *h_template, TString meffh_elec_cc, TString meffh_muon_cc, 
 		     TString meffh_tau_cc, TString meffh_elec_nc);
   std::tuple<Double_t, Double_t, Int_t, Int_t> GetRange(Double_t min, Double_t max, TAxis *axis);

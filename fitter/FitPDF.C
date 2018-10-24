@@ -86,7 +86,9 @@ Double_t FitPDF::analyticalIntegral(Int_t code, const char* rangeName) const {
   Double_t integral = 0.;
   
   if ( code == I_E_CT_BY ) {
-    integral = fFitUtil->PdfIntegrate(fProxies, fResponse, rangeName);
+    TH3D *hexp = fFitUtil->PdfGetExpValHist(fProxies, fResponse, rangeName);
+    integral = hexp->Integral();
+    delete hexp;
   }
   else {
     integral = 0.;
@@ -118,7 +120,7 @@ double FitPDF::operator()(double *x, double *p) {
   Double_t dm21       = p[4];
   Double_t dm31       = p[5];
 
-  return fFitUtil->RecoEvts(fResponse, E, ct, by, sinsqth12, sinsqth13, sinsqth23, dcp, dm21, dm31);
+  return fFitUtil->RecoEvts(fResponse, E, ct, by, sinsqth12, sinsqth13, sinsqth23, dcp, dm21, dm31).first;
   
 }
 

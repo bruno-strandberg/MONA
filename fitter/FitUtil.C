@@ -424,10 +424,10 @@ void FitUtil::ReadMeffHists(TH3D* h_template, TString meffh_elec_cc, TString mef
 
 //***************************************************************************
 
-Double_t FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_true, Int_t bybin_true, 
-			   UInt_t flav, UInt_t iscc, UInt_t isnb, 
-			   Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
-			   Double_t Dcp, Double_t Dm21, Double_t Dm31) {
+std::pair<Double_t, Double_t> FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_true, Int_t bybin_true, 
+						UInt_t flav, UInt_t iscc, UInt_t isnb, 
+						Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
+						Double_t Dcp, Double_t Dm21, Double_t Dm31) {
 
   // check that the bins are in the range
   if ( ebin_true  < 1 || ebin_true  > fHB->GetXaxis()->GetNbins() || 
@@ -477,7 +477,10 @@ Double_t FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_true, Int_t bybin_true,
   // calculate the number of detected events (unitless)
   Double_t det_count = int_count * fXsec->GetBYfrac(e_true, by_true) * meff * 1e-6;
 
-  return det_count;
+  // MC stat err, coming from eff mass and BY distribution (0 for now)
+  Double_t det_err   = 0.;
+
+  return std::make_pair(det_count, det_err);
 
 }
 
@@ -497,18 +500,17 @@ Double_t FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, De
   Double_t Dm21      = *( parmap.at( (TString)fDm21->GetName() ) );
   Double_t Dm31      = *( parmap.at( (TString)fDm31->GetName() ) );
 
-  return RecoEvts(resp, E_reco, Ct_reco, By_reco, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
+  return RecoEvts(resp, E_reco, Ct_reco, By_reco, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first;
 
 }
 
 //***************************************************************************
 
 /** Development: will need to think about the range here!*/
-Double_t FitUtil::PdfIntegrate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp,
-			       const char* rangeName) {
+TH3D* FitUtil::PdfGetExpValHist(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp,
+				const char* rangeName) {
 
   // get the parameter values from the proxies
-
   Double_t SinsqTh12 = *( parmap.at( (TString)fSinsqTh12->GetName() ) );
   Double_t SinsqTh13 = *( parmap.at( (TString)fSinsqTh13->GetName() ) );
   Double_t SinsqTh23 = *( parmap.at( (TString)fSinsqTh23->GetName() ) );
@@ -516,30 +518,66 @@ Double_t FitUtil::PdfIntegrate(const std::map<TString, RooRealProxy*> &parmap, D
   Double_t Dm21      = *( parmap.at( (TString)fDm21->GetName() ) );
   Double_t Dm31      = *( parmap.at( (TString)fDm31->GetName() ) );
 
-  return GetIntegral(resp, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
   
+  // create the histogram with expectation values
+  TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
+  TString hname = resp->Get_RespName() + "_expct";
+  hexp->SetDirectory(0);
+  hexp->Reset();
+  hexp->SetNameTitle(hname, hname);
+
+  Double_t integral = 0.;
+
+  
+  // loop over bins and fill the expectation value histogram
+  for (Int_t ebin = fEbin_min; ebin <= fEbin_max; ebin++) {
+    for (Int_t ctbin = fCtbin_min; ctbin <= fCtbin_max; ctbin++) {
+      for (Int_t bybin = fBybin_min; bybin <= fBybin_max; bybin++) {
+
+        Double_t E  = hexp->GetXaxis()->GetBinCenter( ebin );
+        Double_t ct = hexp->GetYaxis()->GetBinCenter( ctbin );
+        Double_t by = hexp->GetZaxis()->GetBinCenter( bybin );
+
+	auto recoevts = RecoEvts(resp, E, ct, by, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
+	
+	integral += recoevts.first;
+	hexp->SetBinContent(ebin, ctbin, bybin, recoevts.first );
+	hexp->SetBinError  (ebin, ctbin, bybin, recoevts.second);
+	
+      }
+    }
+  }
+
+  if ( integral != hexp->Integral() ) {
+    throw std::logic_error( "ERROR! FitUtil::GetExpectationValues() integrals mismatch: " + to_string(integral) + " " + to_string(hexp->Integral()) );	
+  }
+  
+  return hexp;
+    
 }
 
 //***************************************************************************
 
-Double_t FitUtil::RecoEvts(DetResponse *resp, 
-			   Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
-			   Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
-			   Double_t Dcp, Double_t Dm21, Double_t Dm31) {
+std::pair<Double_t, Double_t> FitUtil::RecoEvts(DetResponse *resp, 
+						Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+						Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
+						Double_t Dcp, Double_t Dm21, Double_t Dm31) {
 
   auto true_bins = resp->GetBinWeights( E_reco, Ct_reco, By_reco );
 
-  Double_t det_count = 0;
-
+  Double_t det_count = 0.;
+  Double_t det_err   = 0.;
+  
   for (auto &tb: true_bins) {
     
     if (tb.fIsCC) {
       
       Double_t TE = TrueEvts(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin, 
 			     tb.fFlav, tb.fIsCC, tb.fIsNB,
-			     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
+			     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first;
 
       det_count += tb.fW * TE;
+      det_err   += TMath::Power(tb.fWE * TE, 2);
       
     }
     else {
@@ -547,15 +585,16 @@ Double_t FitUtil::RecoEvts(DetResponse *resp,
       Double_t TE = 0.;
 
       TE += TrueEvts(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin, ELEC, tb.fIsCC, tb.fIsNB,
-		     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
+		     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first;
       
       TE += TrueEvts(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin, MUON, tb.fIsCC, tb.fIsNB,
-		     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
+		     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first;
 
       TE += TrueEvts(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin,  TAU, tb.fIsCC, tb.fIsNB,
-		     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
+		     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first;
 
       det_count += tb.fW * TE;
+      det_err   += TMath::Power(tb.fWE * TE, 2);
       
     }
 
@@ -565,38 +604,10 @@ Double_t FitUtil::RecoEvts(DetResponse *resp,
   //det_count += resp->GetAtmMuCount1y(E_reco, ct_reco, by_reco) * fOpTime;
   //det_count += resp->GetNoiseCount1y(E_reco, ct_reco, by_reco) * fOpTime;
 
-  return det_count;
-
-}
-
-//***************************************************************************
-
-/**
-   Development - will also need to think about the integration range!
- */
-Double_t FitUtil::GetIntegral(DetResponse *resp,
-			      Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
-			      Double_t Dcp, Double_t Dm21, Double_t Dm31) {
+  det_err = TMath::Sqrt(det_err);
   
-  Double_t integral = 0.;
-  TH3D *hb = resp->GetHist3D();
-  
-  for (Int_t ebin = fEbin_min; ebin <= fEbin_max; ebin++) {
-    for (Int_t ctbin = fCtbin_min; ctbin <= fCtbin_max; ctbin++) {
-      for (Int_t bybin = fBybin_min; bybin <= fBybin_max; bybin++) {
+  return std::make_pair(det_count, det_err);
 
-        Double_t E  = hb->GetXaxis()->GetBinCenter( ebin );
-        Double_t ct = hb->GetYaxis()->GetBinCenter( ctbin );
-        Double_t by = hb->GetZaxis()->GetBinCenter( bybin );
-
-	integral += RecoEvts(resp, E, ct, by, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
-	
-      }
-    }
-  }
-  
-  return integral;
-  
 }
 
 //***************************************************************************
