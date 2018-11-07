@@ -1,4 +1,4 @@
-#include "Fitter.h"
+//#include "Fitter.h"
 
 // fitter headers
 #include "FitUtil.h"
@@ -9,6 +9,8 @@
 #include "SummaryEvent.h"
 #include "NMHUtils.h"
 #include "FileHeader.h"
+#include "DetResponse.h"
+#include "EventSelection.h"
 
 // root headers
 #include "TH3.h"
@@ -19,6 +21,7 @@
 #include "RooDataHist.h"
 #include "RooCategory.h"
 #include "RooSimultaneous.h"
+#include "RooFitResult.h"
 
 // cpp headers
 #include <iostream>
@@ -27,17 +30,76 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <vector>
+
+// jpp headers
+#include "Jeep/JParser.hh"
+#include "Jeep/JMessage.hh"
 
 using namespace RooFit;
 using namespace std;
 
+/** A namespace that collects functions and variables for the fitting */
+namespace Fitter {
+
+  // functions
+  void InitRespsAndSels();
+  void FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response);
+  void FillSelections();
+  void Cleanup();
+  
+  // binning variables
+  static const Int_t    fENB    =  40;
+  static const Double_t fEmin   =   1;
+  static const Double_t fEmax   = 100;
+  static const Int_t    fCtNB   =  40;
+  static const Double_t fCtmin  =  -1;
+  static const Double_t fCtmax  =   1;
+  static const Int_t    fByNB   =   1;
+  static const Double_t fBymin  =   0;
+  static const Double_t fBymax  =   1;
+
+  // member selections and responses
+  DetResponse    *fTRres;
+  DetResponse    *fSHres;
+  EventSelection *fTRsel;
+  EventSelection *fSHsel;
+
+};
+
+/** Main function of the program */
 int main(int argc, char **argv) {
 
   using namespace Fitter;
 
-  auto pars = CommandLineParser(argc, argv);
+  //----------------------------------------------------------
+  // parse command line arguments with Jpp
+  //----------------------------------------------------------
+  
+  string        simdata_file;
+  string        expdata_file;
+  bool          refill_response;
+
+  try {
+
+    JParser<> zap("Program to fit the experimental data with standard track-shower separation.");
+
+    zap['s'] = make_field(simdata_file, "File with all summary data") = (string)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+    zap['e'] = make_field(expdata_file, "File with experimental data sample") = "rootfiles/Experiment_oscpars5_sample_0_NH.root";
+    zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
+
+    zap(argc, argv);
+  }
+  catch(const exception &error) {
+    FATAL(error.what() << endl);
+  }
+
+  //----------------------------------------------------------
+  // call methods to initialise and fill responses
+  //----------------------------------------------------------
+  
   InitRespsAndSels();
-  FillRespsAndSels(pars.simdata_file, pars.expdata_file, pars.refill_response);
+  FillRespsAndSels(simdata_file, expdata_file, refill_response);
 
   //----------------------------------------------------------
   // set up the PDFs for fitting
@@ -53,62 +115,7 @@ int main(int argc, char **argv) {
   FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, fSHres);
 
   //----------------------------------------------------------
-  // cheat - leave only theta-23 as free parameter, see how that goes...
-  //----------------------------------------------------------
-  FileHeader h("fitter");
-  h.ReadHeader(pars.expdata_file);
-
-  // Double_t sinsqth12 = stod( (string)h.GetParameter("sinsq_th12") );
-  // Double_t sinsqth13 = stod( (string)h.GetParameter("sinsq_th13") );
-  // Double_t sinsqth23 = stod( (string)h.GetParameter("sinsq_th23") );
-  // Double_t dcp       = stod( (string)h.GetParameter("dcp") );
-  // Double_t dm21      = stod( (string)h.GetParameter("dm21_1e5") ) * 1e-5;
-  // Double_t dm31      = stod( (string)h.GetParameter("dm31_1e5") ) * 1e-5;
-
-  // Double_t sinsqth12 = 0.297;
-  // Double_t sinsqth13 = 0.0215;
-  // Double_t sinsqth23 = 0.425;
-  // Double_t dcp       = 1.38;
-  // Double_t dm21      = 7.37e-5;
-  // Double_t dm31      = 2.56e-3;
-
-  // Double_t sinsqth12 = 0.297;
-  // Double_t sinsqth13 = 0.0216;
-  // Double_t sinsqth23 = 0.589;
-  // Double_t dcp       = 1.31;
-  // Double_t dm21      = 7.37e-5;
-  // Double_t dm31      = -2.4663e-3;
-
-  // Double_t sinsqth12 = TMath::Power( TMath::Sin( 33.4 * TMath::Pi()/180. ), 2 );
-  // Double_t sinsqth13 = TMath::Power( TMath::Sin( 8.32 * TMath::Pi()/180. ), 2 );
-  // Double_t sinsqth23 = TMath::Power( TMath::Sin( 45   * TMath::Pi()/180. ), 2 );
-  // Double_t dcp       = 1.;
-  // Double_t dm32      = 2.44e-3;
-  // Double_t dm21      = 7.53e-5;
-  // Double_t DM        = dm32 + 0.5*dm21;
-  // Double_t dm31      =  DM + 0.5*dm21; //NH
-  // Double_t dm31      = -DM + 0.5*dm21; //IH
-    
-  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh12") )->setVal( sinsqth12 );
-  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh12") )->setConstant( kTRUE );
-
-  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh13") )->setVal( sinsqth13 );
-  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh13") )->setConstant( kTRUE );
-
-  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setVal( sinsqth23 );
-  // ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setConstant( kTRUE );
-
-  // ( (RooRealVar*)fitutil->GetSet().find("dcp") )->setVal( dcp );
-  // ( (RooRealVar*)fitutil->GetSet().find("dcp") )->setConstant( kTRUE );
-
-  // ( (RooRealVar*)fitutil->GetSet().find("Dm21") )->setVal( dm21 );
-  // ( (RooRealVar*)fitutil->GetSet().find("Dm21") )->setConstant( kTRUE );
-
-  // ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setVal( dm31 );
-  // ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setConstant( kTRUE );
-
-  //----------------------------------------------------------
-  // set up data for simultaneous fitting
+  // set up data for simultaneous fitting and fit
   //----------------------------------------------------------
   std::map<string, TH1* > hist_map = { { (string)fTRsel->Get_SelName() , fTRsel->Get_h_E_costh_by() }, 
 				       { (string)fSHsel->Get_SelName() , fSHsel->Get_h_E_costh_by() } };
@@ -128,69 +135,32 @@ int main(int argc, char **argv) {
 
   cout << "NOTICE main() started fitting" << endl;
   TStopwatch timer;
-
-  simPdf.fitTo( combData );
-
+  RooFitResult *fitres = simPdf.fitTo( combData, Save(kTRUE) );
   cout << "NOTICE main() finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
+  
+  //----------------------------------------------------------
+  // print comparison
+  //----------------------------------------------------------
+  RooArgSet result ( fitres->floatParsFinal() );
+  FileHeader h("Fitter");
+  h.ReadHeader(expdata_file);
+
+  cout << "*********Fit result comparison****************************" << endl;
+  cout << "dm21x1e5 actual  : " << h.GetParameter("dm21_1e5")   << "\t" << " fitted: " << ((RooRealVar*)result.find("Dm21"))->getVal()*1e5 << endl;
+  cout << "dm31x1e5 actual  : " << h.GetParameter("dm31_1e5")   << "\t" << " fitted: " << ((RooRealVar*)result.find("Dm31"))->getVal()*1e5 << endl;
+  cout << "sinsq_th12 actual: " << h.GetParameter("sinsq_th12") << "\t" << " fitted: " << ((RooRealVar*)result.find("SinsqTh12"))->getVal() << endl;
+  cout << "sinsq_th13 actual: " << h.GetParameter("sinsq_th13") << "\t" << " fitted: " << ((RooRealVar*)result.find("SinsqTh13"))->getVal() << endl;
+  cout << "sinsq_th23 actual: " << h.GetParameter("sinsq_th23") << "\t" << " fitted: " << ((RooRealVar*)result.find("SinsqTh23"))->getVal() << endl;
+  cout << "dcp        actual: " << h.GetParameter("dcp")        << "\t" << " fitted: " << ((RooRealVar*)result.find("dcp"))->getVal() << endl;
+  cout << "*********Fit result comparison****************************" << endl;
+  
+  //----------------------------------------------------------
+  // clean-up
+  //----------------------------------------------------------
   
   Cleanup();
   if (fitutil) delete fitutil;
  
-}
-
-//**********************************************************************************
-
-Fitter::cmdpars Fitter::CommandLineParser(int argc, char **argv) {
-
-  using namespace Fitter;
-
-  Fitter::cmdpars pars;
-
-  pars.refill_response = kFALSE;
-  pars.simdata_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
-  pars.expdata_file = (TString)getenv("NMHDIR") + "/evt_sampler/output/Experiments/Experiment_oscpars1_sample_0_NH.root";
-
-  int c;
-  while ( (c = getopt (argc, argv, "s:e:r")) != -1 ) {
-
-    switch (c)
-      {
-
-      case 'r':
-	pars.refill_response = kTRUE;
-	break;
-
-      case 'e':
-	pars.expdata_file = optarg;
-	break;
-
-      case 's':
-	pars.simdata_file = optarg;
-	break;
-
-      case '?':
-      
-	if (optopt == 'e' || optopt == 's') {
-	  fprintf (stderr, "Option -%c requires an argument.\n", optopt);
-	}
-	else if (isprint (optopt)) {
-	  fprintf (stderr, "Unknown option `-%c'.\n", optopt);
-	}
-	else {
-	  fprintf (stderr,
-		   "Unknown option character `\\x%x'.\n",
-		   optopt);
-	}
-	throw std::invalid_argument("Command-line argument parsing failed.");
-      default:
-	abort ();
-      }
-
-  } // end while loop
-
-  // note that order matters here!
-  return pars;
-  
 }
 
 //**********************************************************************************
@@ -254,8 +224,8 @@ void Fitter::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t
   // fill the responses
   //----------------------------------------------------------
 
-  TString track_resp_name  = "track_response.root";
-  TString shower_resp_name = "shower_response.root";
+  TString track_resp_name  = "rootfiles/track_response.root";
+  TString shower_resp_name = "rootfiles/shower_response.root";
 
   if ( !NMHUtils::FileExists(track_resp_name) || !NMHUtils::FileExists(shower_resp_name) || refill_response ) {
 
