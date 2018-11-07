@@ -39,12 +39,14 @@ class FitUtil {
   // public functions that are called in `FitPDF`
   //------------------------------------------------------------------
   Double_t PdfEvaluate (const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp);
-  TH3D*    PdfGetExpValHist(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp, const char* rangeName);
+  std::pair<TH3D*, Double_t> PdfExpectation(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp, const char* rangeName);
 
   // setters/getters
   RooArgSet   GetSet()         { return fParSet;  }
   RooArgList  GetObs()         { return fObsList; }
   TH3D*       GetBinningHist() { return fHB;      }
+  void        SetNOlims();
+  void        SetIOlims();
   
   // DEV: this should become private; kept public at the moment for comparisons with ROOT
   std::pair<Double_t, Double_t> RecoEvts(DetResponse *resp,

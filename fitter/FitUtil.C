@@ -138,7 +138,7 @@ void FitUtil::InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t
   fSinsqTh23 = new RooRealVar("SinsqTh23", "sin^2(theta23)",     0.425,     0.381,     0.636);
   fDcp       = new RooRealVar(      "dcp",       "delta-cp",      1.38,         0,      3.14);
   fDm21      = new RooRealVar(     "Dm21",         "dm21^2", 7.37*1e-5, 6.93*1e-5, 7.96*1e-5);
-  fDm31      = new RooRealVar(     "Dm31",         "dm31^2", 2.56*1e-3, 2.42*1e-3, 2.69*1e-3);;   
+  fDm31      = new RooRealVar(     "Dm31",         "dm31^2", 2.56*1e-3, 2.42*1e-3, 2.69*1e-3);
 
   // add observables to the observables set
   fObsList.add( RooArgList(*fE_reco, *fCt_reco, *fBy_reco) );
@@ -146,6 +146,44 @@ void FitUtil::InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t
   // add all variables to the parameter set
   fParSet.add( fObsList );
   fParSet.add( RooArgSet( *fSinsqTh12, *fSinsqTh13, *fSinsqTh23, *fDcp, *fDm21, *fDm31) );
+  
+}
+
+//***************************************************************************
+
+void FitUtil::SetNOlims() {
+
+  //fSinsqTh13->setVal(0.0215);
+  fSinsqTh13->setMin(0.019);
+  fSinsqTh13->setMax(0.024);
+
+  //fSinsqTh23->setVal(0.425);
+  fSinsqTh23->setMin(0.381);
+  fSinsqTh23->setMax(0.615);
+
+  //fDm31->setVal(2.56e-3);
+  fDm31->setMin(2.45e-3);
+  fDm31->setMax(2.69e-3);
+    
+}
+
+//***************************************************************************
+
+void FitUtil::SetIOlims() {
+
+  //fSinsqTh13->setVal(0.0216);
+  fSinsqTh13->setMin(0.019);
+  fSinsqTh13->setMax(0.0242);
+
+  //fSinsqTh23->setVal(0.589);
+  fSinsqTh23->setMin(0.384);
+  fSinsqTh23->setMax(0.636);
+
+  Double_t dm21 =  7.37e-5;
+  
+  //fDm31->setVal(-2.54e-3 + dm21);
+  fDm31->setMin(-2.66e-3 + dm21);
+  fDm31->setMax(-2.42e-3 + dm21);
   
 }
 
@@ -507,8 +545,8 @@ Double_t FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, De
 //***************************************************************************
 
 /** Development: will need to think about the range here!*/
-TH3D* FitUtil::PdfGetExpValHist(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp,
-				const char* rangeName) {
+std::pair<TH3D*, Double_t> FitUtil::PdfExpectation(const std::map<TString, RooRealProxy*> &parmap,
+						   DetResponse *resp, const char* rangeName) {
 
   // get the parameter values from the proxies
   Double_t SinsqTh12 = *( parmap.at( (TString)fSinsqTh12->GetName() ) );
@@ -518,7 +556,6 @@ TH3D* FitUtil::PdfGetExpValHist(const std::map<TString, RooRealProxy*> &parmap, 
   Double_t Dm21      = *( parmap.at( (TString)fDm21->GetName() ) );
   Double_t Dm31      = *( parmap.at( (TString)fDm31->GetName() ) );
 
-  
   // create the histogram with expectation values
   TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
   TString hname = resp->Get_RespName() + "_expct";
@@ -526,10 +563,10 @@ TH3D* FitUtil::PdfGetExpValHist(const std::map<TString, RooRealProxy*> &parmap, 
   hexp->Reset();
   hexp->SetNameTitle(hname, hname);
 
+  // calculate the integral that takes bin width into account
   Double_t integral = 0.;
 
-  
-  // loop over bins and fill the expectation value histogram
+  // loop over bins and fill the expectation value histogram and integral
   for (Int_t ebin = fEbin_min; ebin <= fEbin_max; ebin++) {
     for (Int_t ctbin = fCtbin_min; ctbin <= fCtbin_max; ctbin++) {
       for (Int_t bybin = fBybin_min; bybin <= fBybin_max; bybin++) {
@@ -537,22 +574,22 @@ TH3D* FitUtil::PdfGetExpValHist(const std::map<TString, RooRealProxy*> &parmap, 
         Double_t E  = hexp->GetXaxis()->GetBinCenter( ebin );
         Double_t ct = hexp->GetYaxis()->GetBinCenter( ctbin );
         Double_t by = hexp->GetZaxis()->GetBinCenter( bybin );
+	
+	Double_t E_w  = hexp->GetXaxis()->GetBinWidth( ebin );
+        Double_t ct_w = hexp->GetYaxis()->GetBinWidth( ctbin );
+        Double_t by_w = hexp->GetZaxis()->GetBinWidth( bybin );
 
 	auto recoevts = RecoEvts(resp, E, ct, by, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
 	
-	integral += recoevts.first;
+	integral += recoevts.first * E_w * ct_w * by_w;
 	hexp->SetBinContent(ebin, ctbin, bybin, recoevts.first );
 	hexp->SetBinError  (ebin, ctbin, bybin, recoevts.second);
 	
       }
     }
   }
-
-  if ( integral != hexp->Integral() ) {
-    throw std::logic_error( "ERROR! FitUtil::GetExpectationValues() integrals mismatch: " + to_string(integral) + " " + to_string(hexp->Integral()) );	
-  }
   
-  return hexp;
+  return std::make_pair(hexp, integral);
     
 }
 

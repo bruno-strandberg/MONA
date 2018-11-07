@@ -86,9 +86,10 @@ Double_t FitPDF::analyticalIntegral(Int_t code, const char* rangeName) const {
   Double_t integral = 0.;
   
   if ( code == I_E_CT_BY ) {
-    TH3D *hexp = fFitUtil->PdfGetExpValHist(fProxies, fResponse, rangeName);
-    integral = hexp->Integral();
-    delete hexp;
+    auto expct = fFitUtil->PdfExpectation(fProxies, fResponse, rangeName);
+    //integral = expct.second; // this is integral calculated by taking bin widths into account - need to test
+    integral = expct.first->Integral();
+    delete expct.first;
   }
   else {
     integral = 0.;

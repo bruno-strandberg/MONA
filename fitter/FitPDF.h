@@ -33,7 +33,9 @@ public:
   double operator() (double *x, double *p);
   DetResponse* GetResponse() { return fResponse; }
   FitUtil*     GetUtil() { return fFitUtil; }
-  TH3D*        GetExpValHist(const char* name=0) { return fFitUtil->PdfGetExpValHist(fProxies, fResponse, name); }
+  TH3D*        GetExpValHist(const char* name=0) {
+    return fFitUtil->PdfExpectation(fProxies, fResponse, name).first;
+  }
   
   Int_t    getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
   Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
