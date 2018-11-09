@@ -11,6 +11,7 @@
 // Root
 #include "TH3.h"
 #include "TStopwatch.h"
+#include "TMath.h"
 
 // RooFit
 #include "RooRealVar.h"
@@ -46,7 +47,9 @@ class FitUtil {
   RooArgList  GetObs()         { return fObsList; }
   TH3D*       GetBinningHist() { return fHB;      }
   void        SetNOlims();
+  void        SetNOcentvals();
   void        SetIOlims();
+  void        SetIOcentvals();
   
   // DEV: this should become private; kept public at the moment for comparisons with ROOT
   std::pair<Double_t, Double_t> RecoEvts(DetResponse *resp,
@@ -91,6 +94,56 @@ class FitUtil {
 
   enum flavors {ELEC = 0, MUON, TAU};                     //!< enum for flavors
 
+  //------------------------------------------------------------------
+  // central values and limits for oscillation parameters, used throughout the class
+  //------------------------------------------------------------------
+
+  /** internal structure to store parameter central values and limits*/
+  struct fpar {
+    Double_t cv;   //!< central value
+    Double_t min;  //!< minimum
+    Double_t max;  //!< max
+
+    /** constructor 
+	\param _cv  central value
+	\param _min minimum
+	\param _max maximum
+    */
+    fpar(Double_t _cv, Double_t _min, Double_t _max) {
+
+      if (_cv < _min) {
+	throw std::invalid_argument( "ERROR! FitUtil::fpar::fpar() central value " + to_string(_cv) + " is smaller than the minimum " + to_string(_min) );
+      }
+
+      if (_cv > _max) {
+	throw std::invalid_argument( "ERROR! FitUtil::fpar::fpar() central value " + to_string(_cv) + " is larger than the maximum " + to_string(_max) );
+      }
+      
+      cv  = _cv;
+      min = _min;
+      max = _max;
+    }
+    
+  };
+  
+  const fpar f_NO_sinsqth12 = fpar(0.297, 0.25, 0.354);
+  const fpar f_IO_sinsqth12 = fpar(0.297, 0.25, 0.354);
+
+  const fpar f_NO_sinsqth13 = fpar(0.0215, 0.019, 0.024);
+  const fpar f_IO_sinsqth13 = fpar(0.0216, 0.019, 0.0242);
+
+  const fpar f_NO_sinsqth23 = fpar(0.425, 0.381, 0.615);
+  const fpar f_IO_sinsqth23 = fpar(0.589, 0.384, 0.636);
+
+  const fpar f_NO_dcp = fpar(1.38, 0., TMath::Pi() );
+  const fpar f_IO_dcp = fpar(1.31, 0., TMath::Pi() );
+
+  const fpar f_NO_dm21 = fpar(7.37e-5, 6.93e-5, 7.96e-5);
+  const fpar f_IO_dm21 = fpar(7.37e-5, 6.93e-5, 7.96e-5);
+
+  const fpar f_NO_dm31 = fpar(2.56e-3, 2.45e-3, 2.69e-3);
+  const fpar f_IO_dm31 = fpar(-2.54e-3+f_IO_dm21.cv, -2.66e-3+f_IO_dm21.cv, -2.42e-3+f_IO_dm21.cv);
+    
   //------------------------------------------------------------------
   // private members for detected neutrino count calculation
   //------------------------------------------------------------------

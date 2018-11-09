@@ -133,12 +133,12 @@ void FitUtil::InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t
   fBy_reco   = new RooRealVar("by_reco", "by_reco", bymin, bymax);
 
   // fit parameters, this will probably require some sort of an interface...
-  fSinsqTh12 = new RooRealVar("SinsqTh12", "sin^2(theta12)",     0.297,      0.25,     0.354);
-  fSinsqTh13 = new RooRealVar("SinsqTh13", "sin^2(theta13)",    0.0215,     0.019,    0.0242);
-  fSinsqTh23 = new RooRealVar("SinsqTh23", "sin^2(theta23)",     0.425,     0.381,     0.636);
-  fDcp       = new RooRealVar(      "dcp",       "delta-cp",      1.38,         0,      3.14);
-  fDm21      = new RooRealVar(     "Dm21",         "dm21^2", 7.37*1e-5, 6.93*1e-5, 7.96*1e-5);
-  fDm31      = new RooRealVar(     "Dm31",         "dm31^2", 2.56*1e-3, 2.42*1e-3, 2.69*1e-3);
+  fSinsqTh12 = new RooRealVar("SinsqTh12", "sin^2(theta12)", f_NO_sinsqth12.cv, f_NO_sinsqth12.min, f_NO_sinsqth12.max);
+  fSinsqTh13 = new RooRealVar("SinsqTh13", "sin^2(theta13)", f_NO_sinsqth13.cv, f_NO_sinsqth13.min, f_NO_sinsqth13.max);
+  fSinsqTh23 = new RooRealVar("SinsqTh23", "sin^2(theta23)", f_NO_sinsqth23.cv, f_NO_sinsqth23.min, f_NO_sinsqth23.max);
+  fDcp       = new RooRealVar(      "dcp",       "delta-cp",       f_NO_dcp.cv,       f_NO_dcp.min, f_NO_dcp.max);
+  fDm21      = new RooRealVar(     "Dm21",         "dm21^2",      f_NO_dm21.cv,      f_NO_dm21.min, f_NO_dm21.max);
+  fDm31      = new RooRealVar(     "Dm31",         "dm31^2",      f_NO_dm31.cv,      f_NO_dm31.min, f_NO_dm31.max);
 
   // add observables to the observables set
   fObsList.add( RooArgList(*fE_reco, *fCt_reco, *fBy_reco) );
@@ -153,37 +153,73 @@ void FitUtil::InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t
 
 void FitUtil::SetNOlims() {
 
-  //fSinsqTh13->setVal(0.0215);
-  fSinsqTh13->setMin(0.019);
-  fSinsqTh13->setMax(0.024);
+  fSinsqTh12->setMin(f_NO_sinsqth12.min);
+  fSinsqTh12->setMax(f_NO_sinsqth12.max);
+  
+  fSinsqTh13->setMin(f_NO_sinsqth13.min);
+  fSinsqTh13->setMax(f_NO_sinsqth13.max);
 
-  //fSinsqTh23->setVal(0.425);
-  fSinsqTh23->setMin(0.381);
-  fSinsqTh23->setMax(0.615);
+  fSinsqTh23->setMin(f_NO_sinsqth23.min);
+  fSinsqTh23->setMax(f_NO_sinsqth23.max);
 
-  //fDm31->setVal(2.56e-3);
-  fDm31->setMin(2.45e-3);
-  fDm31->setMax(2.69e-3);
+  fDcp->setMin(f_NO_dcp.min);
+  fDcp->setMax(f_NO_dcp.max);
+
+  fDm21->setMin(f_NO_dm21.min);
+  fDm21->setMax(f_NO_dm21.max);
+  
+  fDm31->setMin(f_NO_dm31.min);
+  fDm31->setMax(f_NO_dm31.max);
     
+}
+
+//***************************************************************************
+
+void FitUtil::SetNOcentvals() {
+  
+  fSinsqTh12->setVal(f_NO_sinsqth12.cv);
+  fSinsqTh13->setVal(f_NO_sinsqth13.cv);
+  fSinsqTh23->setVal(f_NO_sinsqth23.cv);
+  fDcp->setVal(f_NO_dcp.cv);
+  fDm21->setVal(f_NO_dm21.cv);
+  fDm31->setVal(f_NO_dm31.cv);
+  
 }
 
 //***************************************************************************
 
 void FitUtil::SetIOlims() {
 
-  //fSinsqTh13->setVal(0.0216);
-  fSinsqTh13->setMin(0.019);
-  fSinsqTh13->setMax(0.0242);
-
-  //fSinsqTh23->setVal(0.589);
-  fSinsqTh23->setMin(0.384);
-  fSinsqTh23->setMax(0.636);
-
-  Double_t dm21 =  7.37e-5;
+  fSinsqTh12->setMin(f_IO_sinsqth12.min);
+  fSinsqTh12->setMax(f_IO_sinsqth12.max);
   
-  //fDm31->setVal(-2.54e-3 + dm21);
-  fDm31->setMin(-2.66e-3 + dm21);
-  fDm31->setMax(-2.42e-3 + dm21);
+  fSinsqTh13->setMin(f_IO_sinsqth13.min);
+  fSinsqTh13->setMax(f_IO_sinsqth13.max);
+
+  fSinsqTh23->setMin(f_IO_sinsqth23.min);
+  fSinsqTh23->setMax(f_IO_sinsqth23.max);
+
+  fDcp->setMin(f_IO_dcp.min);
+  fDcp->setMax(f_IO_dcp.max);
+
+  fDm21->setMin(f_IO_dm21.min);
+  fDm21->setMax(f_IO_dm21.max);
+  
+  fDm31->setMin(f_IO_dm31.min);
+  fDm31->setMax(f_IO_dm31.max);
+    
+}
+
+//***************************************************************************
+
+void FitUtil::SetIOcentvals() {
+  
+  fSinsqTh12->setVal(f_IO_sinsqth12.cv);
+  fSinsqTh13->setVal(f_IO_sinsqth13.cv);
+  fSinsqTh23->setVal(f_IO_sinsqth23.cv);
+  fDcp->setVal(f_IO_dcp.cv);
+  fDm21->setVal(f_IO_dm21.cv);
+  fDm31->setVal(f_IO_dm31.cv);
   
 }
 
