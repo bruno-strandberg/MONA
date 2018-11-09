@@ -1,3 +1,4 @@
+
 #include "DetResponse.h"
 #include "SummaryEvent.h"
 #include "SummaryParser.h"
@@ -9,8 +10,15 @@
 #include "RooRealVar.h"
 #include "RooDataHist.h"
 #include "RooFitResult.h"
+#include "RooRandom.h"
 
+#include "TObject.h"
 #include "TFile.h"
+#include "TTree.h"
+#include "TFitResult.h"
+#include "TFitResultPtr.h"
+#include "TF3.h"
+#include "TRandom3.h"
 
 // jpp headers
 #include "Jeep/JParser.hh"
@@ -19,6 +27,30 @@
 using namespace RooFit;
 using namespace std;
 
+/** class to store fit parameter instances*/
+struct FitPars {
+
+  Double_t sinsqth12;
+  Double_t sinsqth13;
+  Double_t sinsqth23;
+  Double_t dcp;
+  Double_t dm21;
+  Double_t dm31;
+
+};
+
+/** class to store fit trial results*/
+struct FitTrial {
+
+  FitPars true_vals;    //!< true values
+  FitPars roofit_vals;  //!< roofit results
+  FitPars roofit_errs;  //!< roofit errors
+  FitPars root_vals;    //!< root results
+  FitPars root_errs;    //!< root errors
+
+};
+
+/** Application to fit the expectation value histogram with the model several times */
 int main(int argc, char **argv) {
 
   //----------------------------------------------------------
@@ -28,6 +60,7 @@ int main(int argc, char **argv) {
   string        simdata_file;
   bool          refill_response;
   string        outputfile;
+  int           nfits;
   string        effmh_elecCC;
   string        effmh_muonCC;
   string        effmh_tauCC;
@@ -41,7 +74,8 @@ int main(int argc, char **argv) {
       (string)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
-    zap['o'] = make_field(outputfile, "File where output histograms are written") = "rootfiles/asymmetry.root";
+    zap['o'] = make_field(outputfile, "File where output histograms are written") = "rootfiles/expectationfit.root";
+    zap['n'] = make_field(nfits, "Number of fits to be performed") = 1;
 
     zap['w'] = make_field(effmh_elecCC, "Eff mass histograms for elec-CC") =
       (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_CC.root";
@@ -104,23 +138,16 @@ int main(int argc, char **argv) {
   cout << "NOTICE ExpctFit() Response ready" << endl;
 
   //----------------------------------------------------------
-  // set up the PDF and get expectation value
+  // set up the PDF and oscillation parameters limits for normal ordering,
+  // get roofit variable pointers
   //----------------------------------------------------------
   
   FitUtil *fitutil = new FitUtil(3, track_resp.GetHist3D(),
   				 1, 100, -1, 0, 0, 1, effmh_elecCC, effmh_muonCC, effmh_tauCC, effmh_elecNC);
-
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_resp);  
 
-  Double_t sinsqth12 = TMath::Power( TMath::Sin( 33.4 * TMath::Pi()/180. ), 2 );
-  Double_t sinsqth13 = TMath::Power( TMath::Sin( 8.42 * TMath::Pi()/180. ), 2 );
-  Double_t sinsqth23 = TMath::Power( TMath::Sin( 45   * TMath::Pi()/180. ), 2 );
-  Double_t dcp       = 0.;
-  Double_t dm32      = 2.44e-3;
-  Double_t dm21      = 7.53e-5;
-  Double_t DM        = dm32 + 0.5*dm21;
-  Double_t dm31      = DM + 0.5*dm21;
-
+  fitutil->SetNOlims();
+  
   RooRealVar* rf_sinsqth12 = (RooRealVar*)fitutil->GetSet().find("SinsqTh12");
   RooRealVar* rf_sinsqth13 = (RooRealVar*)fitutil->GetSet().find("SinsqTh13");
   RooRealVar* rf_sinsqth23 = (RooRealVar*)fitutil->GetSet().find("SinsqTh23");
@@ -128,42 +155,149 @@ int main(int argc, char **argv) {
   RooRealVar* rf_dm21 = (RooRealVar*)fitutil->GetSet().find("Dm21");
   RooRealVar* rf_dm31 = (RooRealVar*)fitutil->GetSet().find("Dm31");
 
-  rf_sinsqth12->setVal(sinsqth12);
-  rf_sinsqth13->setVal(sinsqth13);
-  rf_sinsqth23->setVal(sinsqth23);
-  rf_dcp->setVal(dcp);
-  rf_dm21->setVal(dm21);
-  rf_dm31->setVal(dm31);
+  //----------------------------------------------------------
+  // set-up the output tree
+  //----------------------------------------------------------
   
-  TH3D *tracks_expct  = pdf_tracks.GetExpValHist();
-  tracks_expct->SetNameTitle("tracks_expected", "tracks_expected");
-
-  //----------------------------------------------------------
-  // randomize starting point
-  //----------------------------------------------------------
-  rf_sinsqth12->randomize();
-  rf_sinsqth13->randomize();
-  rf_sinsqth23->randomize();
-  rf_dcp->randomize();
-  rf_dm21->randomize();
-  rf_dm31->randomize();
+  TFile fout((TString)outputfile, "RECREATE");
+  TTree tout("fittrials","fit trial results");
+  FitTrial trial;
+  Double_t root_minLLH, roofit_minLLH;
   
+  tout.Branch("true_vals_sinsqth12"  , &trial.true_vals.sinsqth12);
+  tout.Branch("true_vals_sinsqth13"  , &trial.true_vals.sinsqth13);
+  tout.Branch("true_vals_sinsqth23"  , &trial.true_vals.sinsqth23);
+  tout.Branch("true_vals_dcp"        , &trial.true_vals.dcp);
+  tout.Branch("true_vals_dm21"       , &trial.true_vals.dm21);
+  tout.Branch("true_vals_dm31"       , &trial.true_vals.dm31);
+
+  tout.Branch("roofit_vals_sinsqth12", &trial.roofit_vals.sinsqth12);
+  tout.Branch("roofit_vals_sinsqth13", &trial.roofit_vals.sinsqth13);
+  tout.Branch("roofit_vals_sinsqth23", &trial.roofit_vals.sinsqth23);
+  tout.Branch("roofit_vals_dcp"      , &trial.roofit_vals.dcp);
+  tout.Branch("roofit_vals_dm21"     , &trial.roofit_vals.dm21);
+  tout.Branch("roofit_vals_dm31"     , &trial.roofit_vals.dm31);
+  tout.Branch("roofit_vals_minLLH"   , &roofit_minLLH);
+  
+  tout.Branch("roofit_errs_sinsqth12", &trial.roofit_errs.sinsqth12);
+  tout.Branch("roofit_errs_sinsqth13", &trial.roofit_errs.sinsqth13);
+  tout.Branch("roofit_errs_sinsqth23", &trial.roofit_errs.sinsqth23);
+  tout.Branch("roofit_errs_dcp"      , &trial.roofit_errs.dcp);
+  tout.Branch("roofit_errs_dm21"     , &trial.roofit_errs.dm21);
+  tout.Branch("roofit_errs_dm31"     , &trial.roofit_errs.dm31);
+
+  tout.Branch("root_vals_sinsqth12"  , &trial.root_vals.sinsqth12);
+  tout.Branch("root_vals_sinsqth13"  , &trial.root_vals.sinsqth13);
+  tout.Branch("root_vals_sinsqth23"  , &trial.root_vals.sinsqth23);
+  tout.Branch("root_vals_dcp"        , &trial.root_vals.dcp);
+  tout.Branch("root_vals_dm21"       , &trial.root_vals.dm21);
+  tout.Branch("root_vals_dm31"       , &trial.root_vals.dm31);
+  tout.Branch("root_vals_minLLH"     , &root_minLLH);
+  
+  tout.Branch("root_errs_sinsqth12"  , &trial.root_errs.sinsqth12);
+  tout.Branch("root_errs_sinsqth13"  , &trial.root_errs.sinsqth13);
+  tout.Branch("root_errs_sinsqth23"  , &trial.root_errs.sinsqth23);
+  tout.Branch("root_errs_dcp"        , &trial.root_errs.dcp);
+  tout.Branch("root_errs_dm21"       , &trial.root_errs.dm21);
+  tout.Branch("root_errs_dm31"       , &trial.root_errs.dm31);
+
   //----------------------------------------------------------
-  // import data to RooFit and fit
+  // pereform the requested number of fits
   //----------------------------------------------------------
 
-  RooDataHist rf_hist("rf_hist", "rf_hist", fitutil->GetObs(), Import(*tracks_expct) );
-  RooFitResult *fitres = pdf_tracks.fitTo( rf_hist, Save(kTRUE) );
-  RooArgSet result( fitres->floatParsFinal() );
+  TRandom3 frand(0);
+  RooRandom::randomGenerator()->SetSeed( frand.Uniform(1,1e6) );
+  
+  for (Int_t fitnr = 0; fitnr < nfits; fitnr++) {
 
-  cout << "*********Fit result comparison****************************" << endl;
-  cout << "dm21      actual: " << dm21      << "\t" << " fitted: " << ((RooRealVar*)result.find("Dm21"))->getVal() << endl;
-  cout << "dm31      actual: " << dm31      << "\t" << " fitted: " << ((RooRealVar*)result.find("Dm31"))->getVal() << endl;
-  cout << "sinsqth12 actual: " << sinsqth12 << "\t" << " fitted: " << ((RooRealVar*)result.find("SinsqTh12"))->getVal() << endl;
-  cout << "sinsqth13 actual: " << sinsqth13 << "\t" << " fitted: " << ((RooRealVar*)result.find("SinsqTh13"))->getVal() << endl;
-  cout << "sinsqth23 actual: " << sinsqth23 << "\t" << " fitted: " << ((RooRealVar*)result.find("SinsqTh23"))->getVal() << endl;
-  cout << "dcp       actual: " << dcp       << "\t" << " fitted: " << ((RooRealVar*)result.find("dcp"))->getVal() << endl;
-  cout << "*********Fit result comparison****************************" << endl;
+    // randomize the oscillation parameters
+    rf_sinsqth12->randomize();
+    rf_sinsqth13->randomize();
+    rf_sinsqth23->randomize();
+    rf_dcp->randomize();
+    rf_dm21->randomize();
+    rf_dm31->randomize();
+    
+    // get the expectation value
+    TH3D *tracks_expct = pdf_tracks.GetExpValHist();
+    tracks_expct->SetNameTitle("tracks_expected", "tracks_expected");
+    
+    // store the true values of the expectation
+    trial.true_vals.sinsqth12 = rf_sinsqth12->getVal();
+    trial.true_vals.sinsqth13 = rf_sinsqth13->getVal();
+    trial.true_vals.sinsqth23 = rf_sinsqth23->getVal();
+    trial.true_vals.dcp       = rf_dcp->getVal();
+    trial.true_vals.dm21      = rf_dm21->getVal();
+    trial.true_vals.dm31      = rf_dm31->getVal();
+
+    cout << "*************************************************************************" << endl;
+    cout << "Started fitting with RooFit" << endl;
+    cout << "*************************************************************************" << endl;
+    fitutil->SetNOcentvals();
+    RooDataHist rf_hist("rf_hist", "rf_hist", fitutil->GetObs(), Import(*tracks_expct) );
+    RooFitResult *fitres = pdf_tracks.fitTo( rf_hist, Save(kTRUE), SumW2Error(kTRUE), RooFit::Optimize(kFALSE) );
+    RooArgSet result( fitres->floatParsFinal() );
+
+    // store roofit results and errors
+    trial.roofit_vals.sinsqth12 = ((RooRealVar*)result.find("SinsqTh12"))->getVal();
+    trial.roofit_vals.sinsqth13 = ((RooRealVar*)result.find("SinsqTh13"))->getVal();
+    trial.roofit_vals.sinsqth23 = ((RooRealVar*)result.find("SinsqTh23"))->getVal();
+    trial.roofit_vals.dcp       = ((RooRealVar*)result.find("dcp"))->getVal();
+    trial.roofit_vals.dm21      = ((RooRealVar*)result.find("Dm21"))->getVal();
+    trial.roofit_vals.dm31      = ((RooRealVar*)result.find("Dm31"))->getVal();
+    roofit_minLLH               = fitres->minNll();
+    
+    trial.roofit_errs.sinsqth12 = ((RooRealVar*)result.find("SinsqTh12"))->getError();
+    trial.roofit_errs.sinsqth13 = ((RooRealVar*)result.find("SinsqTh13"))->getError();
+    trial.roofit_errs.sinsqth23 = ((RooRealVar*)result.find("SinsqTh23"))->getError();
+    trial.roofit_errs.dcp       = ((RooRealVar*)result.find("dcp"))->getError();
+    trial.roofit_errs.dm21      = ((RooRealVar*)result.find("Dm21"))->getError();
+    trial.roofit_errs.dm31      = ((RooRealVar*)result.find("Dm31"))->getError();
+
+    cout << "*************************************************************************" << endl;
+    cout << "Started fitting with ROOT" << endl;
+    cout << "*************************************************************************" << endl;
+    fitutil->SetNOcentvals();
+    
+    TF3 *func = new TF3("fitfunc", pdf_tracks, 1, 100, -1, 0, 0, 1, 6);
+    func->SetParameters( rf_sinsqth12->getVal(), rf_sinsqth13->getVal(), rf_sinsqth23->getVal(),
+			 rf_dcp->getVal(), rf_dm21->getVal(), rf_dm31->getVal() );
+    
+    func->SetParNames("sinsq12","sinsq13","sinsq23","dcp","dm21","dm31");
+    
+    func->SetParLimits( 0, rf_sinsqth12->getMin(), rf_sinsqth12->getMax() );
+    func->SetParLimits( 1, rf_sinsqth13->getMin(), rf_sinsqth13->getMax() );
+    func->SetParLimits( 2, rf_sinsqth23->getMin(), rf_sinsqth23->getMax() );
+    func->SetParLimits( 3, rf_dcp->getMin(), rf_dcp->getMax() );
+    func->SetParLimits( 4, rf_dm21->getMin(), rf_dm21->getMax() );
+    func->SetParLimits( 5, rf_dm31->getMin(), rf_dm31->getMax() );
+
+    TFitResultPtr rootres = tracks_expct->Fit("fitfunc", "RSLV");
+
+    // store ROOT results
+    trial.root_vals.sinsqth12 = rootres->Parameter(0);
+    trial.root_vals.sinsqth13 = rootres->Parameter(1);
+    trial.root_vals.sinsqth23 = rootres->Parameter(2);
+    trial.root_vals.dcp       = rootres->Parameter(3);
+    trial.root_vals.dm21      = rootres->Parameter(4);
+    trial.root_vals.dm31      = rootres->Parameter(5);
+    root_minLLH               = rootres->MinFcnValue();
+    
+    trial.root_errs.sinsqth12 = rootres->ParError(0);
+    trial.root_errs.sinsqth13 = rootres->ParError(1);
+    trial.root_errs.sinsqth23 = rootres->ParError(2);
+    trial.root_errs.dcp       = rootres->ParError(3);
+    trial.root_errs.dm21      = rootres->ParError(4);
+    trial.root_errs.dm31      = rootres->ParError(5);
+
+    tout.Fill();
+
+    if (tracks_expct) delete tracks_expct;
+    
+  } // end loop over trials  
+
+  tout.Write();
+  fout.Close();
   
 }
 
