@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <map>
+#include <tuple>
 
 /**
    class to store E_true, ct_true, by_true bins that contribute to E_reco, ct_reco, by_reco bin for neutrino events.
@@ -26,11 +27,10 @@ struct TrueB : public TObject {
   Int_t    fBy_true_bin; //!< true bjorken-y bin index
   Double_t fW;           //!< fraction of events (weight) from true 'detected' bin that contribute to 'detected' reco bin
   Double_t fWE;          //!< MC statistical error of the weight
-  Double_t fFracReco;    //!< relative signal contribution of true bin to RecoB, used for `DetResponse::DisplayRespnse`
 
 
   /** Default constructor. */
- TrueB(): fFlav(0), fIsCC(0), fIsNB(0), fE_true_bin(0), fCt_true_bin(0), fBy_true_bin(0), fW(0), fWE(0), fFracReco(0) {};
+ TrueB(): fFlav(0), fIsCC(0), fIsNB(0), fE_true_bin(0), fCt_true_bin(0), fBy_true_bin(0), fW(0), fWE(0) {};
   
   /** Constructor.
       \param flav   Flavor (0 - elec, 1 - muon, 2 - tau)
@@ -57,7 +57,6 @@ struct TrueB : public TObject {
 
     //counters are initialized to 1 and error to 0. These converted to weights/error in `DetResponse::Normalise`
     fW        = 1;
-    fFracReco = 1;
     fWE       = 0.;
     
   };
@@ -68,7 +67,6 @@ struct TrueB : public TObject {
   /** Function to increment member counters */
   void Increment() {
     fW++;
-    fFracReco++;
   };
   
   /** 
@@ -93,7 +91,7 @@ struct TrueB : public TObject {
     output << "Flavor, is-cc, is-nb; true e, ct, by bin; weight, weight err, frac reco: "
 	   << tb.fFlav << ' ' << tb.fIsCC << ' ' << tb.fIsNB << ' '
 	   << tb.fE_true_bin << ' ' << tb.fCt_true_bin << ' ' << tb.fBy_true_bin << ' '
-	   << tb.fW << ' ' << tb.fWE << ' ' << tb.fFracReco;
+	   << tb.fW << ' ' << tb.fWE;
     return output;
   }
 
@@ -176,7 +174,7 @@ class DetResponse : public EventFilter {
   void                Fill(SummaryEvent *evt);
   void                WriteToFile(TString filename);
   void                ReadFromFile(TString filename);
-  TCanvas*            DisplayResponse(Double_t e_reco, Double_t ct_reco);
+  std::tuple<TCanvas*, TCanvas*, TCanvas*> DisplayResponse(Double_t e_reco, Double_t ct_reco);
   /// Return pointer to the 3D histogram with selected reco events
   TH3D*               GetHist3D() { return fHResp; }
   /// Get response name

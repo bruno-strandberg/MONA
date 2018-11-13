@@ -333,17 +333,6 @@ void DetResponse::Normalise() {
 	  // assumption that nsel << nsim
 	  tb.fWE = TMath::Sqrt(nsel)/nsim;
 	  
-	  //------------------------------------------------------------
-	  // calculate the fraction the events from true bin make up from the reco bin
-	  // this is used in `DetResponse::DisplayResponse`, the sum over fFracReco for each reco bin = 1
-	  //------------------------------------------------------------
-
-	  // total number of events in E_reco, ct_reco, by_reco bin
-	  Double_t nreco = fHResp->GetBinContent(ebin, ctbin, bybin);
-
-	  // the fraction
-	  tb.fFracReco = tb.fFracReco/nreco;
-
 	}
 	
       }
@@ -575,54 +564,133 @@ void DetResponse::ReadFromFile(TString filename) {
 /**
    Function to visualise the response in 2D.
 
+   This function shows the weights of the true bins that contribute to the reco bin in 2D and the number of events in true bins that contribute to the reco bin in 2D. As the response itself is in 3D, summation over bjorken-y is performed, which makes the structure of the function somewhat cumbersome.
+
    \param e_reco    Reconstructed energy
-   \param ct_reco   Reconstructed bjorken-y
-   \return          Pointer to a canvas where the visualisation is drawn.
+   \param ct_reco   Reconstructed cos-theta
+   \return          A tuple with pointers to three canvases where the visualization is drawn.
  */
-TCanvas* DetResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco) {
+std::tuple<TCanvas*,TCanvas*,TCanvas*> DetResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco) {
 
   if (!fNormalised) Normalise();
-  
-  TH2D *h_rb  = (TH2D*)fHResp->Project3D("yx")->Clone();
-  TH2D* h_tbs = (TH2D*)fHResp->Project3D("yx")->Clone();
-  h_rb->Reset();
-  h_tbs->Reset();
-  h_rb->SetDirectory(0);
-  h_tbs->SetDirectory(0);
+
+  //----------------------------------------------------------------------
+  // initialise the histograms for displaying the response
+  //----------------------------------------------------------------------
+  TH2D *hw[fFlavs.size()][fInts.size()][fPols.size()]; //histogram displaying weights by nu type
+  TH2D *hn[fFlavs.size()][fInts.size()][fPols.size()]; //histogram displaying event counts by nu type
+
   TString suffix = "_Ereco=" + (TString)to_string(e_reco) + "_ctreco=" + (TString)to_string(ct_reco);
-  h_rb->SetNameTitle("reco_bin"+suffix,"reco_bin"+suffix);
-  h_tbs->SetNameTitle("true_bins"+suffix,"true bins (only #nu) over all flavors, "+suffix);
-
-  Int_t ebin  = h_rb->GetXaxis()->FindBin(e_reco);
-  Int_t ctbin = h_rb->GetYaxis()->FindBin(ct_reco);
-
-  // sum over bjorken-y
-  for (Int_t bybin = 0; bybin < fBybins; bybin++) {
-        
-    vector<TrueB>& true_bins = fResp[ebin][ctbin][bybin];
-    if (true_bins.size() == 0) continue; //ignore underflow and overflow
-
-    h_rb->SetBinContent( ebin, ctbin, h_rb->GetBinContent(ebin, ctbin) + 1 );
-
-    for (auto &tb: true_bins) {
-      h_tbs->SetBinContent( tb.fE_true_bin, tb.fCt_true_bin, 
-			    h_tbs->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin) + tb.fFracReco );
+  
+  for (auto f: fFlavs) {
+    for (auto i: fInts) {
+      for (auto p: fPols) {
+	TString wname = "weights_" + f.second + "_" + i.second + "_" + p.second + suffix;
+	TString nname = "counts_" + f.second + "_" + i.second + "_" + p.second + suffix;
+	hw[f.first][i.first][p.first] = (TH2D*)fHResp->Project3D("yx")->Clone();
+	hn[f.first][i.first][p.first] = (TH2D*)fHResp->Project3D("yx")->Clone();
+	hw[f.first][i.first][p.first]->Reset();
+	hn[f.first][i.first][p.first]->Reset();
+	hw[f.first][i.first][p.first]->SetDirectory(0);
+	hn[f.first][i.first][p.first]->SetDirectory(0);
+	hw[f.first][i.first][p.first]->SetNameTitle(wname,wname);
+	hn[f.first][i.first][p.first]->SetNameTitle(nname,nname);
+	fHeap.Add(hw[f.first][i.first][p.first]);
+	fHeap.Add(hn[f.first][i.first][p.first]);
+      }
     }
-
   }
 
-  TCanvas *c1 = new TCanvas("DispResponse"+suffix,"DispResponse"+suffix, 1000, 600);
-  c1->Divide(2,1);
-  c1->cd(1);
-  c1->GetPad(1)->SetLogx();
+  //----------------------------------------------------------------------
+  // histogram displaying the number of events in the selected reconstruction bin
+  //----------------------------------------------------------------------  
+  TH2D *h_rb  = (TH2D*)fHResp->Project3D("yx")->Clone();
+  h_rb->SetDirectory(0);
+  h_rb->SetNameTitle("reco_bin"+suffix,"reco_bin"+suffix);
+  Int_t ebin  = h_rb->GetXaxis()->FindBin(e_reco);
+  Int_t ctbin = h_rb->GetYaxis()->FindBin(ct_reco);
+  Double_t bc = h_rb->GetBinContent(ebin, ctbin);
+  h_rb->Reset();
+  h_rb->SetBinContent( ebin, ctbin, bc );
+
+  //----------------------------------------------------------------------
+  // sum over bjorken-y by adding all true bins over bjorken-y to the true_bins vector
+  //----------------------------------------------------------------------
+  vector<TrueB> true_bins;
+  for (Int_t bybin = 0; bybin < fBybins; bybin++) {
+    vector<TrueB>& tbs = fResp[ebin][ctbin][bybin];
+    true_bins.insert( true_bins.end(), tbs.begin(), tbs.end() );
+  }
+
+  //----------------------------------------------------------------------
+  // loop over true bins and add contents to the histograms visualizing the response
+  //----------------------------------------------------------------------
+  for (auto &tb: true_bins) {
+
+    // total number of simulated events in the true bin is stored in fhSim
+    Double_t totsim = fhSim[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent( tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin );
+
+    // number of events from true bin in reco bin - reconstructed from the weight
+    Double_t recsim = totsim * tb.fW;
+
+    // histogram that will display the weights in 2D
+    hw[tb.fFlav][tb.fIsCC][tb.fIsNB]->SetBinContent( tb.fE_true_bin, tb.fCt_true_bin,
+						     hw[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin) + recsim );
+
+    // histogram that will display the number of event from true bin that entered the reco bin
+    hn[tb.fFlav][tb.fIsCC][tb.fIsNB]->SetBinContent( tb.fE_true_bin, tb.fCt_true_bin,
+						     hn[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin) + recsim );
+  }
+
+  //----------------------------------------------------------------------
+  // now do the drawing
+  //----------------------------------------------------------------------
+
+  Int_t padcount = 1;
+  Int_t rows     = 3;
+  Int_t cols     = 4;
+  
+  TCanvas *c1 = new TCanvas("Weights"+suffix,"Weights"+suffix, 1000, 600);
+  c1->Divide(cols,rows);
+
+  TCanvas *c2 = new TCanvas("Counts"+suffix,"Counts"+suffix, 1000, 600);
+  c2->Divide(cols,rows);
+  
+  for (auto f: fFlavs) {
+    for (auto i: fInts) {
+      for (auto p: fPols) {
+
+	if (padcount > rows*cols) {
+	  throw std::invalid_argument( "ERROR! DetResponse::DisplayResponse() too few pads!" );
+	}
+	
+	// the weights displaying histogram shows only numbers at this stage, these need to
+	// be converted back to weights for a 2D response
+	TH2D *hsim2D = (TH2D*)fhSim[f.first][i.first][p.first]->Project3D("yx")->Clone("clone");
+	hw[f.first][i.first][p.first]->Divide(hsim2D);
+	if (hsim2D) delete hsim2D;
+
+	c1->cd(padcount);
+	c1->GetPad(padcount)->SetLogx();
+	hw[f.first][i.first][p.first]->Draw("colz");
+
+	c2->cd(padcount);
+	c2->GetPad(padcount)->SetLogx();
+	hn[f.first][i.first][p.first]->Draw("text");
+	
+	padcount++;
+      }
+    }
+  }  
+    
+  TCanvas *c3 = new TCanvas("RecoBin"+suffix,"RecoBin"+suffix, 1000, 600);
+  c3->SetLogx();
   h_rb->Draw("colz");
-  c1->cd(2);
-  c1->GetPad(2)->SetLogx();
-  h_tbs->Draw("colz");
-
+  
   fHeap.Add(h_rb);
-  fHeap.Add(h_tbs);
   fHeap.Add(c1);
+  fHeap.Add(c2);
+  fHeap.Add(c3);
 
-  return c1;
+  return std::make_tuple(c1,c2,c3);
 }
