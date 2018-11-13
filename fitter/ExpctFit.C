@@ -11,6 +11,7 @@
 #include "RooDataHist.h"
 #include "RooFitResult.h"
 #include "RooRandom.h"
+#include "RooMinimizer.h"
 
 #include "TObject.h"
 #include "TFile.h"
@@ -74,7 +75,7 @@ int main(int argc, char **argv) {
       (string)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
-    zap['o'] = make_field(outputfile, "File where output histograms are written") = "rootfiles/expectationfit.root";
+    zap['o'] = make_field(outputfile, "File where output histograms are written") = (string)getenv("NMHDIR") + "/fitter/rootfiles/expectationfit.root";
     zap['n'] = make_field(nfits, "Number of fits to be performed") = 1;
 
     zap['w'] = make_field(effmh_elecCC, "Eff mass histograms for elec-CC") =
@@ -117,7 +118,7 @@ int main(int argc, char **argv) {
   track_resp.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05, true );
   track_resp.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );    
 
-  TString track_resp_name  = "rootfiles/track_response.root";
+  TString track_resp_name  = (TString)getenv("NMHDIR") + "/fitter/rootfiles/track_response.root";
   
   if ( !NMHUtils::FileExists(track_resp_name) || refill_response ) {
     cout << "NOTICE ExpctFit() (Re)filling response" << endl;
@@ -235,7 +236,22 @@ int main(int argc, char **argv) {
     cout << "*************************************************************************" << endl;
     fitutil->SetNOcentvals();
     RooDataHist rf_hist("rf_hist", "rf_hist", fitutil->GetObs(), Import(*tracks_expct) );
-    RooFitResult *fitres = pdf_tracks.fitTo( rf_hist, Save(kTRUE), SumW2Error(kTRUE), RooFit::Optimize(kFALSE) );
+    //RooFitResult *fitres = pdf_tracks.fitTo( rf_hist, Save(kTRUE), SumW2Error(kFALSE), Optimize(kFALSE), Offset(kTRUE) );
+
+    RooAbsReal *nll = pdf_tracks.createNLL(rf_hist);
+    RooMinimizer m(*nll);
+    //m.setVerbose(kTRUE);
+    const char* minimizer = "Minuit";
+    const char* minalg    = "minuit";
+    m.setMinimizerType(minimizer); // select minimizer
+    m.optimizeConst(kFALSE);       // turn off optimisation
+    m.setOffsetting(kTRUE);        // offset the likelihood, helps with large LLH values
+    m.setEps(1e-5);                // increase MIGRAD precision
+    m.hesse();                     // do initial error evaluation
+    m.minimize(minimizer, minalg);
+    m.hesse();
+    RooFitResult *fitres = m.save();
+
     RooArgSet result( fitres->floatParsFinal() );
 
     // store roofit results and errors
