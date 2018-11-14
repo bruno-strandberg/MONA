@@ -5,7 +5,20 @@
 
 using namespace std;
 
-/** Constructor*/
+/** Constructor
+    \param op_time         Operation time in years
+    \param h_template      A 3D histogram that represents the binning settings
+    \param emin            Minimum energy included in the fit range
+    \param emax            Maximum energy included in the fit range
+    \param ctmin           Minimum cos-theta included in the fit range
+    \param ctmax           Maximum cos-theta included in the fit range
+    \param bymin           Minimum bjorken-y included in the fit range
+    \param bymax           Maximum bjorken-y included in the fit range
+    \param meffh_elec_cc   Effective mass histograms for elec-CC, output by `EffMhists`
+    \param meffh_muon_cc   Effective mass histograms for muon-CC, output by `EffMhists`
+    \param meffh_tau_cc    Effective mass histograms for tau-CC, output by `EffMhists`
+    \param meffh_elec_nc   Effective mass histograms for elec-NC, output by `EffMhists`
+*/
 FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
 		 Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax,
 		 TString meffh_elec_cc, TString meffh_muon_cc, TString meffh_tau_cc, TString meffh_elec_nc) {
@@ -54,7 +67,7 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
 
 //***************************************************************************
 
-/** Destructor.*/
+/** Destructor */
 FitUtil::~FitUtil() {
 
   cout << "FitUtil::~FitUtil() total oscillator calls: " << fOscCalls << endl;
@@ -101,6 +114,15 @@ FitUtil::~FitUtil() {
 
 //***************************************************************************
 
+/** Private function to find a range in an axis that exactly matches bin edges.
+
+    For example, consider 40 logarithmic energy bins from 1-100 GeV. The user can ask the fit to be performed in the range from 2 - 82 GeV. This function find the bin edges closest to the dialled range. For example, the range 2 - 82 would become something like 2.42 - 79.2. This is necessary to make sure that data import to `RooFit`, fit ranges and the detector response are consistent.
+
+    \param min    Minimum of the range
+    \param max    Maximum of the range
+    \param axis   Pointer to an axis that defines the binning
+    \return       A std::tuple with the minimum, the maximum, the minimum bin number and the maximum bin number
+*/
 std::tuple<Double_t, Double_t, Int_t, Int_t> FitUtil::GetRange(Double_t _min, Double_t _max, TAxis *axis) {
 
   Int_t bin_min = 1;
@@ -124,6 +146,14 @@ std::tuple<Double_t, Double_t, Int_t, Int_t> FitUtil::GetRange(Double_t _min, Do
 
 //***************************************************************************
 
+/** Private function to initialise `RooFit` variables.
+    \param emin   Minimum energy in the fit range
+    \param emax   Maximum energy in the fit range
+    \param ctmin  Minimum cos-theta in the fit range
+    \param ctmax  Maximum cos-theta in the fit range
+    \param bymin  Minimum bjorken-y in the fit range
+    \param bymin  Maximum bjorken-y in the fit range
+*/
 void FitUtil::InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, 
 			  Double_t bymin, Double_t bymax) {
 
@@ -151,6 +181,7 @@ void FitUtil::InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t
 
 //***************************************************************************
 
+/** Function to set the oscillation parameter limits corresponding to normal mass ordering */
 void FitUtil::SetNOlims() {
 
   fSinsqTh12->setMin(f_NO_sinsqth12.min);
@@ -175,6 +206,7 @@ void FitUtil::SetNOlims() {
 
 //***************************************************************************
 
+/** Function to set the oscillation parameters to central values that correspond to normal mass ordering */
 void FitUtil::SetNOcentvals() {
   
   fSinsqTh12->setVal(f_NO_sinsqth12.cv);
@@ -188,6 +220,7 @@ void FitUtil::SetNOcentvals() {
 
 //***************************************************************************
 
+/** Function to set the oscillation parameter limits corresponding to inverted mass ordering */
 void FitUtil::SetIOlims() {
 
   fSinsqTh12->setMin(f_IO_sinsqth12.min);
@@ -212,6 +245,7 @@ void FitUtil::SetIOlims() {
 
 //***************************************************************************
 
+/** Function to set the oscillation parameters to central values that correspond to inverted mass ordering */
 void FitUtil::SetIOcentvals() {
   
   fSinsqTh12->setVal(f_IO_sinsqth12.cv);
@@ -225,6 +259,9 @@ void FitUtil::SetIOcentvals() {
 
 //***************************************************************************
 
+/** Private function to initialize histograms for caching variabes 
+    \param h_template  a TH3 template histogram that stores the binning information
+ */
 void FitUtil::InitCacheHists(TH3D *h_template) {
 
   // maps to create histogram names
@@ -286,6 +323,11 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
 
 //***************************************************************************
 
+/** A private function to fill the flux and xsec cache hists
+    \param flux     Pointer to the `AtmFlux` member instance
+    \param xsec     Pointer to the `NuXsec` member instance
+    \param op_time  Operation time in years.
+*/
 void FitUtil::FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time) {
 
   // fill the atm flux cache. Note that (currently) AtmFlux returns 0 for tau flux
@@ -337,9 +379,18 @@ void FitUtil::FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time
 //***************************************************************************
 
 /**
-   Function that handles the caching of the oscillation probabilities.
+   Private function that handles the caching of the oscillation probabilities.
+
+   This function re-calculates the oscillation probabilites and stores them in member histograms `fhOscCache` whenever any of the oscillation parameters change. If none of them change, the calculation is not performed. The way the `DetResponse` class is set up and the way fitting works, this enables to save a large amount of time.
 
    NB! The oscillations tau-> (elec, muon, tau) are not calculated to save time; tau flux is assumed 0.
+
+   \param SinsqTh12   \f$ sin^2\theta_{12} \f$ value
+   \param SinsqTh13   \f$ sin^2\theta_{13} \f$ value
+   \param SinsqTh23   \f$ sin^2\theta_{23} \f$ value
+   \param Dcp         \f$ \delta_{CP} \f$ value
+   \param Dm21        \f$ \Delta m_{21}^2 \f$ value
+   \param Dm31        \f$ \Delta m_{31}^2 \f$ value
  */
 void FitUtil::ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
 			 Double_t Dcp, Double_t Dm21, Double_t Dm31) {
@@ -498,6 +549,21 @@ void FitUtil::ReadMeffHists(TH3D* h_template, TString meffh_elec_cc, TString mef
 
 //***************************************************************************
 
+/** Private function that calculates the number of events in a \f$ (E_{\rm true}, cos\theta_{\rm true}, by_{\rm true}) \f$ bin.
+    \param ebin_true   Number of true energy bin
+    \param ctbin_true  Number of true cos-theta bin
+    \param bybin_true  Number of true bjorken-y bin
+    \param flav        neutrino flavor (0 - elec, 1 - tau, 2 - muon)
+    \param iscc        0 - NC, 1 - CC
+    \param isnb        0 - nu, 1 - nub
+    \param SinsqTh12   \f$ sin^2\theta_{12} \f$ value
+    \param SinsqTh13   \f$ sin^2\theta_{13} \f$ value
+    \param SinsqTh23   \f$ sin^2\theta_{23} \f$ value
+    \param Dcp         \f$ \delta_{CP} \f$ value
+    \param Dm21        \f$ \Delta m_{21}^2 \f$ value
+    \param Dm31        \f$ \Delta m_{31}^2 \f$ value
+    \return            A pair; first is the number of expected events in the true bin, second is the MC statistical uncertainty
+*/
 std::pair<Double_t, Double_t> FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_true, Int_t bybin_true, 
 						UInt_t flav, UInt_t iscc, UInt_t isnb, 
 						Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
@@ -560,6 +626,15 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_tru
 
 //***************************************************************************
 
+/** This function is called from inside `FitPDF::evaluate()` and returns the number of expected events in a \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ bin.
+
+    The argument map is created in `FitPDF` and contains names and corresponding proxies for all parameters in `fParSet`. The detector response is also part of the `FitPDF` class and configures what kind of an event selection the pdf is used to fit.
+
+    \param parmap   Reference to a map with parameter names and corresponding `RooRealProxy`'s.
+    \param resp     Pointer to `DetResponse` instance used with the `FitPDF` class.
+    \return         Expected number of events in a 
+
+*/
 Double_t FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp) {
 
   // get the parameter values from the proxies
@@ -580,7 +655,16 @@ Double_t FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, De
 
 //***************************************************************************
 
-/** Development: will need to think about the range here!*/
+/** This function is called inside `FitPDF::analyticalIntegral` and `FitPDF::GetExpValHist` and fills a histogram with expectation values in reco bins.
+
+    The argument map is created in `FitPDF` and contains names and corresponding proxies for all parameters in `fParSet`. The detector response is also part of the `FitPDF` class and configures what kind of an event selection the pdf is used to fit.
+    
+    \param parmap     Reference to a map with parameter names and corresponding `RooRealProxy`'s.
+    \param resp       Pointer to `DetResponse` instance used with the `FitPDF` class.
+    \param rangeName  Range string as used in `RooFit`, currently dummy.
+    \return           A pair; first is a 3D histogram in reco variables with exepectation values as bin contents, second is an integral over energy, cos-theta and bjorken-y, taking the bin widths into account.
+
+*/
 std::pair<TH3D*, Double_t> FitUtil::PdfExpectation(const std::map<TString, RooRealProxy*> &parmap,
 						   DetResponse *resp, const char* rangeName) {
 
@@ -631,6 +715,18 @@ std::pair<TH3D*, Double_t> FitUtil::PdfExpectation(const std::map<TString, RooRe
 
 //***************************************************************************
 
+/** Private function that calculates the number of events in a \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ bin.
+    \param E_reco      Reconstructed energy
+    \param Ct_reco     Reconstructed cos-theta
+    \param By_reco     Reconstructed bjorken-y
+    \param SinsqTh12   \f$ sin^2\theta_{12} \f$ value
+    \param SinsqTh13   \f$ sin^2\theta_{13} \f$ value
+    \param SinsqTh23   \f$ sin^2\theta_{23} \f$ value
+    \param Dcp         \f$ \delta_{CP} \f$ value
+    \param Dm21        \f$ \Delta m_{21}^2 \f$ value
+    \param Dm31        \f$ \Delta m_{31}^2 \f$ value
+    \return            A pair; first is the number of expected events in the reco bin, second is the MC statistical uncertainty
+*/
 std::pair<Double_t, Double_t> FitUtil::RecoEvts(DetResponse *resp, 
 						Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
 						Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
@@ -682,5 +778,3 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(DetResponse *resp,
   return std::make_pair(det_count, det_err);
 
 }
-
-//***************************************************************************
