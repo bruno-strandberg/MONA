@@ -14,7 +14,7 @@ LDFLAGS       = $(ROOTLIBS) $(NMHLIBS)
 #===============================================================
 # define variables for complilation
 #===============================================================
-PACKAGES = Fitter Asymmetry ExpctFit
+PACKAGES = Fitter Asymmetry ExpctFit1H
 COMMON_HEADERS = $(filter-out $(PACKAGES:=.h), $(wildcard *.h))
 COMMON_SOURCES = $(filter-out $(PACKAGES:=.C), $(wildcard *.C))
 DICTIONARY = dict.cxx
