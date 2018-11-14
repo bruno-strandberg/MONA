@@ -1,16 +1,17 @@
 Main page {#mainpage}
 ===================
+
 This software provides some tools for estimating the ORCA sensitivity to neutrino mass ordering. It relies on Monte-Carlo data from ORCA simulation chain (see `data/README.md` for a brief description of the simulation chain). The directory `NMH/common_software` holds classes that are used by various applications for recurring tasks. Other directories hold code for some specific analysis.
 
 Prerequisities
 ==============
 * ROOT 6
-* To use `GSGParser` to parse `gSeaGen` files in `.evt` format, one also requires `Jpp` and `aanet` compiled against `ROOT 6`
+* Jpp with aanet, compiled against ROOT 6
 * Python scripts will require `docopt` package
 
 More info
 =========
-* Regarding the data format(s) used in the analysis, consult NMH/data/README.md and NMH/data_sorting/README.md.
+* Regarding the data format(s) used in the analysis, consult data/README.md and data_sorting/README.md.
 * Each subdirectory holds a `README.md` file that describes what the code can be used for.
 
 How to use
