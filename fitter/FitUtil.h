@@ -22,10 +22,18 @@
 // standard cpp
 #include <map>
 
-/** This class is used in conjunction with `FitPDF` to fit NMO data with `RooFit` 
+/** This class is used in conjunction with `FitPDF` to fit NMO data with `RooFit`.
 
-    Main ideas: internal oscillation cache, such that i.e. with 10 histograms fitted simultaneously, the number of oscillator calls in minimized.
-    Main ideas: expansion of the fit model is performed here, no modifications of the `FitPDF` class is required.
+    Each `FitPDF` class will require a pointer to a `FitUtil` instance. One `FitUtil` instance can (and should!) be shared between several `FitPDF` instances, if several `FitPDF` instances are required (usually yes - at least one for tracks and one for showers). `FitUtil` employs an internal cache for oscillation parameters, which speeds up the fitting procedure when several histograms/data sets are fitted in parallel (e.g. when several PID bins are used).
+
+    The `FitPDF` class that uses `FitUtil` is a modification of a class that was auto-generated with `RooClassFactory::makePdf`. The idea is that `FitPDF` acts merely as a wrapper class to get access to `RooFit` niceties (such as simultaneous fitting), the model calculations and parameters are defined here in `FitUtil` class.
+
+    <B> How to extend? </B> Simply put, the `FitPDF::evaluate` method is called each time during the fitting (`pdf->fitTo`) when the fitter moves to a new \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ bin. `FitPDF::evaluate` calls `PdfEvaluate` of this class, which returns the number of expected events in the reco bin. Let's say one now wishes to add another fit parameter that scales the atmospheric flux. To do that, one must: 
+
+    -# create a new `RooRealVar*` member in this class, initialise it <B> and add it to `fParSet` </B>. Basically, one must do exactly what is done for `fDm31`. `FitPDF` class creates a `RooRealProxy` for each parameter in `fParSet`, such that the map given to `FitUtil::PdfEvaluate` contains an entry for each parameter `fParSet`. The nice thing in such a setup is that `FitPDF` does not need to be modified, parameters are added in this class and used in this class.
+    -# extend the argument list of `FitUtil::RecoEvts` by the new parameter, extract the new parameter from the map in `FitUtil::PdfEvaluate` and give it to `FitUtil::RecoEvts`.
+    -# Do something meaningful with the new parameter. In this case, the flux scale needs to be passed inside `FitUtil::RecoEvts` to `FitUtil::TrueEvts`, where the flux scale can multiply `atm_count_e` and `atm_count_m`.
+
 */
 class FitUtil {
 
