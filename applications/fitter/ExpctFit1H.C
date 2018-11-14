@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
       (string)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
-    zap['o'] = make_field(outputfile, "File where output histograms are written") = (string)getenv("NMHDIR") + "/fitter/rootfiles/expectationfit.root";
+    zap['o'] = make_field(outputfile, "File where output histograms are written") = (string)getenv("NMHDIR") + "/applications/fitter/rootfiles/expectationfit.root";
     zap['n'] = make_field(nfits, "Number of fits to be performed") = 1;
 
     zap['w'] = make_field(effmh_elecCC, "Eff mass histograms for elec-CC") =
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
   track_resp.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05, true );
   track_resp.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );    
 
-  TString track_resp_name  = (TString)getenv("NMHDIR") + "/fitter/rootfiles/track_response.root";
+  TString track_resp_name  = (TString)getenv("NMHDIR") + "/applications/fitter/rootfiles/track_response.root";
   
   if ( !NMHUtils::FileExists(track_resp_name) || refill_response ) {
     cout << "NOTICE ExpctFit() (Re)filling response" << endl;

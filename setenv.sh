@@ -33,6 +33,10 @@ if ! echo $LD_LIBRARY_PATH | grep -q $NMHDIR/common_software; then
     export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$NMHDIR/common_software
 fi
 
+if ! echo $LD_LIBRARY_PATH | grep -q $NMHDIR/fitter_software; then
+    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$NMHDIR/fitter_software
+fi
+
 if ! echo $LD_LIBRARY_PATH | grep -q $OSCPROBDIR; then
     export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$OSCPROBDIR
 fi
@@ -41,9 +45,14 @@ if ! echo $CPATH | grep -q $NMHDIR/common_software; then
     export CPATH=${CPATH}:$NMHDIR/common_software
 fi
 
+if ! echo $CPATH | grep -q $NMHDIR/fitter_software; then
+    export CPATH=${CPATH}:$NMHDIR/fitter_software
+fi
+
 if ! echo $CPATH | grep -q $OSCPROBDIR; then
     export CPATH=${CPATH}:$OSCPROBDIR
 fi
+
 
 if ($aanet -eq 'true'); then
     if ! echo $CPATH | grep -q $AADIR; then

@@ -1,36 +1,33 @@
 
-#===============================================================
-# setup cxx and library flags
-#===============================================================
-JPPCFLAGS     = -I$(JPP_DIR)/software
-ROOTCFLAGS    = $(shell root-config --cflags)
-ROOTLIBS      = $(shell root-config --libs) -lRooFit -lRooFitCore
-NMHLIBS       = -L $(NMHDIR)/common_software -lnmhsoft -L $(OSCPROBDIR) -lOscProb
+include $(NMHDIR)/Makerules
 
-CXX           = g++
-CXXFLAGS      = -g -Wall -std=c++11 -fPIC $(ROOTCFLAGS) $(JPPCFLAGS)
-LDFLAGS       = $(ROOTLIBS) $(NMHLIBS)
+#===============================================================
+# setup cxx and library flags from global variables
+#===============================================================
+
+CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS)
+LFLAGS = $(ROOTLIBS) $(ROOFITLIBS) $(NMHLIB) $(OSCLIB)
 
 #===============================================================
 # define variables for complilation
 #===============================================================
-PACKAGES = Fitter Asymmetry ExpctFit1H
-COMMON_HEADERS = $(filter-out $(PACKAGES:=.h), $(wildcard *.h))
-COMMON_SOURCES = $(filter-out $(PACKAGES:=.C), $(wildcard *.C))
-DICTIONARY = dict.cxx
+HEADERS = $(wildcard *.h)
+SOURCES = $(wildcard *.C)
+OBJ     = lib$(FITSOFT).so
+DICT    = $(FITSOFT).cxx
 
 #===============================================================
 # compilation
 #===============================================================
 
-all: $(PACKAGES)
+all: $(OBJ)
 
-$(PACKAGES): %: %.C $(DICTIONARY) $(COMMON_SOURCES)
+$(OBJ): $(SOURCES) $(DICT)
 	@echo "  Building $@ with pre-requisities $^..."
-	@g++ -O3 -o $@ $^ $(LDFLAGS) $(CXXFLAGS)
+	@g++ -shared -O3 -o $@ $^ $(LFLAGS) $(CFLAGS)
 
-$(DICTIONARY): $(COMMON_HEADERS)
-	@echo "  Making dictionary for common headers/sources..."
+$(DICT): $(HEADERS)
+	@echo "  Making dictionary $@..."
 	@rootcling -f $@ $^
 
 #===============================================================
@@ -41,16 +38,14 @@ $(DICTIONARY): $(COMMON_HEADERS)
 
 clean:
 	@echo "  Cleaning..."
-	@rm -f $(PACKAGES)
-	@rm -f $(DICTIONARY)
-	@rm -f $(DICTIONARY:%.cxx=%.h)
+	@rm -f $(OBJ)
+	@rm -f $(DICT)
 	@rm -f *rdict.pcm
 
 .PHONY: print
 
 print:
-	@echo ${PACKAGES}
-	@echo ${COMMON_HEADERS}
-	@echo ${COMMON_SOURCES}
-	@echo ${LDFLAGS}
-	@echo ${CXXFLAGS}
+	@echo ${HEADERS}
+	@echo ${SOURCES}
+	@echo ${OBJ}
+	@echo ${CFLAGS}

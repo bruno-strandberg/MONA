@@ -1,0 +1,38 @@
+#==============================================================================
+#collection of global variables that can/should be incorporated in individual makefiles in sub-directories
+#==============================================================================
+
+#--------------------------------------------------------------
+# commonly used packages of NNMO
+#--------------------------------------------------------------
+NMHSOFT    = nmhsoft
+FITSOFT    = fitsoft
+NMHSOFTDIR = $(NMHDIR)/common_software/
+FITSOFTDIR = $(NMHDIR)/fitter_software/
+
+#--------------------------------------------------------------
+# libraries
+#--------------------------------------------------------------
+ROOTLIBS      = $(shell root-config --libs) 
+ROOFITLIBS    = -L$(shell root-config --libdir) -lRooFit -lRooFitCore
+NMHLIB        = -L$(NMHSOFTDIR) -l$(NMHSOFT)
+FITLIB        = -L$(FITSOFTDIR) -l$(FITSOFT)
+OSCLIB        = -L$(OSCPROBDIR) -lOscProb
+
+#--------------------------------------------------------------
+# cflags
+#--------------------------------------------------------------
+ROOTCFLAGS    = $(shell root-config --cflags)
+CXXFLAGS      = -g -Wall -std=c++11 -fPIC
+JPPCFLAGS     = -I$(JPP_DIR)/software
+
+# currently directoried added to CPATH and -I/.. not necessary for compilation
+#FITSOFTFLAGS  = -I$(FITSOFTDIR)
+#NMHSOFTFLAGS  = -I$(NMHSOFTDIR)
+
+#--------------------------------------------------------------
+#compiler
+#--------------------------------------------------------------
+CXX           = g++
+
+
