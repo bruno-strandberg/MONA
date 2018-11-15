@@ -14,7 +14,8 @@ LFLAGS = $(ROOTLIBS) $(ROOFITLIBS) $(NMHLIB) $(OSCLIB)
 HEADERS = $(wildcard *.h)
 SOURCES = $(wildcard *.C)
 OBJ     = lib$(FITSOFT).so
-DICT    = $(FITSOFT).cxx
+DICT    = dic$(FITSOFT).cxx
+ROOTMAP = dic$(FITSOFT).rootmap
 
 #===============================================================
 # compilation
@@ -28,7 +29,7 @@ $(OBJ): $(SOURCES) $(DICT)
 
 $(DICT): $(HEADERS)
 	@echo "  Making dictionary $@..."
-	@rootcling -f $@ $^
+	@rootcling -f $@ -rml $(OBJ) -rmf $(ROOTMAP) $^
 
 #===============================================================
 # clean-up and print command
@@ -40,6 +41,7 @@ clean:
 	@echo "  Cleaning..."
 	@rm -f $(OBJ)
 	@rm -f $(DICT)
+	@rm -f $(ROOTMAP)
 	@rm -f *rdict.pcm
 
 .PHONY: print
@@ -48,4 +50,7 @@ print:
 	@echo ${HEADERS}
 	@echo ${SOURCES}
 	@echo ${OBJ}
+	@echo ${DICT}
+	@echo ${ROOTMAP}
 	@echo ${CFLAGS}
+	@echo ${LFLAGS}
