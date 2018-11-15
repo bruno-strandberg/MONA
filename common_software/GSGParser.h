@@ -16,8 +16,8 @@
 #include "TMath.h"
 #include <iostream>
 #include <stdexcept>
-#include "EventFile.hh"
 
+class EventFile;
 using namespace std;
 
 // Header file for the classes stored in the TTree if any.
@@ -282,13 +282,6 @@ GSGParser::GSGParser(TString fname) : fChain(0)
     throw std::invalid_argument( "ERROR! GSGParser::GSGParser() file " + (string)fname + " not found or format not recognized." );
   }
 
-}
-
-GSGParser::~GSGParser()
-{
-   if (fEvtFile) delete fEvtFile;
-   if (!fChain) return;
-   if ( fChain->GetCurrentFile() ) fChain->GetCurrentFile()->Close();
 }
 
 Int_t GSGParser::GetEntry(Long64_t entry)

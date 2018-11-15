@@ -6,6 +6,7 @@
 #include <fstream>
 #include<sstream>
 #include <sys/stat.h>
+#include "EventFile.hh"
 
 void GSGParser::Loop()
 {
@@ -44,6 +45,13 @@ void GSGParser::Loop()
       // if (Cut(ientry) < 0) continue;
    }
 }
+
+GSGParser::~GSGParser() {
+   if (fEvtFile) delete fEvtFile;
+   if (!fChain) return;
+   if ( fChain->GetCurrentFile() ) fChain->GetCurrentFile()->Close();
+}
+
 
 //**************************************************************************
 
