@@ -334,7 +334,6 @@ void FLUXCHAIN::InitHists() {
    \param meff_tau_cc   Name of the effective mass file for tau CC
    \param meff_elec_nc  Name of the effective mass file for elec NC
 
-   \return True if effective mass histograms successfully found, False otherwise.
  */
 void FLUXCHAIN::ReadMeffHists(FileHeader &h, TString meff_elec_cc, TString meff_muon_cc, 
 				TString meff_tau_cc, TString meff_elec_nc) {

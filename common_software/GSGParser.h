@@ -16,15 +16,7 @@
 #include "TMath.h"
 #include <iostream>
 #include <stdexcept>
-
-//aanet class to read evt files, WAANET set in makefile
-#ifdef WAANET
 #include "EventFile.hh"
-#define AANETEXISTS 1
-#else
-class EventFile;
-#define AANETEXISTS 0
-#endif
 
 using namespace std;
 
@@ -282,21 +274,12 @@ GSGParser::GSGParser(TString fname) : fChain(0)
     fIsRootFile = true;
   }
   else if ( fname.Contains(".evt")  ) {
-
     fIsRootFile = false;
-
-    if (AANETEXISTS > 0) {
-      InitOK = InitEvtFile(fname);
-    }
-    else {
-      InitOK = false;
-      cout << "ERROR! GSGParser::GSGParser() for .evt files compile against aanet." << endl;
-    }
-    
+    InitOK = InitEvtFile(fname);    
   }
 
   if (!InitOK) {
-    throw std::invalid_argument( "ERROR! GSGParser::GSGParser() file " + (string)fname + " not found or trying to parse .evt files without compilation against aanet." );
+    throw std::invalid_argument( "ERROR! GSGParser::GSGParser() file " + (string)fname + " not found or format not recognized." );
   }
 
 }

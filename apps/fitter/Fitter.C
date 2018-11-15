@@ -1,0 +1,304 @@
+//#include "Fitter.h"
+
+// fitter headers
+#include "FitUtil.h"
+#include "FitPDF.h"
+
+// NMH headers
+#include "SummaryParser.h"
+#include "SummaryEvent.h"
+#include "NMHUtils.h"
+#include "FileHeader.h"
+#include "DetResponse.h"
+#include "EventSelection.h"
+
+// root headers
+#include "TH3.h"
+#include "TFile.h"
+#include "TStopwatch.h"
+
+// roofit headers
+#include "RooDataHist.h"
+#include "RooCategory.h"
+#include "RooSimultaneous.h"
+#include "RooFitResult.h"
+
+// cpp headers
+#include <iostream>
+#include <stdexcept>
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <vector>
+
+// jpp headers
+#include "Jeep/JParser.hh"
+#include "Jeep/JMessage.hh"
+
+using namespace RooFit;
+using namespace std;
+
+/** A namespace that collects functions and variables for the fitting */
+namespace Fitter {
+
+  // functions
+  void InitRespsAndSels();
+  void FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response);
+  void FillSelections();
+  void Cleanup();
+  
+  // binning variables
+  static const Int_t    fENB    =  40;
+  static const Double_t fEmin   =   1;
+  static const Double_t fEmax   = 100;
+  static const Int_t    fCtNB   =  40;
+  static const Double_t fCtmin  =  -1;
+  static const Double_t fCtmax  =   1;
+  static const Int_t    fByNB   =   1;
+  static const Double_t fBymin  =   0;
+  static const Double_t fBymax  =   1;
+
+  // member selections and responses
+  DetResponse    *fTRres;
+  DetResponse    *fSHres;
+  EventSelection *fTRsel;
+  EventSelection *fSHsel;
+
+};
+
+/** Main function of the program */
+int main(int argc, char **argv) {
+
+  using namespace Fitter;
+
+  //----------------------------------------------------------
+  // parse command line arguments with Jpp
+  //----------------------------------------------------------
+  
+  string        simdata_file;
+  string        expdata_file;
+  bool          refill_response;
+  string        effmh_elecCC;
+  string        effmh_muonCC;
+  string        effmh_tauCC;
+  string        effmh_elecNC;
+
+  try {
+
+    JParser<> zap("Program to fit the experimental data with standard track-shower separation.");
+
+    zap['s'] = make_field(simdata_file, "File with all summary data") =
+      (string)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+
+    zap['e'] = make_field(expdata_file, "File with experimental data sample") =
+      "rootfiles/Experiment_oscpars5_sample_0_NH.root";
+
+    zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
+
+    zap['w'] = make_field(effmh_elecCC, "Eff mass histograms for elec-CC") =
+      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_CC.root";
+
+    zap['x'] = make_field(effmh_muonCC, "Eff mass histograms for muon-CC") =
+      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_muon_CC.root";
+
+    zap['y'] = make_field(effmh_tauCC , "Eff mass histograms for tau-CC") =
+      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_tau_CC.root";
+
+    zap['z'] = make_field(effmh_elecNC, "Eff mass histograms for elec-NC") =
+      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_NC.root";    
+
+    zap(argc, argv);
+  }
+  catch(const exception &error) {
+    FATAL(error.what() << endl);
+  }
+
+  //----------------------------------------------------------
+  // call methods to initialise and fill responses
+  //----------------------------------------------------------
+  
+  InitRespsAndSels();
+  FillRespsAndSels(simdata_file, expdata_file, refill_response);
+
+  //----------------------------------------------------------
+  // set up the PDFs for fitting
+  //----------------------------------------------------------
+  FitUtil *fitutil = new FitUtil(3, fTRres->GetHist3D(),
+				 1, 100, -1, 0, 0, 1, effmh_elecCC, effmh_muonCC, effmh_tauCC, effmh_elecNC);
+
+  FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, fTRres);  
+  FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, fSHres);
+
+  //----------------------------------------------------------
+  // set up data for simultaneous fitting and fit
+  //----------------------------------------------------------
+  std::map<string, TH1* > hist_map = { { (string)fTRsel->Get_SelName() , fTRsel->Get_h_E_costh_by() }, 
+				       { (string)fSHsel->Get_SelName() , fSHsel->Get_h_E_costh_by() } };
+  
+  // create categories
+  RooCategory categs("categs","data categories");
+  categs.defineType( fTRsel->Get_SelName() );
+  categs.defineType( fSHsel->Get_SelName() );
+  
+  // create combined data set
+  RooDataHist combData("combData", "combined data", fitutil->GetObs(), categs, hist_map);
+
+  // create simultaneous pdf
+  RooSimultaneous simPdf("simPdf", "simultaneous Pdf", categs);
+  simPdf.addPdf(pdf_tracks , fTRsel->Get_SelName() );
+  simPdf.addPdf(pdf_showers, fSHsel->Get_SelName() );
+
+  cout << "NOTICE main() started fitting" << endl;
+  TStopwatch timer;
+  RooFitResult *fitres = simPdf.fitTo( combData, Save(kTRUE) );
+  cout << "NOTICE main() finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
+  
+  //----------------------------------------------------------
+  // print comparison
+  //----------------------------------------------------------
+  RooArgSet result ( fitres->floatParsFinal() );
+  FileHeader h("Fitter");
+  h.ReadHeader(expdata_file);
+
+  cout << "*********Fit result comparison****************************" << endl;
+  cout << "dm21x1e5 actual  : " << h.GetParameter("dm21_1e5")   << "\t" << " fitted: " << ((RooRealVar*)result.find("Dm21"))->getVal()*1e5 << endl;
+  cout << "dm31x1e5 actual  : " << h.GetParameter("dm31_1e5")   << "\t" << " fitted: " << ((RooRealVar*)result.find("Dm31"))->getVal()*1e5 << endl;
+  cout << "sinsq_th12 actual: " << h.GetParameter("sinsq_th12") << "\t" << " fitted: " << ((RooRealVar*)result.find("SinsqTh12"))->getVal() << endl;
+  cout << "sinsq_th13 actual: " << h.GetParameter("sinsq_th13") << "\t" << " fitted: " << ((RooRealVar*)result.find("SinsqTh13"))->getVal() << endl;
+  cout << "sinsq_th23 actual: " << h.GetParameter("sinsq_th23") << "\t" << " fitted: " << ((RooRealVar*)result.find("SinsqTh23"))->getVal() << endl;
+  cout << "dcp        actual: " << h.GetParameter("dcp")        << "\t" << " fitted: " << ((RooRealVar*)result.find("dcp"))->getVal() << endl;
+  cout << "*********Fit result comparison****************************" << endl;
+  
+  //----------------------------------------------------------
+  // clean-up
+  //----------------------------------------------------------
+  
+  Cleanup();
+  if (fitutil) delete fitutil;
+ 
+}
+
+//**********************************************************************************
+
+void Fitter::InitRespsAndSels() {
+
+  using namespace Fitter;
+
+  //----------------------------------------------------------
+  //initialise event selection and response for tracks
+  //----------------------------------------------------------
+
+  fTRsel = new EventSelection(EventSelection::track, "track_sel", NULL, 
+			      fENB, fEmin, fEmax, fCtNB, fCtmin, fCtmax, fByNB, fBymin, fBymax);
+
+  fTRres = new DetResponse(DetResponse::track, "track_resp", 
+			   fENB, fEmin, fEmax, fCtNB, fCtmin, fCtmax, fByNB, fBymin, fBymax);
+
+  vector< EventFilter* > T = {fTRsel, fTRres};
+
+  for (auto n: T) {
+    n->AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   ,  0.5, true );
+    n->AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   ,  0.5, true );
+    n->AddCut( &SummaryEvent::Get_RDF_track_score , std::greater<double>()   ,  0.6, true );
+    n->AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05, true );
+    n->AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );    
+  }
+
+  //----------------------------------------------------------
+  //initialise event selection and response for showers
+  //----------------------------------------------------------
+
+  fSHsel = new EventSelection(EventSelection::shower, "shower_sel", NULL,
+			      fENB, fEmin, fEmax, fCtNB, fCtmin, fCtmax, fByNB, fBymin, fBymax);
+  fSHres = new DetResponse(DetResponse::shower, "shower_resp", 
+			   fENB, fEmin, fEmax, fCtNB, fCtmin, fCtmax, fByNB, fBymin, fBymax);
+
+  vector< EventFilter* > S = {fSHsel, fSHres};
+
+  for (auto n: S) {
+    n->AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   ,  0.5, true );
+    n->AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   ,  0.5, true );
+    n->AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(),  0.6, true );
+    n->AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05, true );
+    n->AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(),  0.5, true );
+  }
+
+}
+
+//**********************************************************************************
+
+void Fitter::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response) {
+
+  using namespace Fitter;
+
+  if ( !fTRres || !fSHres || !fTRsel || !fSHsel ) {
+    throw std::logic_error("ERROR! Fitter::FillRespsAndSels() DetResponse's and EventSelection's are not yet initialized!");
+  }
+
+  //----------------------------------------------------------
+  // fill the responses
+  //----------------------------------------------------------
+
+  TString track_resp_name  = "rootfiles/track_response.root";
+  TString shower_resp_name = "rootfiles/shower_response.root";
+
+  if ( !NMHUtils::FileExists(track_resp_name) || !NMHUtils::FileExists(shower_resp_name) || refill_response ) {
+
+    cout << "NOTICE Fitter::FillRespsAndSels() (Re)filling responses" << endl;
+
+    SummaryParser sp(simdata_file);
+
+    for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
+
+      if (i % 100000 == 0) cout << "Event: " << i << endl;
+
+      SummaryEvent *evt = sp.GetEvt(i);
+      fTRres->Fill(evt);
+      fSHres->Fill(evt);
+
+    }
+
+    fTRres->WriteToFile(track_resp_name);
+    fSHres->WriteToFile(shower_resp_name);
+
+  }
+  else {
+
+    cout << "NOTICE Fitter::FillRespsAndSels() Reading in responses" << endl;
+
+    fTRres->ReadFromFile(track_resp_name);
+    fSHres->ReadFromFile(shower_resp_name);
+  }
+
+  cout << "NOTICE Fitter::FillRespsAndSels() Responses ready" << endl;
+
+  //----------------------------------------------------------
+  // fill the selections
+  //----------------------------------------------------------
+  SummaryParser sp(expdata_file);
+
+  for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
+
+    SummaryEvent *evt = sp.GetEvt(i);
+    fTRsel->Fill(evt);
+    fSHsel->Fill(evt);
+
+  }
+
+  cout << "NOTICE Fitter::FillRespsAndSels() Selections filled" << endl;
+}
+
+//**********************************************************************************
+
+void Fitter::Cleanup() {
+
+  using namespace Fitter;
+
+  if (fTRres) delete fTRres;
+  if (fSHres) delete fSHres;
+  if (fTRsel) delete fTRsel;
+  if (fSHsel) delete fSHsel;
+
+}
+

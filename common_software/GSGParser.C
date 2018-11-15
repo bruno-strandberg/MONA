@@ -172,7 +172,6 @@ Bool_t GSGParser::VertexInCan() {
  * \param  fname   Input file name.
  * \return         True if init successful, false otherwise.
  */
-#ifdef WAANET
 Bool_t GSGParser::InitEvtFile(TString fname) {
 
   struct stat buf;
@@ -260,7 +259,3 @@ Bool_t GSGParser::NextEvtEvent() {
  
   return nextLoaded;
 }
-#else
-Bool_t GSGParser::InitEvtFile(TString fname) { return false; }
-Bool_t GSGParser::NextEvtEvent()             { return false; }
-#endif
