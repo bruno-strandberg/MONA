@@ -11,6 +11,7 @@ LFLAGS = $(ROOTLIBS) $(ROOFITLIBS) $(NMHLIB) $(OSCLIB)
 #===============================================================
 # define variables for complilation
 #===============================================================
+
 HEADERS = $(wildcard *.h)
 SOURCES = $(wildcard *.C)
 OBJ     = lib$(FITSOFT).so

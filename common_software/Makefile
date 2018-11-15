@@ -1,60 +1,57 @@
-#Compilation to ROOT library was a gift from Joao Coelho's OscProb package.
 
-#get root CFLAGS and root LIBS
-ROOTCFLAGS    = $(shell root-config --cflags)
-ROOTLIBS      = $(shell root-config --libs) 
+include $(NMHDIR)/Makerules
 
-#set compiler and standard flags
-CXX           = g++
-CXXFLAGS      = -g -Wall -std=c++11 -fPIC
+#===============================================================
+# setup cxx and library flags from global variables
+#===============================================================
 
-#add the ROOT flags, include dir is current dir
-CXXFLAGS  += $(ROOTCFLAGS)
-LDFLAGS   += $(ROOTLIBS)
+CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS) $(AACFLAGS)
+LFLAGS = $(ROOTLIBS) $(AALIB)
 
-# aanet use flag set in setenv.sh, headers are added to CPATH by setenv, no need for -I/...
-ifeq ($(USE_AANET), true)
-	CXXFLAGS += -DWAANET
-        LDFLAGS  += -L${AADIR} -laa
-endif
+#===============================================================
+# define variables for complilation
+#===============================================================
 
-#for the rootcint command LinkDef.h needs to come last, that's why it is included
-#only when Dictionary is created
-PACKAGE    = nmhsoft
-HEADERS    = $(filter-out LinkDef.h, $(wildcard *.h))
-SOURCES    = $(wildcard *.C)
-TARGET_LIB = lib$(PACKAGE).so
-DICTIONARY = dic$(PACKAGE).cxx
-ROOTMAP    = lib$(PACKAGE).rootmap
+HEADERS = $(filter-out LinkDef.h, $(wildcard *.h))
+SOURCES = $(wildcard *.C)
+OBJ     = lib$(NMHSOFT).so
+DICT    = dic$(NMHSOFT).cxx
+ROOTMAP = dic$(NMHSOFT).rootmap
 
-#for debugging
-#debug:
-#	@echo ${LDFLAGS}
-#	@echo ${CXXFLAGS}
-#	@echo ${SOURCES}
-#	@echo ${HEADERS}
+#===============================================================
+# compilation
+#===============================================================
 
-all: $(TARGET_LIB)
+all: $(OBJ)
 
-#target depends on dictionary (->depends on headers and linkdef) and sources
-#$^ means prerequesities --> $^ = $HEADERS Linkdef.h $SOURCES
-$(TARGET_LIB): $(DICTIONARY) $(SOURCES)
-	@echo "  Building $(PACKAGE)..."
-	@g++ -shared -O3 -o $@ $^ $(LDFLAGS) $(CXXFLAGS)
+$(OBJ): $(SOURCES) $(DICT)
+	@echo "  Building $@ with pre-requisities $^..."
+	@g++ -shared -O3 -o $@ $^ $(LFLAGS) $(CFLAGS)
 
-#$@ means file name of the target of the rule (dic$PACAGE)
-#$^ means prerequesities --> HEADERS and Linkdef
-$(DICTIONARY): $(HEADERS) LinkDef.h
-	@echo "  Making dictionary for $(PACKAGE)..."
-	@rootcling -f $@ -rml $(TARGET_LIB) -rmf $(ROOTMAP) $^
+$(DICT): $(HEADERS) LinkDef.h
+	@echo "  Making dictionary $@..."
+	@rootcling -f $@ -rml $(OBJ) -rmf $(ROOTMAP) $^
 
-clean:
-	@echo "  Cleaning $(PACKAGE)..."
-	@rm -f $(TARGET_LIB)
-	@rm -f $(DICTIONARY)
-	@rm -f $(DICTIONARY:%.cxx=%.h)
-	@rm -f *rdict.pcm
-	@rm -f $(ROOTMAP)
+#===============================================================
+# clean-up and print command
+#===============================================================
 
 .PHONY: clean all
 
+clean:
+	@echo "  Cleaning..."
+	@rm -f $(OBJ)
+	@rm -f $(DICT)
+	@rm -f $(ROOTMAP)
+	@rm -f *rdict.pcm
+
+.PHONY: print
+
+print:
+	@echo ${HEADERS}
+	@echo ${SOURCES}
+	@echo ${OBJ}
+	@echo ${DICT}
+	@echo ${ROOTMAP}
+	@echo ${CFLAGS}
+	@echo ${LFLAGS}

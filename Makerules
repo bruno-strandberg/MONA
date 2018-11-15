@@ -18,6 +18,7 @@ ROOFITLIBS    = -L$(shell root-config --libdir) -lRooFit -lRooFitCore
 NMHLIB        = -L$(NMHSOFTDIR) -l$(NMHSOFT)
 FITLIB        = -L$(FITSOFTDIR) -l$(FITSOFT)
 OSCLIB        = -L$(OSCPROBDIR) -lOscProb
+AALIB         = -L$(AADIR) -laa
 
 #--------------------------------------------------------------
 # cflags
@@ -25,6 +26,7 @@ OSCLIB        = -L$(OSCPROBDIR) -lOscProb
 ROOTCFLAGS    = $(shell root-config --cflags)
 CXXFLAGS      = -g -Wall -std=c++11 -fPIC
 JPPCFLAGS     = -I$(JPP_DIR)/software
+AACFLAGS      = -I$(AADIR) -I$(AADIR)/evt
 
 # currently directoried added to CPATH and -I/.. not necessary for compilation
 #FITSOFTFLAGS  = -I$(FITSOFTDIR)
