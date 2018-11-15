@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <iostream>
+#include <stdexcept>
 
 using namespace std;
 
@@ -14,7 +15,7 @@ using namespace std;
     
     \param reco_type       Reco type used for filling histograms, e.g. `EventSelection::track`
     \param selection_name  String identifier for this selection
-    \param t               Pointer to a `TTree/TChain` where events are selected from; if provided the selection is in "Tree mode" and events that pass the cut are cloned to the `fTree` of this class; if `t = NULL` the instance is in "Histogram mode" and events are not copied, only histograms of this instance are filled.
+    \param TreeMode        Save the events to a `TTree` to perform un-binned fits to data (currently not implemented)
     \param ebins           Number of energy bins for histogram(s)
     \param emin            Minimum energy for histogram(s)
     \param emax            Maximum energy for histogram(s)
@@ -22,15 +23,16 @@ using namespace std;
     \param ctmin           Minimum \f$cos\theta\f$ for histogram(s)
     \param ctmax           Maximum \f$cos\theta\f$ for histogram(s)
  */
-EventSelection::EventSelection(reco reco_type, TString selection_name, TTree *t,
+EventSelection::EventSelection(reco reco_type, TString selection_name, Bool_t TreeMode,
 			       Int_t ebins, Double_t emin, Double_t emax,
 			       Int_t ctbins, Double_t ctmin, Double_t ctmax,
 			       Int_t bybins, Double_t bymin, Double_t bymax) : EventFilter(reco_type) {
 
+  if (TreeMode) {
+    throw std::invalid_argument( "ERROR! EventSelection::EventSelection() TreeMode is currently not supported." );
+  }
+  
   fSelName  = selection_name;
-
-  if (t != NULL) SetTreeMode(t);
-  else { fTree = NULL; fTreeFile = NULL; }
 
   //----------------------------------------------
   //init 2D hist
@@ -66,9 +68,6 @@ EventSelection::EventSelection(const EventSelection &evsel) : EventFilter(evsel)
 
   fSelName  = evsel.fSelName;
 
-  if (evsel.fTree != NULL) { SetTreeMode(evsel.fTree); }
-  else { fTree = NULL; fTreeFile = NULL; }
-
   fh_E_costh = (TH2D*)evsel.fh_E_costh->Clone();
   fh_E_costh->SetDirectory(0);
 
@@ -86,17 +85,12 @@ EventSelection::~EventSelection() {
   if (fh_E_costh) delete fh_E_costh;
   if (fh_E_costh_by) delete fh_E_costh_by;
 
-  if (fTreeFile) {
-    fTreeFile->Close();
-    delete fTreeFile;
-  }
-
 }
 
 //***********************************************************************************
 
 /** 
-    Fill function that fills a `SummaryEvent` to member histograms (and stores in `fTree` if in Tree mode) if the event passes the cuts set for this event selection.
+    Fill function that fills a `SummaryEvent` to member histograms if the event passes the cuts set for this event selection.
 
     \param evt  Pointer to the `SummaryEvent`.
     \param w    Event weight when filled to histograms.
@@ -112,57 +106,23 @@ void EventSelection::Fill(SummaryEvent *evt, Double_t w) {
   fh_E_costh->Fill( fEnergy , -fDir.z(), w );
   fh_E_costh_by->Fill( fEnergy, -fDir.z(), fBy, w );
 
-  // if tree is set, fill this event to the tree
-  if (fTree != NULL) fTree->Fill();
-
-}
-
-//***********************************************************************************
-
-/**
-   Function to initialize 'Tree mode'.
-
-   When in tree mode, the summary event that passes the cut in `EventSelection::Fill` is cloned to the TTree of this event selection.
-
-   \param t    Pointer to a `TTree` with `SummaryEvent`s.
-
- */
-void EventSelection::SetTreeMode(TTree *t) {
-
-  // generate a random number string
-  TRandom3 rand(0);
-  TString fname = (TString)getenv("NMHDIR") + (TString)"/tmp_" + 
-    (TString)to_string( (int)rand.Integer(10E6) ) + ".root";
-
-  // open a TFile and clone an empty tree. The cloned tree remains attached to the input tree t,
-  // such that if one does t->GetEntry(i); fTree->Fill() the entry i is copied to fTree.
-  fTreeFile = new TFile(fname, "RECREATE");
-  fTree = t->CloneTree(0);
+  // if tree mode is implemented, a tree should be filled here with reco variable names that
+  // can be recognized by `fitter_software/FitUtil` - E_reco, ct_reco, by_reco.
   
 }
 
 //***********************************************************************************
 
 /**
-   Write the histograms and TTree (if in tree mode) to file.
+   Write the histograms to file.
    
    \param fname    Name of the root file data is written to.
  */
 void EventSelection::WriteToFile(TString fname) {
 
-  TString tmp_fname = fTreeFile->GetName();
-  
-  fTree->Write();
+  TFile fout(fname, "RECREATE");
   fh_E_costh->Write();
   fh_E_costh_by->Write();
-
-  fTreeFile->Close();
-  delete fTreeFile;
-
-  TString syscmd = (TString)"mv " + tmp_fname + " " + fname;
-  Int_t   sysret = system(syscmd);
-  if (sysret != 0) {
-    cout << "WARNING! EventSelection::WriteToFile() system command " << syscmd << " returned " << sysret << endl;
-  }
-
+  fout.Close();
+  
 }
