@@ -1,141 +1,106 @@
+
+// root headers
 #include "TSystem.h"
+
+// NMH headers
 #include "SummaryParser.h"
 #include "SummaryEvent.h"
+#include "FileHeader.h"
 
-//****************************************************************
-//functions
-//****************************************************************
+// cpp headers
+#include <stdexcept>
 
-void  split_to_files_atmnu(Bool_t overwrite=false);
-void  split_to_files_atmnu_fast(Int_t max_file_handles=950);
-void  split_to_files_mupage(Bool_t overwrite=false, Bool_t separate=false);
-void  split_to_files_noise();
-Int_t get_max_run_nr(TString cut_string);
+// jpp headers
+#include "JTools/JRange.hh"
+#include "Jeep/JParser.hh"
+#include "Jeep/JMessage.hh"
 
-//****************************************************************
-//global variables accessible in all functions inside this macro
-//****************************************************************
+namespace RESTOREPARITY {
 
-/// Global pointer to a summary file parser class.
-SummaryParser *fSp;
+  using namespace JTOOLS;
 
-//****************************************************************
+  void  split_to_files_atmnu_fast(TString tag, JRange<double> E_low, JRange<double> E_high, Int_t max_file_handles=950);
+  void  split_to_files_mupage(TString tag, Bool_t overwrite=false, Bool_t separate=false);
+  void  split_to_files_noise(TString tag);
+  Int_t get_max_run_nr(TString cut_string);
+  void  check_return(Int_t ret);
 
-/** (main function) This function takes the file resulting from ReduceData.C as argument 
- *  and splits it up to NMH/data/mc_end/ directories to match the file scheme used throughout the
- *  MC chain.
- *
- *  See NMH/data/README.md for more details.
- *
- * \param  fname PID summary data in analysis format, output by RDFPID_to_Summary.C.
- *
+  /// Global pointer to a summary file parser class.
+  SummaryParser *fSp;
+  TString tagpar     = "datatag";
+  TString summarydir = (TString)getenv("NMHDIR") + "/data/mcsummary/";
+  TString gseagendir = (TString)getenv("NMHDIR") + "/data/gseagen/";
+  TString muondir    = "/data_mupage/";
+  TString noisedir   = "/data_noise/";
+  TString nudir      = "/data_atmnu/";
+
+};
+
+using namespace JTOOLS;
+using namespace RESTOREPARITY;
+
+/** This program takes the file resulting from RDFPID_to_Summary as argument and splits it up to NMH/data/mcsummary/ directories to match the file scheme used throughout the MC chain.
+    
+   See NMH/data/README.md for more details.
+ 
  */
-void RestoreParity(TString fname) {
+int main(int argc, char **argv) {
 
-  //initialise the data parser
+  //-------------------------------------------------------------------
+  //parse command line arguments
+  //-------------------------------------------------------------------
+
+  string fname;
+  JRange<double> E_low;
+  JRange<double> E_high;
+
+  try {
+    JParser<> zap("This program takes the file resulting from RDFPID_to_Summary as argument and splits it up to NMH/data/mcsummary/ directories to match the file scheme used throughout the MC chain.");
+
+    zap['f'] = make_field(fname , "Name of the file created by RDFPID_to_Summary");
+    zap['l'] = make_field(E_low , "For ORCA, typically two energy ranges are used with gSeaGen, events from both are present in the -f argument file. Provide the low range") = JRange<double>(1, 5);
+    zap['u'] = make_field(E_high, "For ORCA, typically two energy ranges are used with gSeaGen, events from both are present in the -f argument file. Provide the high range") = JRange<double>(3, 100);
+
+    zap(argc, argv);
+  }
+  catch(const exception &error) {
+    FATAL(error.what() << endl);
+  }
+
+  if (fname == "") {
+    throw std::invalid_argument("ERROR! RestoreParity() input file not specified!");
+  }
+
+  //-------------------------------------------------------------------
+  //initialise the data parser; read the tag from the header
+  //-------------------------------------------------------------------
+  FileHeader head("RestoreParity");
+  head.ReadHeader(fname);
   fSp = new SummaryParser(fname);
 
   if (fSp->GetTree() == NULL) {
-    cout << "ERROR! RestoreParity() Issue with SummaryParser() initialisation." << endl;
+    throw std::invalid_argument("ERROR! RestoreParity() Issue with SummaryParser() initialisation.");
   }
 
+  //-------------------------------------------------------------------
   //call functions
-  //split_to_files_atmnu();
-  split_to_files_atmnu_fast();
-  split_to_files_mupage(true, false);
-  split_to_files_noise();
+  //-------------------------------------------------------------------
+  split_to_files_atmnu_fast(head.GetParameter(tagpar), E_low, E_high);
+  split_to_files_mupage(head.GetParameter(tagpar), true, false);
+  split_to_files_noise(head.GetParameter(tagpar));
   
 }
 
 //****************************************************************
 
-/** Function to split the pid output to summary files per mc input, atm neutrinos.
- *
- *  The function split_to_files_atmnu_fast() does the same thing much faster. However, this is simpler
- *  to understand and kept for comparison.
- *
- * \param overwrite If file exists in NMH/data/mc_end/data_atmnu/, ovewrite.
- *
- */
-void split_to_files_atmnu(Bool_t overwrite) {
+/** Function to check the return value of the system call 
+    \param ret  return value of `system`.
+*/
+void RESTOREPARITY::check_return(Int_t ret) {
 
-  //maps to build the filenames
-  map < Double_t, TString > pdg_to_name = { {12., "elec" }, 
-					    {14., "muon" },
-					    {16., "tau"  } };
-
-  map < Double_t, TString > iscc_to_str = { { 0., "NC"}, 
-					    { 1., "CC"} };
-
-  map < Double_t, TString>  emin_to_str = { { 1., "1-5"  },
-					    { 3., "3-100"} };
-  
-  map < TString, Int_t >    cut_maxrun  = {};
-
-  Int_t max_run_nr = 2000;
-
-  //Loop over run numbers
-  for (Int_t run_nr = 1; run_nr <= max_run_nr; run_nr++) {
-    
-    for (auto const& type : pdg_to_name) {
-
-      for (auto const& interaction : iscc_to_str) {
-
-	for (auto const& emin : emin_to_str) {
-
-	  //build the cut string and the file name
-
-	  TString cut_string = "";
-	  cut_string  += "TMath::Abs(fMC_type)==" + (TString)to_string(type.first);
-	  cut_string  += "&&fMC_is_CC==" + (TString)to_string(interaction.first);
-	  cut_string  += "&&fMC_erange_start==" + (TString)to_string(emin.first);
-
-	  //check the run nr limit for this type of events,
-	  //if it is not in the map add it
-
-	  if ( cut_maxrun.find(cut_string) == cut_maxrun.end() ) {
-	    cut_maxrun.insert( pair<TString, Int_t>( cut_string, get_max_run_nr(cut_string) ) );
-	    cout << "Events: " << cut_string << "\t limit: " << cut_maxrun[cut_string] << endl;
-	  } 
-	  else {
-	    if (run_nr > cut_maxrun[cut_string]) continue;
-	  }
-
-	  cut_string  += "&&fMC_runID==" + (TString)to_string(run_nr);
-
-	  TString name_string = "$NMHDIR/data/mc_end/data_atmnu/summary_"; 
-	  name_string += type.second + "-";
-	  name_string += interaction.second + "_";
-	  name_string += emin.second + "GeV_" + (TString)to_string(run_nr) + ".root";
-
-	  //create file, remove if no entries, continue if file exists
-
-	  FileStat_t stats;
-	  Bool_t filefound = !(Bool_t)gSystem->GetPathInfo(name_string, stats);
-	  if (filefound && !overwrite) {
-	    cout << "File " << name_string << " exists, continuing." << endl;
-	    continue;
-	  }
-
-	  cout << "Creating file: " << name_string << endl;
-	  TFile *fout = new TFile(name_string, "RECREATE");
-	  TTree *tout = fSp->GetTree()->CopyTree(cut_string);
-	  
-	  Bool_t remove = false;
-	  if (tout->GetEntries() > 0) { tout->Write(); }
-	  else                        { remove = true; }
-	  
-	  fout->Close();
-	  
-	  if (remove) Int_t sysret = system ("rm " + name_string);
-
-	} //end loop over energy range
-
-      } //end loop over nc/cc
-
-    } //end loop over types
-
-  } //end loop over run numbers
+  if (ret != 0) {
+    cout << "WARNING! RestoreParity::check_return() system returned " << ret << endl;
+  }
 
 }
 
@@ -146,13 +111,13 @@ void split_to_files_atmnu(Bool_t overwrite) {
  * \param cut_string Cut string to select events opened for reading by sp.
  *
  */
-Int_t get_max_run_nr(TString cut_string) {
+Int_t RESTOREPARITY::get_max_run_nr(TString cut_string) {
 
   TFile *f_tmp = new TFile("tmp.root","RECREATE");
   TTree *t_tmp = fSp->GetTree()->CopyTree(cut_string);
   Int_t  max_run_nr = t_tmp->GetMaximum("fMC_runID");
   f_tmp->Close();
-  Int_t sysret = system("rm tmp.root");
+  check_return( system("rm tmp.root") );
 
   return max_run_nr;
 
@@ -164,25 +129,30 @@ Int_t get_max_run_nr(TString cut_string) {
  *
  *  Typically, having atm muon events in one file is better and splitting is not necessary.
  *
- * \param overwrite If file exists in NMH/data/mc_end/data_atmnu/, ovewrite.
- * \param separate Separate MUPAGE files (11k files), if false MUPAGE events in one file in 
- *        NMH/data/mc_end/data_atmmu/
+ * \param data tag of the production
+ * \param overwrite If file exists in NMH/data/mc_end/data_atmnu/tag/, ovewrite.
+ * \param separate Separate MUPAGE files (11k files), if false MUPAGE events in one file in NMH/data/mc_end/data_atmmu/tag/
  *
  */
-void split_to_files_mupage(Bool_t overwrite, Bool_t separate) { 
+void RESTOREPARITY::split_to_files_mupage(TString tag, Bool_t overwrite, Bool_t separate) { 
 
+  TString sumdir = summarydir + tag + muondir;
+  TString gsgdir = gseagendir + tag + muondir;
+  check_return( system("mkdir -p " + sumdir) );
+  check_return( system("mkdir -p " + gsgdir) );
+  cout << "NOTICE RESTOREPARITY::split_to_files_mupage() made directories: " << endl << "\t" << sumdir << "\t" << endl << "\t" << gsgdir << endl;
+  
   Int_t max_run_nr = fSp->GetTree()->GetMaximum("fMC_runID");
 
   //Loop over run numbers
   for (Int_t run_nr = 1; run_nr <= max_run_nr; run_nr++) {
 
     TString cut_string  = "fMC_runID==" + (TString)to_string(run_nr) + "&&fMC_type==-13";
-    TString name_string = "$NMHDIR/data/mc_end/data_mupage/summary_ORCA115_9m_2016.mupage.nevts40000." + 
-      (TString)to_string(run_nr) + ".root";
+    TString name_string = summarydir + tag + muondir + "/summary_mupage." + (TString)to_string(run_nr) + ".root";
 
     if (!separate) {
       cut_string  = "fMC_type==-13";
-      name_string = "$NMHDIR/data/mc_end/data_mupage/summary_ORCA115_9m_2016.mupage.nevts40000.all.root";
+      name_string = summarydir + tag + muondir + "/summary_mupage.all.root";
     }
 
     FileStat_t stats;
@@ -201,9 +171,14 @@ void split_to_files_mupage(Bool_t overwrite, Bool_t separate) {
     if (tout->GetEntries() > 0) { tout->Write(); }
     else                        { remove = true; }
     
+    // create header
+    FileHeader head("RestoreParity");
+    head.AddParameter(tagpar, tag);
+    head.WriteHeader(fout);
+
     fout->Close();
     
-    if (remove) Int_t sysret = system ("rm " + name_string);
+    if (remove) check_return( system ("rm " + name_string) );
 
     if (!separate) break;
 
@@ -222,10 +197,16 @@ void split_to_files_mupage(Bool_t overwrite, Bool_t separate) {
  *  files are split.
  *
  */
-void split_to_files_noise() {
+void RESTOREPARITY::split_to_files_noise(TString tag) {
+
+  TString sumdir = summarydir + tag + noisedir;
+  TString gsgdir = gseagendir + tag + noisedir;
+  check_return( system("mkdir -p " + sumdir) );
+  check_return( system("mkdir -p " + gsgdir) );
+  cout << "NOTICE RESTOREPARITY::split_to_files_noise() made directories: " << endl << "\t" << sumdir << "\t" << endl << "\t" << gsgdir << endl;
 
   TString cut_string  = "fMC_type==0";
-  TString name_string = "$NMHDIR/data/mc_end/data_noise/summary_noise.root";
+  TString name_string = summarydir + tag + noisedir + "/summary_noise.root";
 
   cout << "Creating file: " << name_string << endl;
   TFile *fout = new TFile(name_string, "RECREATE");
@@ -234,10 +215,15 @@ void split_to_files_noise() {
   Bool_t remove = false;
   if (tout->GetEntries() > 0) { tout->Write(); }
   else                        { remove = true; }
+
+  // create header
+  FileHeader head("RestoreParity");
+  head.AddParameter(tagpar, tag);
+  head.WriteHeader(fout);
   
   fout->Close();
   
-  if (remove) Int_t sysret = system ("rm " + name_string);
+  if (remove) check_return( system ("rm " + name_string) );
   
 }
 
@@ -259,7 +245,14 @@ void split_to_files_noise() {
  *  \param max_file_handles Maximum nr of files opened in parallel.
  *
  */
-void  split_to_files_atmnu_fast(Int_t max_file_handles) {
+void  RESTOREPARITY::split_to_files_atmnu_fast(TString tag, JRange<double> E_low, JRange<double> E_high, Int_t max_file_handles) {
+
+
+  TString sumdir = summarydir + tag + nudir;
+  TString gsgdir = gseagendir + tag + nudir;
+  check_return( system("mkdir -p " + sumdir) );
+  check_return( system("mkdir -p " + gsgdir) );
+  cout << "NOTICE RESTOREPARITY::split_to_files_atmnu_fast() made directories: " << endl << "\t" << sumdir << "\t" << endl << "\t" << gsgdir << endl;
 
   //maps to build the filenames
   map < Double_t, TString > pdg_to_name = { {12., "elec" }, 
@@ -269,8 +262,11 @@ void  split_to_files_atmnu_fast(Int_t max_file_handles) {
   map < Double_t, TString > iscc_to_str = { { 0., "NC"}, 
 					    { 1., "CC"} };
 
-  map < Double_t, TString>  emin_to_str = { { 1., "1-5"  },
-  					    { 3., "3-100"} };
+  TString lowrange  = to_string( (int)E_low.getLowerLimit() ) + "-" + to_string( (int)E_low.getUpperLimit() );
+  TString highrange = to_string( (int)E_high.getLowerLimit() ) + "-" + to_string( (int)E_high.getUpperLimit() );
+
+  map < Double_t, TString>  emin_to_str = { {  E_low.getLowerLimit(), lowrange }, 
+					    { E_high.getLowerLimit(), highrange} };
     
   for (auto const& type : pdg_to_name) {
     for (auto const& interaction : iscc_to_str) {
@@ -288,7 +284,7 @@ void  split_to_files_atmnu_fast(Int_t max_file_handles) {
 	cut_string  += "&&fMC_is_CC==" + (TString)to_string(interaction.first);
 	cut_string  += "&&fMC_erange_start==" + (TString)to_string(emin.first);
 
-	TString name_string = "$NMHDIR/data/mc_end/data_atmnu/summary_"; 
+	TString name_string = summarydir + tag + nudir + "/summary_"; 
 	name_string += type.second + "-";
 	name_string += interaction.second + "_";
 	name_string += emin.second + "GeV_";
@@ -350,6 +346,12 @@ void  split_to_files_atmnu_fast(Int_t max_file_handles) {
 	    fouts_lev3[fi]->cd();
 	    if ( touts_lev3[fi]->GetEntries() == 0 ) temp_files.push_back( fouts_lev3[fi]->GetName() );
 	    touts_lev3[fi]->Write();
+
+	    // create header and add to file
+	    FileHeader head("RestoreParity");
+	    head.AddParameter(tagpar, tag);
+	    head.WriteHeader(fouts_lev3[fi]);
+
 	    fouts_lev3[fi]->Close();
 	    delete fouts_lev3[fi];
 	  }
@@ -362,7 +364,7 @@ void  split_to_files_atmnu_fast(Int_t max_file_handles) {
 
 	fout_lev1->Close();
 	for (auto f: fouts_lev2) {  f->Close();  delete f; }
-	for (auto fname: temp_files) Int_t sysret = system ("rm " + fname);
+	for (auto fname: temp_files) check_return( system ("rm " + fname) );
 	
       } //end loop over energy range
     } //end loop over nc/cc

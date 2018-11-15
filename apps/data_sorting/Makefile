@@ -1,0 +1,28 @@
+include $(NMHDIR)/Makerules
+
+CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS) $(JPPCFLAGS)
+LFLAGS = $(ROOTLIBS) $(NMHLIB)
+
+COMMON   = RDFPIDReader.C
+SOURCES  = $(filter-out $(COMMON), $(wildcard *.C))
+PACKAGES = $(filter-out RDFPIDReader, $(SOURCES:.C=))
+
+all: $(PACKAGES)
+
+$(PACKAGES): % : %.C $(COMMON)
+	@echo "  Building $@ with pre-requisities $^..."
+	@g++ -O3 -o $@ $^ $(LFLAGS) $(CFLAGS)
+
+
+.PHONY: clean
+
+clean:
+	rm -f $(PACKAGES)
+
+
+.PHONY: print
+
+print:
+	@echo ${COMMON}
+	@echo ${SOURCES}
+	@echo ${PACKAGES}

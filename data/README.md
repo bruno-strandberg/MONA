@@ -25,40 +25,29 @@ The analysis format is defined by the class ```NMH/common_software/SummaryEvent.
 Directories and files
 =====================
 
-The directory structure (mc_end/, mc_start/, ...) comes with the git repo. For most stuff to
-work, one requires sorted data in mc_end/... and mc_start.
+The directory structure (mcsummary/, gseagen/, ...) comes with the git repo. For most stuff to
+work, one requires sorted data in mcsummary/... and gseagen/ data.
 
-* pid_result_XXX.root          - summary of the mc events and reconstructed/pid'd mc events,
-			         ORCA detector.
+* pid_result_XXX.root          - summary of the mc events and reconstructed/pid'd mc events, ORCA detector.
 
-* ORCA_MC_summary_all_XXX.root - same events as pid_result.root, but converted to analysis format
+* ORCA_MC_summary_XXX.root     - same events as pid_result.root, but converted to analysis format.
 
-* mc_end/                      - same data os ORCA_MC_summary_all.root, separated to files as in the
-			         rest of the MC chain
+* mcsummary/                   - same data os ORCA_MC_summary_XXX.root, separated to files as in the rest of the MC chain.
 
-* mc_start/                    - gSeaGen files, should be 1-1 correspondence with mc_end
+* gseagen/                    - gSeaGen files, should be 1-1 correspondence with mcsummary/
 
-* cross_sections_gSeaGen_v4r1/ - neutrino cc/nc cross-sections on n, p, O16 from GENIE. Gift from
-                                 M. Jongen. 
+* cross_sections_gSeaGen_v4r1/ - neutrino cc/nc cross-sections on n, p, O16 from GENIE. Gift from M. Jongen. 
 
 * honda_flux/                  - honda flux tables for the atmospheric flux class.
 
-* eff_mass/                    - files with effective mass histograms from the applications
-  			       	 NMH/effective_mass
+* eff_mass/                    - files with effective mass histograms from the applications, NMH/effective_mass
 
 * testing/                     - data used by/for NMH/tests scripts.
 
-pid_result_XXX.root file versions (from Steffen, thanks!)
+pid_result_XXX.root file versions
 =================================
 
-pid_result_8Feb2018.root taken from
-/sps/km3net/users/shallman/ORCA_PID/nemowater_with_mx_01_18/shiftedVertexEventSelection/pid_output/
-See Steffen's email titled 'Fwd: ORCA PID update'.
-
-pid_result_14Mar2018.root copied from
-/sps/km3net/users/shallman/ORCA_PID_OUTPUT/pid_result_shiftedVertexEventSelection.root
-More info in, 14.03.2018 version
-https://wiki.km3net.de/mediawiki/index.php/ORCA_PID
+See https://wiki.km3net.de/mediawiki/index.php/ORCA_PID for info regarding various versions.
 
 Info regarding the tree in pid_result_XXX.root
 ==============================================
@@ -94,17 +83,3 @@ Selection:
 * reconame_is_good     - whether the reco converged (i.e. did not give NaN)
 * reconame_is_selected - whether the reco passes selection cuts, as discussed in [selection cuts](https://wiki.km3net.de/mediawiki/index.php/Simulations/ORCA_productions#Default_Event_Selection_Cuts) and [Moritz' script](http://git.km3net.de/moritz/beluga/blob/master/beluga/cut_sets.py).
 * reconame_loose_is_selected - a looser containment cut for event selection.
-
-PID
----
-
-### PID 8Feb2018:
-   * muon_probability  - separate atm. muon and neutrinos
-   * track_probability - separate tracks and showers
-
-### PID 14Mar2018:
-   * muon_score  - separate atm. muon and neutrinos
-   * track_score - separate tracks and showers
-
-### PID 10Apr2018:
-   * noise score - added class to separate noise events

@@ -33,6 +33,11 @@ class SummaryParser {
     */
    TChain*        GetTree()        { return fChain; }
 
+   /** Function to fetch the pointer to the `fOut` class member.
+       \return Pointer to the `fOut` class member.
+    */
+   TFile*         GetFile()        { return fOut; }
+
    /** Function to fetch the pointer to the `fEvt` class member.
 
        NB! When using this, first do `GetTree()->GetEntry(i)` to read the event `i` to `fEvt`.

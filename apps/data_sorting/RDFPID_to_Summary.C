@@ -1,39 +1,63 @@
-#include "TROOT.h"
+
+// root headers
 #include "TFile.h"
 #include "TTree.h"
 
+// NMH headers
 #include "SummaryParser.h"
 #include "RDFPIDReader.h"
+#include "FileHeader.h"
 
+// jpp headers
+#include "Jeep/JParser.hh"
+#include "Jeep/JMessage.hh"
+
+// cpp headers
+#include <stdexcept>
 #include <iostream>
+
+
 using namespace std;
 
 /**
- * This function takes the file NMH/data/pid_result_XXX.root as input and outputs a 
- * file in analysis format that uses SummaryEvent.
- *
- * See NMH/data_sorting/README.md for more info.
- *
- * \param  fin_name   Random decision forest PID output file from ECAP, e.g. ../data/pid_result_XXX.root
- * \param  fout_name  A file where the events from input, converted to analysis format, are stored.
- *
- */
-void RDFPID_to_Summary(TString fin_name="", TString fout_name="") {
+   This program takes the ECAP PID summary file as input and converts it to `SummaryEvent` format for usage with NMH software.
+ 
+   See apps/data_sorting/README.md for more info.
+   
+*/
+int main(int argc, char **argv) {
 
-  if (fin_name == "" || fout_name == "") {
-    cout << "ERROR! RDFPID_to_Summary() Specify input file name (../data/pid_result_XXX.root) and output file name (../data/ORCA_MC_summary_all_xxx.root). Exiting." << endl;
-    return;
+  string fin_name;
+  string fout_dir;
+  string tag;
+
+  try {
+
+    JParser<> zap("This program takes the ECAP PID summary file as input and converts it to `SummaryEvent` format for usage with NMH software.");
+
+    zap['f'] = make_field(fin_name , "PID file from ECAP, e.g. ../../data/pid_result_XXX.root") = "";
+    zap['d'] = make_field(fout_dir , "Output directory where the data file in SummarEvent format is written, e.g. ../../data/") = "";
+    zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. ECAP10Apr2018") = "";
+
+    zap(argc, argv);
+
+  }
+  catch(const exception &error) {
+    FATAL(error.what() << endl);
+  }
+
+  if (fin_name == "" || fout_dir  == "" || tag == "") {
+    throw std::invalid_argument("ERROR! RDFPID_to_Summary() all command line arguments need to be specified!");
   }
 
   //----------------------------------------------------------------------------
   // load the reader class and initialize, set reading all branches
   //----------------------------------------------------------------------------
 
-  gROOT->ProcessLine(".L RDFPIDReader.C+");
-  TFile *fin = new TFile(fin_name, "READ");
+  TFile *fin = new TFile((TString)fin_name, "READ");
   TTree *tin = (TTree*)fin->Get("PID");
   if (tin == NULL) {
-    cout << "ERROR! RDFPID_to_Summary() cannot find tree PID in file " << fin->GetName() << endl;
+    throw std::invalid_argument("ERROR! RDFPID_to_Summary() cannot find tree PID in file " + fin_name);
   }
   RDFPIDReader PIDR(tin);
   PIDR.fChain->SetBranchStatus("*",1);
@@ -41,6 +65,9 @@ void RDFPID_to_Summary(TString fin_name="", TString fout_name="") {
   //----------------------------------------------------------------------------
   // Init the output in analysis format, loop and map variables
   //----------------------------------------------------------------------------
+
+  string fout_name = fout_dir + "ORCA_MC_summary_" + tag + ".root";
+  cout << "NOTICE RDFPID_to_Summary() creating file " << fout_name << endl;
 
   SummaryParser out(fout_name, kFALSE); //false means writing mode
 
@@ -90,6 +117,11 @@ void RDFPID_to_Summary(TString fin_name="", TString fout_name="") {
 
   }
 
+  // add the tag to the header
+  FileHeader head("RDFPID_to_Summary");
+  head.AddParameter("datatag", (TString)tag);
+  head.WriteHeader(out.GetFile());
+
   out.WriteAndClose();
 
   //----------------------------------------------------------------------------
@@ -97,5 +129,7 @@ void RDFPID_to_Summary(TString fin_name="", TString fout_name="") {
   //----------------------------------------------------------------------------
   fin->Close();
   delete fin;
+
+  return 0;
 
 }
