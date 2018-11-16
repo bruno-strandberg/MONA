@@ -1,95 +1,155 @@
+
+// NMH headers
 #include "SummaryParser.h"
 #include "GSGParser.h"
-#include "TH3.h"
-#include "TVector3.h"
-#include "TMath.h"
 #include "NMHUtils.h"
 #include "FileHeader.h"
 
+// root headers
+#include "TH3.h"
+#include "TVector3.h"
+#include "TMath.h"
+
+// jpp headers
+#include "JTools/JRange.hh"
+#include "Jeep/JParser.hh"
+#include "Jeep/JMessage.hh"
+
+// cpp headers
 #include <stdexcept>
 
+using namespace JTOOLS;
+
+namespace EFFMASS {
+
+  //---------------------------------------------------------
+  //functions
+  //---------------------------------------------------------
+
+  TString  CreateOutputName(TString output_dir, Int_t evt_type, Int_t int_type, Int_t en_low, Int_t en_high, Int_t run_nr);
+  void     InitHists(Int_t ebins, Int_t ctbins, Int_t bybins, JRange<double> energy_range);
+  Bool_t   VertexInVol(Double_t vx, Double_t vy, Double_t vz, Double_t Rcan, Double_t zcan_min, Double_t zcan_max);
+  void     FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut);
+  void     FillGenerated(Int_t veff_option);
+
+  //---------------------------------------------------------
+  // histograms and variables
+  //---------------------------------------------------------
+
+  enum effvol_options { can_vol = 0, custom_vol, not_supported }; //!< effective volume options
+
+  // cos-theta and bjorken-y always cover the full range; energy range comes from command line
+  static const double fCtmin  =  -1.; //!< cos-theta minimum of histograms
+  static const double fCtmax  =   1.; //!< cos-theta maximum of histograms
+  static const double fBymin   =  0.; //!< bjorken-y minimum of histograms
+  static const double fBymax   =  1.; //!< bjorken-y maximum of histograms
+
+  // histograms, initialised in InitHists()
+  TH3D *fh_gen_nu;           //!< histogram with gSeaGen events, nu
+  TH3D *fh_gen_nub;          //!< histogram with gSeaGen events, nu-bar
+  TH3D *fh_gen_scaled_nu;    //!< histogram with gSeaGen events, nu, scaled by 1/(V*rho)
+  TH3D *fh_gen_scaled_nub;   //!< histogram with gSeaGen events, nub, scaled by 1/(V*rho)
+  TH3D *fh_det_nu;           //!< histogram with selected (=summary) events, nu
+  TH3D *fh_det_nub;          //!< histogram with selected (=summary) events, nub
+
+  //gseagen and summary file parsers
+  GSGParser     *fG;         //!< pointer to a gSeaGen file parser instance
+  SummaryParser *fS;         //!< pointer to a `SummaryParser` instance
+
+};
+
+using namespace EFFMASS;
+
 //*********************************************************************
-//functions
 
-TString  ParseInputs(Int_t evt_type, Int_t int_type, Int_t en_low, Int_t run_nr);
-void     InitHists();
-Bool_t   VertexInVol(Double_t vx, Double_t vy, Double_t vz, Double_t Rcan, Double_t zcan_min, Double_t zcan_max);
-void     FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut);
-void     FillGenerated(Int_t veff_option);
+/** This routine fills histograms for effective mass calculation.
+    
+    Effective mass is a trickly concept. It is defined as \f$ N_{\rm sel}/N_{\rm gen} \cdot V_{\rm gen} \rho_{\rm seawater} \f$. \f$ V_{\rm gen} \f$ is a generation volume in which the generated events are uniformly distributed. This is typically the can volume, granted that it is sufficiently large. \f$ N_{\rm gen} \f$ is then the number of generated events inside the generation volume and can be determined un-ambiguously from a `gSeaGen` file. However, anyone can define \f$ N_{\rm sel} \f$ with their favorite cuts.
 
-//*********************************************************************
-//global histograms and variables
+    In this analysis, \f$ N_{\rm sel} \f$ is defined as the events that entered the summary PID tree distributed by ECAP. Noise cut, muon cut and further quality cuts are defined in `EventSelection` and `DetResponse` classes, which properly account for the reduction of events due to further cuts. <>Hence it is important to not cut on muons and noise, when generating effective mass histograms for use with, e.g., `FitUtil`!<\B>. The cuts are made possible only to allow to make plots compatible with, e.g., `Swim` and `ParamNMH`.
 
-enum effvol_options { can_vol = 0, custom_vol, not_supported };
-
-//initialised in InitHists()
-TH3D *fh_gen_nu;
-TH3D *fh_gen_nub;
-TH3D *fh_gen_scaled_nu;
-TH3D *fh_gen_scaled_nub;
-TH3D *fh_det_nu;
-TH3D *fh_det_nub;
-
-//gseagen and summary file parsers
-GSGParser     *fG;
-SummaryParser *fS;
-
-//*********************************************************************
-
-/**
-   This routine fills histograms for effective mass calculation and works together with `EffMass.C`.
- 
-   \param  summary_file  Summary file with reconstructed neutrino events.
-   \param  gseagen_file  GSeaGen file where all of the generated MC events are.
-   \param  flavor        Neutrino flavor. 0 - electron, 1 - muon, 2 - tauon.
-   \param  int_type      Interaction type. 0 - NC, 1 - CC.
-   \param  en_low        MC neutrino energy start. Either 1 or 3.
-   \param  run_nr        MC run number.
-   \param  atmmu_cut     PID cut to reject atmospheric muons (0 - very strict, 1 - all events pass).
-   \param  noise_cut     PID cut to reject noise-like events (0 - very strict, 1 - all events pass).
-   \param  veff_option   Select effective volume calculation. 0 - detector can, 1 - custom volume.
-   \param  rvol          Radius of custom volume.
-   \param  zmin_vol      Minimum z of custom volume.
-   \param  zmax_vol      Maximum z of custom volume.
+    The ambiguity would vanish, if we agreed collectively that we calculate the effective mass after the trigger. The events in PID summary tree have undergone some selection cuts that are poorly documented, but in principle their main function is to remove atmosperic muons with simple cuts and to check that reconstructions have worked in some basic way. If we calculated the effective mass after the trigger and had all of the data after the trigger in the summary file, all we would need to do in the NNMO package would be to use the new effective masses and take the selection cuts into account in `EventSelection`'s and `DetResponse`'s.
  
  */
-void EffMhists(TString summary_file, 
-	       TString gseagen_file, 
-	       Int_t flavor, 
-	       Int_t int_type, 
-	       Int_t en_low, 
-	       Int_t run_nr,
-	       Double_t atmmu_cut = 1, 
-	       Double_t noise_cut = 1, 
-	       Int_t veff_option  = 0, 
-	       Double_t rvol      = 0., 
-	       Double_t zmin_vol  = 0., 
-	       Double_t zmax_vol  = 0. ) {
-
-  if (veff_option >= not_supported) {
-    cout << "ERROR! EffectiveMass() veff_option " << veff_option 
-	 << " not supported. Stopping." << endl;
-    return;
-  }
-
-  TString out_name = ParseInputs(flavor, int_type, en_low, run_nr);
-  if (out_name == "") return;
-
-  if ( !NMHUtils::FileExists(summary_file) || !NMHUtils::FileExists(gseagen_file) ) {
-    cout << "ERROR! EffMhists() input file(s) missing." << endl;
-    return;
-  }
-
-  InitHists();
+int main(int argc, char **argv) {
 
   //------------------------------------------------------
-  //load shared library, init datafile parsers
+  //parse command line arguments
+  //------------------------------------------------------  
+  TString        summary_file;
+  TString        gseagen_file;
+  TString        output_dir;
+  JRange<double> energy_range;
+  Int_t          nebins;
+  Int_t          nctbins;
+  Int_t          nbybins;
+  Double_t       atmmu_cut;
+  Double_t       noise_cut;
+  Int_t          veff_option;
+  Double_t       rvol;
+  Double_t       zmin_vol;
+  Double_t       zmax_vol;
+
+  try {
+
+    JParser<> zap("This routine fills histograms for effective mass calculation.");
+
+    string rangecomment = "Energy range of the effective mass histogram. In ORCA simulations are usually done in two ranges, e.g. 1-5GeV and 3-100GeV. The range defined here needs to cover the full width of the two ranges, i.e. 1-100 GeV in this example.";
+    string binningcomment = "This is chosen a large number that can be re-binned to a suitable number for analysis. The default value of 240 can be re-binned to 20, 24, 40, 48, ..., which are typically used in ORCA NMO.";
+
+    zap['s'] = make_field(summary_file, "Summary file with reconstructed neutrino events");
+    zap['g'] = make_field(gseagen_file, "GSeaGen file where all of the generated MC events are");
+    zap['d'] = make_field(output_dir, "Directory where output file is written") = "output/";
+    zap['E'] = make_field(nebins , "Number of energy bins. " + binningcomment) = 240;
+    zap['C'] = make_field(nctbins, "Number of cos-theta bins. See comment for -E") = 240;
+    zap['B'] = make_field(nbybins, "Number of bjorken-y bins. See comment for -E") = 24;
+    zap['e'] = make_field(energy_range, rangecomment) = JRange<double>(1, 100);
+    zap['a'] = make_field(atmmu_cut, "PID cut to reject atmospheric muons (0 - very strict, 1 - all events pass). NB! Be careful and read the documentation of the app!") = 1.;
+    zap['n'] = make_field(noise_cut, "PID cut to reject noise-like events (0 - very strict, 1 - all events pass). NB! Be careful and read the documentation of the app!") = 1.;
+    zap['v'] = make_field(veff_option, "Select effective volume calculation. 0 - detector can, 1 - custom volume.") = can_vol, custom_vol;
+    zap['r'] = make_field(rvol , "Radius of custom volume") = 0.;
+    zap['l'] = make_field(zmin_vol , "Minimum z of custom volume") = 0.;
+    zap['u'] = make_field(zmax_vol , "Maximum z of custom volume") = 0.;
+
+    zap(argc, argv);
+  }
+  catch(const exception &error) {
+    FATAL(error.what() << endl);
+  }
+
+  if (veff_option >= not_supported) {
+    throw std::invalid_argument("ERROR! EffMhists() veff_option " + to_string(veff_option) + " not supported." );
+  }
+
+  if ( !NMHUtils::FileExists(summary_file) || !NMHUtils::FileExists(gseagen_file) ) {
+    throw std::invalid_argument("ERROR! EffMhists() input file(s) missing." );
+  }
+
+  //------------------------------------------------------
+  //init datafile parsers, create output name and init hists
   //------------------------------------------------------  
   fS = new SummaryParser(summary_file);
   fG = new GSGParser(gseagen_file);
 
+  // read the flavor and the interaction type from the first event in the summary file
+  // this is not ideal, but for some reason the neutrino flavor and the interaction type (i.e. input settings)
+  // are not stored in gSeaGen header.
+
+  Int_t flavor   = fS->GetEvt(0)->Get_MC_type();
+  Int_t int_type = fS->GetEvt(0)->Get_MC_is_CC();
+  Int_t run_nr   = fG->fRunNr; // run number from gSeaGen
+  Int_t en_low   = fG->fE_min; // minimum energy of the selected gSeaGen file file
+  Int_t en_high  = fG->fE_max; // maximum energy of the selected gSeaGen file file
+
+  if ( run_nr != fS->GetEvt(0)->Get_MC_runID() ) {
+    throw std::invalid_argument("ERROR! EffMhists() gSeaGen and summary file run numbers are different.");
+  }
+
+  TString out_name = CreateOutputName(output_dir, flavor, int_type, en_low, en_high, run_nr);
+  InitHists(nebins, nctbins, nbybins, energy_range);
+
   //------------------------------------------------------
-  //if custom volume is used, overwrite the values stored in GSPParser
+  //if custom volume is used, overwrite the values stored in GSPParser (these are used in `FillGenerated`)
   //------------------------------------------------------
 
   if (veff_option == custom_vol) {
@@ -113,14 +173,18 @@ void EffMhists(TString summary_file,
   //write out the histograms. Division of det/gen has to be done 
   //later, this allows easy combining of the outputs.
   //------------------------------------------------------
-
   FileHeader h("EffMhists");
+  h.ReadHeader(summary_file); // read the header from summary file, contains the tag
+  h.AddParameter("summary_file", summary_file);
+  h.AddParameter("gseagen_file", gseagen_file);
+  h.AddParameter("emin", (TString)to_string(energy_range.getLowerLimit()) );
+  h.AddParameter("emax", (TString)to_string(energy_range.getUpperLimit()) );
+  h.AddParameter("atmmu_cut", (TString)to_string(atmmu_cut) );
+  h.AddParameter("noise_cut", (TString)to_string(noise_cut) );
   h.AddParameter("veff_option", (TString)to_string(veff_option) );
   h.AddParameter("Rvol", (TString)to_string(fG->fRcan) );
   h.AddParameter("Zmin", (TString)to_string(fG->fZcan_min) );
   h.AddParameter("Zmax", (TString)to_string(fG->fZcan_max) );
-  h.AddParameter("atmmu_cut", (TString)to_string(atmmu_cut) );
-  h.AddParameter("noise_cut", (TString)to_string(noise_cut) );
 
   TFile *fout = new TFile(out_name, "RECREATE");
   fh_gen_nu ->Write();
@@ -153,44 +217,43 @@ void EffMhists(TString summary_file,
 /**
    This function creates the output filename for given inputs.
 
-   \param flavor    Neutrino flavor
-   \param int_type  Interaction type (nc/cc)
-   \param en_low    Start of energy range of gSeaGen simulation
-   \param run_nr    gSeaGen run number
+   \param output_dir Directory where the output file is written
+   \param nupdg      Neutrino pdg code
+   \param int_type   Interaction type (0 = nc, 1 = cc)
+   \param en_low     Start of energy range of gSeaGen simulation
+   \param en_high    End of the energy range of gSeaGen simulation
+   \param run_nr     gSeaGen run number
 
    \return          Output effective mass file name; returns empty if inputs not supported.
 
  */
-TString ParseInputs(Int_t flavor, Int_t int_type, Int_t en_low, Int_t run_nr) {
+TString EFFMASS::CreateOutputName(TString output_dir, Int_t nupdg, Int_t int_type, Int_t en_low, Int_t en_high, Int_t run_nr) {
 
-  map < Int_t, TString > f_to_name = { {0, "elec" }, 
-				       {1, "muon" },
-				       {2, "tau"  } };
+  map < Int_t, TString > pdg_to_name = { {12, "elec" }, 
+					 {14, "muon" },
+					 {16, "tau"  } };
 
   map < Int_t, TString > int_to_name = { {0, "NC" }, 
 					 {1, "CC" } };
-
-  map < Int_t, TString > en_to_name = { {1, "1-5GeV"   }, 
-					{3, "3-100GeV" } };
   
-  
-  if ( f_to_name.find(flavor) == f_to_name.end() ) {
-    cout << "ERROR! flavor " << flavor << " not supported." << endl;
-    return "";
+  if ( pdg_to_name.find(TMath::Abs(nupdg)) == pdg_to_name.end() ) {
+    throw std::invalid_argument("ERROR! EFFMASS::CreateOutputName() pdg code " + to_string(TMath::Abs(nupdg)) + " not supported.");
   }
 
   if ( int_to_name.find(int_type) == int_to_name.end() ) {
-    cout << "ERROR! int_type " << int_type << " not supported." << endl;
-    return "";
+    throw std::invalid_argument("ERROR! EFFMASS::CreateOutputName() interaction type " + to_string(int_type) + " not supported.");
   }
 
-  if ( en_to_name.find(en_low) == en_to_name.end() ) {
-    cout << "ERROR! en_low " << en_low << " not supported." << endl;
-    return "";
+  Int_t sysret = system("mkdir -p " + output_dir);
+
+  if (sysret != 0) {
+    throw std::logic_error("ERROR! EFFMASS::CreateOutputName() could not create dir " + (string)output_dir);
   }
 
-  TString out_name = "output/EffMhists_" + f_to_name[flavor] + "-" + int_to_name[int_type] + "_" + 
-    en_to_name[en_low] + "_" + (TString)to_string(run_nr) + ".root";
+  TString erange = to_string(en_low) + "-" + to_string(en_high) + "GeV";  
+
+  TString out_name = output_dir + "/EffMhists_" + pdg_to_name[TMath::Abs(nupdg)] + "-" + int_to_name[int_type] + "_" + 
+    erange + "_" + (TString)to_string(run_nr) + ".root";
 
   return out_name;
 
@@ -200,27 +263,22 @@ TString ParseInputs(Int_t flavor, Int_t int_type, Int_t en_low, Int_t run_nr) {
 
 /**
    Function that initialised the histograms used globally in this macro.
+   \param ebins          Number of energy bins
+   \param ctbins         Number of cos-theta bins
+   \param bybins         Number of bjorken-y bins
+   \param energy_range   Energy range of the Monte Carlo simulation
  */
-void InitHists() {
+void EFFMASS::InitHists(Int_t ebins, Int_t ctbins, Int_t bybins, JRange<double> energy_range) {
 
   // 'generated' histograms. Use fine binning here, as re-running this macro is time-consuming
-  // suitable rebinning can be defined in `EffMass.C`
+  // suitable binning is chosen in the code that divides selected/generated
 
-  Int_t    ebins  = 120 ;
-  Double_t emin   =   1.;
-  Double_t emax   = 100.;
-
-  Int_t    ctbins = 200 ;
-  Double_t ctmin  =  -1.;
-  Double_t ctmax  =   1.;
-
-  Int_t    bybins =   8 ;
-  Double_t bymin  =   0.;
-  Double_t bymax  =   1.;
+  Double_t emin   = energy_range.getLowerLimit();
+  Double_t emax   = energy_range.getUpperLimit();
   
-  vector<Double_t> e_edges  = NMHUtils::GetLogBins(ebins, emin, emax);
-  vector<Double_t> ct_edges = NMHUtils::GetBins(ctbins, ctmin, ctmax);
-  vector<Double_t> by_edges = NMHUtils::GetBins(bybins, bymin, bymax);
+  vector<Double_t> e_edges  = NMHUtils::GetLogBins(ebins , emin  , emax);
+  vector<Double_t> ct_edges = NMHUtils::GetBins   (ctbins, fCtmin, fCtmax);
+  vector<Double_t> by_edges = NMHUtils::GetBins   (bybins, fBymin, fBymax);
   
   fh_gen_nu  = new TH3D("Generated_nu", "Generated_nu", 
 			ebins, &e_edges[0], 
@@ -258,7 +316,7 @@ void InitHists() {
    \return True if vertex inside volume, false otherwise.
 
  */
-Bool_t VertexInVol(Double_t vx, Double_t vy, Double_t vz, Double_t R, Double_t z_min, Double_t z_max) {
+Bool_t EFFMASS::VertexInVol(Double_t vx, Double_t vy, Double_t vz, Double_t R, Double_t z_min, Double_t z_max) {
 
   Double_t r_vtx = TMath::Sqrt(vx*vx + vy*vy);
 
@@ -274,7 +332,7 @@ Bool_t VertexInVol(Double_t vx, Double_t vy, Double_t vz, Double_t R, Double_t z
    \param atmmu_cut     Atmospheric muon cut
    \param noise_cut     Noise cut
  */
-void FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
+void EFFMASS::FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
 
   //loops over summary events and fill 'detected' histograms
 
@@ -291,7 +349,7 @@ void FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
     //   if ( !VertexInVol(pos.x(), pos.y(), pos.z(), fG->fRcan, fG->fZcan_min, fG->fZcan_max) ) continue;
     // }
 
-    //reject events that look like atmospheric muons
+    //reject events that look like atmospheric muons (not used by default, accounted for in `EventSelection` and `DetResponse`)
     if ( evt->Get_RDF_muon_score() > atmmu_cut  ) continue; 
     if ( evt->Get_RDF_noise_score() > noise_cut ) continue; 
 
@@ -312,7 +370,7 @@ void FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
 
    \param veff_option   Volume constraint option
  */
-void FillGenerated(Int_t veff_option) {
+void EFFMASS::FillGenerated(Int_t veff_option) {
 
   //loop over generated MC events
 
