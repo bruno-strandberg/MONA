@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 
     zap['f'] = make_field(fin_name , "PID file from ECAP, e.g. ../../data/pid_result_XXX.root") = "";
     zap['d'] = make_field(fout_dir , "Output directory where the data file in SummarEvent format is written, e.g. ../../data/") = "";
-    zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. ECAP10Apr2018") = "";
+    zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. ORCA115_23x9m_ECAP0418. Choose this wisely.") = "";
 
     zap(argc, argv);
 
