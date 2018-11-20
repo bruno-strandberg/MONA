@@ -1,47 +1,37 @@
 #!/usr/bin/python
 """
-This script can be used to call the EffMhists.C macro.
+This script can be used to call the EffMhists.C macro for processing many files with default settings (useful for ORCA analyses). For each file in SUMMARYDIR, it will look for a file in GSGDIR; if the file is not found an error is raised. If the gSeaGen file is found, the script sets up a call to EffMhists program.
  
 Usage:
-    EMH_caller -l RUNNR_LOW -u RUNNR_UP -f FLAVOUR... -i INTERACTION... -e E_START... (--local | --farm) [--nmin NMIN] [-c ATMMU_CUT] [-n NOISE_CUT] [-v VEFF_OPT] [--rvol RVOL] [--zmin ZMIN] [--zmax ZMAX]
+    EMH_caller --gsgdir GSGDIR --summarydir SUMMARYDIR [--odir OUTPUTDIR] [--rmin RMIN] [--rmax RMAX] [--selstr SELSTR] [--nmin NMIN] (--local | --farm) 
     EMH_caller -h                                                                     
                                                                                           
-Option:                                                                                   
-    -l RUNNR_LOW      Lowest run number
-    -u RUNNR_UP       Highest run number
-    -f FLAVOUR        Neutrino flavour, 0 - e, 1 - mu, 2 - tau, may select several
-    -i INTERACTION    Interaction type, 0 - nc, 1 - cc, may select several
-    -e E_START        Energy start region, 1 or 3, may select several
-    --local           Run locally
-    --farm            Run on the farm
-    --nmin NMIN       Minimum nr of files to analyse per farm job [default: 190]
-    -h --help         Show this screen
-
-    ==================FINE TUNING BELOW========================================
-
-    -c ATMMU_CUT      PID cut to reject atmospheric muons [default: 1.0]
-    -n NOISE_CUT      PID cut to reject noise-like events [default: 1.0]
-    -v VEFF_OPT       Vgen option, 0 - can, 1 - custom [default: 0]
-    --rvol RVOL       Radius of custom volume [default: 0]
-    --zmin ZMIN       Z minimum of custom volume [default: 0]
-    --zmax ZMAX       Z maximum of custom volume [default: 0]
+Option:
+    --gsgdir GSGDIR             Local gSeaGen directory
+    --summarydir SUMMARYDIR     Local summary files directory
+    --odir OUTPUTDIR            Output dir [default: output/]
+    --rmin RMIN                 Lowest run number [default: 1]
+    --rmax RMAX                 Highest run number [default: 10000]
+    --selstr SELSTR             Selection string for files in SUMMARYDIR, e.g. '*muon-CC*' (note the quotation marks!) [default: ]
+    --nmin NMIN                 Minimum nr of files to analyse per farm job [default: 190]
+    --local                     Run locally
+    --farm                      Run on the farm
+    -h --help                   Show this screen
 
 """
+
+from docopt import docopt
+args = docopt(__doc__)
 
 import sys
 import os
 import math
-from docopt import docopt
 
 #*****************************************************************
 # some global directories
 nmhdir        = os.environ['NMHDIR']
-summary_dir   = nmhdir + "/data/mc_end/data_atmnu/"    #summary files dir
-gseagen_dir   = nmhdir + "/data/mc_start/data_atmnu/"  #gseagen files on sps dir
-irodsdir      = '/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v1.0/gSeaGen/' #gsg@irods
-irodsfiles    = os.popen( "ils {}".format(irodsdir) ).read().split()[1:] #list of gsg@irods
-to_be_fetched = []                 #list of gsgfiles set to be fetched from IRODS (for farming)
-corruptfiles  = ['elec-CC_1-5GeV_251-300.root.tar.gz'] #list of corrupt files
+summary_dir   = os.path.abspath(args['--summarydir'])
+gseagen_dir   = os.path.abspath(args['--gsgdir'])
 
 #*****************************************************************
 
@@ -50,10 +40,35 @@ def execute_effmass_calc(args):
 
     args is an argument dictionary created by docopt.
     """
-    
-    flavours     = { 0: "elec", 1: "muon", 2: "tau" }
-    interactions = { 0: "NC", 1: "CC" }
-    energies     = { 1: "1-5", 3: "3-100" }
+
+    summaryfiles = os.popen( "ls {}".format(args['--summarydir']) ).read().split()
+    gseagenfiles = os.popen( "ls {}".format(args['--gsgdir']) ).read().split()
+
+    flavors      = ['elec', 'muon', 'tau']
+    interactions = ['NC','CC']
+
+    for sf in summaryfiles:
+        
+        # extract flavor, NC/CC, energy range and file number from summary file name
+        # and look for the corresponding gSeaGen file
+
+        flav = inter = erange = fnr = ''
+
+        flav  = [f for f in flavors if f in sf]
+        inter = [i for i in interactions if i in sf]
+        erange = sf[ sf[0:sf.index("GeV")].rfind('_')+1 : sf.index("GeV") ]
+        fnr = sf[ sf.rfind('_') : sf.rfind('.')+1 ]
+
+        if ( len(flav) != 1 or len(inter) != 1 or flav[0] == '' or inter[0] == '' or erange == '' or fnr == '' ):
+            raise Exception("Flavor and interaction extraction failed!")
+        
+        gsgfile = [g for g in gseagenfiles if (flav[0] in g and inter[0] in g and erange in g and fnr in g)]
+
+        if (len(gsgfile) != 1):
+            raise Exception( "Could not find gSeaGen file for summary file {}".format(sf) )
+
+    quit()
+
     cmds   = []
     nfiles = 0
     njobs  = 0
