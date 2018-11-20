@@ -72,7 +72,7 @@ class EventFilter {
  public:
 
   /// enum to determine which reco type is used in filling hists in inheriting classes
-  enum reco {mc_truth, track, shower};
+  enum reco {mc_truth, track, shower, trackWshowerE};
   
   EventFilter(reco reco_type = EventFilter::mc_truth);
   ~EventFilter();

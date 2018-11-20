@@ -87,6 +87,9 @@ Bool_t EventFilter::PassesCuts(SummaryEvent *evt) {
 */
 void EventFilter::SetObservables(SummaryEvent *evt) {
 
+  Bool_t has_shower_energy = kFALSE;
+  if ((evt->Get_shower_energy()) > 0 and (evt->Get_shower_energy() <= 100)) { has_shower_energy = kTRUE; }
+
   switch (fRecoType) {
 
   case mc_truth:
@@ -110,6 +113,15 @@ void EventFilter::SetObservables(SummaryEvent *evt) {
     fPos      = evt->Get_shower_pos();
     break;
     
+  case trackWshowerE:
+    if (has_shower_energy) {
+      fEnergy = evt->Get_shower_energy();
+    } else {
+      fEnergy = evt->Get_track_energy();
+    }
+    fBy       = evt->Get_track_bjorkeny();
+    fDir      = evt->Get_track_dir();
+    fPos      = evt->Get_track_pos();
   }
   
 }
