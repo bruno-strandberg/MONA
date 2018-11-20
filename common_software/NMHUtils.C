@@ -142,7 +142,7 @@ Bool_t NMHUtils::FileExists(TString filename, Double_t size) {
  *                     
  */
 std::tuple<TH2D*, Double_t, Double_t, Double_t>
-NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
+NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TH2D* hcorr, TString nametitle, 
 		    Double_t xlow, Double_t xhigh,
 		    Double_t ylow, Double_t yhigh) {
   
@@ -187,6 +187,8 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
       Double_t N_h2 = h2->GetBinContent(xb, yb);	
       Double_t N_h1_err = h1->GetBinError(xb, yb);
       Double_t N_h2_err = h2->GetBinError(xb, yb);	
+
+      Double_t correlation_coef = hcorr->GetBinContent(xb, yb);
 	
       Double_t A     = 0;
       Double_t A_err = 0;
@@ -194,8 +196,13 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
       if ( N_h1 > 0 ) { 
         A = (N_h1 - N_h2)/TMath::Sqrt(N_h1); 
         A_err = std::pow(0.5*(N_h1 + N_h2) / std::pow(N_h1, 1.5), 2.) * std::pow(N_h1_err, 2.) +
-                std::pow(-1 / std::sqrt(N_h1), 2.) * std::pow(N_h2_err, 2.);
+                std::pow(-1 / std::sqrt(N_h1), 2.) * std::pow(N_h2_err, 2.) -
+                2 * correlation_coef * N_h1_err * N_h2_err * (0.5*(N_h1 + N_h2) / std::pow(N_h1, 2.));
+        //Double_t Bla_err = A_err;
+        if ((A_err < 0) and (std::abs(A_err) < 1e-10)) { A_err = 0.; } // This happened on day 1, has disappeared since...
         A_err = std::sqrt(A_err);
+        
+        //if (A_err != A_err) { cout << Bla_err << " " << N_h1_err << " " << N_h2_err << " " << N_h1 << " " << N_h2 << endl; }
       }
       else { 
         A = 0.; 
@@ -212,7 +219,9 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
 	Nbins += 1;
       }
 
+    //  if ((xb == 11) and (yb == 7)) { cout << A << " " << A_err << endl; }
       h_asym->SetBinContent(xb, yb, A);
+      h_asym->SetBinError(xb, yb, A_err);
 
       asym += A * A;
       asym_err += A * A * A_err * A_err; // The denominator is a function of all bins, so it is done outside of the for-loop, below. 
