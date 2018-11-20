@@ -123,6 +123,30 @@ Bool_t NMHUtils::FileExists(TString filename, Double_t size) {
 //****************************************************************************
 
 /**
+   Function to extract the current working directory on a unix system.
+   \return Current working directory.
+ */
+TString NMHUtils::Getcwd() {
+
+  TString cwd = "";
+
+  static const Int_t nchar = 4096;
+  char cwdarr[nchar];
+  
+  if ( getcwd(cwdarr, nchar ) != NULL ) {
+    cwd = (TString)cwdarr;
+  }
+  else {
+    throw std::logic_error("ERROR! NMHUtils::Getcwd() current working directory extraction failed.");
+  }
+
+  return cwd;
+
+}
+
+//****************************************************************************
+
+/**
  *  Function to calculate bin-by-bin 'asymmetry' between two histograms.
  *
  *  Asymmetry is defined as \f$ A(i) = (N_{h1}^{bin i} - N_{h2}^{bin i})/\sqrt{N_{h1}^{bin i}} \f$.
