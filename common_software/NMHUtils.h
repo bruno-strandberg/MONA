@@ -18,11 +18,10 @@ namespace NMHUtils {
   Bool_t           FileExists(TString filename, Double_t size = 0);
   TString          Getcwd();
 
-  std::tuple<TH2D*, Double_t, Double_t, Double_t> 
+  std::tuple<TH2D*, Double_t> 
     Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
 	      Double_t xlow = -1e10, Double_t xhigh = 1e10,
-	      Double_t ylow = -1e10, Double_t yhigh = 1e10,
-	      Bool_t ReverseSign = kFALSE, Bool_t BothDenoms  = kFALSE);
+	      Double_t ylow = -1e10, Double_t yhigh = 1e10);
 };
 
 #endif

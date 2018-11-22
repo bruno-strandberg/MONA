@@ -147,36 +147,26 @@ TString NMHUtils::Getcwd() {
 //****************************************************************************
 
 /**
- *  Function to calculate bin-by-bin 'asymmetry' between two histograms.
- *
- *  Asymmetry is defined as \f$ A(i) = (N_{h1}^{bin i} - N_{h2}^{bin i})/\sqrt{N_{h1}^{bin i}} \f$.
- *
- * \param h1           First histogram
- * \param h2           Second histogram
- * \param nametitle    String used as name and title for the created asymmetry histogram
- * \param xlow         X-bins with centers below xlow are excluded
- * \param xhigh        X-bins with centers above xhigh are excluded
- * \param ylow         Y-bins with centers below ylow are excluded
- * \param yhigh        Y-bins with centers above yhigh are excluded
- * \param ReverseSign  The sign of the numerator is reversed, thus becoming 
- *                     \f$ (N_{h2}^{bin i} - N_{h1}^{bin i}) \f$.
- * \param BothDenoms   If false, the asymmetry in bin i is zero if \f$ N_{h1}^{bin i} = 0\f$.
- *                     If true, the asymmetry in bin i is \f$ -\sqrt{N_{h2}^{bin i}} \f$ if 
- *                     \f$ N_{h2}^{bin i} > 0\f$ and \f$ N_{h1}^{bin i} = 0\f$. If both are
- *                     0 the asymmetry is 0.
- * \return             A std::tuple with elements: 
- *                     0) a pointer to a histgram with bin-by-bin asymmetries;
- *                     1) the quantity \f$ \sqrt{\sum_{i} A_i^2} \f$ (combined asymmetry); 
- *                     3) the quantity \f$ ( \sum_{bin i} (N_{h1}^i - N_{h2}^i)^2 ) \f$
- *                       (the actual chi2 between the two histograms)
- *                     4) the number of considered bins (degress of freedom)
- *                     
+   Function to calculate bin-by-bin 'asymmetry' between two histograms.
+ 
+   Asymmetry is defined as \f$ A(i) = (N_{h1}^{bin i} - N_{h2}^{bin i})/\sqrt{N_{h1}^{bin i}} \f$.
+ 
+   \param h1           First histogram
+   \param h2           Second histogram
+   \param nametitle    String used as name and title for the created asymmetry histogram
+   \param xlow         X-bins with centers below xlow are excluded
+   \param xhigh        X-bins with centers above xhigh are excluded
+   \param ylow         Y-bins with centers below ylow are excluded
+   \param yhigh        Y-bins with centers above yhigh are excluded
+   \return             A std::tuple with elements: 
+                       0) a pointer to a histogram with bin-by-bin asymmetries  \f$ \rm \chi^2_{signed} = (N_{h1}^{bin} - N_{h2}^{bin})|N_{h1}^{bin} - N_{h2}^{bin}|/N_{h1}^{binned} \f$
+                       1) the quantity \f$ \sqrt{\sum_{i} |\chi^2{\rm signed}|} \f$ (combined asymmetry); 
+                      
  */
-std::tuple<TH2D*, Double_t, Double_t, Double_t> 
+std::tuple<TH2D*, Double_t> 
 NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
 		    Double_t xlow, Double_t xhigh,
-		    Double_t ylow, Double_t yhigh,
-		    Bool_t ReverseSign, Bool_t BothDenoms) {
+		    Double_t ylow, Double_t yhigh) {
   
   //------------------------------------------------------------
   // check that both histograms have the same binning
@@ -209,8 +199,6 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
   h_asym->SetDirectory(0);
 
   Double_t asym  = 0.;
-  Double_t chi2  = 0.;
-  Double_t Nbins = 0.;
 
   for (Int_t xb = 1; xb <= h_asym->GetXaxis()->GetNbins(); xb++) {
     for (Int_t yb = 1; yb <= h_asym->GetYaxis()->GetNbins(); yb++) {
@@ -218,34 +206,27 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
       Double_t N_h1 = h1->GetBinContent(xb, yb);
       Double_t N_h2 = h2->GetBinContent(xb, yb);	
 	
-      Double_t A    = 0;
+      Double_t A = 0;
 
-      if      (   N_h1 > 0                 ) { A = (N_h1 - N_h2)/TMath::Sqrt(N_h1); }
-      else if ( ( N_h2 > 0 ) && BothDenoms ) { A = (N_h1 - N_h2)/TMath::Sqrt(N_h2); }
-      else                                   { A = 0.;                              }
-	
-      if (ReverseSign) A = -A;
-	
+      if   ( N_h1 > 0 ) { A = (N_h1 - N_h2) * TMath::Abs(N_h1 - N_h2)/N_h1; }
+      else              { A = 0.; }
+		
       Double_t xc = h_asym->GetXaxis()->GetBinCenter(xb);
       Double_t yc = h_asym->GetYaxis()->GetBinCenter(yb);
 
       if ( (xc < xlow) || (xc > xhigh) || ( yc < ylow) || ( yc > yhigh ) ) {
 	A = 0.;
       }
-      else {
-	chi2  += (N_h1 - N_h2) * (N_h1 - N_h2);
-	Nbins += 1;
-      }
 
       h_asym->SetBinContent(xb, yb, A);
 
-      asym += A * A;
+      asym += TMath::Abs(A);
 
     }
   }
 
   asym = TMath::Sqrt( asym );
 
-  return std::make_tuple(h_asym, asym, chi2, Nbins);
+  return std::make_tuple(h_asym, asym);
 
 }
