@@ -22,6 +22,7 @@
 #include "RooCategory.h"
 #include "RooSimultaneous.h"
 #include "RooFitResult.h"
+#include "RooMinimizer.h"
 
 // cpp headers
 #include <iostream>
@@ -89,10 +90,9 @@ int main(int argc, char **argv) {
     JParser<> zap("Program to fit the experimental data with standard track-shower separation.");
 
     zap['s'] = make_field(simdata_file, "File with all summary data") =
-      (string)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+      (string)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
 
-    zap['e'] = make_field(expdata_file, "File with experimental data sample") =
-      "rootfiles/Experiment_oscpars5_sample_0_NH.root";
+    zap['e'] = make_field(expdata_file, "File with experimental data sample");
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
 
@@ -149,10 +149,23 @@ int main(int argc, char **argv) {
   simPdf.addPdf(pdf_tracks , fTRsel->Get_SelName() );
   simPdf.addPdf(pdf_showers, fSHsel->Get_SelName() );
 
-  cout << "NOTICE main() started fitting" << endl;
+  cout << "NOTICE Fitter started fitting" << endl;
+  
   TStopwatch timer;
-  RooFitResult *fitres = simPdf.fitTo( combData, Save(kTRUE) );
-  cout << "NOTICE main() finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
+  RooAbsReal *nll = simPdf.createNLL(combData);
+  RooMinimizer m(*nll);
+  const char* minimizer = "Minuit";
+  const char* minalg    = "minuit";
+  m.setMinimizerType(minimizer); // select minimizer
+  m.optimizeConst(kFALSE);       // turn off optimisation
+  m.setOffsetting(kTRUE);        // offset the likelihood, helps with large LLH values
+  m.setEps(1e-5);                // increase MIGRAD precision
+  m.hesse();                     // do initial error evaluation
+  m.minimize(minimizer, minalg);
+  m.hesse();
+  RooFitResult *fitres = m.save();
+
+  cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
   
   //----------------------------------------------------------
   // print comparison
@@ -240,8 +253,8 @@ void Fitter::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t
   // fill the responses
   //----------------------------------------------------------
 
-  TString track_resp_name  = "rootfiles/track_response.root";
-  TString shower_resp_name = "rootfiles/shower_response.root";
+  TString track_resp_name  = NMHUtils::Getcwd() + "/rootfiles/track_response.root";
+  TString shower_resp_name = NMHUtils::Getcwd() + "/rootfiles/shower_response.root";
 
   if ( !NMHUtils::FileExists(track_resp_name) || !NMHUtils::FileExists(shower_resp_name) || refill_response ) {
 

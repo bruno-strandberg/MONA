@@ -199,8 +199,8 @@ void FitUtil::SetNOlims() {
   fDm21->setMin(f_NO_dm21.min);
   fDm21->setMax(f_NO_dm21.max);
   
-  fDm31->setMin(f_NO_dm31.min);
   fDm31->setMax(f_NO_dm31.max);
+  fDm31->setMin(f_NO_dm31.min);
     
 }
 
