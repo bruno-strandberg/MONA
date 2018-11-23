@@ -174,7 +174,7 @@ class DetResponse : public EventFilter {
   void                Fill(SummaryEvent *evt);
   void                WriteToFile(TString filename);
   void                ReadFromFile(TString filename);
-  std::tuple<TCanvas*, TCanvas*, TCanvas*> DisplayResponse(Double_t e_reco, Double_t ct_reco);
+  std::tuple<TCanvas*, TCanvas*, TCanvas*> DisplayResponse(Double_t e_reco, Double_t ct_reco, TString outname="");
   /// Return pointer to the 3D histogram with selected reco events
   TH3D*               GetHist3D() { return fHResp; }
   /// Get response name
