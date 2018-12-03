@@ -570,7 +570,7 @@ void DetResponse::ReadFromFile(TString filename) {
    \param ct_reco   Reconstructed cos-theta
    \return          A tuple with pointers to three canvases where the visualization is drawn.
  */
-std::tuple<TCanvas*,TCanvas*,TCanvas*> DetResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco) {
+std::tuple<TCanvas*,TCanvas*,TCanvas*> DetResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco, TString outname) {
 
   if (!fNormalised) Normalise();
 
@@ -643,9 +643,15 @@ std::tuple<TCanvas*,TCanvas*,TCanvas*> DetResponse::DisplayResponse(Double_t e_r
   }
 
   //----------------------------------------------------------------------
-  // now do the drawing
+  // now do the drawing; if outname is specified write histograms to output
   //----------------------------------------------------------------------
 
+  TFile *fout = NULL;
+
+  if (outname != "") {
+    fout = new TFile(outname, "RECREATE");
+  }
+  
   Int_t padcount = 1;
   Int_t rows     = 3;
   Int_t cols     = 4;
@@ -677,6 +683,11 @@ std::tuple<TCanvas*,TCanvas*,TCanvas*> DetResponse::DisplayResponse(Double_t e_r
 	c2->cd(padcount);
 	c2->GetPad(padcount)->SetLogx();
 	hn[f.first][i.first][p.first]->Draw("text");
+
+	if (fout) {
+	  hw[f.first][i.first][p.first]->Write();
+	  hn[f.first][i.first][p.first]->Write();
+	}
 	
 	padcount++;
       }
@@ -692,5 +703,10 @@ std::tuple<TCanvas*,TCanvas*,TCanvas*> DetResponse::DisplayResponse(Double_t e_r
   fHeap.Add(c2);
   fHeap.Add(c3);
 
+  if (fout) {
+    fout->Close();
+    delete fout;
+  }
+  
   return std::make_tuple(c1,c2,c3);
 }
