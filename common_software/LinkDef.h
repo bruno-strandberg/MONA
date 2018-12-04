@@ -18,6 +18,6 @@
 #pragma link C++ class EventSelection+;
 #pragma link C++ class DetResponse+;
 #pragma link C++ class TrueB+;
-
+#pragma link C++ class EffMass+;
 
 #endif
