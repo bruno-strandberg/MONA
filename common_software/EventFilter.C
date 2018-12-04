@@ -88,6 +88,7 @@ Bool_t EventFilter::PassesCuts(SummaryEvent *evt) {
 void EventFilter::SetObservables(SummaryEvent *evt) {
 
   Bool_t has_shower_energy = kFALSE;
+  // Showers that are not reconstructed properly get an energy of -727.2
   if ((evt->Get_shower_energy()) > 0 and (evt->Get_shower_energy() <= 100)) { has_shower_energy = kTRUE; }
 
   switch (fRecoType) {
@@ -112,8 +113,15 @@ void EventFilter::SetObservables(SummaryEvent *evt) {
     fDir      = evt->Get_shower_dir();
     fPos      = evt->Get_shower_pos();
     break;
-    
+
   case trackWshowerE:
+    fEnergy   = evt->Get_shower_energy();
+    fBy       = evt->Get_track_bjorkeny();
+    fDir      = evt->Get_track_dir();
+    fPos      = evt->Get_track_pos();
+    break; 
+    
+  case hybridE:
     if (has_shower_energy) {
       fEnergy = evt->Get_shower_energy();
     } else {
@@ -122,6 +130,7 @@ void EventFilter::SetObservables(SummaryEvent *evt) {
     fBy       = evt->Get_track_bjorkeny();
     fDir      = evt->Get_track_dir();
     fPos      = evt->Get_track_pos();
+    break;
   }
   
 }
