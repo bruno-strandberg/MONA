@@ -122,6 +122,63 @@ Bool_t NMHUtils::FileExists(TString filename, Double_t size) {
 
 //****************************************************************************
 
+/** Function that checks that two histograms have identical binning.
+
+    \param h1 First histogram (1, 2 or 3 dimensional)
+    \param h2 Second histogram (1, 2 or 3 dimensional)
+    \return True if bins match, False otherwise
+
+ */
+Bool_t NMHUtils::BinsMatch(TH1 *h1, TH1 *h2) {
+
+  Bool_t bins_match = kTRUE;
+
+  TString xtitle =  h1->GetXaxis()->GetTitle();
+  TString ytitle =  h1->GetYaxis()->GetTitle();
+  TString ztitle =  h1->GetZaxis()->GetTitle();
+
+  h1->GetXaxis()->SetTitle("x");
+  h1->GetYaxis()->SetTitle("y");
+  h1->GetZaxis()->SetTitle("z");
+
+  std::vector< std::pair<TAxis*, TAxis*> > axps = { std::make_pair( h1->GetXaxis(), h2->GetXaxis() ), 
+						    std::make_pair( h1->GetYaxis(), h2->GetYaxis() ),
+						    std::make_pair( h1->GetZaxis(), h2->GetZaxis() ) };
+  
+  for (auto &axp: axps) {
+
+    auto ax1 = axp.first;
+    auto ax2 = axp.second;
+
+    if ( ax1->GetNbins() != ax2->GetNbins() ) {
+      cout << "NOTICE NMHUtils::BinsMatch() different number of bins on axis " << ax1->GetTitle() << endl;
+      bins_match = kFALSE;
+    }
+
+    Int_t nbins = ax1->GetNbins();
+
+    for (Int_t bin = 1; bin <= nbins; bin++) {
+
+      if ( ax1->GetBinLowEdge(bin) != ax2->GetBinLowEdge(bin) ) {
+	cout << "NOTICE NMHUtils::CheckBinning() different bin low edges on axis " 
+	     << ax1->GetTitle() << ", bin number " << bin << endl;
+	bins_match = kFALSE;
+      }
+
+    }
+
+  }
+
+  h1->GetXaxis()->SetTitle(xtitle);
+  h1->GetYaxis()->SetTitle(ytitle);
+  h1->GetZaxis()->SetTitle(ztitle);
+
+  return bins_match;
+
+}
+
+//****************************************************************************
+
 /**
  *  Function to calculate bin-by-bin 'asymmetry' between two histograms.
  *
