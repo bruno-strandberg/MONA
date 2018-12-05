@@ -13,15 +13,19 @@ using namespace std;
     
     In this case all of the member histograms are initialised to NULL. The generated and selected histograms are to be set by the `EffMass::SetGenAndSelH` function, after which `EffMass::WriteToFile` is to be called to create the file. With this constructor the effective mass histograms are not initialised.
 
-    \param emin   Minimum energy range (typically defined by the MC simulations, for ORCA usually 1 GeV)
-    \param emax   Maximum energy range (typically defined by the MC simulations, for ORCA usually 100 GeV)
-    \param ctmin  Minimum cos-theta range (usually -1)
-    \param ctmax  Maximum cos-theta range (usually 1)
-    \param bymin  Minimum bjroken-y range (usually 0)
-    \param bymax  Maximum bjorken-y range (usually 1)
+    \param emin    Minimum energy range (typically defined by the MC simulations, for ORCA usually 1 GeV)
+    \param emax    Maximum energy range (typically defined by the MC simulations, for ORCA usually 100 GeV)
+    \param ctmin   Minimum cos-theta range (usually -1)
+    \param ctmax   Maximum cos-theta range (usually 1)
+    \param bymin   Minimum bjroken-y range (usually 0)
+    \param bymax   Maximum bjorken-y range (usually 1)
+    \param datatag Tag to identify production, usually propaged from apps/data_sorting scripts.
 
 */
-EffMass::EffMass(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax) {
+EffMass::EffMass(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax, TString datatag) {
+
+  fDataTag = datatag;
+  fRhoSW = 0; // rho not used in this mode, set to 0
 
   fEmin  = emin;
   fEmax  = emax;
@@ -38,6 +42,7 @@ EffMass::EffMass(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, D
 	fhGen[f.first][i.first][p.first]  = NULL;
 	fhSel[f.first][i.first][p.first]  = NULL;
 	fhMeff[f.first][i.first][p.first] = NULL;
+	fVgen[f.first][i.first][p.first]  = 0;
       }
     }
   }
@@ -56,8 +61,9 @@ EffMass::EffMass(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, D
     \param nbybins Number of bjorken-y bins to use
 
  */
-EffMass::EffMass(TString fname, Int_t nebins, Int_t nctbins, Int_t nbybins) {
+EffMass::EffMass(TString fname, Int_t nebins, Int_t nctbins, Int_t nbybins, Double_t rho_sw) {
 
+  fRhoSW = rho_sw;
   ReadFromFile(fname);
   CreateMeffHists(nebins, nctbins, nbybins);
 
@@ -93,17 +99,18 @@ EffMass::~EffMass() {
 
 /** Function to set the 'generated' and 'selected' histogram that are used for effective mass calculation.
 
-    As the effective mass is calculated as hsel/hgen, one of the histograms needs to have been scaled by the generation volume and the sea water density.
+    The effective mass is calculated as hsel/hgen * vgen * rho. Neither hsel nor hgen should be scaled, scaling is performed inside the class.
 
     \param flavor Neutrino flavor (0 - elec, 1 - muon, 2 - tau)
     \param iscc   NC = 0, CC = 1
     \param isnb   nu = 0, nub = 1
     \param hgen   Histogram with 'generated' events, typically gSeaGen events inside the can
     \param hsel   Histogram with 'selected' events, typically events in PID output tree from ECAP
+    \param vgen   Size of the generation volume in m3 (typically the can)
     
  */
-void EffMass::SetGenAndSelH(Int_t flavor, Bool_t iscc, Bool_t isnb, TH3D* hgen, TH3D* hsel) {
-
+void EffMass::SetGenAndSelH(Int_t flavor, Bool_t iscc, Bool_t isnb, TH3D* hgen, TH3D* hsel, Double_t vgen) {
+  
   if (flavor > TAU) {
     throw std::invalid_argument("ERROR! EffMass::SetGenAndSelH() unknown flavor " + (string)to_string(flavor));
   }
@@ -137,6 +144,8 @@ void EffMass::SetGenAndSelH(Int_t flavor, Bool_t iscc, Bool_t isnb, TH3D* hgen, 
   fhGen[flavor][(UInt_t)iscc][(UInt_t)isnb]->SetDirectory(0);
   fhSel[flavor][(UInt_t)iscc][(UInt_t)isnb]->SetDirectory(0);
 
+  fVgen[flavor][(UInt_t)iscc][(UInt_t)isnb] = vgen;
+
 }
 
 //********************************************************************
@@ -148,12 +157,13 @@ void EffMass::SetGenAndSelH(Int_t flavor, Bool_t iscc, Bool_t isnb, TH3D* hgen, 
 void EffMass::WriteToFile(TString fname) {
 
   FileHeader header("EffMass");
-  header.AddParameter("Emin" , (TString)to_string(fEmin)  );
-  header.AddParameter("Emax" , (TString)to_string(fEmax)  );
-  header.AddParameter("Ctmin", (TString)to_string(fCtmin) );
-  header.AddParameter("Ctmax", (TString)to_string(fCtmax) );
-  header.AddParameter("Bymin", (TString)to_string(fBymin) );
-  header.AddParameter("Bymax", (TString)to_string(fBymax) );
+  header.AddParameter("emin" , (TString)to_string(fEmin)  );
+  header.AddParameter("emax" , (TString)to_string(fEmax)  );
+  header.AddParameter("ctmin", (TString)to_string(fCtmin) );
+  header.AddParameter("ctmax", (TString)to_string(fCtmax) );
+  header.AddParameter("bymin", (TString)to_string(fBymin) );
+  header.AddParameter("bymax", (TString)to_string(fBymax) );
+  header.AddParameter("datatag", fDataTag);
   
   TFile fout(fname, "RECREATE");
 
@@ -165,6 +175,9 @@ void EffMass::WriteToFile(TString fname) {
 	TString typestr = f.second + "_" + i.second + "_" + p.second;
 	TString genname = "hgen_" + typestr;
 	TString selname = "hsel_" + typestr;
+	TString volname = "vol_" + typestr;
+
+	header.AddParameter(volname, (TString)to_string(fVgen[f.first][i.first][p.first]) );
 
 	TH3D* hgen = fhGen[f.first][i.first][p.first];
 	TH3D* hsel = fhSel[f.first][i.first][p.first];
@@ -199,10 +212,25 @@ void EffMass::ReadFromFile(TString fname) {
   if ( !NMHUtils::FileExists(fname) ) {
     throw std::invalid_argument("EffMass::ReadFromFile() cannot find " + (string)fname);
   }
+
+  // read header data
+
+  FileHeader h1("EffMass");
+  h1.ReadHeader(fname);
   
+  fDataTag = h1.GetParameter("datatag");
+
+  fEmin  = std::stod( (string)h1.GetParameter("emin") );
+  fEmax  = std::stod( (string)h1.GetParameter("emax") );
+  fCtmin = std::stod( (string)h1.GetParameter("ctmin") );
+  fCtmax = std::stod( (string)h1.GetParameter("ctmax") );
+  fBymin = std::stod( (string)h1.GetParameter("bymin") );
+  fBymax = std::stod( (string)h1.GetParameter("bymax") );
+
+  // read the generated and selected histograms from the input file  
+
   TFile fin(fname, "READ");
 
-  // read the generated and selected histograms from the input file
   for (auto f: fFlavMap) {
     for (auto i: fIntMap) {
       for (auto p: fPolMap) {
@@ -210,6 +238,7 @@ void EffMass::ReadFromFile(TString fname) {
 	TString typestr = f.second + "_" + i.second + "_" + p.second;
 	TString genname = "hgen_" + typestr;
 	TString selname = "hsel_" + typestr;
+	TString volname = "vol_" + typestr;
 
 	TH3D* hgen = (TH3D*)fin.Get(genname);
 	TH3D* hsel = (TH3D*)fin.Get(selname);
@@ -218,7 +247,8 @@ void EffMass::ReadFromFile(TString fname) {
 	  throw std::invalid_argument("EffMass::ReadFromFile() could not find selected or generated histogram for " + (string)typestr );
 	}
 
-	// clone histograms and detatch from input file
+	// read volume; clone histograms and detatch from input file
+	fVgen[f.first][i.first][p.first] = std::stod( (string)h1.GetParameter(volname) );
 	fhGen[f.first][i.first][p.first] = (TH3D*)hgen->Clone();
 	fhSel[f.first][i.first][p.first] = (TH3D*)hsel->Clone();
 	fhGen[f.first][i.first][p.first]->SetDirectory(0);
@@ -230,17 +260,6 @@ void EffMass::ReadFromFile(TString fname) {
 
   fin.Close();
 
-  // read header data
-  FileHeader h1("EffMass");
-  h1.ReadHeader(fname);
-  
-  fEmin  = std::stod( (string)h1.GetParameter("Emin") );
-  fEmax  = std::stod( (string)h1.GetParameter("Emax") );
-  fCtmin = std::stod( (string)h1.GetParameter("Ctmin") );
-  fCtmax = std::stod( (string)h1.GetParameter("Ctmax") );
-  fBymin = std::stod( (string)h1.GetParameter("Bymin") );
-  fBymax = std::stod( (string)h1.GetParameter("Bymax") );
-
 }
 
 //********************************************************************
@@ -250,6 +269,7 @@ void EffMass::ReadFromFile(TString fname) {
     \param nebins   Number of energy bins
     \param nctbins  Number of cos-theta bins
     \param nbybins  Number of bjorken-y bins
+    \param rho_sw   Sea-water density
 
  */
 void EffMass::CreateMeffHists(Int_t nebins, Int_t nctbins, Int_t nbybins) {
@@ -311,6 +331,9 @@ void EffMass::CreateMeffHists(Int_t nebins, Int_t nctbins, Int_t nbybins) {
 	meff ->Rebin3D(rebinning_ebins, rebinning_ctbins, rebinning_bybins);
 	genRB->Rebin3D(rebinning_ebins, rebinning_ctbins, rebinning_bybins);
 	meff->Divide(genRB);
+
+	// apply scaling
+	meff->Scale( fVgen[f.first][i.first][p.first] * fRhoSW );
 
 	fhMeff[f.first][i.first][p.first] = meff;
 	delete genRB;
@@ -448,6 +471,7 @@ TGraphErrors* EffMass::AverageUpgoing(Int_t flavor, Bool_t iscc, Bool_t isnb) {
 
   // do the divide --> convert to effective mass; put to graph
   hsel1D->Divide(hgen1D);
+  hsel1D->Scale( fVgen[flavor][(UInt_t)iscc][(UInt_t)isnb] * fRhoSW );
 
   TGraphErrors *g = new TGraphErrors();
   g->SetNameTitle("meff1d_" + typestr, "meff1d_" + typestr);

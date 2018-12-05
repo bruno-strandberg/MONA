@@ -18,11 +18,11 @@ class EffMass {
 
  public:
 
-  EffMass(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
-  EffMass(TString fname, Int_t nebins, Int_t nctbins, Int_t nbybins);
+  EffMass(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax, TString datatag);
+  EffMass(TString fname, Int_t nebins, Int_t nctbins, Int_t nbybins, Double_t rho_sw = 1.0397500);
   ~EffMass();
 
-  void SetGenAndSelH(Int_t flavor, Bool_t iscc, Bool_t isnb, TH3D* hgen, TH3D* hsel);
+  void SetGenAndSelH(Int_t flavor, Bool_t iscc, Bool_t isnb, TH3D* hgen, TH3D* hsel, Double_t vgen);
   void WriteToFile(TString filename);
 
   Double_t      GetMeff  (Int_t flavor, Bool_t iscc, Bool_t isnb, 
@@ -36,6 +36,9 @@ class EffMass {
   
   void ReadFromFile(TString filename);
   void CreateMeffHists(Int_t nebins, Int_t nctbins, Int_t nbybins);
+
+  TString  fDataTag; //!< tag to identify the prodution
+  Double_t fRhoSW;   //!< sea-water density
 
   Double_t fEmin;  //!< minimum energy range of the effective mass calculation
   Double_t fEmax;  //!< maximum energy range of the effective mass calculation
@@ -56,9 +59,10 @@ class EffMass {
   std::map <Int_t, TString> fIntMap  = { {NC, "nc"}, {CC, "cc"} };                       //!< nc/cc string map
   std::map <Int_t, TString> fPolMap  = { {NU, "nu"}, {NUB, "nub"} };                     //!< nu/nubar string map
 
-  TH3D* fhGen[fFlavs][fInts][fPols];  //!< histograms with generated data * Vgen * rho
-  TH3D* fhSel[fFlavs][fInts][fPols];  //!< histograms with selected data
-  TH3D* fhMeff[fFlavs][fInts][fPols]; //!< histograms with effective mass values
+  TH3D*    fhGen[fFlavs][fInts][fPols];  //!< histograms with generated data
+  TH3D*    fhSel[fFlavs][fInts][fPols];  //!< histograms with selected data
+  TH3D*    fhMeff[fFlavs][fInts][fPols]; //!< histograms with effective mass values
+  Double_t fVgen[fFlavs][fInts][fPols];  //!< generation volumes associated with fhGen histograms
 
   TList fHeap; //!< list of elements created on the heap for later deletion
 
