@@ -12,13 +12,30 @@
 
 // jpp headers
 #include "JTools/JRange.hh"
+
+#include "JGeometry3D/JTrack3E.hh"
+
 #include "Jeep/JParser.hh"
 #include "Jeep/JMessage.hh"
+
+#include "evt/Evt.hh"
+#include "evt/Trk.hh"
+#include "evt/Head.hh"
+
+#include "JAAnet/JHead.hh"
+#include "JAAnet/JHeadToolkit.hh"
+#include "JAAnet/JAAnetToolkit.hh"
+
+#include "JSupport/JMultipleFileScanner.hh"
+#include "JSupport/JMonteCarloFileSupportkit.hh"
+#include "JSupport/JSupport.hh"
 
 // cpp headers
 #include <stdexcept>
 
 using namespace JTOOLS;
+using namespace JSUPPORT;
+using namespace JPP;
 
 namespace EFFMASS {
 
@@ -29,14 +46,17 @@ namespace EFFMASS {
   TString  CreateOutputName(TString output_dir, Int_t evt_type, Int_t int_type, Int_t en_low, Int_t en_high, Int_t run_nr);
   void     InitHists(Int_t ebins, Int_t ctbins, Int_t bybins, JRange<double> energy_range);
   Bool_t   VertexInVol(Double_t vx, Double_t vy, Double_t vz, Double_t Rcan, Double_t zcan_min, Double_t zcan_max);
-  void     FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut);
-  void     FillGenerated(Int_t veff_option);
+  void     FillSelected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut, Int_t flavor, Int_t int_type);
+  void     FillGenerated(Int_t veff_option, Double_t rvol, Double_t zmin, Double_t zmax, Int_t flavor, Int_t int_type);
 
   //---------------------------------------------------------
   // histograms and variables
   //---------------------------------------------------------
 
   enum effvol_options { can_vol = 0, custom_vol, not_supported }; //!< effective volume options
+
+  static const UInt_t GSG_CC = 2; //!< integer value to denote CC interaction in gSeaGen (see wiki)
+  static const UInt_t GSG_NC = 3; //!< integer value to denote NC interaction in gSeaGen (see wiki)
 
   // cos-theta and bjorken-y always cover the full range; energy range comes from command line
   static const double fCtmin  =  -1.; //!< cos-theta minimum of histograms
@@ -47,14 +67,12 @@ namespace EFFMASS {
   // histograms, initialised in InitHists()
   TH3D *fh_gen_nu;           //!< histogram with gSeaGen events, nu
   TH3D *fh_gen_nub;          //!< histogram with gSeaGen events, nu-bar
-  TH3D *fh_gen_scaled_nu;    //!< histogram with gSeaGen events, nu, scaled by 1/(V*rho)
-  TH3D *fh_gen_scaled_nub;   //!< histogram with gSeaGen events, nub, scaled by 1/(V*rho)
   TH3D *fh_det_nu;           //!< histogram with selected (=summary) events, nu
   TH3D *fh_det_nub;          //!< histogram with selected (=summary) events, nub
 
   //gseagen and summary file parsers
-  GSGParser     *fG;         //!< pointer to a gSeaGen file parser instance
-  SummaryParser *fS;         //!< pointer to a `SummaryParser` instance
+  JMultipleFileScanner<Evt> fG; //!< gseagen scanner from JPP
+  SummaryParser *fS;            //!< pointer to a `SummaryParser` instance
 
 };
 
@@ -129,49 +147,58 @@ int main(int argc, char **argv) {
   //init datafile parsers, create output name and init hists
   //------------------------------------------------------  
   fS = new SummaryParser(summary_file);
-  fG = new GSGParser(gseagen_file);
+  fG = JMultipleFileScanner<Evt>((string)gseagen_file);
+  const JHead aahead = getHeader(fG);
 
   // read the flavor and the interaction type from the first event in the summary file
   // this is not ideal, but for some reason the neutrino flavor and the interaction type (i.e. input settings)
   // are not stored in gSeaGen header.
 
-  Int_t flavor   = fS->GetEvt(0)->Get_MC_type();
-  Int_t int_type = fS->GetEvt(0)->Get_MC_is_CC();
-  Int_t run_nr   = fG->fRunNr; // run number from gSeaGen
-  Int_t en_low   = fG->fE_min; // minimum energy of the selected gSeaGen file file
-  Int_t en_high  = fG->fE_max; // maximum energy of the selected gSeaGen file file
+  Int_t flavor      = fS->GetEvt(0)->Get_MC_type();
+  Int_t int_type    = fS->GetEvt(0)->Get_MC_is_CC();
+  Int_t run_nr      = aahead.start_run.run_id;        // run number from gSeaGen
+  Double_t en_low   = aahead.cut_nu.Emin;             // minimum energy of the selected gSeaGen file file
+  Double_t en_high  = aahead.cut_nu.Emax;             // maximum energy of the selected gSeaGen file file
+
+  // if can volume is used over-write the vol dimensions with can dimensions
+  if (veff_option == can_vol) {
+    rvol     = aahead.can.r;
+    zmin_vol = aahead.can.zmin;
+    zmax_vol = aahead.can.zmax;
+  }
 
   if ( run_nr != fS->GetEvt(0)->Get_MC_runID() ) {
     throw std::invalid_argument("ERROR! EffMhists() gSeaGen and summary file run numbers are different.");
   }
 
+  if ( en_low != fS->GetEvt(0)->Get_MC_erange_start() ) {
+    
+    if ( flavor == 16 && TMath::Abs( en_low - fS->GetEvt(0)->Get_MC_erange_start() ) < 1 ) {
+      cout << "WARNING! EffMhists() gSeaGen emin: " << en_low << ", summary emin: " 
+	   << fS->GetEvt(0)->Get_MC_erange_start() << " for tau's; ignoring." << endl;
+    }
+    else {
+      throw std::invalid_argument("ERROR! EffMhists() gSeaGen and summary file energy range mismatch.");
+    }
+
+  }
+
   TString out_name = CreateOutputName(output_dir, flavor, int_type, en_low, en_high, run_nr);
   InitHists(nebins, nctbins, nbybins, energy_range);
-
-  //------------------------------------------------------
-  //if custom volume is used, overwrite the values stored in GSPParser (these are used in `FillGenerated`)
-  //------------------------------------------------------
-
-  if (veff_option == custom_vol) {
-    fG->fRcan      = rvol;
-    fG->fZcan_min  = zmin_vol;
-    fG->fZcan_max  = zmax_vol;
-    fG->fVcan      = TMath::Pi() * TMath::Power(fG->fRcan, 2) * (fG->fZcan_max - fG->fZcan_min);
-  }
   
   //------------------------------------------------------
-  //loops over summary events and fill 'detected' histograms
+  //loops over summary events and fill 'selected' histograms
   //------------------------------------------------------
-  FillDetected(veff_option, atmmu_cut, noise_cut);
+  FillSelected(veff_option, atmmu_cut, noise_cut, flavor, int_type);
 
   //------------------------------------------------------
   //fill the 'generated' histograms
   //------------------------------------------------------
-  FillGenerated(veff_option);
+  FillGenerated(veff_option, rvol, zmin_vol, zmax_vol, flavor, int_type);
 
   //------------------------------------------------------
-  //write out the histograms. Division of det/gen has to be done 
-  //later, this allows easy combining of the outputs.
+  // write out the histograms. Division of det/gen and scaling has to be done 
+  // later, this allows easy combining of the outputs
   //------------------------------------------------------
   FileHeader h("EffMhists");
   h.ReadHeader(summary_file); // read the header from summary file, contains the tag
@@ -179,18 +206,20 @@ int main(int argc, char **argv) {
   h.AddParameter("gseagen_file", gseagen_file);
   h.AddParameter("emin", (TString)to_string(energy_range.getLowerLimit()) );
   h.AddParameter("emax", (TString)to_string(energy_range.getUpperLimit()) );
+  h.AddParameter("ctmin", (TString)to_string( fCtmin ) );
+  h.AddParameter("ctmax", (TString)to_string( fCtmax ) );
+  h.AddParameter("bymin", (TString)to_string( fBymin ) );
+  h.AddParameter("bymax", (TString)to_string( fBymax ) );
   h.AddParameter("atmmu_cut", (TString)to_string(atmmu_cut) );
   h.AddParameter("noise_cut", (TString)to_string(noise_cut) );
   h.AddParameter("veff_option", (TString)to_string(veff_option) );
-  h.AddParameter("Rvol", (TString)to_string(fG->fRcan) );
-  h.AddParameter("Zmin", (TString)to_string(fG->fZcan_min) );
-  h.AddParameter("Zmax", (TString)to_string(fG->fZcan_max) );
+  h.AddParameter("rvol", (TString)to_string(rvol) );
+  h.AddParameter("zmin", (TString)to_string(zmin_vol) );
+  h.AddParameter("zmax", (TString)to_string(zmax_vol) );
 
   TFile *fout = new TFile(out_name, "RECREATE");
   fh_gen_nu ->Write();
   fh_gen_nub->Write();
-  fh_gen_scaled_nu ->Write();
-  fh_gen_scaled_nub->Write();
   fh_det_nu ->Write();
   fh_det_nub->Write();
   h.WriteHeader(fout);
@@ -202,13 +231,10 @@ int main(int argc, char **argv) {
   //------------------------------------------------------
   delete fh_gen_nu;
   delete fh_gen_nub;
-  delete fh_gen_scaled_nu;
-  delete fh_gen_scaled_nub;
   delete fh_det_nu;
   delete fh_det_nub;
   
   delete fS;
-  delete fG;
 
 }
 
@@ -227,7 +253,8 @@ int main(int argc, char **argv) {
    \return          Output effective mass file name; returns empty if inputs not supported.
 
  */
-TString EFFMASS::CreateOutputName(TString output_dir, Int_t nupdg, Int_t int_type, Int_t en_low, Int_t en_high, Int_t run_nr) {
+TString EFFMASS::CreateOutputName(TString output_dir, Int_t nupdg, Int_t int_type, 
+				  Int_t en_low, Int_t en_high, Int_t run_nr) {
 
   map < Int_t, TString > pdg_to_name = { {12, "elec" }, 
 					 {14, "muon" },
@@ -252,8 +279,8 @@ TString EFFMASS::CreateOutputName(TString output_dir, Int_t nupdg, Int_t int_typ
 
   TString erange = to_string(en_low) + "-" + to_string(en_high) + "GeV";  
 
-  TString out_name = output_dir + "/EffMhists_" + pdg_to_name[TMath::Abs(nupdg)] + "-" + int_to_name[int_type] + "_" + 
-    erange + "_" + (TString)to_string(run_nr) + ".root";
+  TString out_name = output_dir + "/EffMhists_" + pdg_to_name[TMath::Abs(nupdg)] + "-" 
+    + int_to_name[int_type] + "_" + erange + "_" + (TString)to_string(run_nr) + ".root";
 
   return out_name;
 
@@ -286,18 +313,14 @@ void EFFMASS::InitHists(Int_t ebins, Int_t ctbins, Int_t bybins, JRange<double> 
 			bybins, &by_edges[0]);
 
   fh_gen_nub        = (TH3D*)fh_gen_nu->Clone("Generated_nub");
-  fh_gen_scaled_nu  = (TH3D*)fh_gen_nu->Clone("Generated_scaled_nu");
-  fh_gen_scaled_nub = (TH3D*)fh_gen_nu->Clone("Generated_scaled_nub");
   fh_gen_nub       ->SetNameTitle("Generated_nub","Generated_nub");
-  fh_gen_scaled_nu ->SetNameTitle("Generated_scaled_nu" ,"Generated_scaled_nu");
-  fh_gen_scaled_nub->SetNameTitle("Generated_scaled_nub","Generated_scaled_nub");
 
-  // 'detected' histograms
-  fh_det_nu          = (TH3D*)fh_gen_nu->Clone("Detected_nu");
-  fh_det_nu->SetNameTitle("Detected_nu" ,"Detected_nu");
+  // 'selected' histograms
+  fh_det_nu          = (TH3D*)fh_gen_nu->Clone("Selected_nu");
+  fh_det_nu->SetNameTitle("Selected_nu" ,"Selected_nu");
 
-  fh_det_nub         = (TH3D*)fh_gen_nu->Clone("Detected_nub");
-  fh_det_nub->SetNameTitle("Detected_nub","Detected_nub");
+  fh_det_nub         = (TH3D*)fh_gen_nu->Clone("Selected_nub");
+  fh_det_nub->SetNameTitle("Selected_nub","Selected_nub");
   
 }
 
@@ -326,38 +349,45 @@ Bool_t EFFMASS::VertexInVol(Double_t vx, Double_t vy, Double_t vz, Double_t R, D
 //*********************************************************************
 
 /**
-   Function that fills the 'detected' histograms of this macro.
+   Function that fills the 'selected' histograms of this macro.
 
    \param veff_option   Volume constraint option
    \param atmmu_cut     Atmospheric muon cut
    \param noise_cut     Noise cut
+   \param flavor        nu flavor
+   \param int_type      interaction type (cc/nc)
  */
-void EFFMASS::FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut) {
+void EFFMASS::FillSelected(Int_t veff_option, Double_t atmmu_cut, Double_t noise_cut, 
+			   Int_t flavor, Int_t int_type) {
 
-  //loops over summary events and fill 'detected' histograms
+  //loops over summary events and fill 'selected' histograms
 
   for (Int_t i = 0; i < fS->GetTree()->GetEntries(); i++) {
 
     fS->GetTree()->GetEntry(i);
     SummaryEvent *evt = fS->GetEvt();
 
-    // Do not cut on vertex of 'detected' events, this cannot be emulated in experimental data
-    // still need to think about this...
+    // check that flavor and the interaction is always the same
+    if ( TMath::Abs( flavor ) != TMath::Abs( evt->Get_MC_type() ) ) {
+      throw std::invalid_argument("ERROR! FillSelected() flavor mismatch, expecting neutrinos of the same flavor (e.g. only 14, -14).");
+    }
 
-    // if (veff_option == can_vol || veff_option == custom_vol) {
-    //   TVector3 pos = evt->Get_MC_pos();
-    //   if ( !VertexInVol(pos.x(), pos.y(), pos.z(), fG->fRcan, fG->fZcan_min, fG->fZcan_max) ) continue;
-    // }
+    if ( int_type != (Int_t)evt->Get_MC_is_CC() ) {
+      throw std::invalid_argument("ERROR! FillSelected() interaction type mismatch, expecting only CC or NC events.");
+    }
 
-    //reject events that look like atmospheric muons (not used by default, accounted for in `EventSelection` and `DetResponse`)
+    // reject events that look like atmospheric muons; not used by default, accounted for in 
+    // `EventSelection` and `DetResponse`, available to study their effects
     if ( evt->Get_RDF_muon_score() > atmmu_cut  ) continue; 
     if ( evt->Get_RDF_noise_score() > noise_cut ) continue; 
-
-    //if you wish to set PID cut, do so here
     
-    // fill nu and nubar 'detected' histograms
-    if ( evt->Get_MC_type() > 0 ) { fh_det_nu ->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z(), evt->Get_MC_bjorkeny() ); }
-    else                          { fh_det_nub->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z(), evt->Get_MC_bjorkeny() ); }
+    // fill nu and nubar 'selected' histograms
+    if ( evt->Get_MC_type() > 0 ) { 
+      fh_det_nu ->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z(), evt->Get_MC_bjorkeny() ); 
+    }
+    else { 
+      fh_det_nub->Fill( evt->Get_MC_energy(), -evt->Get_MC_dir().z(), evt->Get_MC_bjorkeny() ); 
+    }
     
   }
 
@@ -369,38 +399,52 @@ void EFFMASS::FillDetected(Int_t veff_option, Double_t atmmu_cut, Double_t noise
    Function that fills the 'generated' histograms of this macro
 
    \param veff_option   Volume constraint option
+   \param rvol          Radius of the generation volume
+   \param zmin          zmin of the generation volume
+   \param zmax          zmax of the generation volume
+   \param flavor        nu flavor
+   \param int_type      interaction type (cc/nc)
+
  */
-void EFFMASS::FillGenerated(Int_t veff_option) {
+void EFFMASS::FillGenerated(Int_t veff_option, Double_t rvol, Double_t zmin, Double_t zmax,
+			    Int_t flavor, Int_t int_type) {
 
-  //loop over generated MC events
+  while ( fG.hasNext() ) {
 
-  while ( fG->NextEvent() ) {
+    const Evt* event = fG.next();
+    Trk nu_trk;
     
+    if ( has_neutrino(*event) ) {
+      nu_trk = get_neutrino(*event);
+    }
+    else {
+      throw std::invalid_argument("ERROR! EFFMASS::FillGenerated() cannot find a neutrino in the MC event.");
+    }
+
+    // check that flavor and the interaction is always the same
+    if ( TMath::Abs( flavor ) != TMath::Abs( nu_trk.type ) ) {
+      throw std::invalid_argument("ERROR! FillGenerated() flavor mismatch, expecting neutrinos of same flavor (e.g. only 14, -14).");
+    }
+
+    Bool_t mismatch = ( ( ( int_type == 0 ) && ( (Int_t)nu_trk.getusr("cc") == GSG_CC ) ) ||
+			( ( int_type == 1 ) && ( (Int_t)nu_trk.getusr("cc") == GSG_NC ) ) );
+
+    if ( mismatch  ) {
+      throw std::invalid_argument("ERROR! FillGenerated() interaction type mismatch, expecting only CC or NC events.");
+    }
+
     //if volume cut is used exclude events with vertices outside the volume cut
     if (veff_option == can_vol || veff_option == custom_vol) {
-      if ( !VertexInVol(fG->Neutrino_V1, fG->Neutrino_V2, fG->Neutrino_V3, fG->fRcan, fG->fZcan_min, fG->fZcan_max) ) continue;
+      if ( !VertexInVol(nu_trk.pos.x, nu_trk.pos.y, nu_trk.pos.z, rvol, zmin, zmax) ) continue;
     }
 
-    if (fG->Neutrino_PdgCode > 0) { 
-      fh_gen_nu ->Fill(fG->Neutrino_E, -fG->Neutrino_D3, fG->By ); 
-      fh_gen_scaled_nu ->Fill(fG->Neutrino_E, -fG->Neutrino_D3, fG->By ); 
+    if (nu_trk.type > 0) { 
+      fh_gen_nu        ->Fill( nu_trk.E, -nu_trk.dir.z, nu_trk.getusr("by") );
     }
     else { 
-      fh_gen_nub->Fill(fG->Neutrino_E, -fG->Neutrino_D3, fG->By );
-      fh_gen_scaled_nub->Fill(fG->Neutrino_E, -fG->Neutrino_D3, fG->By );
+      fh_gen_nub       ->Fill( nu_trk.E, -nu_trk.dir.z, nu_trk.getusr("by") );
     }
+
   }
-
-  //multiply h_gen_nu by Veff * rho_seawater
-  //after this step hDetected divided by h_gen_nu gives the effective mass hist
-
-  Double_t scale = 0;
-  Double_t rho   = fG->fRho_seawater;
-  
-  if (veff_option == can_vol || veff_option == custom_vol) scale = fG->fVcan * rho;
-  else { throw std::invalid_argument( "ERROR! FillGenerated() unknown volume option." ); }
-
-  fh_gen_scaled_nu ->Scale( 1./scale );
-  fh_gen_scaled_nub->Scale( 1./scale );
 
 }

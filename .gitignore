@@ -1,3 +1,20 @@
+
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+# Unignore all dirs
+!*/
+
+#
+!*Makefile*
+
+#===============================================
+#the above is meant to get rid of binaries
+#===============================================
+
 # ignore some directories
 playground/
 */tmp/
