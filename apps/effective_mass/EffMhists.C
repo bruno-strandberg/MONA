@@ -173,12 +173,12 @@ int main(int argc, char **argv) {
 
   if ( en_low != fS->GetEvt(0)->Get_MC_erange_start() ) {
     
-    if ( flavor == 16 && TMath::Abs( en_low - fS->GetEvt(0)->Get_MC_erange_start() ) < 1 ) {
+    if ( TMath::Abs(flavor) == 16 && TMath::Abs( en_low - fS->GetEvt(0)->Get_MC_erange_start() ) < 1 ) {
       cout << "WARNING! EffMhists() gSeaGen emin: " << en_low << ", summary emin: " 
 	   << fS->GetEvt(0)->Get_MC_erange_start() << " for tau's; ignoring." << endl;
     }
     else {
-      throw std::invalid_argument("ERROR! EffMhists() gSeaGen and summary file energy range mismatch.");
+      throw std::invalid_argument("ERROR! EffMhists() gSeaGen and summary file energy range mismatch for flavor " + to_string(flavor) + ", emin gseagen and summary:" + to_string(en_low) + ", " + to_string( fS->GetEvt(0)->Get_MC_erange_start() ) );
     }
 
   }
