@@ -26,6 +26,7 @@ args = docopt(__doc__)
 import sys
 import os
 import math
+import time
 
 #*****************************************************************
 # some global directories
@@ -73,8 +74,8 @@ def execute_effmass_calc(args):
         if (len(gsgfile) != 1):
             print ("WARNING! Could not find gSeaGen file for summary file {}".format(sf))
             continue
-        
-        sumf = os.path.abspath(args['--summarydir']) + sf[ sf.rfind('/') : ]
+
+        sumf = os.path.abspath(args['--summarydir']) + "/" + sf[ sf.rfind('/')+1 : ]
         gsgf = os.path.abspath(args['--gsgdir']) + "/" + gsgfile[0]
 
         jobcmds.append( get_execution_cmd( sumf, gsgf, os.path.abspath(args['--odir']) ) )
@@ -103,10 +104,10 @@ def execute_effmass_calc(args):
         if args['--local']:
             syscmd = "bash {}".format(js)
         else:
-            syscmd = "qsub -P P_km3net -l sps=1 -l ct=5:00:00 -o {0} -e {0} {1}".format(cwd+"/tmp", scriptn)
+            syscmd = "qsub -P P_km3net -l sps=1 -l ct=5:00:00 -o {0} -e {0} {1}".format(os.getcwd()+"/tmp", js)
 
-        print syscmd
-        #os.system(syscmd)
+        #print syscmd
+        os.system(syscmd)
 
 #*****************************************************************
         
@@ -131,7 +132,7 @@ def create_farm_script(cmds, jobnr):
 
     cwd = os.getcwd()
     os.system("mkdir -p tmp/")
-    scriptn = "tmp/farm_job_{}.sh".format(jobnr)
+    scriptn = "tmp/farm_job_{}_timestamp{}.sh".format(jobnr,time.time())
 
     scriptf = open(scriptn, "w")
 
