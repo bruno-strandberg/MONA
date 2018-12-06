@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
 
     // check that MC ranges match
     FileHeader h("h");
-    h.ReadHeader( std::get<COMBOUT>(Pe[0]) );
+    h.ReadHeader( std::get<COMBOUT>(p) );
 
     if ( emin  != GetParameter(h, "emin")  || emax  != GetParameter(h, "emax")  ||
 	 ctmin != GetParameter(h, "ctmin") || ctmax != GetParameter(h, "ctmax") ||
@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
   // write the effective mass file
   //------------------------------------------------------  
   if (use_datatag) {
-    output_file = output_file(0, output_file.Index(".root")) + datatag + ".root";
+    output_file = output_file(0, output_file.Index(".root")) + "_" + datatag + ".root";
   }
 
   em.WriteToFile(output_file);
