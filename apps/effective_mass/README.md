@@ -1,32 +1,27 @@
 Effective mass
 ==============
 
-Scripts in this directory can be used to create effective mass histograms.
+Programs in this directory can be used to create effective mass histograms. The output file of `Combine` application can be loaded by the `common_software/EffMass` class to calculate the effective masses.
 
 Prerequisities
 ==============
-* The scripts use the code in NMH/common_software/.
-* To parse gSeaGen files in .evt format, common_software needs Jpp and aanet root6 branch.
-* The scripts require ORCA simulation chain summary files in a specific format in NMH/data/mc_end
-* The scripts require ORCA simulation chain start (gSeaGen files) in NMH/data/mc_start/
+* The scripts use the library in`common_software/` and Jpp headers.
+* The scripts require ORCA simulation chain summary files in analysis format in `NMH/data/mcsummary/TAG/data_atmnu/`. These can be created with the applications in `apps/data_sorting/`.
+* The scripts require ORCA simulation chain start (gSeaGen files) in `NMH/data/gseagen/TAG/data_atmnu`
 
 How to run
 ==========
 
-Both EffMhists.C and EffMass.C macros can be run stand-alone. Run them in compiled mode
-(do root, EffMhists.C+(...) ). Interfaces are documented in the code.
+The application `EffMhists` creates effective mass histograms for one flavor for a given gSeaGen and summary file. Do `./EffMhists -h!` and read the doxygen doxumentation for more information.
 
-Assuming sorted data in NMH/data/... directory, a python script EMH_caller.py can be used to run
-over several run numbers, flavors, energies, interactions. Do ```EMH_caller.py -h``` for help. It can also send jobs to the farm to save time. Combinations that do not exist (e.g. muon-NC) are ignored.
+The script `EMH_caller.py` can be called to run `EffMhists` for all of the summary files in `NMH/data/mcsummary/TAG/data_atmnu/` directory, given that corresponding gSeaGen files are available.
 
-After EMH_caller.py has been run to produce effective mass histograms in output/ for each flavor, energy, interaction, the script EM_caller.py can be called. This will identify missing files, summarize the data and create effective mass histograms to combined_output.
+The application `Combine` uses the `common_software/EffMass` class and combines all of the outputs from `EffMhists` to a single output file. That file can be loaded to another `EffMass` instance to calculate effective masses.
+
 
 Outputs
 ==========
 
-EffMhists.C outputs histograms for 'Detected' events (events in the summary file) and 'Generated'
-events (corresponding events in gSeaGen file).
+`EffMhists` outputs 'generated' (gSeaGen events) and 'selected' (summary events) histograms for the given input files.
 
-EffMass.C takes the EffMhists.C output as input and divides Detected/Generated to write out
-effective mass histograms. The division is done in a separate macro to falicitate adding several
-EffMhists.C outputs together with 'hadd'.
+`Combine` created four combined outputs (`elec-CC, muon-CC, tau-CC, elec-NC`) from the outputs of `EffMhists` and additionally one file than is to be used with the `EffMass` class.
