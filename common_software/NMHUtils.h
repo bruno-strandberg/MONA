@@ -17,6 +17,7 @@ namespace NMHUtils {
   vector<TString>  ReadLines(TString input_file);
   Bool_t           FileExists(TString filename, Double_t size = 0);
   TString          Getcwd();
+  Bool_t           BinsMatch(TH1 *h1, TH1 *h2);
 
   std::tuple<TH2D*, Double_t> 
     Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 

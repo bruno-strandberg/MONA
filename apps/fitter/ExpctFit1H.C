@@ -21,6 +21,8 @@
 #include "TF3.h"
 #include "TRandom3.h"
 
+#include<stdexcept>
+
 // jpp headers
 #include "Jeep/JParser.hh"
 #include "Jeep/JMessage.hh"
@@ -51,50 +53,54 @@ struct FitTrial {
 
 };
 
-/** Application to fit the expectation value histogram with the model several times */
 int main(int argc, char **argv) {
+
+  TString rfd = NMHUtils::Getcwd() + "/rootfiles/";
 
   //----------------------------------------------------------
   // parse command line arguments with Jpp
   //----------------------------------------------------------
   
-  string        simdata_file;
+  TString       simdata_file;
   bool          refill_response;
-  string        outputfile;
+  TString       outputfile;
   int           nfits;
-  string        effmh_elecCC;
-  string        effmh_muonCC;
-  string        effmh_tauCC;
-  string        effmh_elecNC;
+  TString       effmh_elecCC;
+  TString       effmh_muonCC;
+  TString       effmh_tauCC;
+  TString       effmh_elecNC;
   
   try {
 
-    JParser<> zap("Program to test RooFit fitter by fitting the expectation value");
+    JParser<> zap("Application to fit the expectation value histogram for tracks with the model several times.");
 
     zap['s'] = make_field(simdata_file, "File with all summary data") =
-      (string)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+      (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
-    zap['o'] = make_field(outputfile, "File where output histograms are written") = (string)getenv("NMHDIR") + "/applications/fitter/rootfiles/expectationfit.root";
+    zap['o'] = make_field(outputfile, "File where output histograms are written") = rfd + "expectationfit.root";
     zap['n'] = make_field(nfits, "Number of fits to be performed") = 1;
 
     zap['w'] = make_field(effmh_elecCC, "Eff mass histograms for elec-CC") =
-      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_CC.root";
+      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_CC.root";
 
     zap['x'] = make_field(effmh_muonCC, "Eff mass histograms for muon-CC") =
-      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_muon_CC.root";
+      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMhists_muon_CC.root";
 
     zap['y'] = make_field(effmh_tauCC , "Eff mass histograms for tau-CC") =
-      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_tau_CC.root";
+      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMhists_tau_CC.root";
 
     zap['z'] = make_field(effmh_elecNC, "Eff mass histograms for elec-NC") =
-      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_NC.root";    
+      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_NC.root";    
     zap(argc, argv);
   }
   catch(const exception &error) {
     FATAL(error.what() << endl);
   }
   
+  Int_t sysret = system("mkdir -p " + rfd);
+  if (sysret != 0) { throw std::invalid_argument( "ERROR! ExpctFit1H cannot create dir " + (string)rfd ); }
+
   //----------------------------------------------------------
   // set up the detector response
   //----------------------------------------------------------
@@ -118,10 +124,10 @@ int main(int argc, char **argv) {
   track_resp.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05, true );
   track_resp.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );    
 
-  TString track_resp_name  = (TString)getenv("NMHDIR") + "/applications/fitter/rootfiles/track_response.root";
+  TString track_resp_name  = rfd + "track_response.root";
   
   if ( !NMHUtils::FileExists(track_resp_name) || refill_response ) {
-    cout << "NOTICE ExpctFit() (Re)filling response" << endl;
+    cout << "NOTICE ExpctFit1H (Re)filling response" << endl;
 
     SummaryParser sp(simdata_file);
     for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
@@ -132,11 +138,11 @@ int main(int argc, char **argv) {
     track_resp.WriteToFile(track_resp_name);
   }
   else {
-    cout << "NOTICE ExpctFit() Reading in response" << endl;
+    cout << "NOTICE ExpctFit1H Reading in response" << endl;
     track_resp.ReadFromFile(track_resp_name);
   }
 
-  cout << "NOTICE ExpctFit() Response ready" << endl;
+  cout << "NOTICE ExpctFit1H Response ready" << endl;
 
   //----------------------------------------------------------
   // set up the PDF and oscillation parameters limits for normal ordering,
@@ -311,6 +317,8 @@ int main(int argc, char **argv) {
     if (tracks_expct) delete tracks_expct;
     
   } // end loop over trials  
+
+  cout << "NOTICE ExpctFit1H finished loop" << endl;
 
   tout.Write();
   fout.Close();

@@ -5,7 +5,7 @@ LFLAGS = $(ROOTLIBS) $(NMHLIB)
 
 COMMON   = RDFPIDReader.C
 SOURCES  = $(filter-out $(COMMON), $(wildcard *.C))
-PACKAGES = $(filter-out RDFPIDReader, $(SOURCES:.C=))
+PACKAGES = $(SOURCES:.C=)
 
 all: $(PACKAGES)
 
