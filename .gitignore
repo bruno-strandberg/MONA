@@ -17,7 +17,7 @@
 
 # ignore some directories
 playground/
-*/tmp/
+*tmp*
 
 # ignore specific file extensions
 common_software/dic*
