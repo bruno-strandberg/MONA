@@ -11,8 +11,12 @@
 
 #include <stdexcept>
 
+/** Namespace that holds functions and variables for the `Combine` application. */
 namespace COMBINE {
 
+  /** Function to issue a system command and check for return.
+      \param syscmd   System command
+   */
   void SystemCmd( TString syscmd ) {
     Int_t sysret = system(syscmd);
     if (sysret != 0) {
@@ -22,12 +26,16 @@ namespace COMBINE {
 
   Double_t GetParameter(FileHeader &h, TString par_name);
 
-  enum flavenum { ELEC = 0, MUON, TAU};
-  enum intenum  { NC = 0, CC};
-  enum pols {NU=0, NUB};
+  enum flavenum { ELEC = 0, MUON, TAU}; //!< flavor enumerator
+  enum intenum  { NC = 0, CC};          //!< interaction types
+  enum pols {NU=0, NUB};                //!< neutrino/anti-neutrino flags
 
 };
 
+/** This function operates on the outputs of `EffMhists` application. In practice, there are thousands of `gSeaGen` files and corresponding summary files, for each of those the `EffMhists` application is run, which creates an ouput (e.g. `EffMhists_elec-NC_3-100GeV_442.root`). This application takes the directory where the files are and merges the files by flavor. It will try to create files `Combined_elec-CC.root, Combined_muon-CC.root, Combined_tau-CC.root, Combined_elec-NC.root`. After this, it will try to use the `common_software/EffMass` class to create a single output file which can be used with other instances of the `common_software/EffMass` class to provide an effective mass calculator.
+
+    For this application to work, some `EffMhists` outputs need to be available for all four neutrino interaction types (elec-CC, muon-CC, tau-CC, elec-NC). Otherwise the program will throw an exception.
+*/
 int main(int argc, char **argv) {
 
   using namespace COMBINE;
