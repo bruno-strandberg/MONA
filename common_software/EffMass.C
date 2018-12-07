@@ -496,3 +496,40 @@ TGraphErrors* EffMass::AverageUpgoing(Int_t flavor, Bool_t iscc, Bool_t isnb) {
 
 }
 
+//********************************************************************
+
+/** Get the histogram with 'generated' events for given neutrino type
+
+    \param flavor       Neutrino flavor (0 - elec, 1 - muon, 2 - tau)
+    \param iscc         NC = 0, CC = 1
+    \param isnb         nu = 0, nub = 1
+    \return             Pointer to a TH3D histogram.
+ */
+TH3D* EffMass::GetGen(Int_t flavor, Bool_t iscc, Bool_t isnb) {
+
+  if (flavor > TAU) {
+    throw std::invalid_argument("ERROR! EffMass::GetGen() unknown flavor " + to_string(flavor));
+  }
+
+  return fhGen[flavor][(UInt_t)iscc][(UInt_t)isnb];
+
+}
+
+//********************************************************************
+
+/** Get the histogram with 'selected' events for given neutrino type
+
+    \param flavor       Neutrino flavor (0 - elec, 1 - muon, 2 - tau)
+    \param iscc         NC = 0, CC = 1
+    \param isnb         nu = 0, nub = 1
+    \return             Pointer to a TH3D histogram.
+ */
+TH3D* EffMass::GetSel(Int_t flavor, Bool_t iscc, Bool_t isnb) {
+
+  if (flavor > TAU) {
+    throw std::invalid_argument("ERROR! EffMass::GetSel() unknown flavor " + to_string(flavor));
+  }
+
+  return fhSel[flavor][(UInt_t)iscc][(UInt_t)isnb];
+
+}

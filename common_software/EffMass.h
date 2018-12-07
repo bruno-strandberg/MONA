@@ -25,6 +25,8 @@ class EffMass {
   void SetGenAndSelH(Int_t flavor, Bool_t iscc, Bool_t isnb, TH3D* hgen, TH3D* hsel, Double_t vgen);
   void WriteToFile(TString filename);
 
+  TH3D*         GetGen(Int_t flavor, Bool_t iscc, Bool_t isnb);
+  TH3D*         GetSel(Int_t flavor, Bool_t iscc, Bool_t isnb);
   Double_t      GetMeff  (Int_t flavor, Bool_t iscc, Bool_t isnb, 
 			  Double_t E_true, Double_t Ct_true, Double_t By_true, Bool_t interpolate = kFALSE);
   Double_t      GetMeffBC(Int_t flavor, Bool_t iscc, Bool_t isnb, 
