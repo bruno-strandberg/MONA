@@ -37,6 +37,7 @@ using namespace JTOOLS;
 using namespace JSUPPORT;
 using namespace JPP;
 
+/** Namespace that collects functions for the `EffMhists` application.*/
 namespace EFFMASS {
 
   //---------------------------------------------------------

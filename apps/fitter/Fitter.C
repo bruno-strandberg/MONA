@@ -40,8 +40,8 @@
 using namespace RooFit;
 using namespace std;
 
-/** A namespace that collects functions and variables for the fitting */
-namespace Fitter {
+/** Namespace that collects functions and variables for the `Fitter` application */
+namespace FITTER {
 
   // functions
   void InitRespsAndSels();
@@ -71,7 +71,7 @@ namespace Fitter {
 /** Main function of the program */
 int main(int argc, char **argv) {
 
-  using namespace Fitter;
+  using namespace FITTER;
 
   //----------------------------------------------------------
   // parse command line arguments with Jpp
@@ -194,9 +194,9 @@ int main(int argc, char **argv) {
 
 //**********************************************************************************
 
-void Fitter::InitRespsAndSels() {
+void FITTER::InitRespsAndSels() {
 
-  using namespace Fitter;
+  using namespace FITTER;
 
   //----------------------------------------------------------
   //initialise event selection and response for tracks
@@ -241,12 +241,12 @@ void Fitter::InitRespsAndSels() {
 
 //**********************************************************************************
 
-void Fitter::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response) {
+void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response) {
 
-  using namespace Fitter;
+  using namespace FITTER;
 
   if ( !fTRres || !fSHres || !fTRsel || !fSHsel ) {
-    throw std::logic_error("ERROR! Fitter::FillRespsAndSels() DetResponse's and EventSelection's are not yet initialized!");
+    throw std::logic_error("ERROR! FITTER::FillRespsAndSels() DetResponse's and EventSelection's are not yet initialized!");
   }
 
   //----------------------------------------------------------
@@ -258,7 +258,7 @@ void Fitter::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t
 
   if ( !NMHUtils::FileExists(track_resp_name) || !NMHUtils::FileExists(shower_resp_name) || refill_response ) {
 
-    cout << "NOTICE Fitter::FillRespsAndSels() (Re)filling responses" << endl;
+    cout << "NOTICE FITTER::FillRespsAndSels() (Re)filling responses" << endl;
 
     SummaryParser sp(simdata_file);
 
@@ -278,13 +278,13 @@ void Fitter::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t
   }
   else {
 
-    cout << "NOTICE Fitter::FillRespsAndSels() Reading in responses" << endl;
+    cout << "NOTICE FITTER::FillRespsAndSels() Reading in responses" << endl;
 
     fTRres->ReadFromFile(track_resp_name);
     fSHres->ReadFromFile(shower_resp_name);
   }
 
-  cout << "NOTICE Fitter::FillRespsAndSels() Responses ready" << endl;
+  cout << "NOTICE FITTER::FillRespsAndSels() Responses ready" << endl;
 
   //----------------------------------------------------------
   // fill the selections
@@ -299,14 +299,14 @@ void Fitter::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t
 
   }
 
-  cout << "NOTICE Fitter::FillRespsAndSels() Selections filled" << endl;
+  cout << "NOTICE FITTER::FillRespsAndSels() Selections filled" << endl;
 }
 
 //**********************************************************************************
 
-void Fitter::Cleanup() {
+void FITTER::Cleanup() {
 
-  using namespace Fitter;
+  using namespace FITTER;
 
   if (fTRres) delete fTRres;
   if (fSHres) delete fSHres;

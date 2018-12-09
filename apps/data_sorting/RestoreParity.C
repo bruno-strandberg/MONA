@@ -15,6 +15,7 @@
 #include "Jeep/JParser.hh"
 #include "Jeep/JMessage.hh"
 
+/** A namespace that collects functions and variables for the `RestoreParity` application.*/
 namespace RESTOREPARITY {
 
   using namespace JTOOLS;
