@@ -80,10 +80,7 @@ int main(const int argc, const char **argv) {
   string        simdata_file;
   string        expdata_file;
   bool          refill_response;
-  string        effmh_elecCC;
-  string        effmh_muonCC;
-  string        effmh_tauCC;
-  string        effmh_elecNC;
+  TString       meff_file;
 
   try {
 
@@ -95,18 +92,9 @@ int main(const int argc, const char **argv) {
     zap['e'] = make_field(expdata_file, "File with experimental data sample");
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
-
-    zap['w'] = make_field(effmh_elecCC, "Eff mass histograms for elec-CC") =
-      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_CC.root";
-
-    zap['x'] = make_field(effmh_muonCC, "Eff mass histograms for muon-CC") =
-      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_muon_CC.root";
-
-    zap['y'] = make_field(effmh_tauCC , "Eff mass histograms for tau-CC") =
-      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_tau_CC.root";
-
-    zap['z'] = make_field(effmh_elecNC, "Eff mass histograms for elec-NC") =
-      (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_NC.root";    
+    
+    zap['M'] = make_field(meff_file, "Effective mass file created by using `EffMass` class") = 
+      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
 
     if ( zap.read(argc, argv)!= 0 ) return 1;
   }
@@ -125,7 +113,7 @@ int main(const int argc, const char **argv) {
   // set up the PDFs for fitting
   //----------------------------------------------------------
   FitUtil *fitutil = new FitUtil(3, fTRres->GetHist3D(),
-				 1, 100, -1, 0, 0, 1, effmh_elecCC, effmh_muonCC, effmh_tauCC, effmh_elecNC);
+				 1, 100, -1, 0, 0, 1, meff_file);
 
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, fTRres);  
   FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, fSHres);

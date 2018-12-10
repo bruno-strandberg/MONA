@@ -36,10 +36,7 @@ int main(const int argc, const char **argv) {
   Int_t          nctbins;
   JRange<double> range_th23;
   Int_t          nsteps;
-  TString        effmh_elecCC;
-  TString        effmh_muonCC;
-  TString        effmh_tauCC;
-  TString        effmh_elecNC;
+  TString        meff_file;
   
   try {
 
@@ -55,18 +52,8 @@ int main(const int argc, const char **argv) {
     zap['C'] = make_field(nctbins, "Number of cos-theta bins in the range -1 to 1") = 80;
     zap['a'] = make_field(range_th23, "sin^2 theta23 range") = JRange<double>(0.5, 0.5);
     zap['n'] = make_field(nsteps, "Number of steps in sin^2 theta23 range") = 1;
-
-    zap['w'] = make_field(effmh_elecCC, "Eff mass histograms for elec-CC") =
-      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_CC.root";
-
-    zap['x'] = make_field(effmh_muonCC, "Eff mass histograms for muon-CC") =
-      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMhists_muon_CC.root";
-
-    zap['y'] = make_field(effmh_tauCC , "Eff mass histograms for tau-CC") =
-      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMhists_tau_CC.root";
-
-    zap['z'] = make_field(effmh_elecNC, "Eff mass histograms for elec-NC") =
-      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_NC.root";    
+    zap['M'] = make_field(meff_file, "Effective mass file created by using `EffMass` class") = 
+      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
 
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
@@ -152,7 +139,7 @@ int main(const int argc, const char **argv) {
   //----------------------------------------------------------
   
   FitUtil *fitutil = new FitUtil(3, track_resp.GetHist3D(),
-  				 1, 100, -1, 1, 0, 1, effmh_elecCC, effmh_muonCC, effmh_tauCC, effmh_elecNC);
+  				 1, 100, -1, 1, 0, 1, meff_file);
 
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_resp);  
   FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, &shower_resp);
@@ -251,5 +238,7 @@ int main(const int argc, const char **argv) {
   for (auto h: hlist) h->Write();
   asym_vs_th23.Write("asym_vs_th23");
   fout.Close();
+
+  delete fitutil;
 
 }
