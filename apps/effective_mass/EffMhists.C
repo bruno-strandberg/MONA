@@ -36,6 +36,7 @@
 using namespace JTOOLS;
 using namespace JSUPPORT;
 using namespace JPP;
+using namespace JAANET;
 
 /** Namespace that collects functions for the `EffMhists` application.*/
 namespace EFFMASS {
@@ -90,7 +91,7 @@ using namespace EFFMASS;
     The ambiguity would vanish, if we agreed collectively that we calculate the effective mass after the trigger. The events in PID summary tree have undergone some selection cuts that are poorly documented, but in principle their main function is to remove atmosperic muons with simple cuts and to check that reconstructions have worked in some basic way. If we calculated the effective mass after the trigger and had all of the data after the trigger in the summary file, all we would need to do in the NNMO package would be to use the new effective masses and take the selection cuts into account in `EventSelection`'s and `DetResponse`'s.
  
  */
-int main(int argc, char **argv) {
+int main(const int argc, const char **argv) {
 
   //------------------------------------------------------
   //parse command line arguments
@@ -130,7 +131,7 @@ int main(int argc, char **argv) {
     zap['l'] = make_field(zmin_vol , "Minimum z of custom volume") = 0.;
     zap['u'] = make_field(zmax_vol , "Maximum z of custom volume") = 0.;
 
-    zap(argc, argv);
+    zap.read(argc, argv);
   }
   catch(const exception &error) {
     FATAL(error.what() << endl);

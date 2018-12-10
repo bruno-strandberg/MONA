@@ -14,11 +14,7 @@ This directory has some generic classes that are used by other scripts in the NM
 * `EventFilter`     - a class that defines an event filter for inheriting classes, such as `EventSelection` and `DetResponse`
 * `DetResponse`     - a class that defines the detector response from MC data
 * `AtmFlux`         - a class to get the atmospheric neutrino flux
-
-Prerequisities
-==============
-* To compile, the script ../setenv.sh needs to be sourced before.
-* Jpp and aanet with root 6 are required only for reading .evt files with GSGParser.
+* `EffMass`         - a class to read/write effective mass histograms in a specific format and perform effective mass calculations
 
 How to run
 ==============

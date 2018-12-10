@@ -36,7 +36,7 @@ namespace COMBINE {
 
     For this application to work, some `EffMhists` outputs need to be available for all four neutrino interaction types (elec-CC, muon-CC, tau-CC, elec-NC). Otherwise the program will throw an exception.
 */
-int main(int argc, char **argv) {
+int main(const int argc, const char **argv) {
 
   using namespace COMBINE;
 
@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
     zap['e'] = make_field(output_file    , "Name of the EffMass output file") = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass.root";
     zap['t'] = make_field(use_datatag    , "Append the datatag to the output_file name. E.g. output/out.root becomes output/out_ORCA115_23x9m_ECAP0418.root (recommended)");
 
-    zap(argc, argv);
+    zap.read(argc, argv);
   }
   catch(const exception &error) {
     FATAL(error.what() << endl);

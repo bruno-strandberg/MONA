@@ -69,7 +69,7 @@ namespace FITTER {
 };
 
 /** Main function of the program */
-int main(int argc, char **argv) {
+int main(const int argc, const char **argv) {
 
   using namespace FITTER;
 
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
     zap['z'] = make_field(effmh_elecNC, "Eff mass histograms for elec-NC") =
       (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_NC.root";    
 
-    zap(argc, argv);
+    zap.read(argc, argv);
   }
   catch(const exception &error) {
     FATAL(error.what() << endl);

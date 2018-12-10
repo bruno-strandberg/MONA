@@ -25,7 +25,7 @@ using namespace std;
    See apps/data_sorting/README.md for more info.
    
 */
-int main(int argc, char **argv) {
+int main(const int argc, const char **argv) {
 
   string fin_name;
   string fout_dir;
@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     zap['d'] = make_field(fout_dir , "Output directory where the data file in SummarEvent format is written, e.g. ../../data/") = "";
     zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. ORCA115_23x9m_ECAP0418. Choose this wisely.") = "";
 
-    zap(argc, argv);
+    zap.read(argc, argv);
 
   }
   catch(const exception &error) {

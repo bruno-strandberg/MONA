@@ -45,7 +45,7 @@ using namespace RESTOREPARITY;
    See NMH/data/README.md for more details.
  
  */
-int main(int argc, char **argv) {
+int main(const int argc, const char **argv) {
 
   //-------------------------------------------------------------------
   //parse command line arguments
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
     zap['l'] = make_field(E_low , "For ORCA, typically two energy ranges are used with gSeaGen, events from both are present in the -f argument file. Provide the low range") = JRange<double>(1, 5);
     zap['u'] = make_field(E_high, "For ORCA, typically two energy ranges are used with gSeaGen, events from both are present in the -f argument file. Provide the high range") = JRange<double>(3, 100);
 
-    zap(argc, argv);
+    zap.read(argc, argv);
   }
   catch(const exception &error) {
     FATAL(error.what() << endl);
