@@ -131,7 +131,7 @@ int main(const int argc, const char **argv) {
     zap['l'] = make_field(zmin_vol , "Minimum z of custom volume") = 0.;
     zap['u'] = make_field(zmax_vol , "Maximum z of custom volume") = 0.;
 
-    zap.read(argc, argv);
+    if ( zap.read(argc, argv) != 0 ) return 1;
   }
   catch(const exception &error) {
     FATAL(error.what() << endl);

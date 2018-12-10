@@ -108,7 +108,7 @@ int main(const int argc, const char **argv) {
     zap['z'] = make_field(effmh_elecNC, "Eff mass histograms for elec-NC") =
       (string)getenv("NMHDIR") + "/data/eff_mass/EffMhists_elec_NC.root";    
 
-    zap.read(argc, argv);
+    if ( zap.read(argc, argv)!= 0 ) return 1;
   }
   catch(const exception &error) {
     FATAL(error.what() << endl);

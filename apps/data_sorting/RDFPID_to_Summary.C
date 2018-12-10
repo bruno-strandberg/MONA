@@ -39,7 +39,7 @@ int main(const int argc, const char **argv) {
     zap['d'] = make_field(fout_dir , "Output directory where the data file in SummarEvent format is written, e.g. ../../data/") = "";
     zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. ORCA115_23x9m_ECAP0418. Choose this wisely.") = "";
 
-    zap.read(argc, argv);
+    if ( zap.read(argc, argv) != 0 ) return 1;
 
   }
   catch(const exception &error) {

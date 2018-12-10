@@ -62,7 +62,7 @@ int main(const int argc, const char **argv) {
     zap['l'] = make_field(E_low , "For ORCA, typically two energy ranges are used with gSeaGen, events from both are present in the -f argument file. Provide the low range") = JRange<double>(1, 5);
     zap['u'] = make_field(E_high, "For ORCA, typically two energy ranges are used with gSeaGen, events from both are present in the -f argument file. Provide the high range") = JRange<double>(3, 100);
 
-    zap.read(argc, argv);
+    if ( zap.read(argc, argv) != 0 ) return 1;
   }
   catch(const exception &error) {
     FATAL(error.what() << endl);
