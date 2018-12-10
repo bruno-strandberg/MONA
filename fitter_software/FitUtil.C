@@ -14,14 +14,11 @@ using namespace std;
     \param ctmax           Maximum cos-theta included in the fit range
     \param bymin           Minimum bjorken-y included in the fit range
     \param bymax           Maximum bjorken-y included in the fit range
-    \param meffh_elec_cc   Effective mass histograms for elec-CC, output by `EffMhists`
-    \param meffh_muon_cc   Effective mass histograms for muon-CC, output by `EffMhists`
-    \param meffh_tau_cc    Effective mass histograms for tau-CC, output by `EffMhists`
-    \param meffh_elec_nc   Effective mass histograms for elec-NC, output by `EffMhists`
+    \param meff_file       File with effective mass data (created with `EffMass` class)
 */
 FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
 		 Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax,
-		 TString meffh_elec_cc, TString meffh_muon_cc, TString meffh_tau_cc, TString meffh_elec_nc) {
+		 TString meff_file) {
 
   fOpTime = op_time;
 
@@ -32,6 +29,7 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
 
   fFlux = new AtmFlux;
   fXsec = new NuXsec( fHB->GetZaxis()->GetNbins() );
+  fMeff = new EffMass( meff_file, fHB->GetXaxis()->GetNbins(), fHB->GetYaxis()->GetNbins(), fHB->GetZaxis()->GetNbins() );
   fProb = new OscProb::PMNS_Fast;
   fPrem = new OscProb::PremModel;
 
@@ -49,7 +47,6 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
   
   InitFitVars(get<MIN>(ENr), get<MAX>(ENr), get<MIN>(CTr), get<MAX>(CTr), get<MIN>(BYr), get<MAX>(BYr));
   InitCacheHists(fHB);
-  ReadMeffHists(fHB, meffh_elec_cc, meffh_muon_cc, meffh_tau_cc, meffh_elec_nc);
   FillFluxAndXsecCache(fFlux, fXsec, fOpTime);
 
   f_cache_sinsqth12 = 0;
@@ -79,6 +76,7 @@ FitUtil::~FitUtil() {
   if (fHB)   delete fHB;
   if (fFlux) delete fFlux;
   if (fXsec) delete fXsec;
+  if (fMeff) delete fMeff;
   if (fProb) delete fProb;
   if (fPrem) delete fPrem;
 
@@ -97,7 +95,6 @@ FitUtil::~FitUtil() {
       // xsec and meff
       for (UInt_t iscc = 0; iscc < fInts; iscc++) {
 	if ( fhXsecCache[f][iscc][isnb] ) delete fhXsecCache[f][iscc][isnb];
-	if ( fhMeff[f][iscc][isnb] ) delete fhMeff[f][iscc][isnb];
       }
 
     }
@@ -456,99 +453,6 @@ void FitUtil::ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqT
 
 //***************************************************************************
 
-/**
-   Private function to read effective mass histograms, copied from `evt_sampler/FluxChain.C`
-
-   \param h_template     3D histogram template that carries the binning information
-   \param meffh_elec_cc  Name of the effective mass histograms file for elec CC
-   \param meffh_muon_cc  Name of the effective mass histograms file for muon CC
-   \param meffh_tau_cc   Name of the effective mass histograms file for tau CC
-   \param meffh_elec_nc  Name of the effective mass histograms file for elec NC
-
- */
-void FitUtil::ReadMeffHists(TH3D* h_template, TString meffh_elec_cc, TString meffh_muon_cc, 
-			    TString meffh_tau_cc, TString meffh_elec_nc) {
-
-  //  map of flavor numbers and strings for histogram names from file
-  map < Int_t, TString > flavs  = { {0, "elec"},   
-				    {1, "muon"},
-				    {2, "tau" } };
-
-  // map of nc/cc numbers and strings for histogram names from file
-  map < Int_t, TString > itypes = { {0, "nc"},
-				    {1, "cc"} };
-  
-  vector<TString> meff_filenames = {meffh_elec_cc, meffh_muon_cc, meffh_tau_cc};
-
-  for (UInt_t f = 0; f < fFlavs; f++) {
-    for (UInt_t cc = 0; cc < fInts; cc++) {
-
-      // for nc events the effective mass is identical for all flavors, only elec_NC simulated
-      TString meff_fname = meff_filenames[f];
-      if (cc == 0) meff_fname = meffh_elec_nc;
-    
-      TFile meff_file(meff_fname, "READ");
-      if ( !meff_file.IsOpen() ) {
-	throw std::invalid_argument( "ERROR! FitUtil::ReadMeffHists() could not find file " + (string)meff_fname );
-      }
-
-      //---------------------------------------------------------------
-      // get the histograms, rebin and divide to get effective mass histos
-      //---------------------------------------------------------------
-
-      TString hname = "Meff_" + flavs[f] + "_" + itypes[cc];
-
-      // get the histograms from file
-      TH3D *h_gen_nu   = (TH3D*)meff_file.Get("Generated_scaled_nu");
-      TH3D *h_gen_nub  = (TH3D*)meff_file.Get("Generated_scaled_nub");
-      fhMeff[f][cc][0] = (TH3D*)meff_file.Get("Detected_nu")->Clone(hname + "_nu");
-      fhMeff[f][cc][1] = (TH3D*)meff_file.Get("Detected_nub")->Clone(hname + "_nub");
-
-      // detach from meff_file
-      fhMeff[f][cc][0]->SetDirectory(0);
-      fhMeff[f][cc][1]->SetDirectory(0);
-
-      // calculate rebinning
-      Int_t existing_ebins  = fhMeff[f][cc][0]->GetXaxis()->GetNbins();
-      Int_t existing_ctbins = fhMeff[f][cc][0]->GetYaxis()->GetNbins();
-      Int_t existing_bybins = fhMeff[f][cc][0]->GetZaxis()->GetNbins();
-
-      Int_t rebinning_ebins  = existing_ebins /h_template->GetXaxis()->GetNbins();
-      Int_t rebinning_ctbins = existing_ctbins/h_template->GetYaxis()->GetNbins();
-      Int_t rebinning_bybins = existing_bybins/h_template->GetZaxis()->GetNbins();
-
-      // check that rebinning is valid
-      if ( existing_ebins % h_template->GetXaxis()->GetNbins() != 0 ) {
-	throw std::invalid_argument( "ERROR! FitUtil::ReadMeffHists() energy axis nbins=" + to_string(existing_ebins) + " of file " + (string)meff_fname + " cannot be rebinned to " + to_string( h_template->GetXaxis()->GetNbins() ) + ". Change the binning template or change and re-run effective_mass/EffMhists.C with suitable binning." );
-      }
-
-      if ( existing_ctbins % h_template->GetYaxis()->GetNbins() != 0 ) {
-	throw std::invalid_argument( "ERROR! FitUtil::ReadMeffHists() costheta axis nbins=" + to_string(existing_ctbins) + " of file " + (string)meff_fname + " cannot be rebinned to " + to_string( h_template->GetYaxis()->GetNbins() ) + ". Change the binning template or change and re-run effective_mass/EffMhists.C with suitable binning." );
-      }
-      
-      if ( existing_bybins % h_template->GetZaxis()->GetNbins() != 0 ) {
-	throw std::invalid_argument( "ERROR! FitUtil::ReadMeffHists() bjorken-y axis nbins=" + to_string(existing_bybins) + " of file " + (string)meff_fname + " cannot be rebinned to " + to_string( h_template->GetZaxis()->GetNbins() ) + ". Change the binning template or change and re-run effective_mass/EffMhists.C with suitable binning." );
-      }
-
-      // perform rebinning
-      h_gen_nu ->Rebin3D(rebinning_ebins, rebinning_ctbins, rebinning_bybins);
-      h_gen_nub->Rebin3D(rebinning_ebins, rebinning_ctbins, rebinning_bybins);
-      fhMeff[f][cc][0]->Rebin3D(rebinning_ebins, rebinning_ctbins, rebinning_bybins);
-      fhMeff[f][cc][1]->Rebin3D(rebinning_ebins, rebinning_ctbins, rebinning_bybins);
-
-      // divide to get effective mass in Ton
-      fhMeff[f][cc][0]->Divide(h_gen_nu);
-      fhMeff[f][cc][1]->Divide(h_gen_nub);
-            
-      meff_file.Close();
-
-    }
-  }
-
-}
-
-//***************************************************************************
-
 /** Private function that calculates the number of events in a \f$ (E_{\rm true}, cos\theta_{\rm true}, by_{\rm true}) \f$ bin.
     \param ebin_true   Number of true energy bin
     \param ctbin_true  Number of true cos-theta bin
@@ -607,7 +511,7 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_tru
   Double_t int_count = osc_count * fhXsecCache[flav][iscc][isnb]->GetBinContent(ebin_true)/fMN * fKg_per_MTon;
   
   // get the effective mass
-  Double_t meff = fhMeff[flav][iscc][isnb]->GetBinContent(ebin_true, ctbin_true, bybin_true);
+  Double_t meff  = fMeff->GetMeffBC( flav, iscc, isnb, ebin_true, ctbin_true, bybin_true );
 
   // find true observable values necassary to split events to bjorken-y bins
   Double_t e_true  = fHB->GetXaxis()->GetBinCenter( ebin_true );

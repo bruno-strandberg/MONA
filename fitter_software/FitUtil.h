@@ -5,6 +5,7 @@
 #include "DetResponse.h"
 #include "AtmFlux.h"
 #include "NuXsec.h"
+#include "EffMass.h"
 #include "PMNS_Fast.h"
 #include "PremModel.h"
 
@@ -46,7 +47,7 @@ class FitUtil {
 
   FitUtil(Double_t op_time, TH3 *h_template,
 	  Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax,
-	  TString meffh_elec_cc, TString meffh_muon_cc, TString meffh_tau_cc, TString meffh_elec_nc);
+	  TString meff_file);
   ~FitUtil();
 
   //------------------------------------------------------------------
@@ -96,8 +97,6 @@ class FitUtil {
   void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
   void InitCacheHists(TH3D *h_template);
   void FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time);
-  void ReadMeffHists(TH3D *h_template, TString meffh_elec_cc, TString meffh_muon_cc, 
-		     TString meffh_tau_cc, TString meffh_elec_nc);
   std::tuple<Double_t, Double_t, Int_t, Int_t> GetRange(Double_t min, Double_t max, TAxis *axis);
   enum rangeret { MIN=0, MAX, MINBIN, MAXBIN };           //!< enum for function `GetRange` return
     
@@ -176,6 +175,7 @@ class FitUtil {
   TH3D               *fHB;                          //!< a template histogram that defines the binning
   AtmFlux            *fFlux;                        //!< atm flux calculator
   NuXsec             *fXsec;                        //!< xsec calculator
+  EffMass            *fMeff;                        //!< effective mass calculator
   OscProb::PMNS_Fast *fProb;                        //!< oscillation probability calculator
   OscProb::PremModel *fPrem;                        //!< earth model
 
@@ -186,7 +186,6 @@ class FitUtil {
   TH2D *fhFluxCache[fFlavs][fPols];         //!< atm flux cache with struct. [flav][is_nub]
   TH2D *fhOscCache [fFlavs][fFlavs][fPols]; //!< osc prob cache with struct. [flav_in][flav_out][isnb]
   TH1D *fhXsecCache[fFlavs][fInts][fPols];  //!< xsec cache with struct. [flav][is_cc][isnb]
-  TH3D *fhMeff     [fFlavs][fInts][fPols];  //!< effective mass hists with struct. [flav][is_cc][is_nub]
 
   Double_t f_cache_sinsqth12;    //!< internally cached theta12 value
   Double_t f_cache_sinsqth13;    //!< internally cached theta13 value
