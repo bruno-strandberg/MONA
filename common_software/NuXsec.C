@@ -13,7 +13,7 @@
  * \param  xsecfile     A root file in specific format with neutrino xsec data.
  * \param  by_dist_file A roof file in specific format with energy vs bjorken-y distributions
  */
-NuXsec::NuXsec(Int_t bybins, TString xsecfile, TString by_dist_file) {
+NuXsec::NuXsec(UInt_t bybins, TString xsecfile, TString by_dist_file) {
 
   // get the nmhdir, if default options (xsecfile="", by_dist_file="") 
   // point to default xsecfile and bjorken-y distribution file
@@ -25,18 +25,24 @@ NuXsec::NuXsec(Int_t bybins, TString xsecfile, TString by_dist_file) {
   }
 
   if ( xsecfile == "" ) {
-    xsecfile = nmhdir + "/data/cross_sections_gSeaGen_v4r1/xsec.root";
+    fXsecFile = nmhdir + "/data/cross_sections_gSeaGen_v4r1/xsec.root"; 
+  }
+  else {
+    fXsecFile = xsecfile;
   }
 
   if (by_dist_file == "") {
-    by_dist_file = nmhdir + "/data/cross_sections_gSeaGen_v4r1/by_dists.root";
+    fByFile = nmhdir + "/data/cross_sections_gSeaGen_v4r1/by_dists.root";
+  }
+  else {
+    fByFile = by_dist_file;
   }
   
   //init the maps fGraphs and fByHists that holds the TGraphs with xsec data
 
-  InitMaps(xsecfile, by_dist_file, bybins);
+  InitMaps(fXsecFile, fByFile, bybins);
 
-  fByBinsSet = (bybins != -1);
+  fByBinsSet = (bybins != 0);
   fGraphsSet = false;
   f_g_H1     = NULL;
   f_g_O16    = NULL;
@@ -141,6 +147,10 @@ Double_t NuXsec::GetXsec(Double_t E) {
     throw std::invalid_argument( "ERROR! NuXsec::GetXsec() graphs not set! Did you run SelectInteraction(...)?");
   }
 
+  if ( E < fEmin || E > fEmax ) {
+    throw std::invalid_argument( "ERROR! NuXsec::GetXsec() energy " + to_string(E) + " out of range, limited by the input file " + (string)fXsecFile );
+  }
+
   Double_t cs_O16 = f_g_O16->Eval(E);
   Double_t cs_H1  = f_g_H1->Eval(E);
 
@@ -167,8 +177,23 @@ Double_t NuXsec::GetBYfrac(Double_t E, Double_t by) {
     throw std::invalid_argument( "ERROR! NuXsec::GetBYfrac() histgram pointer not set! Did you run SelectInteraction(...)?");
   }
 
+  if ( E < f_h_by->GetXaxis()->GetXmin() || E >= f_h_by->GetXaxis()->GetXmax() ) {
+    throw std::invalid_argument("ERROR! NuXsec::GetBYfrac() energy" + to_string(E) + " out of range, limited by the input file " + (string)fByFile );
+  }
+
+  if ( by < f_h_by->GetYaxis()->GetXmin() || by > f_h_by->GetYaxis()->GetXmax() ) {
+    throw std::invalid_argument("ERROR! NuXsec::GetBYfrac() bjorken-y " + to_string(by) + " out of range." );
+  }
+
   Int_t ebin  = f_h_by->GetXaxis()->FindBin(E);
   Int_t bybin = f_h_by->GetYaxis()->FindBin(by);
+
+  // due to technical reasons ( TAxis range [0, 1) ) by = 1.0 fetches the over-flow bin value, which is 0
+  // this does not make physical sense for bjorken-y. as by > 1.0 throws an error above, here the bybin is 
+  // changed from overflow to the last bin
+  if ( bybin > f_h_by->GetYaxis()->GetNbins() ) {
+    bybin = bybin - 1;
+  }
 
   return f_h_by->GetBinContent(ebin, bybin);
 
@@ -183,13 +208,15 @@ Double_t NuXsec::GetBYfrac(Double_t E, Double_t by) {
  * \param  byfile        File with energy vs bjorken-y distribution histograms.
  * \param  bybins        Number of bjorken-y bins used in the analysis
  */
-void NuXsec::InitMaps(TString xsecfile, TString byfile, Int_t bybins) {
+void NuXsec::InitMaps(TString xsecfile, TString byfile, UInt_t bybins) {
 
   TFile *fxsec = new TFile(xsecfile, "READ");
   TFile *fby   = new TFile(byfile,   "READ");
   if ( !fxsec->IsOpen() || !fby->IsOpen() ) {
     throw std::invalid_argument( "ERROR! NuXsec::InitMaps() could not find xsec or bjorken-y file!");
   }
+
+  vector<double> maxima, minima; // vectors to define the valid energy range
 
   //loop over maps, use the CreateString() function to create a lookup string
   //for each combination of nu_flavor, int_type, p_type. Clone the xsec graphs/by hists to the maps.
@@ -207,6 +234,10 @@ void NuXsec::InitMaps(TString xsecfile, TString byfile, Int_t bybins) {
 	vector<TGraph*> graphs;
 	graphs.push_back( (TGraph*)( fxsec->Get(gname1)->Clone() ) );
 	graphs.push_back( (TGraph*)( fxsec->Get(gname2)->Clone() ) );
+	for (auto g: graphs) {
+	  maxima.push_back( g->GetXaxis()->GetXmax() );
+	  minima.push_back( g->GetXaxis()->GetXmin() );
+	}
 
 	TH2D *hist = (TH2D*)fby->Get(hname)->Clone();
 	hist->SetDirectory(0);
@@ -214,12 +245,16 @@ void NuXsec::InitMaps(TString xsecfile, TString byfile, Int_t bybins) {
 
 	// calculate the rebinning for bjorken-y histograms, such that the input histograms
 	// are left with the desired number of bjorken-y bins. The constructor can be used without
-	// specifying binning, in which case bybins = -1 and only 1 bjorken-y bin is used
+	// specifying binning, in which case bybins = 0 and only 1 bjorken-y bin is used
 	Int_t existing_bins = hist->GetYaxis()->GetNbins();
-	Int_t rebinning     = existing_bins;                
-	if (bybins != -1) rebinning = existing_bins/bybins;
+	Int_t rebinning     = existing_bins;
+	Int_t modulus       = 0;
+	if (bybins > 0) {
+	  rebinning = existing_bins/(Int_t)bybins;
+	  modulus   = existing_bins%(Int_t)bybins;
+	}
 
-	if ( existing_bins % bybins != 0) {
+	if ( modulus != 0 ) {
 	  throw std::invalid_argument( "ERROR! NuXsec::InitMaps() the input file has " + to_string(existing_bins) + " bjorken-y bins, which cannot be re-binned to " + to_string(bybins) );
 	}
 
@@ -239,6 +274,10 @@ void NuXsec::InitMaps(TString xsecfile, TString byfile, Int_t bybins) {
 
   fby->Close();
   delete fby;
+
+  // define the maximum and minimum validity range
+  fEmin = *std::max_element( minima.begin(), minima.end() );
+  fEmax = *std::min_element( maxima.begin(), maxima.end() );
 
 }
 
