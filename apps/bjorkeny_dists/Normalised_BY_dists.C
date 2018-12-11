@@ -1,8 +1,36 @@
 #include "NMHUtils.h"
+#include "FileHeader.h"
+
+#include "TFile.h"
+#include "TH2.h"
+
+#include "Jeep/JParser.hh"
+#include "Jeep/JMessage.hh"
+
 #include<vector>
+
 using namespace std;
 
-void Normalised_BY_dists(TString byhists_olist, TString output = "out.root") {
+/**
+   Application to merge the outputs of `Create_BY_hists` application.
+*/
+int main(const int argc, const char **argv) {
+
+  TString byhists_olist;
+  TString output;
+
+  try {
+
+    JParser<> zap("Application to merge the outputs of `Create_BY_hists` application.");
+
+    zap['f'] = make_field(byhists_olist, "List of files output by `Create_BY_hists`. For example, create via ls *some_files* > my_list.txt and provide -f my_list.txt as arugment.");
+    zap['o'] = make_field(output, "Name of the output file") = "output.root";
+
+    if ( zap.read(argc, argv) != 0 ) return 1;
+  }
+  catch(const exception &error) {
+    FATAL(error.what() << endl);
+  }
 
   //-------------------------------------------------
   // merge the files
@@ -16,9 +44,22 @@ void Normalised_BY_dists(TString byhists_olist, TString output = "out.root") {
   }
 
   Int_t sysret = 0;
-  if ( NMHUtils::FileExists(output) ) sysret = system("rm " + output);
-  sysret = system(syscmd);
+  if ( NMHUtils::FileExists(output) ) {
 
+    sysret = system("rm " + output);
+
+    if ( sysret != 0 ) {
+      cout << "WARNING Normalised_BY_dists() removal of " << output << " returned " << sysret << endl;
+    }
+    else {
+      cout << "NOTICE Normalised_BY_dists() file " << output << " already existed, removed it" << endl;
+    }
+
+  }
+
+  sysret = system(syscmd);
+  if ( sysret != 0 ) cout << "WARNING Normalised_BY_dists() command " << syscmd << " returned " << sysret << endl;
+  
   //-------------------------------------------------
   // read the merged histograms to memory
   //-------------------------------------------------

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This script can be used to send Create_BY_hists.C macro jobs to the farm.
+This script can be used to send Create_BY_hists application jobs to the farm.
 
 Usage:
     hist_caller.py -g GSG_FILE (--local | --farm) [-n FMIN]
@@ -23,17 +23,17 @@ args = docopt(__doc__)
 #*******************FUNCTION DEFINITIONS********************************
 #=======================================================================
 
-def create_root_cmd(gsg_file_list, output_name):
+def create_syscmd(gsg_file_list, output_name):
     """
-    This function creates the root command to execute Create_BY_hists.C+
+    This function creates the command to execute Create_BY_hists application
     """
-    
-    syscmd  = "root -b -q '{}/Create_BY_hists.C+(".format(cwd)
-    syscmd += '"' + gsg_file_list + '",'
-    syscmd += '"' + output_name + '"'
-    syscmd += ")'"
+    syscmd  = "{}/Create_BY_hists".format(cwd)
+    syscmd += " -g {}".format(gsg_file_list)
+    syscmd += " -o {}".format(output_name)
 
     return syscmd
+
+#=======================================================================
 
 def create_farm_script(syscmd, tmpdir, job_nr):
     """
@@ -44,7 +44,11 @@ def create_farm_script(syscmd, tmpdir, job_nr):
     scriptf = open(scriptn, "w")
     scriptf.write('#!/bin/bash\n\n')
 
+    scriptf.write( "cd {0}\n".format( os.environ['JPP_DIR'] ) )
+    scriptf.write( "source setenv.sh\n" )
+    scriptf.write( "cd {0}\n".format(cwd) )
     scriptf.write( "source {0}/bin/thisroot.sh\n".format( os.environ['ROOTSYS'] ) )
+    scriptf.write( 'export OSCPROBDIR="{}"\n'.format(os.environ['OSCPROBDIR']) )
     scriptf.write( "source {0}/setenv.sh\n\n".format( os.environ['NMHDIR'] ) )
     scriptf.write(syscmd + "\n")
 
@@ -94,21 +98,16 @@ for gsgfile in gsg_flist:
         files_per_job = 0
 
 #=======================================================================
-# use the arguments to execute Create_BY_hists.C, either on the farm or locally
+# use the arguments to execute Create_BY_hists, either on the farm or locally
 #=======================================================================
 
 if args['--local']:
-    syscmd = create_root_cmd(arg_list[0][0], arg_list[0][1])
+    syscmd = create_syscmd(arg_list[0][0], arg_list[0][1])
     print syscmd
     os.system(syscmd)
-else:
 
+else:
     for i, arg_pair in enumerate(arg_list):
-        syscmd = create_root_cmd(arg_pair[0], arg_pair[1])
+        syscmd = create_syscmd(arg_pair[0], arg_pair[1])
         scriptname = create_farm_script(syscmd, cwd+"/tmp", i)
         os.system( "qsub -P P_km3net -l sps=1 -l vmem=2G -l ct=5:00:00 -o {0} -e {0} {1}".format(cwd+"/tmp", scriptname) )
-
-        
-
-
-    
