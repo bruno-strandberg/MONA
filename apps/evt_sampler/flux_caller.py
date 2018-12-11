@@ -1,9 +1,9 @@
 #!/usr/bin/python
 """
-This script can be used to call the FluxChain.C macro several times with different (random) oscillation parameter settings. If nothing but the IDSTR is specified, the macro will call FluxChain.C twice, once with NH, once with IH, with all OscPars at central values. For a single call of FluxChain.C use the root prompt.
+This script can be used to call the FluxChain app several times with different (random) oscillation parameter settings. If nothing but the IDSTR is specified, the macro will call FluxChain twice, once with NH, once with IH, with all OscPars at central values. For a single call of FluxChain use the command prompt.
  
 Usage:
-    flux_caller [-n NR_OF_CONFS] [-p PAR] [-s STEP] [-y YEARS] [--meff] [--ecc MEFF_ELEC_CC] [--mcc MEFF_MUON_CC] [--tcc MEFF_TAU_CC] [--enc MEFF_ELEC_NC] -i IDSTR
+    flux_caller [-n NR_OF_CONFS] [-p PAR] [-s STEP] [-y YEARS] [--meff MEFF_FILE] -i IDSTR
     flux_caller -h                                                                     
 
 Option:
@@ -16,11 +16,7 @@ Option:
     -s STEP             If -p specified, the step with which the par is scanned. If -p 
                         and -s are specified, then -n is ignored.
     -y YEARS            Number of years of data taking [default: 3]
-    --meff              Use effective mass to calculate detected flux histograms
-    --ecc MEFF_ELEC_CC  Elec-CC Meff file [default: ../data/eff_mass/EffMhists_elec_CC.root]
-    --mcc MEFF_MUON_CC  Muon-CC Meff file [default: ../data/eff_mass/EffMhists_muon_CC.root]
-    --tcc MEFF_TAU_CC   Tau-CC Meff file [default: ../data/eff_mass/EffMhists_tau_CC.root]
-    --enc MEFF_ELEC_NC  Elec-NC Meff file [default: ../data/eff_mass/EffMhists_elec_NC.root]
+    --meff MEFF_FILE    Effective mass file [default: ../../data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root]
     -i IDSTR            Identifier string added as prefix to files in output/FluxChain/
 
     -h --help           Show this screen
@@ -224,6 +220,7 @@ def main(args):
     outlist.close()
 
     for cmd in cmds:
+        print cmd
         os.system(cmd)
 
 
@@ -235,29 +232,19 @@ def get_fluxchain_cmd(args, outname, NH, sinsq12, sinsq23, sinsq13, dcp, dm21, d
     """
 
     years        = args['-y']
-    Meff         = args['--meff']
-    meff_elec_cc = os.path.abspath(args['--ecc'])
-    meff_muon_cc = os.path.abspath(args['--mcc'])
-    meff_tau_cc  = os.path.abspath(args['--tcc'])
-    meff_elec_nc = os.path.abspath(args['--enc'])
+    meff_file    = os.path.abspath(args['--meff'])
 
-    syscmd  = "root -b -q 'FluxChain.C+("
-    syscmd += str(years) + ", "        # 3 years running time
-    syscmd += '"' + outname + '", '    # output name
-    syscmd += str(20) + ","            # 20-fold oversampling in each bin
-    syscmd += str(int(NH)) + ", "      # 0 - IH, 1 - NH
-    syscmd += str(int(Meff)) + ", "    # 0 - don't use Meff, 1 - use Meff
-    syscmd += '"' + str(meff_elec_cc) + '", ' # elec-CC eff mass file
-    syscmd += '"' + str(meff_muon_cc) + '", ' # muon-CC eff mass file
-    syscmd += '"' + str(meff_tau_cc)  + '", ' # tau-CC eff mass file
-    syscmd += '"' + str(meff_elec_nc) + '", ' # elec-NC eff mass file
-    syscmd += str(sinsq12) + ", "      # oscillation parameter values
-    syscmd += str(sinsq23) + ", "
-    syscmd += str(sinsq13) + ", "
-    syscmd += str(dcp) + ", "
-    syscmd += str(dm21) + ", "
-    syscmd += str(dm32)
-    syscmd += ")'"
+    syscmd  = "./FluxChain"
+    syscmd += " -t {}".format(years)
+    syscmd += " -M {}".format(meff_file)
+    syscmd += " -o {}".format(outname)
+    syscmd += " -U {}".format(sinsq12)
+    syscmd += " -V {}".format(sinsq23)
+    syscmd += " -W {}".format(sinsq13)
+    syscmd += " -X {}".format(dcp)
+    syscmd += " -Y {}".format(dm21)
+    syscmd += " -Z {}".format(dm32)
+    if (not NH): syscmd += " -I"
 
     return syscmd
 

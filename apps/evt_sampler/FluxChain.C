@@ -136,12 +136,12 @@ int main(const int argc, const char **argv) {
     zap['n'] = make_field(nsamples, "Number of oscillation samples per filling one bin (recommended > 10). If set to 1 then bin central values are used") = 20;
     zap['I'] = make_field(IH, "Inverted hierarchy (normal hierarchy otherwise)");
     zap['M'] = make_field(meff_file, "ROOT file with effective mass histograms, created with `apps/effective_mass` applications that use the class `common_software/EffMass`") = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
-    zap['u'] = make_field(sinsq_th12, "sin^2(theta12) value. By default PDG value is used.") = NOTSET;
-    zap['v'] = make_field(sinsq_th23, "sin^2(theta23) value. By default PDG value is used.") = NOTSET;
-    zap['w'] = make_field(sinsq_th13, "sin^2(theta13) value. By default PDG value is used.") = NOTSET;
-    zap['x'] = make_field(dcp, "deltaCP value in pi's, as given by PDG group (e.g 1.38). Ny default PDG value is used.") = NOTSET;
-    zap['y'] = make_field(dm21, "dm21^2 value. By default PDG value is used.") = NOTSET;
-    zap['z'] = make_field(dm32, "dm32^2 value; this must be > 0 for NH and < 0 for IH. By default PDG value is used.") = NOTSET;
+    zap['U'] = make_field(sinsq_th12, "sin^2(theta12) value. By default PDG value is used.") = NOTSET;
+    zap['V'] = make_field(sinsq_th23, "sin^2(theta23) value. By default PDG value is used.") = NOTSET;
+    zap['W'] = make_field(sinsq_th13, "sin^2(theta13) value. By default PDG value is used.") = NOTSET;
+    zap['X'] = make_field(dcp, "deltaCP value in pi's, as given by PDG group (e.g 1.38). Ny default PDG value is used.") = NOTSET;
+    zap['Y'] = make_field(dm21, "dm21^2 value. By default PDG value is used.") = NOTSET;
+    zap['Z'] = make_field(dm32, "dm32^2 value; this must be > 0 for NH and < 0 for IH. By default PDG value is used.") = NOTSET;
     zap['e'] = make_field(erange, "Energy range in GeV") = JTOOLS::JRange<Double_t>(1, 100);
     zap['E'] = make_field(nebins , "Number of energy bins.")    = 40;
     zap['C'] = make_field(nctbins, "Number of cos-theta bins.") = 40;
