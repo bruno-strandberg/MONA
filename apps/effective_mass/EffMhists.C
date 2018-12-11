@@ -13,8 +13,6 @@
 // jpp headers
 #include "JTools/JRange.hh"
 
-#include "JGeometry3D/JTrack3E.hh"
-
 #include "Jeep/JParser.hh"
 #include "Jeep/JMessage.hh"
 
