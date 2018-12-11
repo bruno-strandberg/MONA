@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This script can be used to call the GSGSampler.C macro and execute it on the farm.
+This script can be used to call the GSGSampler app and execute it on the farm.
  
 Usage:
     sampler_caller -f FLAVOR... -i INTERACTION... -a FLUX_LIST [-n SAMPLES] [--execute] [--gsgdir GSGDIR] [--sumdir SUMDIR]
@@ -9,12 +9,14 @@ Usage:
 Option:
     -f FLAVOR         Neutrino flavor 0 - elec, 1 - muon, 2 - tau, may select several
     -i INTERACTION    Interaction 0 - nc, 1 - cc, may select several
-    -a FLUX_LIST      Text file that lists the FluxChain.C output files input to GSGSampler.
+    -a FLUX_LIST      Text file that lists the FluxChain app output files input to GSGSampler.
                       flux_caller.py outputs such a file.
     -n SAMPLES        Samples per flux file [default: 5]
     --execute         To send to farm, otherwise only scripts created
-    --gsgdir GSGDIR   Directory where gSeaGen files are sought [default: ../data/mc_start/data_atmnu/]
-    --sumdir SUMDIR   Directory where summary files are sought [default: ../data/mc_end/data_atmnu/]
+    --gsgdir GSGDIR   Directory where gSeaGen files are sought
+                      [default: ../../data/gseagen/ORCA115_23x9m_ECAP0418/data_atmnu/]
+    --sumdir SUMDIR   Directory where summary files are sought
+                      [default: ../../data/mcsummary/ORCA115_23x9m_ECAP0418/data_atmnu/]
     -h --help         Show this screen
 
 """
@@ -59,17 +61,14 @@ def main(args):
             os.system( "ls {0}/*{1}*{2}* > {3}".format(sum_dir, flav, inter, sum_flist) )
 
             # create the command to execute GSGSampler
-            cmd  = "root -b -q 'GSGSampler.C+("
-            cmd += '"' + flux_file_list + '", '  # flux file list
-            cmd += '"' + gsg_flist + '", '       # gseagen file list
-            cmd += '"' + sum_flist + '", '       # summary file list
-            cmd += str(int(f)) + ", "            # neutrino flavor
-            cmd += str(int(i)) + ", "            # neutrino interaction
-            cmd += str(int(args['-n'])) + ", "   # number of samples per flux file
-            cmd += str(2) + ", "      # not more than 2GB of RAM used for data storage simultaneously
-            cmd += str(10)            # not more than 10 experiments simultaneously in RAM
-            cmd += ")'"
-
+            cmd  = "./GSGSampler "
+            cmd += " -f {}".format(flux_file_list)
+            cmd += " -g {}".format(gsg_flist)
+            cmd += " -s {}".format(sum_flist)
+            cmd += " -F {}".format(int(f))
+            if (int(i) > 0): cmd += " -C"
+            cmd += " -n {}".format(args['-n'])
+            
             # create a bash script than can be sent to farm
             script_name = "{0}/tmp/farm_job_{1}_{2}.sh".format(cwd, flav, inter)
             script_file = open(script_name, 'w')
@@ -77,7 +76,8 @@ def main(args):
             script_file.write('#!/bin/bash\n\n')
             script_file.write('cd {0}\nsource setenv.sh\ncd {1}\n'.format(jpp, cwd)) #jpp
             script_file.write('source {}/bin/thisroot.sh\n'.format(root))            #root
-            script_file.write('source {}/setenv.sh -a -o {}\n\n'.format(nmh, oscp))  #nmh
+            script_file.write('export OSCPROBDIR="{}"\n'.format(oscp))               #export oscprobdir
+            script_file.write('source {}/setenv.sh\n\n'.format(nmh))                 #nmh
             script_file.write(cmd)
 
             script_file.close()

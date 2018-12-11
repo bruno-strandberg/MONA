@@ -6,9 +6,21 @@
 
 //NMH
 #include "SummaryParser.h"
-#include "GSGParser.h"
 #include "NMHUtils.h"
 #include "FileHeader.h"
+
+//aanet and JPP headers
+#include "Jeep/JParser.hh"
+#include "Jeep/JMessage.hh"
+#include "evt/Evt.hh"
+#include "evt/Trk.hh"
+#include "evt/Head.hh"
+#include "JAAnet/JHead.hh"
+#include "JAAnet/JHeadToolkit.hh"
+#include "JAAnet/JAAnetToolkit.hh"
+#include "JSupport/JMultipleFileScanner.hh"
+#include "JSupport/JMonteCarloFileSupportkit.hh"
+#include "JSupport/JSupport.hh"
 
 //generic cpp
 #include <stdexcept>
@@ -16,7 +28,7 @@
 using namespace GSGS;
 
 /**
-   Function to create a sample of Monte-Carlo events.
+   Application to create samples of Monte-Carlo events resembling sea-data.
  
    This function creates a sample of Monte-Carlo events for a given flavor and interaction type.
    Each FluxChain.C output file contains histograms in TDirectory intflux/, each histogram holds
@@ -47,26 +59,39 @@ using namespace GSGS;
 
    The code will output a file output/GSGSampler/EvtSample_{flavor}-{interaction}_{Nf}_{Ns}.root, 
    where Nf is the sequence number of the flux chain file and Ns is the sample number.
- 
-   \param flux_chain_list a text file with a list of FluxChain.C macro outputs
-   \param gsg_flist       a text file with a list of gSeaGen files. 
-   \param summary_flist   a text file with a list of summary files
-   \param flavor          neutrino flavor
-   \param is_cc           0 - neutral current, 1 - charged current
-   \param nsamples        Number of Monte-Carlo samples to be generated.
-   \param memory_lim      If more RAM than memory_lim used to store data, trigger write-out
-   \param exp_lim         If more experiments than exp_lim in memory, trigger write-out
-   \param dbg_scale       Option to scale down the number of interacted events, 
-   such that the program can be run with a reduced nr of gSeaGen files
-                         without getting errors related to not having enough Monte-Carlo events.
+
  */
-void GSGSampler(TString flux_chain_flist, 
-		TString gsg_flist, 
-		TString summary_flist,
-		Int_t flavor, Int_t is_cc, Int_t nsamples = 1, 
-		Double_t memory_lim = 2,
-		Double_t exp_lim    = 10,
-		Double_t dbg_scale  = 1.) {
+int main(const int argc, const char **argv) {
+
+  TString  flux_chain_flist;
+  TString  gsg_flist;
+  TString  summary_flist;
+  Int_t    flavor;
+  Bool_t   is_cc; 
+  Int_t    nsamples;
+  Double_t memory_lim;
+  Double_t exp_lim;
+  Double_t dbg_scale;
+
+  try {
+
+    JParser<> zap("Application to create samples of Monte-Carlo events resembling sea-data.");
+
+    zap['f'] = make_field(flux_chain_flist, "a text file with a list of FluxChain app outputs");
+    zap['g'] = make_field(gsg_flist, "a text file with a list of gSeaGen files");
+    zap['s'] = make_field(summary_flist, "a text file with a list of summary files");
+    zap['F'] = make_field(flavor, "neutrino flavor (0 - elec, 1 - muon, 2 - tau)");
+    zap['C'] = make_field(is_cc, "CC interaction if set, NC otherwise");
+    zap['n'] = make_field(nsamples, "Number of Monte-Carlo samples to be generated") = 1;
+    zap['m'] = make_field(memory_lim, "If more RAM (in GeV) than this used to store data, trigger write-out") = 2;
+    zap['e'] = make_field(exp_lim, "If more experiments than exp_lim in memory, trigger write-out") = 10;
+    zap['d'] = make_field(dbg_scale, "Option to scale down the number of interacted events, such that the program can be run with a reduced nr of gSeaGen files without getting errors related to not having enough Monte-Carlo events.") = 1.;
+
+    if ( zap.read(argc, argv) != 0 ) return 1;
+  }
+  catch(const exception &error) {
+    FATAL(error.what() << endl);
+  }
 
   // timers
   TStopwatch OverallTimer, DataReadTimer, DataWriteTimer, SamplerTimer;
@@ -91,21 +116,16 @@ void GSGSampler(TString flux_chain_flist,
   for (Int_t F = 0; F < (Int_t)flux_files.size(); F++) {
 
     TString fc_file = flux_files[F];
-
-    if ( !GetIntHists(fc_file, flavor, is_cc) ) {
-      cout << "ERROR! GSGSampler() problem opening flux histograms from " << fc_file << endl;
-      return;
-    }
+    GetIntHists(fc_file, flavor, (Int_t)is_cc);
 
     if ( !initialized ) {
       initialized = true;
-      InitVars(flavor, is_cc);
+      InitVars(flavor, (Int_t)is_cc);
 
       DataReadTimer.Start(kFALSE);
       gsg_data_size = ReadGSGData(gsg_flist, summary_flist, flavor, is_cc);
       if ( gsg_data_size == 0. ) {
-	cout << "ERROR! GSGSampler() problem reading gSeaGen files." << endl;
-	return;
+	throw std::invalid_argument("ERROR! GSGSampler() problem reading gSeaGen files.");
       }
       DataReadTimer.Stop();
     }
@@ -181,15 +201,14 @@ void GSGSampler(TString flux_chain_flist,
  * \return                  True if histograms found, False if not found.
  *
  */
-Bool_t GSGS::GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc) {
+void GSGS::GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc) {
 
   if (fhInt_nu)  delete fhInt_nu;
   if (fhInt_nub) delete fhInt_nub;
 
   TFile f(flux_chain_file, "READ");
   if ( !f.IsOpen() ) {
-    cout << "ERROR! GetIntHists() cannot open file " << flux_chain_file << endl;
-    return false;
+    throw std::invalid_argument("ERROR! GSGS::GetIntHists() cannot open file " + (string)flux_chain_file);
   }
 
   if (is_cc > 0) {
@@ -200,8 +219,7 @@ Bool_t GSGS::GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc) {
     TH2D   *h_nub = (TH2D*)f.Get(hname_nub);
 
     if ( !h_nu || !h_nub ) {
-      cout << "ERROR! GetIntHists() cannot find hists " << hname_nu << "\t" << hname_nub << endl;
-      return false;
+      throw std::invalid_argument("ERROR! GSGS::GetIntHists() cannot find hists " + (string)hname_nu + " " + (string)hname_nub);
     }
 
     fhInt_nu  = (TH2D*)h_nu->Clone();
@@ -228,8 +246,7 @@ Bool_t GSGS::GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc) {
     TH2D   *h_tau_nub  = (TH2D*)f.Get(hname_tau_nub);
 
     if (!h_elec_nu || !h_elec_nub || !h_muon_nu || !h_muon_nub || !h_tau_nu || !h_tau_nub) {
-      cout << "ERROR! GetIntHists() cannot find NC hists" << endl;
-      return false;
+      throw std::invalid_argument("ERROR! GSGS::GetIntHists() cannot find NC hists");
     }
 
     fhInt_nu  = (TH2D*)h_elec_nu->Clone("intflux_allflav_nc_nu");
@@ -249,7 +266,6 @@ Bool_t GSGS::GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc) {
   }
 
   f.Close();
-  return true;
   
 }
 
@@ -322,14 +338,16 @@ void GSGS::InitVars(Int_t flavor, Int_t is_cc) {
 Double_t GSGS::ReadGSGData(TString gsg_file_list, TString summary_file_list, 
 			   Int_t flavor, Int_t is_cc) {
 
-  cout << "NOTICE ReadGSGData() started reading GSG data" << endl;
+  cout << "NOTICE GSGS::ReadGSGData() started reading GSG data" << endl;
 
   Double_t gsg_data_size = 0.;
   vector<TString> fnames        = NMHUtils::ReadLines(gsg_file_list);
   vector<TString> summary_files = NMHUtils::ReadLines(summary_file_list);
 
+  //------------------------------------------------------------------------
   // create a hash from the input gsg and summary filenames; if a cache for this input has
   // been created, read data from cache instead of from GSGfiles
+  //------------------------------------------------------------------------
 
   std::string hash_str = "";
   for (auto f: fnames) hash_str += (std::string)f;
@@ -343,77 +361,92 @@ Double_t GSGS::ReadGSGData(TString gsg_file_list, TString summary_file_list,
     return gsg_data_size;
   }
 
-  // no cache --> loop over file names and read data from GSG files
+  //------------------------------------------------------------------------
+  // no cache --> loop over file names and test inputs
+  //------------------------------------------------------------------------
+
+  JSUPPORT::JMultipleFileScanner_t mfs_flist; // file list for JMultipleFileScanner
 
   for (auto fname: fnames) {
 
     // check that the files correspond to the expected flavor and interaction
-
     if ( !fname.Contains( fFlavs[flavor] ) || !fname.Contains( fInts[is_cc] ) ) {
-      cout << "WARNING! ReadGSGData() specified flavor " << fFlavs[flavor] << " and interaction " 
-	   << fInts[is_cc] << " seem to mismatch flavor and interaction in filename, skipping file "
-	   << fname << endl;
+      cout << "WARNING! GSGS::ReadGSGData() specified flavor " << fFlavs[flavor] << " and interaction " << fInts[is_cc] << " seem to mismatch flavor and interaction in filename, skipping file " << fname << endl;
       continue;
-    }
-
-    // initalise parser, set detector can size and sea water density
-
-    cout << "NOTICE ReadGSGData() Reading from file: " << fname << endl;
-
-    GSGParser gp(fname);
-
-    if (fVcan == 0.) fVcan = gp.fVcan;
-    else if ( fVcan != gp.fVcan) {
-      cout << "ERROR! ReadGSGData() detector can change from  " << fVcan << " to " << gp.fVcan
-    	   << ", exiting." << endl;
-      return 0.;
-    }
-
-    if (fRhoSW == 0.) fRhoSW = gp.fRho_seawater;
-    else if ( fRhoSW != gp.fRho_seawater) {
-      cout << "ERROR! ReadGSGData() sea water density change from  " << fRhoSW
-	   << " to " << gp.fRho_seawater << ", exiting." << endl;
-      return 0.;
     }
 
     // check that the corresponding summary file exists; if not skip this gsg file
-
-    TString sf = FindSummaryFile(summary_files, flavor, is_cc, gp.fE_min, gp.fE_max, gp.fRunNr);
-    if ( sf == "" ) {
-      cout << "WARNING! ReadGSGData() skipping gSeaGen file " << fname << endl;
+    const JAANET::JHead H = JSUPPORT::getHeader((string)fname);
+    if ( FindSummaryFile(summary_files, flavor, is_cc, H.cut_nu.Emin, H.cut_nu.Emax, H.start_run.run_id) == "" ) {
+      cout << "WARNING! GSGS::ReadGSGData() could not find the summary file corresponding to " << fname << ", skipping it." << endl;
       continue;
     }
 
-    //loop over events
+    // read the can volume, check that it is the same in all files
+    Double_t vcan = TMath::Pi() * H.can.r * H.can.r * ( H.can.zmax - H.can.zmin );
 
-    while ( gp.NextEvent() ) {
+    if (fVcan == 0.) {
+      fVcan = vcan;
+    }
+    else if ( fVcan != vcan) {
+      throw std::invalid_argument("ERROR! GSGS::ReadGSGData() detector can change from  " + to_string(fVcan) + " to " + to_string(vcan) + " in file " + (string)fname );
+    }
 
-      // skip events with vertices outside the can
-      if ( !gp.VertexInCan() ) continue;
+    // checks ok, add to the file-list to be read with Jpp
+    mfs_flist.push_back( (string)fname );
 
-      Double_t energy =  gp.Neutrino_E;
-      Double_t ct     = -gp.Neutrino_D3;
+  }
+
+  //------------------------------------------------------------------------
+  // loop over events
+  //------------------------------------------------------------------------
+
+  JSUPPORT::JMultipleFileScanner<Evt> gp(mfs_flist);
+  TString current_file = "";
+  JAANET::JHead CH; 
+
+  while ( gp.hasNext() ) {
+
+    const Evt* event = gp.next();
+    Trk nu_trk;
     
-      Int_t xbin = fhGSG_nu->GetXaxis()->FindBin( energy );
-      Int_t ybin = fhGSG_nu->GetYaxis()->FindBin( ct );
+    if ( JAANET::has_neutrino(*event) ) {
+      nu_trk = JAANET::get_neutrino(*event);
+    }
+    else {
+      throw std::invalid_argument("ERROR! GSGS::ReadGSGData() cannot find a neutrino in the MC event.");
+    }
 
-      if (gp.Neutrino_PdgCode > 0)  {
-      	fhGSG_nu->Fill( energy, ct );
-      	fGSGEvts_nu[xbin][ybin].push_back( evtid(gp.fRunNr, gp.iEvt, gp.fE_min) );
-      }
-      else {
-      	fhGSG_nub->Fill( energy, ct );
-      	fGSGEvts_nub[xbin][ybin].push_back( evtid(gp.fRunNr, gp.iEvt, gp.fE_min) );
-      }
-
-      gsg_data_size += sizeof(evtid);
-
-    } // end loop over events
+    // read the header each time a new file is reached for some necessary data
+    if ( gp.getFilename() != current_file ) {
+      current_file = gp.getFilename();
+      CH = JSUPPORT::getHeader((string)current_file);
+    }
     
-  } //end loop over files
-  
-  cout << "NOTICE ReadGSGData() finished reading GSG data, " 
-       << gsg_data_size/1e9 << " gb of RAM used." << endl;
+    // skip events with vertices outside the can
+    Double_t rvtx = TMath::Sqrt( nu_trk.pos.x * nu_trk.pos.x + nu_trk.pos.y * nu_trk.pos.y );
+    if ( rvtx > CH.can.r || nu_trk.pos.z < CH.can.zmin || nu_trk.pos.z > CH.can.zmax ) continue;
+
+    Double_t energy =  nu_trk.E;
+    Double_t ct     = -nu_trk.dir.z;
+    
+    Int_t xbin = fhGSG_nu->GetXaxis()->FindBin( energy );
+    Int_t ybin = fhGSG_nu->GetYaxis()->FindBin( ct );
+
+    if (nu_trk.type > 0)  {
+      fhGSG_nu->Fill( energy, ct );
+      fGSGEvts_nu[xbin][ybin].push_back( evtid(CH.start_run.run_id, event->mc_id, CH.cut_nu.Emin) );
+    }
+    else {
+      fhGSG_nub->Fill( energy, ct );
+      fGSGEvts_nub[xbin][ybin].push_back( evtid(CH.start_run.run_id, event->mc_id, CH.cut_nu.Emin) );
+    }
+
+    gsg_data_size += sizeof(evtid);
+
+  } // end loop over events
+    
+  cout << "NOTICE GSGS::ReadGSGData() finished reading GSG data, " << gsg_data_size/1e9 << " gb of RAM used." << endl;
 
   CacheGSGdata(cache_name);
 
@@ -430,7 +463,7 @@ Double_t GSGS::ReadGSGData(TString gsg_file_list, TString summary_file_list,
 void GSGS::CacheGSGdata(TString fname) {
 
   if ( NMHUtils::FileExists(fname) ) {
-    cout << "NOTICE CacheGSGdata() file " << fname << " exists, not overwriting." << endl;
+    cout << "NOTICE GSGS::CacheGSGdata() file " << fname << " exists, not overwriting." << endl;
     return;
   }
 
@@ -501,16 +534,14 @@ Double_t GSGS::ReadFromCache(TString fname) {
   TFile *f = new TFile(fname, "READ");
 
   if ( !f->IsOpen() ) {
-    cout << "ERROR! ReadFromCache() could open file " << fname  << endl;
-    return 0.;
+    throw std::invalid_argument("ERROR! GSGS::ReadFromCache() could open file " + (string)fname);
   }
 
   TH1D  *h = (TH1D*)f->Get("can_and_rho");
   TTree *t = (TTree*)f->Get("gsgcache");
 
   if (t == NULL || h == NULL) {
-    cout << "ERROR! ReadFromCache() could not find data in file " << fname  << endl;
-    return 0.;
+    throw std::invalid_argument("ERROR! GSGS::ReadFromCache() could not find data in file " + (string)fname);
   }
 
   fVcan  = h->GetBinContent(1);
@@ -549,8 +580,7 @@ Double_t GSGS::ReadFromCache(TString fname) {
   f->Close();
   delete f;
 
-  cout << "NOTICE ReadFromCache() finished reading GSG data, " 
-       << gsg_data_size/1e9 << " gb of RAM used." << endl;
+  cout << "NOTICE GSGS::ReadFromCache() finished reading GSG data, " << gsg_data_size/1e9 << " gb of RAM used." << endl;
 
   return gsg_data_size/1e9;
 
@@ -609,7 +639,7 @@ Bool_t GSGS::SampleEvents(TH2D *h_expected, TH2D *h_smeared,
 	  smeared = store[xbin][ybin].size();
 	}
 	else {
-	  cout << "ERROR! SampleEvents() for E, ct " << en << ", " << ct <<  " wanted " << smeared
+	  cout << "ERROR! GSGS::SampleEvents() for E, ct " << en << ", " << ct <<  " wanted " << smeared
 	       << " events (expectation " << expected << "), but only " << store[xbin][ybin].size()
 	       << " available, exiting." << endl;
 	  return false;
@@ -638,7 +668,7 @@ Bool_t GSGS::SampleEvents(TH2D *h_expected, TH2D *h_smeared,
 	} // end if
 
 	if (counter++ > limit) {
-	  cout << "ERROR! SampleEvents() while loop exceeds sampling limit of " << limit
+	  cout << "ERROR! GSGS::SampleEvents() while loop exceeds sampling limit of " << limit
 	       << " per xbin, ybin " << xbin << "\t" << ybin << endl;
 	  cout << "Smeared, store size, sample size: " << smeared << "\t" << store[xbin][ybin].size()
 	       << "\t" << sample[xbin][ybin].size() << endl;
@@ -716,7 +746,7 @@ void GSGS::StoreForWriting(Bool_t SampleOK, TH2D *smeared_nu, TH2D *smeared_nub,
  */
 void GSGS::WriteToFiles(TString summary_file_list, Int_t flavor, Int_t is_cc) {
 
-  cout << "NOTICE WriteToFiles() writing out sampled data" << endl;
+  cout << "NOTICE GSGS::WriteToFiles() writing out sampled data" << endl;
 
   // select relevant summary files and add to the summary parser
 
@@ -734,7 +764,7 @@ void GSGS::WriteToFiles(TString summary_file_list, Int_t flavor, Int_t is_cc) {
   }
 
   if ( sp == NULL ) {
-    throw std::invalid_argument( "ERROR! WriteToFiles() no summary files selected." );
+    throw std::invalid_argument( "ERROR! GSGS::WriteToFiles() no summary files selected." );
   }
 
   // create output files and trees; create search limits that indicate which
@@ -817,8 +847,11 @@ void GSGS::WriteToFiles(TString summary_file_list, Int_t flavor, Int_t is_cc) {
     delete fExpHeaders[N];
 
     if (remove) {
-      cout << "NOTICE WriteToFiles() empty tree in " << name << ", removing file." << endl;
+      cout << "NOTICE GSGS::WriteToFiles() empty tree in " << name << ", removing file." << endl;
       Int_t sysret = system("rm " + name);
+      if ( sysret != 0 ) {
+	cout << "WARNING! GSGS::WriteToFiles() removal cmd of " << name << " returned " << sysret << endl;
+      }
     }
 
   }

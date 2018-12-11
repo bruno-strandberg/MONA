@@ -3,6 +3,9 @@
 #include <map>
 #include "FileHeader.h"
 
+#include<vector>
+using namespace std;
+
 /**
  * Namespace that holds functions and variables used in the GSGSampler.C macro.
  */
@@ -14,7 +17,7 @@ namespace GSGS {
   //*****************************************************************
   // functions
   //*****************************************************************
-  Bool_t   GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc);
+  void     GetIntHists(TString flux_chain_file, Int_t flavor, Int_t is_cc);
   void     InitVars(Int_t flavor, Int_t is_cc);
   void     CleanUp();
   Double_t ReadGSGData(TString gsg_file_list, TString summary_file_list, Int_t flavor, Int_t is_cc);
@@ -39,8 +42,8 @@ namespace GSGS {
   TRandom3 *fRand=NULL;  //!< random number generator
   Int_t    fEbins;       //!< number of energy bins in the event vectors
   Int_t    fCtbins;      //!< number of costheta bins in the event vectors
-  Double_t fVcan = 0.;   //!< can size, set in ReadGSGData()
-  Double_t fRhoSW = 0.;  //!< sea water density, set in ReadGSGData()
+  Double_t fVcan = 0.;   //!< can size, set in GSGS::ReadGSGData() and checked to match for all input files
+  Double_t fRhoSW = 1.03975; //!< sea water density
 
   //! 2D array of vectors, each vector holds summary nu eventid's of (E, costheta) bin
   vector<evtid> **fGSGEvts_nu;
