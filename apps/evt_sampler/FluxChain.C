@@ -1,13 +1,21 @@
 
+//oscprob headers
 #include "PMNS_Fast.h"
 #include "PremModel.h"
 
+//nmh headers
 #include "AtmFlux.h"
 #include "NuXsec.h"
 #include "NMHUtils.h"
 #include "FileHeader.h"
+#include "EffMass.h"
 
-//#include "TString.h"
+//jpp headers
+#include "JTools/JRange.hh"
+#include "Jeep/JParser.hh"
+#include "Jeep/JMessage.hh"
+
+//root headers
 #include "TSystem.h"
 #include "TMath.h"
 #include "TH2.h"
@@ -15,27 +23,29 @@
 #include "TRandom3.h"
 #include "TFile.h"
 
+//cpp headers
 #include <iostream>
 #include <stdexcept>
 
 /**
-   Namespace that stores functions and globally used variables/members for `FluxChain.C`.
+   Namespace that stores functions and globally used variables/members for the `FluxChain` app.
  */
 namespace FLUXCHAIN {
 
   //*****************************************************************
   // functions
   //*****************************************************************
-  void   InitClasses();
+  void   InitClasses(Int_t nebins, Int_t nctbins, Int_t nbybins, TString effmass_file);
   void   InitOscPars(Bool_t NH, FileHeader &h,
 		     Double_t _sinsq_th12=0., Double_t _sinsq_th23=0., Double_t _sinsq_th13=0., 
 		     Double_t _dcp=-10., Double_t _dm21=0., Double_t _dm32=0.);
   void   SetToPDG(Bool_t NH, 
 		  Double_t &sinsq_th12, Double_t &sinsq_th23, Double_t &sinsq_th13, 
 		  Double_t &dcp, Double_t &dm21, Double_t &dm32, Double_t &dm31);
-  void   InitHists();
-  void   ReadMeffHists(FileHeader &h, TString meff_elec_cc, TString meff_muon_cc, 
-		       TString meff_tau_cc, TString meff_elec_nc);
+  void   InitHists(Int_t nebins, Int_t nctbins, Int_t nbybins, JTOOLS::JRange<Double_t> erange,
+		   JTOOLS::JRange<Double_t> ctrange, JTOOLS::JRange<Double_t> byrange);
+  // void   ReadMeffHists(FileHeader &h, TString meff_elec_cc, TString meff_muon_cc, 
+  // 		       TString meff_tau_cc, TString meff_elec_nc);
   void   FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb, Int_t nsamples);
   void   CleanUp();
   void   WriteToFile(TString output_name, FileHeader &h);
@@ -47,13 +57,13 @@ namespace FLUXCHAIN {
   OscProb::PremModel *fPrem;     //!< PREM Model
   AtmFlux  *fFlux;               //!< flux calculator
   NuXsec   *fXsec;               //!< cross-section calculator
+  EffMass  *fMeff;               //!< effective mass calculator
   TRandom3 *fRand;               //!< random number generator for over-sampling bins
 
   TH2D    *fhAtmFlux[3][2][2];   //!< atmospheric flux histograms, indices [flavor][is_cc][is_nb]
   TH2D    *fhOscFlux[3][2][2];   //!< oscillated flux histograms
   TH2D    *fhIntFlux[3][2][2];   //!< interacted flux histograms
   TH3D    *fhDetFlux[3][2][2];   //!< detected flux histograms
-  TH3D       *fhMeff[3][2][2];   //!< effective mass histograms
   TH2D    *fhOscProb[3][3][2][2];//!< oscillation probabilities in format[flavor_in][flavor_out][is_cc][is_nb]
 
   map < Int_t, TString > fFlavs  = { {0, "elec" },   //!< map of flavor numbers and strings
@@ -73,19 +83,7 @@ namespace FLUXCHAIN {
   Double_t fSec_per_y   = 365.2421897 * 24 * 60 * 60; //!< seconds in a tropical year
   Double_t fKg_per_Mton = 1e9;                        //!< kg per MTon (MTon = 1e6 Ton; Ton = 1e3 kg)
 
-  // binning for histograms
-  Int_t    fEbins  =  40;
-  Double_t fEmin   =   1.;
-  Double_t fEmax   = 100.;
-
-  Int_t    fCtbins =  40;
-  Double_t fCtmin  =  -1.;
-  Double_t fCtmax  =   1.;
-
-  Int_t    fBybins =   4;
-  Double_t fBymin  =   0.;
-  Double_t fBymax  =   1.;
-
+  static const Double_t NOTSET = 1e5;                 //!< const to identify not-set osc parameters
 };
 
 using namespace std;
@@ -104,42 +102,60 @@ using namespace FLUXCHAIN;
    into account, detflux/ shows intflux/ histograms after effective mass is taken into account.
    meff/ directory displays the effective mass histograms used for the generation of detflux/
    histograms. In the region of fast oscillations it is necessary to sample each bin several times,
-   parameter nsamples determines how many samples per bin are calculated.
- 
-   \param  op_time       Operation time in years.
-   \param  output_name   Name of the file where histograms are written.
-   \param  nsamples      Number of samples per filling one bin (recommended > 10). If set to 1 then bin central values are used.
-   \param  NH            True - normal nu mass hierarchy, False - inverted nu mass hierarchy.
-   \param  UseMeff       If true, program will look for effective mass histograms in the input files to calculate detected number of events for detflux/ directory. If one inputs the FluxChain output to GSGSampler, meff is not necessary. If false, the input effective mass strings can be empty.
-   \param meff_elec_cc   ROOT file with 'detected' and 'generated' hists for elec-CC (create with `EffMhists.C`)
-   \param meff_muon_cc   ROOT file with 'detected' and 'generated' hists for muon-CC (create with `EffMhists.C`)
-   \param meff_tau_cc    ROOT file with 'detected' and 'generated' hists for tau-CC (create with `EffMhists.C`)
-   \param meff_elec_nc   ROOT file with 'detected' and 'generated' hists for NC (create with `EffMhists.C`)
-   \param sinsq_th12     \f$\sin^2\theta_{12}\f$ value. If 0., PDG value is used.
-   \param sinsq_th23     \f$\sin^2\theta_{23}\f$ value. If 0., PDG value is used.
-   \param sinsq_th13     \f$\sin^2\theta_{13}\f$ value. If 0., PDG value is used.
-   \param dcp            \f$\delta_{CP}\f$ value in \f$\pi\f$'s, as given by PDG group (e.g 1.38). If -10, PDG value is used.
-   \param dm21           \f$\Delta m^2_{21}\f$ value. If 0., PDG value is used.
-   \param dm32           \f$\Delta m^2_{32}\f$ value; this must be > 0 for NH and < 0 for IH. If 0., PDG value is used.
+   parameter nsamples determines how many samples per bin are calculated. 
+*/
 
- */
-void FluxChain(Double_t op_time      = 3.,
-	       TString  output_name  = "flux_chain_out.root",
-	       Int_t    nsamples     = 20,
-	       Bool_t   NH           = true,
-	       Bool_t   UseMeff      = false,
-	       TString  meff_elec_cc = "../data/eff_mass/EffMhists_elec_CC.root",
-	       TString  meff_muon_cc = "../data/eff_mass/EffMhists_muon_CC.root",
-	       TString  meff_tau_cc  = "../data/eff_mass/EffMhists_tau_CC.root",
-	       TString  meff_elec_nc = "../data/eff_mass/EffMhists_elec_NC.root",
-	       Double_t sinsq_th12   = 0., 
-	       Double_t sinsq_th23   = 0., 
-	       Double_t sinsq_th13   = 0., 
-	       Double_t dcp          = -10., 
-	       Double_t dm21         = 0., 
-	       Double_t dm32         = 0.) {
+int main(const int argc, const char **argv) {
 
-  gSystem->Load("$OSCPROBDIR/libOscProb.so");
+  //------------------------------------------------------
+  //parse command line arguments
+  //------------------------------------------------------  
+
+  Double_t op_time;
+  TString  output_name;
+  Int_t    nsamples;
+  Bool_t   IH;
+  TString  meff_file;
+  Double_t sinsq_th12;
+  Double_t sinsq_th23;
+  Double_t sinsq_th13;
+  Double_t dcp;
+  Double_t dm21;
+  Double_t dm32;
+  JTOOLS::JRange<Double_t> erange;
+  Int_t nebins;
+  Int_t nctbins;
+  Int_t nbybins;
+
+  try {
+
+    JParser<> zap("This routine creates a file with E vs costheta histograms with expected numbers of nu events at different stages of the flux chain (atmospheric, oscillated, interacted, detected)");
+
+    zap['t'] = make_field(op_time, "Detector operation time in years") = 3;
+    zap['o'] = make_field(output_name, "Name of the file where histograms are written") = "flux_chain_out.root";
+    zap['n'] = make_field(nsamples, "Number of oscillation samples per filling one bin (recommended > 10). If set to 1 then bin central values are used") = 20;
+    zap['I'] = make_field(IH, "Inverted hierarchy (normal hierarchy otherwise)");
+    zap['M'] = make_field(meff_file, "ROOT file with effective mass histograms, created with `apps/effective_mass` applications that use the class `common_software/EffMass`") = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+    zap['u'] = make_field(sinsq_th12, "sin^2(theta12) value. By default PDG value is used.") = NOTSET;
+    zap['v'] = make_field(sinsq_th23, "sin^2(theta23) value. By default PDG value is used.") = NOTSET;
+    zap['w'] = make_field(sinsq_th13, "sin^2(theta13) value. By default PDG value is used.") = NOTSET;
+    zap['x'] = make_field(dcp, "deltaCP value in pi's, as given by PDG group (e.g 1.38). Ny default PDG value is used.") = NOTSET;
+    zap['y'] = make_field(dm21, "dm21^2 value. By default PDG value is used.") = NOTSET;
+    zap['z'] = make_field(dm32, "dm32^2 value; this must be > 0 for NH and < 0 for IH. By default PDG value is used.") = NOTSET;
+    zap['e'] = make_field(erange, "Energy range in GeV") = JTOOLS::JRange<Double_t>(1, 100);
+    zap['E'] = make_field(nebins , "Number of energy bins.")    = 40;
+    zap['C'] = make_field(nctbins, "Number of cos-theta bins.") = 40;
+    zap['B'] = make_field(nbybins, "Number of bjorken-y bins.") = 4;
+
+    if ( zap.read(argc, argv) != 0 ) return 1;
+  }
+  catch(const exception &error) {
+    FATAL(error.what() << endl);
+  }
+
+  Bool_t NH = !IH;
+  JTOOLS::JRange<Double_t> ctrange(-1,1);
+  JTOOLS::JRange<Double_t> byrange(0,1);
 
   // create header
   FileHeader h("FluxChain");
@@ -147,12 +163,12 @@ void FluxChain(Double_t op_time      = 3.,
   h.AddParameter("output_name", output_name );
   h.AddParameter("nsamples"   , (TString)to_string(nsamples) );
   h.AddParameter("NH"         , (TString)to_string(NH) );
-  h.AddParameter("UseMeff"    , (TString)to_string(UseMeff) );
+  h.AddParameter("meff_file"  , meff_file );
+  h.ReadHeader(meff_file);
   
-  InitClasses();
+  InitClasses(nebins, nctbins, nbybins, meff_file);
   InitOscPars(NH, h, sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32);
-  InitHists();
-  if ( UseMeff ) ReadMeffHists(h, meff_elec_cc, meff_muon_cc, meff_tau_cc, meff_elec_nc);
+  InitHists(nebins, nctbins, nbybins, erange, ctrange, byrange);
  
   for (Int_t f = 0; f < 3; f++) {
     for (Int_t cc = 0; cc < 2; cc++) {
@@ -172,14 +188,19 @@ void FluxChain(Double_t op_time      = 3.,
 //*****************************************************************
 
 /**
- *  Inline function to initialise classes.
+   Inline function to initialise classes.
+   \param nebins       number of energy bins
+   \param nctbins      number of cos-theta bins
+   \param nbybins      number of bjorken-y bins
+   \param effmass_file effective mass file
  */
-void FLUXCHAIN::InitClasses() {
+void FLUXCHAIN::InitClasses(Int_t nebins, Int_t nctbins, Int_t nbybins, TString effmass_file) {
 
   fProb = new OscProb::PMNS_Fast;
   fPrem = new OscProb::PremModel;
   fFlux = new AtmFlux;
-  fXsec = new NuXsec(fBybins);
+  fXsec = new NuXsec(nbybins);
+  fMeff = new EffMass(effmass_file, nebins, nctbins, nbybins);
   fRand = new TRandom3(0);
 }
 
@@ -208,17 +229,16 @@ void FLUXCHAIN::InitOscPars(Bool_t NH, FileHeader &h,
   SetToPDG(NH, sinsq_th12, sinsq_th23, sinsq_th13, dcp, dm21, dm32, dm31);
 
   // modify only these parameters for which value has been set
-  if (_sinsq_th12 != 0.) sinsq_th12 = _sinsq_th12;
-  if (_sinsq_th23 != 0.) sinsq_th23 = _sinsq_th23;
-  if (_sinsq_th13 != 0.) sinsq_th13 = _sinsq_th13;
-  if (_dcp  != -10.)     dcp        = _dcp;
-  if (_dm21 != 0.)       dm21       = _dm21;
-  if (_dm32 != 0.)       dm32       = _dm32;
-  if (_dm21 != 0. || _dm32 != 0.) dm31 = dm21 + dm32;
+  if (_sinsq_th12 != NOTSET) sinsq_th12 = _sinsq_th12;
+  if (_sinsq_th23 != NOTSET) sinsq_th23 = _sinsq_th23;
+  if (_sinsq_th13 != NOTSET) sinsq_th13 = _sinsq_th13;
+  if (_dcp  != NOTSET)       dcp        = _dcp;
+  if (_dm21 != NOTSET)       dm21       = _dm21;
+  if (_dm32 != NOTSET)       dm32       = _dm32;
+  if (_dm21 != NOTSET || _dm32 != NOTSET) dm31 = dm21 + dm32;
 
   if ( ( NH && (_dm32 < 0) ) || ( !NH && (_dm32 > 0) ) ) {
-    throw std::invalid_argument( "ERROR! FLUXCHAIN::InitOscPars() wrong sign of dm32 " + to_string(dm32) + " for hierarchy (0=IH, 1=NH) " 
-				 + to_string(NH) + ", should be dm32 > 0 for NH and dm32 < 0 for IH." );
+    throw std::invalid_argument( "ERROR! FLUXCHAIN::InitOscPars() wrong sign of dm32 " + to_string(dm32) + " for hierarchy (0=IH, 1=NH) " + to_string(NH) + ", should be dm32 > 0 for NH and dm32 < 0 for IH." );
   }
 
   //------------------------------------------------
@@ -285,11 +305,14 @@ void FLUXCHAIN::SetToPDG(Bool_t NH,
 /**
  *  Inline function to init E vs costheta histograms.
  */
-void FLUXCHAIN::InitHists() {
+void FLUXCHAIN::InitHists(Int_t nebins, Int_t nctbins, Int_t nbybins, 
+			  JTOOLS::JRange<Double_t> erange, 
+			  JTOOLS::JRange<Double_t> ctrange,
+			  JTOOLS::JRange<Double_t> byrange) {
 
-  vector<Double_t> e_edges  = NMHUtils::GetLogBins(fEbins, fEmin, fEmax);
-  vector<Double_t> ct_edges = NMHUtils::GetBins(fCtbins, fCtmin, fCtmax);
-  vector<Double_t> by_edges = NMHUtils::GetBins(fBybins, fBymin, fBymax);
+  vector<Double_t> e_edges  = NMHUtils::GetLogBins(nebins ,  erange.getLowerLimit(),  erange.getUpperLimit() );
+  vector<Double_t> ct_edges = NMHUtils::GetBins   (nctbins, ctrange.getLowerLimit(), ctrange.getUpperLimit() );
+  vector<Double_t> by_edges = NMHUtils::GetBins   (nbybins, byrange.getLowerLimit(), byrange.getUpperLimit() );
   
   for (Int_t f = 0; f < 3; f++) {
     for (Int_t cc = 0; cc < 2; cc++) {
@@ -300,11 +323,10 @@ void FLUXCHAIN::InitHists() {
 	TString intname = "intflux_" + fFlavs[f] + "_" + fItypes[cc] + "_" + fPtypes[nb];
 	TString detname = "detflux_" + fFlavs[f] + "_" + fItypes[cc] + "_" + fPtypes[nb];
 
-	fhAtmFlux[f][cc][nb] = new TH2D(atmname, atmname, fEbins, &e_edges[0], fCtbins, &ct_edges[0]);
-	fhOscFlux[f][cc][nb] = new TH2D(oscname, oscname, fEbins, &e_edges[0], fCtbins, &ct_edges[0]);
-	fhIntFlux[f][cc][nb] = new TH2D(intname, intname, fEbins, &e_edges[0], fCtbins, &ct_edges[0]);
-	fhDetFlux[f][cc][nb] = new TH3D(detname, detname, fEbins, &e_edges[0], fCtbins, &ct_edges[0], fBybins, &by_edges[0]);
-	fhMeff[f][cc][nb] = NULL;
+	fhAtmFlux[f][cc][nb] = new TH2D(atmname, atmname, nebins, &e_edges[0], nctbins, &ct_edges[0]);
+	fhOscFlux[f][cc][nb] = new TH2D(oscname, oscname, nebins, &e_edges[0], nctbins, &ct_edges[0]);
+	fhIntFlux[f][cc][nb] = new TH2D(intname, intname, nebins, &e_edges[0], nctbins, &ct_edges[0]);
+	fhDetFlux[f][cc][nb] = new TH3D(detname, detname, nebins, &e_edges[0], nctbins, &ct_edges[0], nbybins, &by_edges[0]);
 
 	fhAtmFlux[f][cc][nb]->Sumw2();
 	fhOscFlux[f][cc][nb]->Sumw2();
@@ -313,110 +335,11 @@ void FLUXCHAIN::InitHists() {
 
 	for (Int_t _f = 0; _f < 3; _f++) {
 	  TString oscprobn = "oscprob_" + fFlavs[f] + "_to_" + fFlavs[_f] + "_" + fItypes[cc] + "_" + fPtypes[nb];
-	  fhOscProb[f][_f][cc][nb] = new TH2D(oscprobn, oscprobn, fEbins, &e_edges[0], fCtbins, &ct_edges[0]);
+	  fhOscProb[f][_f][cc][nb] = new TH2D(oscprobn, oscprobn, nebins, &e_edges[0], nctbins, &ct_edges[0]);
 	  fhOscProb[f][_f][cc][nb]->Sumw2();
 	}
        
       }
-    }
-  }
-  
-}
-
-//*****************************************************************
-
-/**
-   Inline function to read effective mass histograms.
-
-   \param h             Address of a FileHeader instance for information storage
-   \param meff_elec_cc  Name of the effective mass file for elec CC
-   \param meff_muon_cc  Name of the effective mass file for muon CC
-   \param meff_tau_cc   Name of the effective mass file for tau CC
-   \param meff_elec_nc  Name of the effective mass file for elec NC
-
- */
-void FLUXCHAIN::ReadMeffHists(FileHeader &h, TString meff_elec_cc, TString meff_muon_cc, 
-				TString meff_tau_cc, TString meff_elec_nc) {
-  
-  vector<TString> meff_filenames = {meff_elec_cc, meff_muon_cc, meff_tau_cc};
-
-  for (Int_t f = 0; f < 3; f++) {
-    for (Int_t cc = 0; cc < 2; cc++) {
-
-      // for nc events the effective mass is identical for all flavors, only elec_NC simulated
-      TString meff_fname = meff_filenames[f];
-      if (cc == 0) meff_fname = meff_elec_nc;
-    
-      TFile meff_file(meff_fname, "READ");
-      if ( !meff_file.IsOpen() ) {
-	throw std::invalid_argument( "ERROR! FLUXCHAIN::ReadMeffHists() could not find file " + (string)meff_fname );
-      }
-
-      //---------------------------------------------------------------
-      // read the header from EffMhists output and manually add some parameters to the header
-      // of this app. Typically EffMhists outputs are hadd'ed, adding header fields manually
-      // removes duplicate entries
-      //---------------------------------------------------------------
-      
-      FileHeader emh("emhheader");     // read the header from effmhists output
-      emh.ReadHeader(meff_fname);
-
-      h.AddParameter( emh, "Rvol" );   // add parameter Rvol from emh to h
-      h.AddParameter( emh, "Zmin" );
-      h.AddParameter( emh, "Zmax" );
-      h.AddParameter( emh, "atmmu_cut" );
-      h.AddParameter( emh, "noise_cut" );
-
-      //---------------------------------------------------------------
-      // get the histograms, rebin and divide to get effective mass histos
-      //---------------------------------------------------------------
-
-      TString hname = "Meff_" + fFlavs[f] + "_" + fItypes[cc];
-
-      // get the histograms from file
-      TH3D *h_gen_nu   = (TH3D*)meff_file.Get("Generated_scaled_nu");
-      TH3D *h_gen_nub  = (TH3D*)meff_file.Get("Generated_scaled_nub");
-      fhMeff[f][cc][0] = (TH3D*)meff_file.Get("Detected_nu")->Clone(hname + "_nu");
-      fhMeff[f][cc][1] = (TH3D*)meff_file.Get("Detected_nub")->Clone(hname + "_nub");
-
-      // detach from meff_file
-      fhMeff[f][cc][0]->SetDirectory(0);
-      fhMeff[f][cc][1]->SetDirectory(0);
-
-      // calculate rebinning
-      Int_t existing_ebins  = fhMeff[f][cc][0]->GetXaxis()->GetNbins();
-      Int_t existing_ctbins = fhMeff[f][cc][0]->GetYaxis()->GetNbins();
-      Int_t existing_bybins = fhMeff[f][cc][0]->GetZaxis()->GetNbins();
-
-      Int_t rebinning_ebins  = existing_ebins /fEbins;
-      Int_t rebinning_ctbins = existing_ctbins/fCtbins;
-      Int_t rebinning_bybins = existing_bybins/fBybins;
-
-      // check that rebinning is valid
-      if ( existing_ebins % fEbins != 0 ) {
-	throw std::invalid_argument( "ERROR! FLUXCHAIN::ReadMeffHists() energy axis nbins=" + to_string(existing_ebins) + " of file " + (string)meff_fname + " cannot be rebinned to " + to_string(fEbins) + ". Change fEbins in FluxChain.C or change and re-run NMHDIR/effective_mass/EffMhists.C with suitable binning." );
-      }
-
-      if ( existing_ctbins % fCtbins != 0 ) {
-	throw std::invalid_argument( "ERROR! FLUXCHAIN::ReadMeffHists() costheta axis nbins=" + to_string(existing_ctbins) + " of file " + (string)meff_fname + " cannot be rebinned to " + to_string(fCtbins) + ". Change fCtbins in FluxChain.C or change and re-run NMHDIR/effective_mass/EffMhists.C with suitable binning." );
-      }
-      
-      if ( existing_bybins % fBybins != 0 ) {
-	throw std::invalid_argument( "ERROR! FLUXCHAIN::ReadMeffHists() bjorken-y axis nbins=" + to_string(existing_bybins) + " of file " + (string)meff_fname + " cannot be rebinned to " + to_string(fBybins) + ". Change fBybins in FluxChain.C or change and re-run NMHDIR/effective_mass/EffMhists.C with suitable binning." );
-      }
-
-      // perform rebinning
-      h_gen_nu ->Rebin3D(rebinning_ebins, rebinning_ctbins, rebinning_bybins);
-      h_gen_nub->Rebin3D(rebinning_ebins, rebinning_ctbins, rebinning_bybins);
-      fhMeff[f][cc][0]->Rebin3D(rebinning_ebins, rebinning_ctbins, rebinning_bybins);
-      fhMeff[f][cc][1]->Rebin3D(rebinning_ebins, rebinning_ctbins, rebinning_bybins);
-
-      // divide to get effective mass in Ton
-      fhMeff[f][cc][0]->Divide(h_gen_nu);
-      fhMeff[f][cc][1]->Divide(h_gen_nub);
-            
-      meff_file.Close();
-
     }
   }
   
@@ -505,14 +428,8 @@ void FLUXCHAIN::FillHists(Double_t op_time, Int_t flav, Int_t is_cc, Int_t is_nb
 
 	  Double_t by = h->GetZaxis()->GetBinCenter(zbin);
 	  
-	  // effective mass (in units Ton); if meff not used then hists not defined and detflux histograms will be 0
-	  Double_t meff = 0.;
-	  if ( fhMeff[flav][is_cc][is_nb] ) {
-	    Int_t meff_xbin = fhMeff[flav][is_cc][is_nb]->GetXaxis()->FindBin( en );
-	    Int_t meff_ybin = fhMeff[flav][is_cc][is_nb]->GetYaxis()->FindBin( ct );
-	    Int_t meff_zbin = fhMeff[flav][is_cc][is_nb]->GetZaxis()->FindBin( by );
-	    meff = fhMeff[flav][is_cc][is_nb]->GetBinContent(meff_xbin, meff_ybin, meff_zbin);
-	  }
+	  // effective mass (in units Ton)
+	  Double_t meff = fMeff->GetMeff(flav, is_cc, is_nb, en, ct, by);
 
 	  // detected neutrino count in operation time (unitless)
 	  Double_t det_flux = int_flux * fXsec->GetBYfrac(en, by) * meff * 1e-6;
@@ -574,7 +491,6 @@ void FLUXCHAIN::WriteToFile(TString output_name, FileHeader &h) {
   TDirectory *oscflux = fout.mkdir("oscflux");
   TDirectory *intflux = fout.mkdir("intflux");
   TDirectory *detflux = fout.mkdir("detflux");
-  TDirectory *meff    = fout.mkdir("meff");
   TDirectory *oscprob = fout.mkdir("oscprob");
   
   for (Int_t f = 0; f < 3; f++) {
@@ -588,8 +504,6 @@ void FLUXCHAIN::WriteToFile(TString output_name, FileHeader &h) {
 	fhIntFlux[f][cc][nb]->Write();
 	detflux->cd();
 	fhDetFlux[f][cc][nb]->Write();
-	meff->cd();
-	if (fhMeff[f][cc][nb]) fhMeff[f][cc][nb]->Write();
 	oscprob->cd();
 	for (Int_t _f = 0; _f < 3; _f++) fhOscProb[f][_f][cc][nb]->Write();
       }
@@ -611,6 +525,7 @@ void FLUXCHAIN::CleanUp() {
   delete fPrem;
   delete fFlux;
   delete fXsec;
+  delete fMeff;
   delete fRand;
   
   for (Int_t f = 0; f < 3; f++) {
@@ -620,7 +535,6 @@ void FLUXCHAIN::CleanUp() {
 	delete fhOscFlux[f][cc][nb];
 	delete fhIntFlux[f][cc][nb];
 	delete fhDetFlux[f][cc][nb];
-	if (fhMeff[f][cc][nb]) delete fhMeff[f][cc][nb];
 	for (Int_t _f = 0; _f < 3; _f++) delete fhOscProb[f][_f][cc][nb];
       }
     }
