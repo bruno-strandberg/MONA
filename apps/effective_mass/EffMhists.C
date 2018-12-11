@@ -1,7 +1,6 @@
 
 // NMH headers
 #include "SummaryParser.h"
-#include "GSGParser.h"
 #include "NMHUtils.h"
 #include "FileHeader.h"
 
