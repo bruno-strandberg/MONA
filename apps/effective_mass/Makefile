@@ -3,7 +3,7 @@ include $(NMHDIR)/Makerules
 CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS) $(JPPCFLAGS) $(AACFLAGS)
 LFLAGS = $(ROOTLIBS) $(NMHLIB) $(AALIB) -L$(JPP_LIB) -ljaanetROOT -lz
 
-SOURCES  = $(filter-out EffMass.C, $(wildcard *.C))
+SOURCES  = $(wildcard *.C)
 HEADERS  = $(wildcard *.h)
 PACKAGES = $(SOURCES:.C=)
 

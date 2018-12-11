@@ -141,6 +141,7 @@ def create_farm_script(cmds, jobnr):
     scriptf.write( "source setenv.sh\n" )
     scriptf.write( "cd {0}\n".format(cwd) )
     scriptf.write( "source {0}/bin/thisroot.sh\n".format( os.environ['ROOTSYS'] ) )
+    scriptf.write( 'export OSCPROBDIR="{}"\n'.format(os.environ['OSCPROBDIR']) )
     scriptf.write( "source {0}/setenv.sh\n\n".format( os.environ['NMHDIR'] ) )
     
     for cmd in cmds:
