@@ -366,6 +366,10 @@ Double_t EffMass::GetMeff(Int_t flavor, Bool_t iscc, Bool_t isnb,
     throw std::invalid_argument("ERROR! EffMass::GetMeff() unknown flavor " + to_string(flavor));
   }
 
+  if ( !InCoveredRange(E_true, Ct_true, By_true) ) {
+    throw std::invalid_argument("ERROR! EffMass::GetMeff() point (E, ct, by) = (" + to_string(E_true) + ", " + to_string(Ct_true) + ", " + to_string(By_true) + ") is outside the covered range" );
+  }
+
   if (interpolate) {
     cout << "WARNING! EffMass::GetMeff() interpolation not yet implemented, returning content of corresponding bin." << endl;
   }
@@ -410,6 +414,16 @@ Double_t EffMass::GetMeffBC(Int_t flavor, Bool_t iscc, Bool_t isnb,
   }
 
   return fhMeff[flavor][(UInt_t)iscc][(UInt_t)isnb]->GetBinContent(E_truebin, Ct_truebin, By_truebin);
+
+}
+
+//********************************************************************
+
+Bool_t EffMass::InCoveredRange(Double_t E_true, Double_t Ct_true, Double_t By_true) {
+
+  return ( ( E_true  >= fEmin  && E_true  <= fEmax  ) && 
+	   ( Ct_true >= fCtmin && Ct_true <= fCtmax ) && 
+	   ( By_true >= fBymin && By_true <= fBymax ) );
 
 }
 

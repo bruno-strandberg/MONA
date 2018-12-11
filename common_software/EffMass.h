@@ -38,6 +38,7 @@ class EffMass {
   
   void ReadFromFile(TString filename);
   void CreateMeffHists(Int_t nebins, Int_t nctbins, Int_t nbybins);
+  Bool_t InCoveredRange(Double_t E_true, Double_t Ct_true, Double_t By_true);
 
   TString  fDataTag; //!< tag to identify the prodution
   Double_t fRhoSW;   //!< sea-water density
