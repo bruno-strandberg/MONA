@@ -18,4 +18,4 @@ How to run
 ==========
 1. Converter can be run as `./RDFPID_to_Summary -d ../../data/ -f ../../data/pid_result_XXX.root -t MY_TAG`, use `-h!` for more info. This creates the file `NMH/data/ORCA_MC_summary_MY_TAG.root`, which will contain all the same events as `NMH/data/pid_result_XXX.root`, but will be in the analysis format (reduced and organised tree).
    
-2. Run `RestoreParity.C -f ../../data/ORCA_MC_summary_MY_TAG.root -l 1+5 -u 3+100`, use `-h!` for more info. This will split the data up to several files in `NMH/data/mcsumary/MY_TAG/...` to match the file naming and numbering scheme used throughout the MC chain. This will take ~10 minutes.
+2. Run `RestoreParity -f ../../data/ORCA_MC_summary_MY_TAG.root -l 1+5 -u 3+100`, use `-h!` for more info. This will split the data up to several files in `NMH/data/mcsumary/MY_TAG/...` to match the file naming and numbering scheme used throughout the MC chain. This will take ~10 minutes.
