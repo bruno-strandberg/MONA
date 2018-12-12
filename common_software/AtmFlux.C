@@ -12,6 +12,11 @@
  */
 AtmFlux::AtmFlux(UInt_t opt, Bool_t debug) {
 
+  fEmin  = 0;
+  fEmax  = 0;
+  fCtmin = 0;
+  fCtmax = 0;
+  
   //======================================================
   //init the 2D graphs that hold the flux data
   //======================================================
@@ -55,10 +60,7 @@ AtmFlux::AtmFlux(UInt_t opt, Bool_t debug) {
   //======================================================
   //read in the data
   //======================================================
-
-  if ( !ReadHondaFlux( fFileMap[opt], debug ) ) {
-    throw std::invalid_argument("ERROR! AtmFlux::AtmFlux() reading fluxes from file failed.");
-  }    
+  ReadHondaFlux( fFileMap[opt], debug );
 
 }
 
@@ -89,34 +91,27 @@ AtmFlux::~AtmFlux() {
  *  same format.
  *
  *  Other Honda formats (azimuth dependent or all-direction averaged) are not supported.
- *
- *  Honda flux bin centers are from -0.95 -- 0.95. We also wish to have flux at -1 and 1.
- *  To accommodate this, the flux corresponding to E, cosz = +-0.95 is also set for points 
- *  E, cosz = +-1 (otherwise TGraph2D->Interpolate() does not work for abs(cosz) > 0.95).
- *
+ * *
  *  \param fname Name of the azimuth-averaged Honda flux file.
  *  \param debug Debug flag (default false). In debug mode it prints out 
  *               E, cosz, flux_mu, flux_mub, flux_e, flux_eb.
  */
-Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
-
-  Bool_t ReadOK = false;
+void AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
   
   ifstream in;             //create in-stream
   in.open(fname);          //load the file to in-stream
   Int_t nlines = 0;        //lines counter
   string line;             //line from file
-  Double_t cosz     = 2.;  //cosz value, updated from specific lines in file
-  Double_t cosz_bin = 0.1; //cosz bin width
+  Double_t cosz = 2.;      //cosz value, updated from specific lines in file
 
+  vector<Double_t> cos_range; // vector to help determine the cos-theta range
+  vector<Double_t> e_range;   // vector to help determine the energy range
   
   //===================================================
   //check if file open failed
   //===================================================  
   if ( !in.is_open() ) {
-    cout << "ERROR! AtmFlux::ReadHondaFlux() could not open file " << fname
-	 << ", data read failed." << endl;
-    ReadOK = false;
+    throw std::invalid_argument("ERROR! AtmFlux::ReadHondaFlux() could not open file " + (string)fname);
   }
   //===================================================
   //file open, read the data
@@ -138,8 +133,8 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
 	// because string parsing in cpp is great, right. In the line that states the cosz range
 	// fetch the string between the first "=" and "--", convert this to double, add bin width
 
-	cosz = stod( line.substr( line.find("=") + 1, line.find("--") - line.find("=") - 1 ) )
-	  + cosz_bin/2;
+	cosz = stod( line.substr( line.find("=") + 1, line.find("--") - line.find("=") - 1 ) ) + fCt_bw/2;
+	cos_range.push_back(cosz);
 	
 	continue;
       }
@@ -151,25 +146,12 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
       Double_t E_nu, f_mu, f_mub, f_e, f_eb;
       stringstream(line) >> E_nu >> f_mu >> f_mub >> f_e >> f_eb;
 
-      fGraphs[0][0]->SetPoint( fGraphs[0][0]->GetN(), E_nu, cosz, f_e  );
-      fGraphs[0][1]->SetPoint( fGraphs[0][1]->GetN(), E_nu, cosz, f_eb );
-      fGraphs[1][0]->SetPoint( fGraphs[1][0]->GetN(), E_nu, cosz, f_mu );
-      fGraphs[1][1]->SetPoint( fGraphs[1][1]->GetN(), E_nu, cosz, f_mub);
-
-      //Honda flux last bin is cosz +- 0.95. Add flux(E, cosz=+-0.95) value also to points
-      //cosz=+-1. Otherwise TGraph2D->Interpolate() will give zeroes for abs(cosz) > 0.95.
-            
-      if ( TMath::Abs(cosz) > 0.9 ) {
-
-	Double_t cosz_end = 2;
-	cosz > 0 ? cosz_end = 1. : cosz_end = -1. ;
-	
-	fGraphs[0][0]->SetPoint( fGraphs[0][0]->GetN(), E_nu, cosz_end, f_e  );
-	fGraphs[0][1]->SetPoint( fGraphs[0][1]->GetN(), E_nu, cosz_end, f_eb );
-	fGraphs[1][0]->SetPoint( fGraphs[1][0]->GetN(), E_nu, cosz_end, f_mu );
-	fGraphs[1][1]->SetPoint( fGraphs[1][1]->GetN(), E_nu, cosz_end, f_mub);
-	
-      }
+      if ( cos_range.size() == 1 ) e_range.push_back( E_nu ); //count the energies for the first cos-theta value
+      
+      fGraphs[0][0]->SetPoint( fGraphs[0][0]->GetN(), E_nu, cosz, f_e  * TMath::Power(E_nu, fPower) );
+      fGraphs[0][1]->SetPoint( fGraphs[0][1]->GetN(), E_nu, cosz, f_eb * TMath::Power(E_nu, fPower) );
+      fGraphs[1][0]->SetPoint( fGraphs[1][0]->GetN(), E_nu, cosz, f_mu * TMath::Power(E_nu, fPower) );
+      fGraphs[1][1]->SetPoint( fGraphs[1][1]->GetN(), E_nu, cosz, f_mub* TMath::Power(E_nu, fPower) );
       
       if (debug) {
 	cout << "E_nu, cosz, mu, mubar, e, ebar: " <<  E_nu << "\t" << cosz << "\t" << f_mu
@@ -180,7 +162,6 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
 
     //close file
 
-    ReadOK = true;
     in.close();
 
     if (debug) {
@@ -189,8 +170,21 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
     
   } //end fin is open
 
-  return ReadOK;
+  fEmin  = *std::min_element( e_range.begin(), e_range.end() );
+  fEmax  = *std::max_element( e_range.begin(), e_range.end() );
+  fCtmin = *std::min_element( cos_range.begin(), cos_range.end() );
+  fCtmax = *std::max_element( cos_range.begin(), cos_range.end() );
+
+  // created from strings and have values like 0.1 + 1e-16; round them to 5 digits
+  fEmin  = round(fEmin * 1e5)/1e5;
+  fEmax  = round(fEmax * 1e5)/1e5;
+  fCtmin = round(fCtmin * 1e5)/1e5 - fCt_bw/2;
+  fCtmax = round(fCtmax * 1e5)/1e5 + fCt_bw/2; // extend range from 0.95 --> 1
   
+  if (debug) {
+    printf("AtmFlux::ReadHondaFlux(): energy range=[%f, %f], cos-theta range=[%f, %f]\n",
+	   fEmin, fEmax, fCtmin, fCtmax );
+  }
 }
 
 //*************************************************************************
@@ -215,22 +209,38 @@ Bool_t AtmFlux::ReadHondaFlux(TString fname, Bool_t debug) {
 */
 Double_t AtmFlux::Flux_dE_dcosz(UInt_t nu_flavor, Bool_t is_nubar, Double_t E, Double_t cosz) {
 
+  //----------------------------------------------------------
   // safety checks
-  
+  //----------------------------------------------------------
+
   if (nu_flavor == 2) return 0.; //tau flux is 0
-
+  
   if (nu_flavor > 2 || (UInt_t)is_nubar > 1) {
-    cout << "ERROR! AtmFlux:Flux_dE_dcosz() wrong flavour (supported 0-2): " << nu_flavor
-	 << " or is_nubar (supported true, false): " << is_nubar << ", returning 0." << endl;
-    return 0.;
+    throw std::invalid_argument("ERROR! AtmFlux:Flux_dE_dcosz() wrong flavour (supported 0-2): " + to_string(nu_flavor) + " or is_nubar (supported 0, 1): " + to_string(is_nubar));
+  }
+
+  if ( (E <= fEmin) || (E >= fEmax) ) {
+    throw std::invalid_argument("ERROR! AtmFlux::Flux_dE_dcosz() Energy " + to_string(E) + " outside the supported range of " + to_string(fEmin) + " - " + to_string(fEmax));
+  }
+
+  if ( cosz < fCtmin || cosz > fCtmax) {
+    throw std::invalid_argument("ERROR! AtmFlux::Flux_dE_dcosz() cos-theta " + to_string(cosz) + " outside the supported range of " + to_string(fCtmin) + " - " + to_string(fCtmax));
   }
   
-  if ( (E < 0.1) || (E > 1.0000E+04) || TMath::Abs(cosz) > 1. ) {
-    cout << "ERROR! AtmFlux:Flux_dE_dcosz() wrong Energy (supported 0.1 - 10000 GeV): " << E
-	 << " or cosz (supported -1 - 1): " << cosz << ", returning 0." << endl;
-    return 0.;
+  //-----------------------------------------------------------------------
+  // the below hokus-pokus is to deal with values in the cosz range 0.95-1. The last bin center in a honda table
+  // is 0.95 and hence the TGraph cannot interpolate if cosz >= 0.95. However it is desired to be able to get
+  // a value also for e.g. 0.975, for which the below logic returns the value corresponding to 0.95.
+  //-----------------------------------------------------------------------
+  
+  if ( cosz <= (fCtmin + fCt_bw/2) ) {
+    cosz = fCtmin + fCt_bw/2 + 1e-5; //interpolation works for cosz < -0.95, hence +1e-5
   }
 
-  return fGraphs[nu_flavor][(UInt_t)is_nubar]->Interpolate(E, cosz) * 2 * TMath::Pi();
+  if ( cosz >= (fCtmax - fCt_bw/2) ) {
+    cosz = fCtmax - fCt_bw/2 - 1e-5; //interpolation works for cosz > +0.95, hence -1e-5
+  }
+   
+  return fGraphs[nu_flavor][(UInt_t)is_nubar]->Interpolate(E, cosz) * 2 * TMath::Pi() * TMath::Power(E, -fPower);
   
 }
