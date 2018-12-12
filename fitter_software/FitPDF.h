@@ -69,8 +69,6 @@ private:
 
   enum integrations {I_NUMERIC = 0, I_E_CT_BY}; //!< enumerator for integration types
   
-  void CheckBinning(TH3 *h1, TH3 *h2);
-
   FitUtil     *fFitUtil;                     //!< pointer to the fit utility that can be shared between several `FitPDF` instances
   DetResponse *fResponse;                    //!< pointer to a specific fit response that describes the data to be fitted
   std::map<TString, RooRealProxy*> fProxies; //!< map of proxies to the RooRealVar's defined in `FitUtil`

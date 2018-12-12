@@ -160,7 +160,7 @@ Bool_t NMHUtils::BinsMatch(TH1 *h1, TH1 *h2) {
     for (Int_t bin = 1; bin <= nbins; bin++) {
 
       if ( ax1->GetBinLowEdge(bin) != ax2->GetBinLowEdge(bin) ) {
-	cout << "NOTICE NMHUtils::CheckBinning() different bin low edges on axis " 
+	cout << "NOTICE NMHUtils::BinsMatch() different bin low edges on axis " 
 	     << ax1->GetTitle() << ", bin number " << bin << endl;
 	bins_match = kFALSE;
       }

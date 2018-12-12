@@ -5,7 +5,7 @@
 #include "RooAbsCategory.h" 
 #include <math.h> 
 #include "TMath.h" 
-
+#include "NMHUtils.h"
 #include <stdexcept>
 
 ClassImp(FitPDF); 
@@ -45,11 +45,21 @@ FitPDF::FitPDF(const FitPDF& other, const char* name) : RooAbsPdf(other, name) {
 FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp) : RooAbsPdf(name, title) {
 
   // set the pointers
+  if (futil == NULL ) {
+    throw std::invalid_argument("ERROR! FitPDF::FitPDF() null pointer to FitUtil class");
+  }
+
+  if (resp == NULL) {
+    throw std::invalid_argument("ERROR! FitPDF::FitPDF() null pointer to DetResponse class");
+  }
+  
   fFitUtil  = futil;
   fResponse = resp;
 
-  CheckBinning( fFitUtil->GetBinningHist(), fResponse->GetHist3D() );
-
+  if ( !NMHUtils::BinsMatch( fFitUtil->GetBinningHist(), fResponse->GetHist3D() ) ) {
+    throw std::invalid_argument("ERROR! FitPDF::FitPDF() FitUtil and DetResponse use different binning.");
+  }
+  
   // create a list of the parameters for iteration and create proxies
   RooArgList pars( fFitUtil->GetSet() );
 
@@ -145,55 +155,6 @@ double FitPDF::operator()(double *x, double *p) {
 
 //*******************************************************************************
 
-/** Private function that checks that two 3D histograms have identical binning.
-    
-    This is used to make certain that the `DetResponse` and `FitUtil` use the same binning settings and the function throws an error if binnings mismatch.
-*/
-void FitPDF::CheckBinning(TH3 *h1, TH3 *h2) {
-
-  TString xtitle =  h1->GetXaxis()->GetTitle();
-  TString ytitle =  h1->GetYaxis()->GetTitle();
-  TString ztitle =  h1->GetZaxis()->GetTitle();
-
-  h1->GetXaxis()->SetTitle("x");
-  h1->GetYaxis()->SetTitle("y");
-  h1->GetZaxis()->SetTitle("z");
-
-  std::vector< std::pair<TAxis*, TAxis*> > axps = { std::make_pair( h1->GetXaxis(), h2->GetXaxis() ), 
-						    std::make_pair( h1->GetYaxis(), h2->GetYaxis() ),
-						    std::make_pair( h1->GetZaxis(), h2->GetZaxis() ) };
-  
-  for (auto &axp: axps) {
-
-    auto ax1 = axp.first;
-    auto ax2 = axp.second;
-
-    if ( ax1->GetNbins() != ax2->GetNbins() ) {
-      throw std::invalid_argument("ERROR! FitPDF::CheckBinning() different number of bins on axis " + 
-				  (string)ax1->GetTitle() );
-    }
-
-    Int_t nbins = ax1->GetNbins();
-
-    for (Int_t bin = 1; bin <= nbins; bin++) {
-
-      if ( ax1->GetBinLowEdge(bin) != ax2->GetBinLowEdge(bin) ) {
-	throw std::invalid_argument("ERROR! FitPDF::CheckBinning() different bin low edges on axis " + 
-				    (string)ax1->GetTitle() + ", bin number " + to_string(bin) );
-      }
-
-    }
-
-  }
-
-  h1->GetXaxis()->SetTitle(xtitle);
-  h1->GetYaxis()->SetTitle(ytitle);
-  h1->GetZaxis()->SetTitle(ztitle);
-
-}
-
-//*******************************************************************************
-
 /** Function to create a TH3D that represents a pseudo-experiment
 
     TO-BE-IMPLEMENTED
@@ -205,6 +166,7 @@ TH3D* FitPDF::SimplePseudoExp() {
   
   /*
     To be implemented. GetExpValHist() and perform poisson smearing in each bin.
+    Perhaps take the statistical error of the expectation into account when doing the smearing
    */
 
   return dummy;
