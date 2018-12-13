@@ -498,6 +498,8 @@ void DetResponse::ReadFromFile(TString filename) {
 
   // if the detresponse is read from file, the binning is changed to match that
   // of the detresponse that is being read in
+  CleanResponse();
+
   FileHeader h("for_read_in");
   h.ReadHeader(filename);
 
@@ -507,7 +509,6 @@ void DetResponse::ReadFromFile(TString filename) {
   fCtbins     = std::stoi( (string)h.GetParameter("fCtbins") );
   fBybins     = std::stoi( (string)h.GetParameter("fBybins") );
 
-  CleanResponse();
   InitResponse(fEbins, fCtbins, fBybins);
 
   // read in the true bin data to the response
