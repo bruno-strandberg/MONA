@@ -24,7 +24,7 @@ The trickiest part in the code is the fit parameter map. Basically, a pdf in `Ro
 
 ### Why have `FitUtil` and `FitPDF` separately?
 
-The idea is that we typically wish to perform several fits in parallel (e.g. fit a histogram for tracks and a histogram for showers simultaneously). Practically this means one has a histogram for tracks and a pdf to fit the tracks histogram and, correspondigly, a histogram for showers and a pdf to fit the showers histogram. However, both pdf's (tracks pdf and showers pdf) need to share the fit parameters, as the fit is performed simultaneously. For this reason the fit parameters are defined centrally in the `FitUtil` class, which is shared between the multiple pdf's.
+The idea is that we typically wish to perform several fits in parallel (e.g. fit a histogram for tracks and a histogram for showers simultaneously). Practically this means one has a histogram for tracks and a pdf to fit the tracks histogram and, correspondigly, a histogram for showers and a pdf to fit the showers histogram. However, both pdf's (tracks pdf and showers pdf) need to share the fit parameters, as the fit is performed simultaneously. For this reason the fit parameters are defined centrally in the `FitUtil` class, which is shared between the multiple pdf's. Another way of thinking about it is that if one uses a simple `RooGaussian` in `RooFit`, in this case also the parameters can only be defined externally (i.e. outside) of the pdf class `RooGaussian`.
 
 Secondly, say one wishes to fit 10 histograms in parallel, instead of 2. Calculation of the oscillation probabilities is a CPU resource drain (approx 1/3 of the time). `FitUtil` has a central cache of the oscillation probabilities, shared between all 10 fits, which allows to save some time.
 
