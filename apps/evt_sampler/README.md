@@ -1,13 +1,13 @@
 Evt sampler
 ==============
 
-Applications in this directory can be used to generate experiment samples from gSeaGen events. Each experiment sample will be stored in a root file in the analysis format (see `NMHDIR/common_software/README.md`). Each sample will contain a sample of muon, elec, tau CC and NC events, as would be recorded by running the detector for a certain amount of time. The experiment samples are to be subjected to subsequent analysis to estimate sensitivy to neutrino mass hierarchy.
+Applications in this directory can be used to generate experiment samples from gSeaGen events. Each experiment sample will be stored in a root file in the *analysis format* (see `NMH/README.md`). Each sample will contain a sample of muon, elec, tau CC and NC events, as would be recorded by running the detector for a certain amount of time. The experiment samples are to be subjected to subsequent analysis to estimate sensitivy to neutrino mass hierarchy.
 
 Prerequisities
 ==============
-* The applications require summary data in analysis format, usually in `data/mcsummary/TAG/data_atmnu/`, created with the applications in `apps/data_sorting`.
+* The applications require summary data in *analysis format*, usually in `NMH/data/mcsummary/TAG/data_atmnu/`, created with the applications in `apps/data_sorting`.
 * The scripts require access to gSeaGen simulation data.
-* The `FluxChain` application will require an effective mass file that can be read by the `common_software/EffMass` class. Such a file is created by the applications in `apps/effective_mass`
+* The `FluxChain` application will require an effective mass file that can be read by the `NMH/common_software/EffMass.h/C` class. Such a file is created by the applications in `apps/effective_mass`.
 
 Directories
 ===========

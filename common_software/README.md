@@ -1,52 +1,61 @@
 Common software
 ===============
 
-This directory has some generic classes that are used by other scripts in the NMH directory. The classes are documented in the source files, here very brief summaries are provided.
+Classes in this directory are compiled into a shared library object, which is automatically loaded by `ROOT` and provide tools for neutrino mass ordering analysis. Each class is carefully documented in the header and source file and can be explored in a web browser, once the doxygen documentation has been created (see `NMH/README.md`). Very brief descriptions of the classes is provided below.
 
-* `SummaryEvent`    - a class that defines the summary data format for this analysis
-* `SummaryParser`   - a class to parse summary files in the analysis format (`SummaryEvent`)
-* `NuXsec`          - a class to get the neutrino interaction cross-section in water
-* `NMHUtils`        - a misc collection of useful functions, e.g. for asymmetry calculation and for calculating logarithmic bins
-* `GSGParser`       - a class to parse `gSeaGen` files, either in `.root` or `.evt` format
-* `GSGHeaderReader` - a class that is used only in `GSGParser` to read the `gSeaGen` header in `.root` format
-* `FileHeader`      - a class to create simple headers for `ROOT` files
-* `EventSelection`  - a class to define event selections (e.g. to select 'track' events and fill them to histograms)
-* `EventFilter`     - a class that defines an event filter for inheriting classes, such as `EventSelection` and `DetResponse`
-* `DetResponse`     - a class that defines the detector response from MC data
+Data format and data filtering
+------------------------------
+* `SummaryEvent`    - a class that defines the data format for this analysis framework
+* `EventFilter`     - a class that defines an event filter that acts on `SummaryEvent`s; parent class of `EventSelection` and `DetResponse`
+* `EventSelection`  - given a `TTree` of data in `SummaryEvent` format (either MC data or sea data), this class allows to filter events to a certain event class (e.g. filter events into track-like)
+* `DetResponse`     - given a `TTree` of **monte-carlo** data in `SummaryEvent` format, this class allows to create a detector response for a certain event class (e.g. for track-like events)
+
+These classes are the main work-horses for data manipulation. Given some *experiment data* (either simulated MC or sea data) and the corresponding Monte-Carlo data (both in `SummaryEvent` format), these classes provide tools to create selections of the data and corresponding detector responses. Given that the user has a model that predicts how many events are expected in a certain true (energy, cos-theta, bjorken-y) bin, the user can use the detector response to get the predicted number of events in a reco (energy, cos-theta, bjorken-y) bin. The model can be anything (e.g. normal ordering, inverted ordering, normal ordering with sterile) and it is up to the user to define. The point is that the `DetResponse` class can help to map events from true -> reco, and that the detector response can be set up easily for any event selection imposed on a `SummaryEvent`. The applications in `NMH/apps/fitter` demonstrate some use cases.
+
+Calculator classes
+------------------
 * `AtmFlux`         - a class to get the atmospheric neutrino flux
+* `NuXsec`          - a class to get the neutrino interaction cross-section in water
 * `EffMass`         - a class to read/write effective mass histograms in a specific format and perform effective mass calculations
 
-How to run
-==============
+These classes act as calculators to get easy access to atmospheric flux (based on a honda table) or cross section (based on a ROOT file with xsec data from GENIE) predictions. The `EffMass` class is slightly more complicated, because effective mass needs to be calculated from the simulated data. Applications in `apps/effective_mass` can be used to create the required effective mass data file and the class `EffMass` can be subsequently used for effective mass calculations with the created data file as input.
 
-The classes can be used in root by doing:
+Utility classes
+---------------
+* `SummaryParser`   - a class to read or write files in *analysis format* (`SummaryEvent.h/C`)
+* `FileHeader`      - a class to create simple headers for `ROOT` files
+* `NMHUtils`        - a misc collection of useful functions, e.g. for asymmetry calculation and for calculating logarithmic bins
+
+These classes do not play an important role in terms of analysis concepts, but they do provide some utilities that make life substantially easier.
+
+How to use?
+===========
+
+* The classes can be used readily from the ROOT prompt, e.g:
 ```
 root
-SummaryParser sp("/path/to/summary_file/")
+AtmFlux f
+f.Flux_dE_dcosz(1, 0, 15, -0.8) 
 ```
 
-The classes can also be used in compiled root macros, compiled programs etc., just like any other ROOT class.
+* The classes can be used in un-compiled or compiled ROOT macros exactly like any other ROOT class.
 
-The usage of data parsers is illustrated in `NMH/examples/data_parsers.C`. If there is `gSeaGen` data and summary data in `../data/mc_end` and `../data/mc_start`, one can, in the examples directory, do ```root data_parsers.C+```.
+* The classes can be used in compiled applications. In this case some experience with `Makefile` is required. For examples, consult the makefiles in `NMH/apps/../`.
 
-The analysis data format
-========================
 
-### Variables in tree
-* pos and dir refer to vertex position and neutrino direction, given for MC truth and 3 reco's.
-* energy_nu and bjorkeny refer to the neutrion energy and Bjorken y, given for MC truth a 3 reco's (expect no bjorkeny for gandalf).
-* Other variables are discussed in SummaryParser.h
-* The variables <reco>_ql0(12) are described in detail below.
+Maintenance & outlook to the future
+===================================
 
-### Quality levels
+Changes to `SummaryEvent` class
+-------------------------------
+It is very likely that in the future, someone will discover that the variables in `SummaryEvent` are not enough and more/different variables are required. From the view-point of the library, this can be addressed trivially by changing the member variables of the `SummaryEvent` class and providing the corresponding getter and setter functions. After this, both the `EventSelection` and `DetResponse` can use the new/changed variable and the developments are finished. 
 
-For each reconstruction there are branches called '<reco>_ql0, <reco>_ql1, ...' .  'ql' stands for 'quality level'.
+The applications (`NMH/apps/../`) that are based on the library are affected if some **existing** variables or interfaces (setters/getters) are changed. Addition of new variables will not affect them.
 
-* Quality level 0 is the lowest quality level, meaning somewhere in the reco chain it has been tested that the reconstruction worked in the most minimal way, e.g. that it did not return a NaN.
+As the start of development of this package started in the early days of ORCA when we had 1 line in water, it was very difficult to forecast which variables will be required in the long-term. Thus, changes to `SummaryEvent` are expected and even changes that break all the applications should be considered lightly. The applications are easy to modify or delete and should be considered temporary anyway. The main value of the package is in this library and the `NMH/fitter_software` library, which do not make assumptions about the variable content of `SummaryEvent`.
 
-* Quality level 1 is the next lowest quality level. In this case the reconstruction has been tested against quality cuts set by the reconstruction specialists, as described on the wiki and the Moritz' script, linked in NMH/data/README.md. Additionally, in this case the event containment cut is loosened, such that the vertex can be up to 30 m outside the instrumented volume.
+MC chain data/sea data in native format
+---------------------------------------
+Sometime in the (far?) future we will agree that all data (sea data and monte-carlo summary data) will be in XXX format (when this package was started, no such agreement existed - some said `aanet` is the best, some said `hdf5` is the best, some said plain text is the best). Let it be assumed that, for example, `aanet` emerges victorious. How can one now use this package, which assumes `SummaryEvent` format? Should everything be deleted and started from scratch? Or should I convert each file I wish to use to `SummaryEvent` format? This sounds painful...
 
-* Quality level 2 is the highest quality level. It is the same as above, but the vertex needs to be inside the instrumented volume.
-
-We are usually (March 2018) advised to use ql1, as it selects more events and improves
-statistics. For dusj there is no level 2 defined.
+**Easy and sustainable solution**: TBD set up pseudo-code in `SummaryParser` to exemplify how `aanet` files could be read.
