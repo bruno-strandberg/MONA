@@ -7,8 +7,8 @@ Data format and data filtering
 ------------------------------
 * `SummaryEvent`    - a class that defines the data format for this analysis framework
 * `EventFilter`     - a class that defines an event filter that acts on `SummaryEvent`s; parent class of `EventSelection` and `DetResponse`
-* `EventSelection`  - given a `TTree` of data in `SummaryEvent` format (either MC data or sea data), this class allows to filter events to a certain event class (e.g. filter events into track-like)
-* `DetResponse`     - given a `TTree` of **monte-carlo** data in `SummaryEvent` format, this class allows to create a detector response for a certain event class (e.g. for track-like events)
+* `EventSelection`  - given data in `SummaryEvent` format (either MC data or sea data), this class allows to filter events to a certain event class (e.g. filter events into track-like)
+* `DetResponse`     - given **monte-carlo** data in `SummaryEvent` format, this class allows to create a detector response for a certain event class (e.g. for track-like events)
 
 These classes are the main work-horses for data manipulation. Given some *experiment data* (either simulated MC or sea data) and the corresponding Monte-Carlo data (both in `SummaryEvent` format), these classes provide tools to create selections of the data and corresponding detector responses. Given that the user has a model that predicts how many events are expected in a certain true (energy, cos-theta, bjorken-y) bin, the user can use the detector response to get the predicted number of events in a reco (energy, cos-theta, bjorken-y) bin. The model can be anything (e.g. normal ordering, inverted ordering, normal ordering with sterile) and it is up to the user to define. The point is that the `DetResponse` class can help to map events from true -> reco, and that the detector response can be set up easily for any event selection imposed on a `SummaryEvent`. The applications in `NMH/apps/fitter` demonstrate some use cases.
 
