@@ -18,7 +18,7 @@ Calculator classes
 * `NuXsec`          - a class to get the neutrino interaction cross-section in water
 * `EffMass`         - a class to read/write effective mass histograms in a specific format and perform effective mass calculations
 
-These classes act as calculators to get easy access to atmospheric flux (based on a honda table) or cross section (based on a ROOT file with xsec data from GENIE) predictions. The `EffMass` class is slightly more complicated, because effective mass needs to be calculated from the simulated data. Applications in `apps/effective_mass` can be used to create the required effective mass data file and the class `EffMass` can be subsequently used for effective mass calculations with the created data file as input.
+These classes act as calculators to get easy access to atmospheric flux (based on a honda table) or cross section (based on a ROOT file with xsec data from GENIE) predictions. The `EffMass` class is slightly more complicated, because effective mass needs to be calculated from the simulated data. Applications in `NMH/apps/effective_mass` can be used to create the required effective mass data file and the class `EffMass` can be subsequently used for effective mass calculations with the created data file as input.
 
 Utility classes
 ---------------
