@@ -196,9 +196,11 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
         A_err = std::pow(0.5*(N_h1 + N_h2) / std::pow(N_h1, 1.5), 2.) * std::pow(N_h1_err, 2.) +
                 std::pow(-1 / std::sqrt(N_h1), 2.) * std::pow(N_h2_err, 2.) -
                 2 * 1 * N_h1_err * N_h2_err * (0.5*(N_h1 + N_h2) / std::pow(N_h1, 2.));
-        if ((A_err < 0) and (std::abs(A_err) < 1e-10)) { A_err = 0.; } // This happened on day 1, has disappeared since...
+        if ((A_err < 0) and (std::abs(A_err) < 1e-10)) { A_err = 0.; } // This happens occosionally, but it fucks up the calculation.
         A_err = std::sqrt(A_err);
         
+        // Overwrite the error to check this simplified version.
+        //A_err = A * N_h1_err / N_h1;
       }
       else { 
         A = 0.; 
