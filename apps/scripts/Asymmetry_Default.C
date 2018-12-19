@@ -20,22 +20,20 @@ using namespace std;
 
 // This script calculates the asymmetry for unbinned data in default_detres/
 
-void asymmetry_timing() {
+void Asymmetry_Default() {
 
   bool plot = true;
 
   TString filefolder = "./default_detres/";
 
-  TString file_NO = filefolder + "timing_NO.root";
-  TString file_IO = filefolder + "timing_IO.root";
-  TString file_corr = filefolder + "correlations.root";
-  TString output  = filefolder + "asym_pid.root";
+  TString file_NO = filefolder + "default_expectated_evts_NO.root";
+  TString file_IO = filefolder + "default_expectated_evts_IO.root";
+  TString output  = filefolder + "asymmertry_default.root";
   
   TFile *f_IO = TFile::Open(file_IO, "READ");
 
   std::tuple<TH2D*, TH2D*, TH2D*> h_tuple_NO = ReadDetectorResponseFile(file_NO);
   std::tuple<TH2D*, TH2D*, TH2D*> h_tuple_IO = ReadDetectorResponseFile(file_IO);
-  //std::tuple<TH2D*, TH2D*, TH2D*> h_tuple_corr = ReadCorrelationFile(file_corr);
 
   TH2D *h_t_NO = std::get<0>(h_tuple_NO);
   TH2D *h_s_NO = std::get<1>(h_tuple_NO);
@@ -43,9 +41,6 @@ void asymmetry_timing() {
   TH2D *h_t_IO = std::get<0>(h_tuple_IO);
   TH2D *h_s_IO = std::get<1>(h_tuple_IO);
   TH2D *h_m_IO = std::get<2>(h_tuple_IO);
-  //TH2D *h2_corr_t = std::get<0>(h_tuple_corr);
-  //TH2D *h2_corr_s = std::get<1>(h_tuple_corr);
-  //TH2D *h2_corr_m = std::get<2>(h_tuple_corr);
 
   h_t_NO->SetName("detected_tracks_NO");
   h_s_NO->SetName("detected_showers_NO");
@@ -72,7 +67,7 @@ void asymmetry_timing() {
 
     vector<TH2D*> plots = {h_t_NO, h_s_NO, h_m_NO, h_t_IO, h_s_IO, h_m_IO, h_asym_t, h_asym_s, h_asym_m};
     int i = 1;
-    for (auto plot: plots) { // OMG finally decent iterating in cpp! :)
+    for (auto plot: plots) {
       c1->cd(i);
       plot->Draw("colz");
       plot->GetXaxis()->SetTitle("Energy [GeV]");
@@ -85,7 +80,6 @@ void asymmetry_timing() {
       i++;
     }
   }
-
 
   TFile fout(output, "RECREATE");
   c1->Write();

@@ -17,7 +17,7 @@ void SplitDetectorResponse() {
 
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
-  TString filefolder = "./pid_detres/";
+  TString filefolder = TString::Format("./pid_detres/pid_binning_%i", N_PID_CLASSES);
 
   gROOT->ProcessLine(".L FitFunction.C+");
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
