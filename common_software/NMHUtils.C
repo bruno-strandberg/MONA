@@ -142,8 +142,8 @@ Bool_t NMHUtils::BinsMatch(TH1 *h1, TH1 *h2) {
   h1->GetZaxis()->SetTitle("z");
 
   std::vector< std::pair<TAxis*, TAxis*> > axps = { std::make_pair( h1->GetXaxis(), h2->GetXaxis() ), 
-						    std::make_pair( h1->GetYaxis(), h2->GetYaxis() ),
-						    std::make_pair( h1->GetZaxis(), h2->GetZaxis() ) };
+                            std::make_pair( h1->GetYaxis(), h2->GetYaxis() ),
+                            std::make_pair( h1->GetZaxis(), h2->GetZaxis() ) };
   
   for (auto &axp: axps) {
 
@@ -160,9 +160,9 @@ Bool_t NMHUtils::BinsMatch(TH1 *h1, TH1 *h2) {
     for (Int_t bin = 1; bin <= nbins; bin++) {
 
       if ( ax1->GetBinLowEdge(bin) != ax2->GetBinLowEdge(bin) ) {
-	cout << "NOTICE NMHUtils::BinsMatch() different bin low edges on axis " 
-	     << ax1->GetTitle() << ", bin number " << bin << endl;
-	bins_match = kFALSE;
+    cout << "NOTICE NMHUtils::BinsMatch() different bin low edges on axis " 
+         << ax1->GetTitle() << ", bin number " << bin << endl;
+    bins_match = kFALSE;
       }
 
     }
@@ -224,8 +224,8 @@ TString NMHUtils::Getcwd() {
 
 std::tuple<TH2D*, Double_t, Double_t, Double_t>
 NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
-		    Double_t xlow, Double_t xhigh,
-		    Double_t ylow, Double_t yhigh) {
+            Double_t xlow, Double_t xhigh,
+            Double_t ylow, Double_t yhigh) {
   
   //------------------------------------------------------------
   // check that both histograms have the same binning
@@ -263,11 +263,11 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
 
   for (Int_t xb = 1; xb <= h_asym->GetXaxis()->GetNbins(); xb++) {
     for (Int_t yb = 1; yb <= h_asym->GetYaxis()->GetNbins(); yb++) {
-	
+
       Double_t N_h1 = h1->GetBinContent(xb, yb);
-      Double_t N_h2 = h2->GetBinContent(xb, yb);	
+      Double_t N_h2 = h2->GetBinContent(xb, yb);
       Double_t N_h1_err = h1->GetBinError(xb, yb);
-      Double_t N_h2_err = h2->GetBinError(xb, yb);	
+      Double_t N_h2_err = h2->GetBinError(xb, yb);
 
       Double_t A     = 0;
       Double_t A_err = 0;
@@ -287,7 +287,7 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
         A = 0.; 
         A_err = 0.;
       }
-	
+
       Double_t xc = h_asym->GetXaxis()->GetBinCenter(xb);
       Double_t yc = h_asym->GetYaxis()->GetBinCenter(yb);
 
