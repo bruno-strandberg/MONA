@@ -82,8 +82,9 @@ The analysis format is defined by the class `NMH/common_software/SummaryEvent.h/
 
 ### Variables in tree
 * pos and dir refer to vertex position and neutrino direction, respectively, and are provided for MC truth and 2 reco's (track and shower).
-* energy and bjorkeny refer to the neutrion energy and Bjorken y, respectively, given for MC truth a 2 reco's (bjorkeny for tracks is currently empty).
-* Other variables are discussed in `SummaryParser.h`
+* energy and bjorkeny refer to the neutrion energy and Bjorken y, respectively, given for MC truth and 2 reco's (bjorkeny for tracks is currently empty).
+* there are variables for various PID scores.
+* For further info, see the documentation for `SummaryParser.h`
 * The variables `<reco>_ql0(12)` define *quality levels* and are described in detail below.
 
 ### Quality levels
