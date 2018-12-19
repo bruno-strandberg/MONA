@@ -445,12 +445,12 @@ void FitFunction::ReadMeffHists(TString meff_elec_cc, TString meff_muon_cc,
 				TString meff_tau_cc, TString meff_elec_nc) {
 
   //  map of flavor numbers and strings for histogram names from file
-  map < Int_t, TString > flavs  = { {0, "elec" },   
+  std::map < Int_t, TString > flavs  = { {0, "elec" },   
 				     {1, "muon" },
 				     {2, "tau"  } };
 
   // map of nc/cc numbers and strings for histogram names from file
-  map < Int_t, TString > itypes = { {0, "nc"  },
+  std::map < Int_t, TString > itypes = { {0, "nc"  },
 				    {1, "cc" } };
   
   vector<TString> meff_filenames = {meff_elec_cc, meff_muon_cc, meff_tau_cc};
