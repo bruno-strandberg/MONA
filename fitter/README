@@ -1,0 +1,8 @@
+This folder contains the root scripts that were used to calculate detector responses and asymmetries
+in the fall of Sep-Dec 2018. These scripts were run on:
+
+gcc version 4.8.5 20150623 (Red Hat 4.8.5-36) (GCC)
+ROOT : /pbs/home/l/lnauta/software/root_v6.12.06 (tagged)
+JPP : /sps/km3net/users/lnauta/jpp_versions/v10.1.10174 (tagged) 
+OSCPROB : /sps/km3net/users/lnauta/neutrino_mass/git/OscProb (25646a5, untagged)
+NMH : /sps/km3net/users/lnauta/neutrino_mass/git/NMH (4a404e5, untagged)
