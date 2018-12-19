@@ -33,7 +33,7 @@ using namespace std;
 class NuXsec {
 
  public:
-  NuXsec(Int_t bybins = -1, TString xsecfile="", TString by_dist_file="");
+  NuXsec(UInt_t bybins = 0, TString xsecfile="", TString by_dist_file="");
   ~NuXsec();
 
   void     SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar);
@@ -41,7 +41,7 @@ class NuXsec {
   Double_t GetBYfrac(Double_t E, Double_t by);
 
  private:
-  void     InitMaps(TString xsecfile, TString byfile, Int_t bybins);
+  void     InitMaps(TString xsecfile, TString byfile, UInt_t bybins);
   TString  CreateString(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar);
 
   map < Int_t, TString > fNu_flavs  = { {0, "e"}, {1, "mu"}, {2, "tau"} }; //!< map with e, mu, tau
@@ -56,6 +56,10 @@ class NuXsec {
   TGraph *f_g_H1;     //!< pointer to a graph with H1 xsec for the selected interaction
   TGraph *f_g_O16;    //!< pointer to a graph with O16 xsec for the selected interaction
   TH2D   *f_h_by;     //!< pointer to a hist with E vs bjorken-y distribution for selected interaciton 
+  Double_t fEmin;     //!< minimum of the covered energy range of the input xsec files
+  Double_t fEmax;     //!< maximum of the covered energy range of the input xsec files
+  TString  fXsecFile; //!< file where xsec data is read from
+  TString  fByFile;   //!< file where bjorken-y distributions are read from
 
 };
 

@@ -14,13 +14,13 @@
 
    At the init of the class the user selects the reconstruction type that is used for filling member histograms. Then, the function `EventFilter::AddCut` can be used to define selection cuts for the events of this selection. The method `EventSelection::Fill` stores a `SummaryEvent` for this selection if the event passes the selection cuts.
 
-   The class always fills member histograms when `Fill` is called. Additionally, if a pointer to a `TTree` where the analyzed `SummaryEvent`'s are read from is provided, the class operates in 'Tree more' and copies over the events to the member `fTree`.
+   The class always fills member histograms when `Fill` is called. TO-BE-IMPLEMENTED: Additionally, when `TreeMode` flag is specified, the code saves the reco variables to a TTree, such that `fitter_software` can be used to perform an un-binned fit to data.
  */
 class EventSelection : public EventFilter {
 
  public:
   
-  EventSelection(reco reco_type, TString selection_name="", TTree *t = NULL,
+  EventSelection(reco reco_type, TString selection_name="", Bool_t TreeMode = kFALSE,
 		 Int_t ebins  = 40, Double_t emin  =  1., Double_t emax  = 100.,
 		 Int_t ctbins = 40, Double_t ctmin = -1., Double_t ctmax = 1.,
 		 Int_t bybins =  1, Double_t bymin =  0., Double_t bymax = 1.);
@@ -28,7 +28,6 @@ class EventSelection : public EventFilter {
   ~EventSelection();
 
   void Fill(SummaryEvent *evt, Double_t w=1.);
-  void SetTreeMode(TTree *t);
   void WriteToFile(TString fname);
 
   TString Get_SelName()      { return fSelName;      } //!< Get the selection name
@@ -37,8 +36,6 @@ class EventSelection : public EventFilter {
 
  private:
   TString        fSelName;        //!< name of the selection
-  TFile         *fTreeFile;       //!< the temp file the tree will be associated with
-  TTree         *fTree;           //!< tree with selected events
   TH2D          *fh_E_costh;      //!< Energy vs CosTheta histogram
   TH3D          *fh_E_costh_by;   //!< Energy vs CosTheta vs by histogram
 

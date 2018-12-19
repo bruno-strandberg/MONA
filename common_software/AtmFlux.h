@@ -31,13 +31,18 @@ class AtmFlux {
   Double_t Flux_dE_dcosz(UInt_t nu_flavor, Bool_t is_nubar, Double_t E, Double_t cosz);
   
  private:
-  Bool_t   ReadHondaFlux(TString fname, Bool_t debug=false);
+  void ReadHondaFlux(TString fname, Bool_t debug=false);
   
-  map <UInt_t, TString> fFileMap;      //!< map linking options and flux file names
-  static const int fNflavs = 2;        //!< number of flavors (e, mu, no tau)
-  static const int fPtypes = 2;        //!< number of types (nu, nubar)
-  TGraph2D* fGraphs[fNflavs][fPtypes]; //!< 2D graphs that hold the flux data
-  
+  map <UInt_t, TString> fFileMap;       //!< map linking options and flux file names
+  static const int fNflavs = 2;         //!< number of flavors (e, mu, no tau)
+  static const int fPtypes = 2;         //!< number of types (nu, nubar)
+  TGraph2D* fGraphs[fNflavs][fPtypes];  //!< 2D graphs that hold the flux data
+  Double_t fEmin;                       //!< minimum energy range of the interpolation
+  Double_t fEmax;                       //!< maximum energy range of the interpolation
+  Double_t fCtmin;                      //!< minimum cos-theta range of the interpolation
+  Double_t fCtmax;                      //!< maximum cos-theta range of the interpolation
+  static constexpr double fCt_bw = 0.1; //!< bin width used in input honda tables
+  static const Int_t fPower = 3;        //!< E power for more accurate interpolation
 };
 
 #endif

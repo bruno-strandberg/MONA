@@ -1,0 +1,27 @@
+Effective mass
+==============
+
+Programs in this directory can be used to create effective mass histograms. The output file of `Combine` application can be loaded by the `common_software/EffMass` class to calculate the effective masses.
+
+Prerequisities
+==============
+* The scripts use the library in`common_software/` and Jpp headers.
+* The scripts require ORCA simulation chain summary files in analysis format in `NMH/data/mcsummary/TAG/data_atmnu/`. These can be created with the applications in `apps/data_sorting/`.
+* The scripts require ORCA simulation chain start (gSeaGen files) in `NMH/data/gseagen/TAG/data_atmnu`
+
+How to run
+==========
+
+The application `EffMhists` creates effective mass histograms for one flavor for a given gSeaGen and summary file. Do `./EffMhists -h!` and read the doxygen doxumentation for more information.
+
+The script `EMH_caller.py` can be called to run `EffMhists` for all of the summary files in `NMH/data/mcsummary/TAG/data_atmnu/` directory, given that corresponding gSeaGen files are available.
+
+The application `Combine` uses the `common_software/EffMass` class and combines all of the outputs from `EffMhists` to a single output file. That file can be loaded to another `EffMass` instance to calculate effective masses.
+
+
+Outputs
+==========
+
+`EffMhists` outputs 'generated' (gSeaGen events) and 'selected' (summary events) histograms for the given input files.
+
+`Combine` created four combined outputs (`elec-CC, muon-CC, tau-CC, elec-NC`) from the outputs of `EffMhists` and additionally one file than is to be used with the `EffMass` class.

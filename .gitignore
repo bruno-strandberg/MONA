@@ -1,10 +1,31 @@
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+# Unignore all dirs
+!*/
+
+#
+!*Makefile*
+
+#===============================================
+#the above is meant to get rid of binaries
+#===============================================
+
+# ignore some directories
 playground/
+*tmp*
+
+# ignore specific file extensions
 common_software/dic*
+fitter_software/dic*
+tests/roofit_example/dic*
 *.so
 *~
 *_C.d
 *.pcm
 *.rootmap
-*/tmp/
 *.dat
 *.root

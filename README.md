@@ -1,86 +1,87 @@
 Main page {#mainpage}
 ===================
-This software provides some tools for estimating the ORCA sensitivity to neutrino mass ordering. It relies on Monte-Carlo data from ORCA simulation chain (see `data/README.md` for a brief description of the simulation chain). The directory `NMH/common_software` holds classes that are used by various applications for recurring tasks. Other directories hold code for some specific analysis.
+
+This software provides some tools for estimating the ORCA sensitivity to neutrino mass ordering. It relies on Monte-Carlo data from ORCA simulation chain (see `data/README.md` for a brief description of the simulation chain).
 
 Prerequisities
 ==============
-* ROOT 6
-* To use `GSGParser` to parse `gSeaGen` files in `.evt` format, one also requires `Jpp` and `aanet` compiled against `ROOT 6`
+* ROOT 6: tested at Lyon with /usr/local/root/6.10.02
+* Jpp with aanet, compiled against ROOT 6: tested with v10.1.11007
+* [OscProb](https://github.com/joaoabcoelho/OscProb) package needs be available and compiled and an environment variable `OSCPROBDIR` needs to be set to point to the `OscProb` directory.
 * Python scripts will require `docopt` package
 
-More info
-=========
-* Regarding the data format(s) used in the analysis, consult NMH/data/README.md and NMH/data_sorting/README.md.
+Documentation
+=============
+* Create with `doxygen doxyconf`, open `doxygen/html/index.html` in your favorite browser.
+* Regarding the data format(s) used in the analysis, consult `data/README.md` and `data_sorting/README.md`.
 * Each subdirectory holds a `README.md` file that describes what the code can be used for.
+
+Setup in lyon and elsewhere
+===========================
+TBD
 
 How to use
 ==========
 
-Setup in lyon and elsewhere
--------------
-* TBD
-* ```source setenv.sh -a -o /oscprob/dir```. `-a` sets to compile against `aanet` (only required when reading `gSeaGen` files in `.evt` format). `-o` sets the `OscProb` directory that is required for oscillating neutrinos.
-* ```cd common_software/ ; make ```
-
 Sort data
 ----------
-The starting point is the file `NMH/data/pid_result_XXX.root`. This needs to be converted to analysis format. Data sorting/conversion is handled by macros in `NMH/data_sorting/`. Consult `NMH/data_sorting/README.md`
+The starting point is the file `NMH/data/pid_result_XXX.root`. This needs to be converted to analysis format. Data sorting/conversion is handled by apps in `NMH/apps/data_sorting/`. Consult `NMH/apps/data_sorting/README.md`.
 
 Effective mass
 --------------
-2D effective mass histograms can be created with the scripts in `NMH/effective_mass`. Consult `NMH/data_sorting/README.md`. The combined outputs of the effective mass scripts are stored in `data/eff_mass`. There should be a file per each neutrino flavor, CC and electron NC.
+3D effective mass histograms can be created with the apps in `NMH/apps/effective_mass`. Consult `NMH/apps/effective_mass/README.md`. The combined output of the effective mass apps is stored in `data/eff_mass`.
 
-Create experiment samples
--------------------------
-The code in directory `NMH/evt_sampler/` can be used to create samples of Monte-Carlo data that look like event recorded by the detector over a certain amount of time. See `NMH/evt_sampler/README.md` for further information.
+Bjorken-y distributions
+------------------------
+TBD
 
-Asymmetry
----------
-The code in directory `NMH/asymmetry` can be used to estimate the asymmetry between normal and inverted hierarchy. Documentation is pending.
+Available applications
+----------------------
 
+ORCA Monte-Carlo chain and data format
+======================================
 
-Developments
-============
+ORCA Monte-Carlo chain
+----------------------
 
-For improvements
-----------------
+This directory stores the data necessary for the NMH sensitivity analysis. The raw starting point of the analysis is the file pid_result_XXX.root. The typical ORCA MC chain is as follows (see the following line in plain text in README.md):
+```
+gSeaGen->KM3Sim                JGandalf for tracks                                           
+               \             /                      \                                       
+		       JTE->         -  Recolns for tracks  -    -> merge, PID training -->summary  
+               /             \                      /                                       
+mupage->KM3                    Dusj reco for showers                                        
+```
+pid_result_XXX.root is the summary file, which contains all the information from the reco chains, plus the PID info and MC truth.
 
-* Instead of mc_end, mc_start, you should have some discriminating name, eg mc_end_ECAP_PID_XXX, mc_start_LOI
+There are numerous gSeaGen and mupage files. We have *something* like this gSeaGen_<flavor>_<interaction>_<erange>_<runnr>.root, where flavor is muon/elec/tau, interaction is CC or NC, erange is 1--5 or 3--100, runnr is 1--1800.
 
-* AtmFlux option enumerator should be part of the class, as in EventSelection.
+This scheme persists until PID, however in the pid_result_XXX.root all flavours, interactions, energy ranges and run numbers are merged together, with special variables that help to re-trace the origin of each event. The merging is a necessary step for data input to ECAP Random Decision Forest PID.
 
-* NuXsec uses data in a specific format. Would be nice to have something that can use GENIE output directly (not urgent).
+For data sorting and quality purposes, having everything in one file is not optimal. Also, pid_result_XXX.root has about 300 branches, that occasionally change, depending on the version. Writing an analysis code that takes a changing and incomprehensible data format as input is not optimal. For that purpose the data in pid_result_XXX.root is converted to 'analysis' format (a smaller set of variables, organised tree, see below) and split up to match the file scheme used throughout the MC chain.
 
-* AtmFlux::ReadHondaFlux() makes a small approximation for the ranges abs(cosz) > 0.95 (not sure this can be easily improved, though).
+Analysis format
+---------------
 
-* For both NuXsec and AtmFlux I foresee an option to add a scaler graph. The scaler graph can be initiated from a function or from a graph. It should provide a simple way to to scale/skew the crossection/flux.
+The analysis format is defined by the class ```NMH/common_software/SummaryEvent.h/C```. The class ```NMH/common_software/SummaryParser``` is set to read or write data in the analysis format by using the SummaryEvent class. The variables of the analysis format are described in SummaryEvent documentation.
 
-* GSGSampler.C should output trees with GSG event IDs. These trees should be fed to a different application, that reads in the summary data and GSG samples and identifies events that made it to the end of the chain. In such a way you could disentangle the problem associated with the changing summary file format.
+Variables in tree
+-----------------
+* pos and dir refer to vertex position and neutrino direction, given for MC truth and 3 reco's.
+* energy_nu and bjorkeny refer to the neutrion energy and Bjorken y, given for MC truth a 3 reco's (expect no bjorkeny for gandalf).
+* Other variables are discussed in SummaryParser.h
+* The variables <reco>_ql0(12) are described in detail below.
 
-* You should make a separate application that cache's the gSeaGen data.
+Quality levels
+--------------
 
-To-do, ideas
-------------
+For each reconstruction there are branches called '<reco>_ql0, <reco>_ql1, ...' .  'ql' stands for 'quality level'.
 
-* You could try to estimate the effective mass from the effective area, in which case you won't need to parse the gSeaGen files.
+* Quality level 0 is the lowest quality level, meaning somewhere in the reco chain it has been tested that the reconstruction worked in the most minimal way, e.g. that it did not return a NaN.
 
-* Interactive python setup script that asks for OscProb, Jpp with root 6, etc, paths and creates the setenv.sh script.
+* Quality level 1 is the next lowest quality level. In this case the reconstruction has been tested against quality cuts set by the reconstruction specialists, as described on the wiki and the Moritz' script, linked in NMH/data/README.md. Additionally, in this case the event containment cut is loosened, such that the vertex can be up to 30 m outside the instrumented volume.
 
-Done
-----
+* Quality level 2 is the highest quality level. It is the same as above, but the vertex needs to be inside the instrumented volume.
 
-* Need aanet to parse tau gSeaGen files and calculate the effective mass --> compiling against aanet
-
-* allow compilation without aanet/jpp --> controlled by setenv.sh script
-
-* the test tests/flux_check_inpol.py illustrates that the interpolation works nicely in cosz and energy directions, no reason to put energy on log scale.
-
-* SummaryParser should have a TChain instead of TTree to allow attaching several files --> done
-
-* The can size, muon cut etc should be stored in the output of effective mass --> handled by FileHeader
-
-* The above point applied also more generally: the input parameters should be saved to output for different applications, etc FluxChain, GSGSampler, ... --> handled by FileHeader
-
-* pid_result conversion to summary format is still painful, especially when summary data format changes. One option would be to define summary data structure in a SummaryEvent() class. This would, however, break compatibility with most things I have written so far and, more importantly, will make accessing/cloning/etc of the data more difficult. Maybe a better option would be to have a script that, after DataReducer.C has run its script, it checks for branches in SummaryParser.h and advises on branches to be added? --> Improved by creating the SummaryEvent class, which provides better IO.
-
-* It may be an idea that SummaryParser uses some event class instead of a flat tree -> uses SummaryEvent.
+We are usually (March 2018) advised to use ql1, as it selects more events and improves
+statistics. For dusj there is no level 2 defined.

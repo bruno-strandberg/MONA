@@ -5,18 +5,18 @@ include $(NMHDIR)/Makerules
 # setup cxx and library flags from global variables
 #===============================================================
 
-CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS) $(AACFLAGS)
-LFLAGS = $(ROOTLIBS) $(AALIB)
+CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS)
+LFLAGS = $(ROOTLIBS) $(ROOFITLIBS) $(NMHLIB) $(OSCLIB)
 
 #===============================================================
 # define variables for complilation
 #===============================================================
 
-HEADERS = $(filter-out LinkDef.h, $(wildcard *.h))
+HEADERS = $(wildcard *.h)
 SOURCES = $(wildcard *.C)
-OBJ     = lib$(NMHSOFT).so
-DICT    = dic$(NMHSOFT).cxx
-ROOTMAP = dic$(NMHSOFT).rootmap
+OBJ     = lib$(FITSOFT).so
+DICT    = dic$(FITSOFT).cxx
+ROOTMAP = dic$(FITSOFT).rootmap
 
 #===============================================================
 # compilation
@@ -28,7 +28,7 @@ $(OBJ): $(SOURCES) $(DICT)
 	@echo "  Building $@ with pre-requisities $^..."
 	@g++ -shared -O3 -o $@ $^ $(LFLAGS) $(CFLAGS)
 
-$(DICT): $(HEADERS) LinkDef.h
+$(DICT): $(HEADERS)
 	@echo "  Making dictionary $@..."
 	@rootcling -f $@ -rml $(OBJ) -rmf $(ROOTMAP) $^
 

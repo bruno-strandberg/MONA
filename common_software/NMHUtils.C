@@ -122,9 +122,89 @@ Bool_t NMHUtils::FileExists(TString filename, Double_t size) {
 
 //****************************************************************************
 
+/** Function that checks that two histograms have identical binning.
+
+    \param h1 First histogram (1, 2 or 3 dimensional)
+    \param h2 Second histogram (1, 2 or 3 dimensional)
+    \return True if bins match, False otherwise
+
+ */
+Bool_t NMHUtils::BinsMatch(TH1 *h1, TH1 *h2) {
+
+  Bool_t bins_match = kTRUE;
+
+  TString xtitle =  h1->GetXaxis()->GetTitle();
+  TString ytitle =  h1->GetYaxis()->GetTitle();
+  TString ztitle =  h1->GetZaxis()->GetTitle();
+
+  h1->GetXaxis()->SetTitle("x");
+  h1->GetYaxis()->SetTitle("y");
+  h1->GetZaxis()->SetTitle("z");
+
+  std::vector< std::pair<TAxis*, TAxis*> > axps = { std::make_pair( h1->GetXaxis(), h2->GetXaxis() ), 
+						    std::make_pair( h1->GetYaxis(), h2->GetYaxis() ),
+						    std::make_pair( h1->GetZaxis(), h2->GetZaxis() ) };
+  
+  for (auto &axp: axps) {
+
+    auto ax1 = axp.first;
+    auto ax2 = axp.second;
+
+    if ( ax1->GetNbins() != ax2->GetNbins() ) {
+      cout << "NOTICE NMHUtils::BinsMatch() different number of bins on axis " << ax1->GetTitle() << endl;
+      bins_match = kFALSE;
+    }
+
+    Int_t nbins = ax1->GetNbins();
+
+    for (Int_t bin = 1; bin <= nbins; bin++) {
+
+      if ( ax1->GetBinLowEdge(bin) != ax2->GetBinLowEdge(bin) ) {
+	cout << "NOTICE NMHUtils::BinsMatch() different bin low edges on axis " 
+	     << ax1->GetTitle() << ", bin number " << bin << endl;
+	bins_match = kFALSE;
+      }
+
+    }
+
+  }
+
+  h1->GetXaxis()->SetTitle(xtitle);
+  h1->GetYaxis()->SetTitle(ytitle);
+  h1->GetZaxis()->SetTitle(ztitle);
+
+  return bins_match;
+
+}
+
+//****************************************************************************
+
+/**
+ * Function to extract the current working directory on a unix system.
+ * \return Current working directory.
+ */
+TString NMHUtils::Getcwd() {
+
+  TString cwd = "";
+
+  static const Int_t nchar = 4096;
+  char cwdarr[nchar];
+  
+  if ( getcwd(cwdarr, nchar ) != NULL ) {
+    cwd = (TString)cwdarr;
+  }
+  else {
+    throw std::logic_error("ERROR! NMHUtils::Getcwd() current working directory extraction failed.");
+  }
+
+  return cwd;
+
+}
+
+//****************************************************************************
+
 /**
  *  Function to calculate bin-by-bin 'asymmetry' between two histograms.
- *
  *  Asymmetry is defined as \f$ A(i) = (N_{h1}^{bin i} - N_{h2}^{bin i})/\sqrt{N_{h1}^{bin i}} \f$.
  *
  * \param h1           First histogram
@@ -141,6 +221,7 @@ Bool_t NMHUtils::FileExists(TString filename, Double_t size) {
  *                     3) the number of considered bins (degress of freedom)
  *                     
  */
+
 std::tuple<TH2D*, Double_t, Double_t, Double_t>
 NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
 		    Double_t xlow, Double_t xhigh,
@@ -211,10 +292,10 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
       Double_t yc = h_asym->GetYaxis()->GetBinCenter(yb);
 
       if ( (xc < xlow) || (xc > xhigh) || ( yc < ylow) || ( yc > yhigh ) ) {
-	A = 0.;
+        A = 0.;
       }
       else {
-	Nbins += 1;
+        Nbins += 1;
       }
 
     //  if ((xb == 11) and (yb == 7)) { cout << A << " " << A_err << endl; }
