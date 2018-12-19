@@ -15,10 +15,9 @@ using namespace std;
 
 void timing() {
 
-  Int_t n_evts = 25;
 
   bool use_half_data = false;
-  TString filefolder = TString::Format("./default_detres/", n_evts);
+  TString filefolder = "./default_detres/";
 
   gROOT->ProcessLine(".L FitFunction.C+");
   gSystem->Load("$OSCPROBDIR/libOscProb.so");

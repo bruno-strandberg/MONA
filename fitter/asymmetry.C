@@ -23,7 +23,7 @@ using namespace std;
 void asymmetry() {
 
   bool b_plot = false;
-  const int N_PID_CLASSES = 40;
+  const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
   TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
 
