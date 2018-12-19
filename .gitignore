@@ -29,3 +29,5 @@ tests/roofit_example/dic*
 *.rootmap
 *.dat
 *.root
+*.pdf
+*.png
