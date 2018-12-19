@@ -7,3 +7,4 @@ common_software/dic*
 *.rootmap
 */tmp/
 *.dat
+*.root
