@@ -19,7 +19,7 @@
 #include <iostream>
 using namespace std;
 
-void resolution_plot_flav_improved(TString sum_file="../data/ORCA_MC_summary_all_10Apr2018.root") { 
+void resolution_plot_flav_improved(TString sum_file="../../data/ORCA_MC_summary_all_10Apr2018.root") { 
   SummaryParser sp(sum_file);
   
   bool plot = true;
@@ -97,38 +97,6 @@ void resolution_plot_flav_improved(TString sum_file="../data/ORCA_MC_summary_all
   cout << "Bad both    : " << bad_track_and_shower << endl;
 
   if (plot) {
-   // TString output = "./pid_detres/resolution_different_energy_schemes/for_grp_meeting_hybrid_20181115.root";
-   // TFile fout(output, "RECREATE");
-
-   // gStyle->SetPalette(kLightTemperature);
-   // TCanvas *ca = new TCanvas("ca", "ca", 500, 500);
-   // GetNormalizedSlicesY(h2mucc[2]);
-   // h2mucc[2]->Draw("colz");
-   // h2mucc[2]->GetXaxis()->SetTitle("E_{true} [GeV]");
-   // h2mucc[2]->GetYaxis()->SetTitle("E_{reco} [GeV]");
-   // h2mucc[2]->GetXaxis()->SetRangeUser(3,100);
-   // h2mucc[2]->GetYaxis()->SetRangeUser(3,100);
-   // ca->SetLogx();
-   // ca->SetLogy();
-   // ca->SetLogz();
-   // h2mucc[2]->Write();
-   // ca->SaveAs("./pid_detres/resolution_different_energy_schemes/mucc_2_hybrid.pdf");
-
-   // TCanvas *cb = new TCanvas("cb", "cb", 500, 500);
-   // GetNormalizedSlicesY(h2mucc[9]);
-   // h2mucc[9]->Draw("colz");
-   // h2mucc[9]->GetXaxis()->SetTitle("E_{true} [GeV]");
-   // h2mucc[9]->GetYaxis()->SetTitle("E_{reco} [GeV]");
-   // h2mucc[9]->GetXaxis()->SetRangeUser(3,100);
-   // h2mucc[9]->GetYaxis()->SetRangeUser(3,100);
-   // cb->SetLogx();
-   // cb->SetLogy();
-   // cb->SetLogz();
-   // h2mucc[9]->Write();
-   // cb->SaveAs("./pid_detres/resolution_different_energy_schemes/mucc_9_hybrid.pdf");
-   // fout.Close();
-
-
     TCanvas *c3 = new TCanvas("c3", "c3", 1800, 500); 
     TCanvas *c4 = new TCanvas("c4", "c4", 1800, 500); 
     TCanvas *c5 = new TCanvas("c5", "c5", 1800, 500); 

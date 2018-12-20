@@ -19,7 +19,7 @@
 #include <iostream>
 using namespace std;
 
-void resolution_plot(TString sum_file="../data/ORCA_MC_summary_all_10Apr2018.root") { 
+void resolution_plot(TString sum_file="../../data/ORCA_MC_summary_all_10Apr2018.root") { 
 
   SummaryParser sp(sum_file);
   
@@ -36,12 +36,17 @@ void resolution_plot(TString sum_file="../data/ORCA_MC_summary_all_10Apr2018.roo
   std::vector<TH1D*> hm;
   std::vector<TH2D*> h2t;
   std::vector<TH2D*> h2s;
+  std::vector<TH2D*> h2elcc;
+  std::vector<TH2D*> h2elnc;
+  std::vector<TH2D*> h2mucc;
+  std::vector<TH2D*> h2munc;
+
   for (int i = 0; i < 10; i++){
     ht.push_back(new TH1D(Form("ht_%i", i), Form("Reconstructed events_q_0.%i", i), n_bins, &e_edges[0]));
     hs.push_back(new TH1D(Form("hs_%i", i), Form("Reconstructed events_q_0.%i", i), n_bins, &e_edges[0]));
     hm.push_back(new TH1D(Form("hm_%i", i), Form("MC events_q_0.%i", i), n_bins, &e_edges[0]));
-    //h2t.push_back(new TH2D(Form("h2t_%i", i), Form("Energy resolution tracks_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
-    //h2s.push_back(new TH2D(Form("h2s_%i", i), Form("Energy resolution showers_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
+    h2t.push_back(new TH2D(Form("h2t_%i", i), Form("Energy resolution tracks_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
+    h2s.push_back(new TH2D(Form("h2s_%i", i), Form("Energy resolution showers_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
     h2elcc.push_back(new TH2D(Form("h2elcc_%i", i), Form("Energy resolution nu_e_CC_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
     h2elnc.push_back(new TH2D(Form("h2elnc_%i", i), Form("Energy resolution nu_e_NC_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
     h2mucc.push_back(new TH2D(Form("h2mucc_%i", i), Form("Energy resolution nu_m_CC_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
@@ -85,8 +90,8 @@ void resolution_plot(TString sum_file="../data/ORCA_MC_summary_all_10Apr2018.roo
       if (sp.GetEvt()->Get_MC_is_CC()) h2mucc[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_track_energy());
       else                             h2munc[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_track_energy());
     }
-    //h2t[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_track_energy());
-    //h2s[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_shower_energy());
+    h2t[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_track_energy());
+    h2s[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_shower_energy());
 
     if (q > 0.6) { ht_def->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_track_energy()); }
     if (q < 0.6) { hs_def->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_shower_energy()); }

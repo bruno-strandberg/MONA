@@ -14,12 +14,12 @@
 #include "NMHUtils.h"
 #include "SummaryParser.h"
 #include "SummaryEvent.h"
-#include "HelperFunction.C"
+#include "HelperFunctions.C"
 
 #include <iostream>
 using namespace std;
 
-void resolution_plot_flav_complementary_events(TString sum_file="../data/ORCA_MC_summary_all_10Apr2018.root") {
+void resolution_plot_flav_complementary_events(TString sum_file="../../data/ORCA_MC_summary_all_10Apr2018.root") {
   SummaryParser sp(sum_file);
   
   bool plot = true;

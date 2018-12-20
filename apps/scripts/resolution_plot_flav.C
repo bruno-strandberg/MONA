@@ -14,16 +14,16 @@
 #include "NMHUtils.h"
 #include "SummaryParser.h"
 #include "SummaryEvent.h"
-#include "HelperFunction.C"
+#include "HelperFunctions.C"
 
 #include <iostream>
 using namespace std;
 
 
-void resolution_plot_flav(TString sum_file="../data/ORCA_MC_summary_all_10Apr2018.root") { 
+void resolution_plot_flav(TString sum_file="../../data/ORCA_MC_summary_all_10Apr2018.root") { 
   SummaryParser sp(sum_file);
   
-  bool plot = false;
+  bool plot = true;
   int n_bins = 40;
   std::vector<Double_t> e_edges  = NMHUtils::GetLogBins(n_bins, 1, 100);
   std::vector<Double_t> ct_edges = NMHUtils::GetBins(n_bins, -1, 1);
@@ -109,37 +109,6 @@ void resolution_plot_flav(TString sum_file="../data/ORCA_MC_summary_all_10Apr201
   cout << "Rejected evt: " << rejected << endl;
 
   if (plot) {
-    //TString output = "./pid_detres/energy_resolution_plots_most_evts_used/for_orca_meeting_shower_20181120.root";
-    //TFile fout(output, "RECREATE");
-    //
-    //gStyle->SetPalette(kLightTemperature);
-    //TCanvas *ca = new TCanvas("ca", "ca", 500, 500);
-    //GetNormalizedSlicesY(h2mucc[2]);
-    //h2mucc[2]->Draw("colz");
-    //h2mucc[2]->GetXaxis()->SetTitle("E_{true} [GeV]");
-    //h2mucc[2]->GetYaxis()->SetTitle("E_{reco} [GeV]");
-    //h2mucc[2]->GetXaxis()->SetRangeUser(3,100);
-    //h2mucc[2]->GetYaxis()->SetRangeUser(3,100);
-    //ca->SetLogx();
-    //ca->SetLogy();
-    //ca->SetLogz();
-    //h2mucc[2]->Write();
-    //ca->SaveAs("./pid_detres/energy_resolution_plots_most_evts_used/mucc_2_shower_shower_energy_used.pdf");
-
-    //TCanvas *cb = new TCanvas("cb", "cb", 500, 500);
-    //GetNormalizedSlicesY(h2mucc[9]);
-    //h2mucc[9]->Draw("colz");
-    //h2mucc[9]->GetXaxis()->SetTitle("E_{true} [GeV]");
-    //h2mucc[9]->GetYaxis()->SetTitle("E_{reco} [GeV]");
-    //h2mucc[9]->GetXaxis()->SetRangeUser(3,100);
-    //h2mucc[9]->GetYaxis()->SetRangeUser(3,100);
-    //cb->SetLogx();
-    //cb->SetLogy();
-    //cb->SetLogz();
-    //h2mucc[9]->Write();
-    //cb->SaveAs("./pid_detres/energy_resolution_plots_most_evts_used/mucc_9_shower_shower_energy_used.pdf");
-    //fout.Close();
-
     TCanvas *c1 = new TCanvas("c1", "c1", 1800, 500);
     TCanvas *c2 = new TCanvas("c2", "c2", 1800, 500);
     TCanvas *c3 = new TCanvas("c3", "c3", 1800, 500); 
