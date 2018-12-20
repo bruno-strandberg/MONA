@@ -16,7 +16,7 @@
 #include <iostream>
 using namespace std;
 
-void reconstruction_counts(TString sum_file="../data/ORCA_MC_summary_all_10Apr2018.root") { 
+void reconstruction_counts(TString sum_file="../../data/ORCA_MC_summary_all_10Apr2018.root") { 
   SummaryParser sp(sum_file);
   
   bool plot = true;
