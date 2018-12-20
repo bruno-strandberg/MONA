@@ -22,11 +22,11 @@ void weight_hist_mc(Double_t ebin=10, Double_t ctbin=-0.8) {
   //----------------------------------------------------------
   // detector response for tracks and showers
   //----------------------------------------------------------
-  DetResponse drm(DetResponse::shower, "mc_response", 40, 1, 100, 40, -1, 1, 1, 0, 1);
-  drm.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05            , true );
-  drm.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5             , true );
+  DetResponse mc_response(DetResponse::shower, "mc_response", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  mc_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05            , true );
+  mc_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5             , true );
 
-  drm.ReadFromFile(filefolder + "mc_response_timing.root");
+  mc_response.ReadFromFile(filefolder + "mc_response.root");
 
   cout << "NOTICE: Finished filling response" << endl;
 
@@ -36,9 +36,10 @@ void weight_hist_mc(Double_t ebin=10, Double_t ctbin=-0.8) {
 
   Double_t bybin = 0.5; // Theres only one by
 
-  FitFunction mfitf(&drm, 3, "../data/eff_mass/EffMhists_elec_CC.root", "../data/eff_mass/EffMhists_muon_CC.root", "../data/eff_mass/EffMhists_tau_CC.root", "../data/eff_mass/EffMhists_elec_NC.root");
+  auto effmass_folder = (TString)getenv("NMHDIR") + "/data/eff_mass/";
+  FitFunction mfitf(&mc_response, 3, effmass_folder + "EffMhists_elec_CC.root", effmass_folder + "EffMhists_muon_CC.root", effmass_folder + "EffMhists_tau_CC.root", effmass_folder + "EffMhists_elec_NC.root");
   std::vector<TrueB> mc_weights;
-  mc_weights  = drm.GetBinWeights(ebin, ctbin, bybin);
+  mc_weights  = mc_response.GetBinWeights(ebin, ctbin, bybin);
  
 
   TH1D h_weights_mc = TH1D("h_w_m_q", "Weights mc",  100, 0, 2); 
