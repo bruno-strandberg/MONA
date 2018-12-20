@@ -19,17 +19,12 @@
 #include <iostream>
 using namespace std;
 
-void under_over_flow_E_flav(TString sum_file="../data/ORCA_MC_summary_all_10Apr2018.root") { 
+void under_over_flow_ct_flav(TString sum_file="../../data/ORCA_MC_summary_all_10Apr2018.root") { 
   SummaryParser sp(sum_file);
   
   int n_bins = 40;
   std::vector<Double_t> e_edges  = NMHUtils::GetLogBins(n_bins, 1, 100);
-  std::vector<Double_t> ct_edges = NMHUtils::GetBins(n_bins, -1, 1);
-
-  // Default scheme: all events
-  TH2D* ht_def = new TH2D("ht_def", "Reconstructed events", n_bins, &e_edges[0], n_bins, &e_edges[0]);
-  TH2D* hs_def = new TH2D("hs_def", "Reconstructed events", n_bins, &e_edges[0], n_bins, &e_edges[0]);
-  TH1D* h_mc_type = new TH1D("h_mc_type", "mc_type", 40, -19.5, 19.5);
+  std::vector<Double_t> ct_edges = NMHUtils::GetBins(n_bins, -1, 0);
 
   std::vector<TH2D*> h2elcc;
   std::vector<TH2D*> h2elnc;
@@ -38,12 +33,12 @@ void under_over_flow_E_flav(TString sum_file="../data/ORCA_MC_summary_all_10Apr2
   std::vector<TH2D*> h2tacc;
   std::vector<TH2D*> h2tanc;
   for (int i = 0; i < 10; i++){
-    h2elcc.push_back(new TH2D(Form("h2elcc_%i", i), Form("Energy resolution nu_e_CC_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
-    h2elnc.push_back(new TH2D(Form("h2elnc_%i", i), Form("Energy resolution nu_e_NC_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
-    h2mucc.push_back(new TH2D(Form("h2mucc_%i", i), Form("Energy resolution nu_m_CC_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
-    h2munc.push_back(new TH2D(Form("h2munc_%i", i), Form("Energy resolution nu_m_NC_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
-    h2tacc.push_back(new TH2D(Form("h2tacc_%i", i), Form("Energy resolution nu_t_CC_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
-    h2tanc.push_back(new TH2D(Form("h2tanc_%i", i), Form("Energy resolution nu_t_NC_q_0.%i", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
+    h2elcc.push_back(new TH2D(Form("h2elcc_%i", i), Form("Angular resolution nu_e_CC_q_0.%i", i), n_bins, &ct_edges[0], n_bins, &ct_edges[0]));
+    h2elnc.push_back(new TH2D(Form("h2elnc_%i", i), Form("Angular resolution nu_e_NC_q_0.%i", i), n_bins, &ct_edges[0], n_bins, &ct_edges[0]));
+    h2mucc.push_back(new TH2D(Form("h2mucc_%i", i), Form("Angular resolution nu_m_CC_q_0.%i", i), n_bins, &ct_edges[0], n_bins, &ct_edges[0]));
+    h2munc.push_back(new TH2D(Form("h2munc_%i", i), Form("Angular resolution nu_m_NC_q_0.%i", i), n_bins, &ct_edges[0], n_bins, &ct_edges[0]));
+    h2tacc.push_back(new TH2D(Form("h2tacc_%i", i), Form("Angular resolution nu_t_CC_q_0.%i", i), n_bins, &ct_edges[0], n_bins, &ct_edges[0]));
+    h2tanc.push_back(new TH2D(Form("h2tanc_%i", i), Form("Angular resolution nu_t_NC_q_0.%i", i), n_bins, &ct_edges[0], n_bins, &ct_edges[0]));
   } 
 
   Double_t q;
@@ -54,7 +49,6 @@ void under_over_flow_E_flav(TString sum_file="../data/ORCA_MC_summary_all_10Apr2
   Int_t total_events = 0;
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
     total_events++;
-    h_mc_type->Fill(sp.GetEvt()->Get_MC_type());
     // Filter shyte
     bool good_tr = false;
     bool good_sh = false;
@@ -74,16 +68,16 @@ void under_over_flow_E_flav(TString sum_file="../data/ORCA_MC_summary_all_10Apr2
 
     // Fill events
     if ((std::abs(sp.GetEvt()->Get_MC_type()) == 11) or (std::abs(sp.GetEvt()->Get_MC_type()) == 12)) { // Abs for anti-particles
-      if (sp.GetEvt()->Get_MC_is_CC()) h2elcc[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_shower_energy());
-      else                             h2elnc[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_shower_energy());
+      if (sp.GetEvt()->Get_MC_is_CC()) h2elcc[index]->Fill(-sp.GetEvt()->Get_MC_dir_z(), -sp.GetEvt()->Get_shower_dir_z());
+      else                             h2elnc[index]->Fill(-sp.GetEvt()->Get_MC_dir_z(), -sp.GetEvt()->Get_shower_dir_z());
     }
     if ((std::abs(sp.GetEvt()->Get_MC_type()) == 13) or (std::abs(sp.GetEvt()->Get_MC_type()) == 14)) {
-      if (sp.GetEvt()->Get_MC_is_CC()) h2mucc[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_track_energy());
-      else                             h2munc[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_shower_energy());
+      if (sp.GetEvt()->Get_MC_is_CC()) h2mucc[index]->Fill(-sp.GetEvt()->Get_MC_dir_z(), -sp.GetEvt()->Get_track_dir_z());
+      else                             h2munc[index]->Fill(-sp.GetEvt()->Get_MC_dir_z(), -sp.GetEvt()->Get_shower_dir_z());
     }
     if ((std::abs(sp.GetEvt()->Get_MC_type()) == 15) or (std::abs(sp.GetEvt()->Get_MC_type()) == 16)) {
-      if (sp.GetEvt()->Get_MC_is_CC()) h2tacc[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_shower_energy());
-      else                             h2tanc[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_shower_energy());
+      if (sp.GetEvt()->Get_MC_is_CC()) h2tacc[index]->Fill(-sp.GetEvt()->Get_MC_dir_z(), -sp.GetEvt()->Get_shower_dir_z());
+      else                             h2tanc[index]->Fill(-sp.GetEvt()->Get_MC_dir_z(), -sp.GetEvt()->Get_shower_dir_z());
     }
 
   }
