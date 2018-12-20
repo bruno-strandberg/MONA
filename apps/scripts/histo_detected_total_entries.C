@@ -19,25 +19,19 @@
 #include <iostream>
 using namespace std;
 
-void histo_MC_total_entries() {
+void histo_detected_total_entries() {
 
-  const int N_PID_CLASSES = 15;
+  const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
 
-  TString input_def_t_NO = "./default_detres/track_response_timing_NO.root";
-  TString input_def_s_NO = "./default_detres/shower_response_timing_NO.root";
-  TString input_def_t_IO = "./default_detres/track_response_timing_IO.root";
-  TString input_def_s_IO = "./default_detres/shower_response_timing_IO.root";
+  TString input_def = "./default_detres/asymmetry_default.root";
   
-  TFile *f_def_t_NO = TFile::Open(input_def_t_NO, "READ");
-  TFile *f_def_s_NO = TFile::Open(input_def_s_NO, "READ");
-  TFile *f_def_t_IO = TFile::Open(input_def_t_IO, "READ");
-  TFile *f_def_s_IO = TFile::Open(input_def_s_IO, "READ");
+  TFile *f_def = TFile::Open(input_def, "READ");
 
-  TH3D *h_t_NO_def = (TH3D*)f_def_t_NO->Get("hresp");
-  TH3D *h_s_NO_def = (TH3D*)f_def_s_NO->Get("hresp");
-  TH3D *h_t_IO_def = (TH3D*)f_def_t_IO->Get("hresp");
-  TH3D *h_s_IO_def = (TH3D*)f_def_s_IO->Get("hresp");
+  TH2D *h_t_NO_def = (TH2D*)f_def->Get("detected_tracks_NO");
+  TH2D *h_s_NO_def = (TH2D*)f_def->Get("detected_showers_NO");
+  TH2D *h_t_IO_def = (TH2D*)f_def->Get("detected_tracks_IO");
+  TH2D *h_s_IO_def = (TH2D*)f_def->Get("detected_showers_IO");
 
   Double_t n_t_NO_def = h_t_NO_def->Integral();
   Double_t n_s_NO_def = h_s_NO_def->Integral();
@@ -50,20 +44,14 @@ void histo_MC_total_entries() {
   
 
   for (int i = 0; i < N_PID_CLASSES; i++){
-    TString input_t_NO = Form("./pid_detres/track_response_NO_%.2f.root", i * N_PID_CLASSES);
-    TString input_t_IO = Form("./pid_detres/track_response_IO_%.2f.root", i * N_PID_CLASSES);
-    TString input_s_NO = Form("./pid_detres/shower_response_NO_%.2f.root", i * N_PID_CLASSES);
-    TString input_s_IO = Form("./pid_detres/shower_response_IO_%.2f.root", i * N_PID_CLASSES);
+    TString input = Form("./pid_detres/pid_binning_%i/asymmetry_split_%.2f.root", N_PID_CLASSES, PID_step * i);
     
-    TFile *f_t_NO = TFile::Open(input_t_NO, "READ");
-    TFile *f_t_IO = TFile::Open(input_t_IO, "READ");
-    TFile *f_s_NO = TFile::Open(input_s_NO, "READ");
-    TFile *f_s_IO = TFile::Open(input_s_IO, "READ");
+    TFile *f = TFile::Open(input, "READ");
 
-    TH3D *h_t_NO = (TH3D*)f_t_NO->Get("hresp");
-    TH3D *h_t_IO = (TH3D*)f_t_IO->Get("hresp");
-    TH3D *h_s_NO = (TH3D*)f_s_NO->Get("hresp");
-    TH3D *h_s_IO = (TH3D*)f_s_IO->Get("hresp");
+    TH2D *h_t_NO = (TH2D*)f->Get("detected_tracks_NO");
+    TH2D *h_t_IO = (TH2D*)f->Get("detected_tracks_IO");
+    TH2D *h_s_NO = (TH2D*)f->Get("detected_showers_NO");
+    TH2D *h_s_IO = (TH2D*)f->Get("detected_showers_IO");
 
     Double_t n_t_NO = h_t_NO->Integral();
     Double_t n_t_IO = h_t_IO->Integral();
