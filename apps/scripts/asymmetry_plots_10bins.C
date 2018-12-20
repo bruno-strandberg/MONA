@@ -19,19 +19,21 @@ using namespace std;
 
 void asymmetry_plots_10bins() {
 
-  for (int i = 0; i < 10; i++){
-    TString input = Form("./pid_detres/asym_pid_0.%i.root", i);
-    
+  const int N_PID_CLASSES = 10;
+  Double_t PID_step = 1 / float(N_PID_CLASSES);
+  for (int i = 0; i < N_PID_CLASSES; i++){
+    TString input = Form("./pid_detres/pid_binning_%i/asymmetry_split_%.2f.root", N_PID_CLASSES, i * PID_step);
+
     TFile *f = TFile::Open(input, "READ");
 
     gStyle->SetPalette(kLightTemperature);
     gStyle->SetOptStat(0);
 
-    TH2D *h1 = (TH2D*)f->Get(Form("asymmetry_track_%i", i));
+    TH2D *h1 = (TH2D*)f->Get(Form("asymmetry_track_%.2f", i * PID_step));
     TCanvas *c1 = new TCanvas(Form("c%i", i), Form("c%i", i), 630, 500); 
     h1->Draw("colz");
 
-    h1->SetTitle(Form("Asymmetry tracks q_0.%i", i));
+    h1->SetTitle(Form("Asymmetry tracks q_%.2f", i * PID_step));
     h1->SetXTitle("E_{reco} [GeV]");
     h1->SetYTitle("cos(#theta_{reco})");
 
@@ -53,14 +55,14 @@ void asymmetry_plots_10bins() {
     h1->GetZaxis()->SetRangeUser(-1,1);
     c1->SetLogx();
     h1->Draw("colz");
-    c1->SaveAs(Form("./pid_detres/asymmetry_tracks_0.%i.pdf", i));
-    c1->SaveAs(Form("./pid_detres/png/asymmetry_tracks_0.%i.png", i));
+    c1->SaveAs(Form("./pid_detres/asymmetry_tracks_%.2f.pdf", i * PID_step));
+    c1->SaveAs(Form("./pid_detres/png/asymmetry_tracks_%.2f.png", i * PID_step));
 
-    TH2D *h2 = (TH2D*)f->Get(Form("asymmetry_shower_%i", i));
+    TH2D *h2 = (TH2D*)f->Get(Form("asymmetry_shower_%.2f", i * PID_step));
     TCanvas *c2 = new TCanvas(Form("c%i", i+10), Form("c%i", i+10), 630, 500); 
     h2->Draw("colz");
 
-    h2->SetTitle(Form("Asymmetry showers q_0.%i", i));
+    h2->SetTitle(Form("Asymmetry showers q_%.2f", i * PID_step));
     h2->SetXTitle("E_{reco} [GeV]");
     h2->SetYTitle("cos(#theta_{reco})");
 
@@ -81,7 +83,7 @@ void asymmetry_plots_10bins() {
     h2->GetZaxis()->SetRangeUser(-1,1);
     c2->SetLogx();
     h2->Draw("colz");
-    c2->SaveAs(Form("./pid_detres/asymmetry_showers_0.%i.pdf", i));
-    c2->SaveAs(Form("./pid_detres/png/asymmetry_showers_0.%i.png", i));
+    c2->SaveAs(Form("./pid_detres/asymmetry_showers_%.2f.pdf", i * PID_step));
+    c2->SaveAs(Form("./pid_detres/png/asymmetry_showers_%.2f.png", i * PID_step));
   }
 }

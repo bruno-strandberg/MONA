@@ -18,11 +18,11 @@
 using namespace std;
 
 
-void plot_asym_errors() {
+void plot_asymmetry_errors() {
 
-    TString file = TString::Format("./pid_detres/asym_pid_0.%i.root", 9);
+    TString file = "./pid_detres/pid_binning_10/asymmetry_split_0.90.root";
     TFile *f = TFile::Open(file, "READ");
-    TH2D *h_asym = (TH2D*)f->Get("asymmetry_track_9");
+    TH2D *h_asym = (TH2D*)f->Get("asymmetry_track_0.90");
     h_asym->SetDirectory(0);
 
     TH2D *h_asym_err = (TH2D*)h_asym->Clone("h_a_rel_err");

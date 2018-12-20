@@ -19,7 +19,7 @@ using namespace std;
 
 void asymmetry_plots() {
 
-  TString input   = "./default_detres/asym_pid.root";
+  TString input   = "./default_detres/asymmetry_default.root";
   
   TFile *f_IO = TFile::Open(input, "READ");
 

@@ -27,7 +27,7 @@ void error_plot(bool mass_ordering=true) {
     order_string = "IO";
   }
 
-  TString input = Form("./default_detres/timing_%s.root", order_string.c_str());
+  TString input = Form("./default_detres/default_expectated_evts_%s.root", order_string.c_str());
   
   TFile *f_IO = TFile::Open(input, "READ");
 
