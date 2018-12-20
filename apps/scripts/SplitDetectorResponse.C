@@ -63,7 +63,6 @@ void SplitDetectorResponse() {
   SummaryParser sp("../../data/ORCA_MC_summary_all_10Apr2018.root");
   bool writeFiles = true;
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
-    if (i == 1000) break;
     if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
     sp.GetTree()->GetEntry(i);
     SummaryEvent *evt = sp.GetEvt();
