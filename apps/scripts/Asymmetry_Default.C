@@ -22,25 +22,23 @@ using namespace std;
 
 void Asymmetry_Default() {
 
-  bool plot = true;
+  bool plot = false;
 
-  TString filefolder = "./default_detres/";
+  TString filefolder = "./default_detres/RooFit/";
 
   TString file_NO = filefolder + "default_expectated_evts_NO.root";
   TString file_IO = filefolder + "default_expectated_evts_IO.root";
   TString output  = filefolder + "asymmetry_default.root";
   
+  TFile *f_NO = TFile::Open(file_NO, "READ");
   TFile *f_IO = TFile::Open(file_IO, "READ");
 
-  std::tuple<TH2D*, TH2D*, TH2D*> h_tuple_NO = ReadDetectorResponseFile(file_NO);
-  std::tuple<TH2D*, TH2D*, TH2D*> h_tuple_IO = ReadDetectorResponseFile(file_IO);
-
-  TH2D *h_t_NO = std::get<0>(h_tuple_NO);
-  TH2D *h_s_NO = std::get<1>(h_tuple_NO);
-  TH2D *h_m_NO = std::get<2>(h_tuple_NO);
-  TH2D *h_t_IO = std::get<0>(h_tuple_IO);
-  TH2D *h_s_IO = std::get<1>(h_tuple_IO);
-  TH2D *h_m_IO = std::get<2>(h_tuple_IO);
+  TH2D *h_t_NO = (TH2D*)f_NO->Get("detected_tracks");
+  TH2D *h_s_NO = (TH2D*)f_NO->Get("detected_showers");
+  TH2D *h_m_NO = (TH2D*)f_NO->Get("detected_mc");
+  TH2D *h_t_IO = (TH2D*)f_IO->Get("detected_tracks");
+  TH2D *h_s_IO = (TH2D*)f_IO->Get("detected_showers");
+  TH2D *h_m_IO = (TH2D*)f_IO->Get("detected_mc");
 
   h_t_NO->SetName("detected_tracks_NO");
   h_s_NO->SetName("detected_showers_NO");
@@ -49,11 +47,11 @@ void Asymmetry_Default() {
   h_s_IO->SetName("detected_showers_IO");
   h_m_IO->SetName("detected_mc_IO");
 
-  std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_t = 
+  std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_t =
   NMHUtils::Asymmetry(h_t_NO, h_t_IO, "asymmetry_track", 2, 80, -1, 0);
-  std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_s = 
+  std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_s =
   NMHUtils::Asymmetry(h_s_NO, h_s_IO, "asymmetry_shower", 2, 80, -1, 0);
-  std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_m = 
+  std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_m =
   NMHUtils::Asymmetry(h_m_NO, h_m_IO, "asymmetry_mc", 2, 80, -1, 0);
 
   TH2D* h_asym_t = std::get<0>(asym_t);
@@ -118,5 +116,4 @@ void Asymmetry_Default() {
   cout << "Asymmetry total for showers: " << asym_s_value   << " +- " << asym_s_err   << " (" << 100*asym_s_err/asym_s_value     << "%)" << endl;
   cout << "Asymmetry for mc           : " << asym_m_value   << " +- " << asym_m_err   << " (" << 100*asym_m_err/asym_m_value     << "%)" << endl;
   cout << "Asymmetry total combined   : " << asym_tot_value << " +- " << asym_tot_err << " (" << 100*asym_tot_err/asym_tot_value << "%)" << endl;
-
 }
