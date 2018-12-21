@@ -17,7 +17,7 @@ void SplitDetectorResponse() {
 
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
-  TString filefolder = TString::Format("./pid_detres/pid_binning_%i", N_PID_CLASSES);
+  TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
 
   gROOT->ProcessLine(".L FitFunction.C+");
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
@@ -61,7 +61,6 @@ void SplitDetectorResponse() {
 
   auto summary_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
   SummaryParser sp(summary_file);
-  bool writeFiles = true;
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
     if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
     sp.GetTree()->GetEntry(i);

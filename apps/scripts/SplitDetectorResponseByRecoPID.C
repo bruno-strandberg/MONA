@@ -91,7 +91,6 @@ void SplitDetectorResponseByRecoPID() {
 
   auto summary_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
   SummaryParser sp(summary_file);
-  bool writeFiles = true;
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
     sp.GetTree()->GetEntry(i);
     SummaryEvent *evt = sp.GetEvt();
@@ -106,13 +105,11 @@ void SplitDetectorResponseByRecoPID() {
   }
 
   for (int i = 0; i < N_PID_CLASSES; i++) { 
-    if (writeFiles) { // This flag is to not accidently overwrite with empty files
-      response_good_track_vector[i].WriteToFile(filefolder + TString::Format("track_response_gt_%.2f.root", PID_step * i));
-      response_good_shower_vector[i].WriteToFile(filefolder + TString::Format("track_response_gs_%.2f.root", PID_step * i));
-      response_good_event_vector[i].WriteToFile(filefolder + TString::Format("track_response_ge_%.2f.root", PID_step * i));
-      response_shower_vector[i].WriteToFile(filefolder  + TString::Format("shower_response_%.2f.root", PID_step * i));
-      response_mc_vector[i].WriteToFile(filefolder  + TString::Format("mc_response_%.2f.root", PID_step * i));
-    }
+    response_good_track_vector[i].WriteToFile(filefolder + TString::Format("track_response_gt_%.2f.root", PID_step * i));
+    response_good_shower_vector[i].WriteToFile(filefolder + TString::Format("track_response_gs_%.2f.root", PID_step * i));
+    response_good_event_vector[i].WriteToFile(filefolder + TString::Format("track_response_ge_%.2f.root", PID_step * i));
+    response_shower_vector[i].WriteToFile(filefolder  + TString::Format("shower_response_%.2f.root", PID_step * i));
+    response_mc_vector[i].WriteToFile(filefolder  + TString::Format("mc_response_%.2f.root", PID_step * i));
   }
 
   cout << "NOTICE: Finished filling response" << endl;

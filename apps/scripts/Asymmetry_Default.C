@@ -28,7 +28,7 @@ void Asymmetry_Default() {
 
   TString file_NO = filefolder + "default_expectated_evts_NO.root";
   TString file_IO = filefolder + "default_expectated_evts_IO.root";
-  TString output  = filefolder + "asymmertry_default.root";
+  TString output  = filefolder + "asymmetry_default.root";
   
   TFile *f_IO = TFile::Open(file_IO, "READ");
 
@@ -96,7 +96,7 @@ void Asymmetry_Default() {
   fout.Close();
 
   c1->cd(1);
-  c1->SaveAs(filefolder + "asym_plots.pdf");
+  c1->SaveAs(filefolder + "asymmetry_plots.pdf");
 
   if (plot) { // To keep the memory low (esp. over tunnels) close the canvas.
     c1->Close(); 
