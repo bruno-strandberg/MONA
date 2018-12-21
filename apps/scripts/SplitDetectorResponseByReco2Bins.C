@@ -66,8 +66,8 @@ void SplitDetectorResponseByReco2Bins() {
     }
   }
   for (int i = 0; i < N_PID_CLASSES; i++) {
-    drts[i].WriteToFile(filefolder + TString::Format("track_response_%.2f.root" , cut_map[i]));
-    drss[i].WriteToFile(filefolder + TString::Format("shower_response_%.2f.root", cut_map[i]));
+    track_response_vector[i].WriteToFile(filefolder + TString::Format("track_response_%.2f.root" , cut_map[i]));
+    shower_response_vector[i].WriteToFile(filefolder + TString::Format("shower_response_%.2f.root", cut_map[i]));
   }
 
   cout << "NOTICE: Finished filling response" << endl;

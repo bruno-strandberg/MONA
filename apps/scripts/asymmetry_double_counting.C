@@ -37,9 +37,9 @@ void asymmetry_double_counting() {
 
   cout << "Asymmetries per single bin: " << endl;
   for (int i = 0; i < N_PID_CLASSES; i++) {
-    TString file_NO = TString::Format("./quality_detres/split_pid_NO_%.1f.root", cut_map[i]);
-    TString file_IO = TString::Format("./quality_detres/split_pid_IO_%.1f.root", cut_map[i]);
-    TString output  = TString::Format("./quality_detres/asym_pid_%.1f.root", cut_map[i]);
+    TString file_NO = TString::Format("./quality_detres/split_pid_NO_%.2f.root", cut_map[i]);
+    TString file_IO = TString::Format("./quality_detres/split_pid_IO_%.2f.root", cut_map[i]);
+    TString output  = TString::Format("./quality_detres/asymmetry_split_%.2f.root", cut_map[i]);
     
     TFile *f_IO = TFile::Open(file_IO, "READ");
 
@@ -57,14 +57,14 @@ void asymmetry_double_counting() {
     h_s_IO->SetName("detected_showers_IO");
 
     std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_t = 
-    NMHUtils::Asymmetry(h_t_NO, h_t_IO, TString::Format("asymmetry_track_%.1f",  cut_map[i]), 2, 80, -1, 0);
+    NMHUtils::Asymmetry(h_t_NO, h_t_IO, TString::Format("asymmetry_track_%.2f",  cut_map[i]), 2, 80, -1, 0);
     std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_s = 
-    NMHUtils::Asymmetry(h_s_NO, h_s_IO, TString::Format("asymmetry_shower_%.1f", cut_map[i]), 2, 80, -1, 0);
+    NMHUtils::Asymmetry(h_s_NO, h_s_IO, TString::Format("asymmetry_shower_%.2f", cut_map[i]), 2, 80, -1, 0);
 
     TH2D* h_asym_t = std::get<0>(asym_t);
     TH2D* h_asym_s = std::get<0>(asym_s);
 
-    TCanvas *c1 = new TCanvas(TString::Format("c1_%.1f", cut_map[i]), "c1", 800, 1200); // has to be outside of the if, so that the writing below works.
+    TCanvas *c1 = new TCanvas(TString::Format("c1_%.2f", cut_map[i]), "c1", 800, 1200); // has to be outside of the if, so that the writing below works.
     gStyle->SetPalette(kBird);
     if (plot) { 
       c1->Divide(2,3);

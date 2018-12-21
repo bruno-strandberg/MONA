@@ -21,12 +21,12 @@ using namespace std;
 // This script calculates the asymmetry for track energy binned data in good track, good shower and good event.
 
 
-void asymmetry_energy_pid_binning() {
+void asymmetry_energy_split_by_reco() {
 
   bool b_plot = true;
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
-  TString filefolder = "./energy_detres/pid_bins_10/";
+  TString filefolder = Form("./energy_detres/pid_bins_%i/", N_PID_CLASSES);
 
   vector<Double_t> asym_t_gt(N_PID_CLASSES);
   vector<Double_t> asym_t_gs(N_PID_CLASSES);

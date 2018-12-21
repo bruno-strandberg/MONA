@@ -38,9 +38,9 @@ void asymmetry_energy() {
   Double_t asym_s_err;
   Double_t asym_m_err;
 
-  TString file_NO = filefolder + "split_energy_NO.root";
-  TString file_IO = filefolder + "split_energy_IO.root";
-  TString output  = filefolder + "asym_energy.root";
+  TString file_NO = filefolder + "split_expected_evts_by_energy_NO.root";
+  TString file_IO = filefolder + "split_expected_evts_by_energy_IO.root";
+  TString output  = filefolder + "asymmetry_split_by_energy.root";
   
   TFile *f_NO  = TFile::Open(file_NO, "READ");
   TFile *f_IO  = TFile::Open(file_IO, "READ");
