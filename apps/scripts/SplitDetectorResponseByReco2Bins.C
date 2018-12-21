@@ -13,21 +13,11 @@
 #include <iostream>
 using namespace std;
 
-void SplitQuality(bool mass_ordering=true) {
+void SplitDetectorResponseByReco2Bins() {
+
   const int N_PID_CLASSES = 2;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
   TString filefolder = "./quality_detres/";
-  string order_string;
-  double p5;
-  // GET RID OF THIS boolean STUFF
-  if (mass_ordering) { // True = NO, +1; False = IO, -1
-    order_string = "NO";
-    p5 = 2.52e-3;
-  } 
-  else { 
-    order_string = "IO";
-    p5 = -2.44e-3;
-  }
 
   gROOT->ProcessLine(".L FitFunction.C+");
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
@@ -64,6 +54,7 @@ void SplitQuality(bool mass_ordering=true) {
     shower_response_vector.push_back(shower_response);
   }
 
+  auto summary_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
   SummaryParser sp("../../data/ORCA_MC_summary_all_10Apr2018.root");
   bool writeFiles = true;
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
@@ -100,40 +91,46 @@ void SplitQuality(bool mass_ordering=true) {
     hdet_tracks->Reset();
     hdet_showers->Reset();
   
-    // Mass ordering implied by the oscillation parameters
-    double p[] = {0.303, 0.0214, 0.5, 0, 7.53e-5, p5}; // Taking p5 from the boolean, this is only difference between NO and IO.
+    std::vector<std::tuple<string, Double_t>> orderings; // Value is dm32
+    orderings.push_back(std::make_tuple("NO", 2.52e-3));
+    orderings.push_back(std::make_tuple("IO", -2.44e-3));
   
-    TStopwatch timer;
+    for (auto order: orderings) {
+      double p[] = {0.303, 0.0214, 0.5, 0, 7.53e-5, std::get<1>(order)}; // dm32 is last parameter.
+      string order_string = std::get<0>(order);  
+    
+      TStopwatch timer;
+    
+      for (Int_t ebin = 1; ebin <= hdet_tracks->GetXaxis()->GetNbins(); ebin++) {
+        for (Int_t ctbin = 1; ctbin <= hdet_tracks->GetYaxis()->GetNbins(); ctbin++) {
+          for (Int_t bybin = 1; bybin <= hdet_tracks->GetZaxis()->GetNbins(); bybin++) {
+    
+            Double_t E  = hdet_tracks->GetXaxis()->GetBinCenter( ebin );
+            Double_t ct = hdet_tracks->GetYaxis()->GetBinCenter( ctbin );
+            Double_t by = hdet_tracks->GetZaxis()->GetBinCenter( bybin );
+    
+            double x[] = {E, ct, by};
+   
+            std::tuple<double, double> track_response  = tfitf.operator()(x, p);
+            std::tuple<double, double> shower_response = sfitf.operator()(x, p);
   
-    for (Int_t ebin = 1; ebin <= hdet_tracks->GetXaxis()->GetNbins(); ebin++) {
-      for (Int_t ctbin = 1; ctbin <= hdet_tracks->GetYaxis()->GetNbins(); ctbin++) {
-        for (Int_t bybin = 1; bybin <= hdet_tracks->GetZaxis()->GetNbins(); bybin++) {
-  
-          Double_t E  = hdet_tracks->GetXaxis()->GetBinCenter( ebin );
-          Double_t ct = hdet_tracks->GetYaxis()->GetBinCenter( ctbin );
-          Double_t by = hdet_tracks->GetZaxis()->GetBinCenter( bybin );
-  
-          double x[] = {E, ct, by};
- 
-          std::tuple<double, double> track_response  = tfitf.operator()(x, p);
-          std::tuple<double, double> shower_response = sfitf.operator()(x, p);
-
-          hdet_tracks->SetBinContent(  ebin, ctbin, bybin, std::get<0>(track_response) );
-          hdet_tracks->SetBinError(    ebin, ctbin, bybin, std::get<1>(track_response) );
-          hdet_showers->SetBinContent( ebin, ctbin, bybin, std::get<0>(shower_response) );
-          hdet_showers->SetBinError(   ebin, ctbin, bybin, std::get<1>(shower_response) );
+            hdet_tracks->SetBinContent(  ebin, ctbin, bybin, std::get<0>(track_response) );
+            hdet_tracks->SetBinError(    ebin, ctbin, bybin, std::get<1>(track_response) );
+            hdet_showers->SetBinContent( ebin, ctbin, bybin, std::get<0>(shower_response) );
+            hdet_showers->SetBinError(   ebin, ctbin, bybin, std::get<1>(shower_response) );
+          }
         }
       }
-    }
+      
+      cout << "NOTICE: Finished filling histograms" << endl;
+      cout << "NOTICE: Time for filling hists " << (Double_t)timer.RealTime() << endl;
     
-    cout << "NOTICE: Finished filling histograms" << endl;
-    cout << "NOTICE: Time for filling hists " << (Double_t)timer.RealTime() << endl;
-  
-    TString output = TString::Format("split_pid_%s_%.2f.root", order_string.c_str(), cut_map[i]);
-    TFile fout(filefolder + output, "RECREATE");
-    hdet_tracks->Write();
-    hdet_showers->Write();
-    fout.Close();
-    cout << "NOTICE: Written " << output << endl;
+      TString output = TString::Format("split_pid_%s_%.2f.root", order_string.c_str(), cut_map[i]);
+      TFile fout(filefolder + output, "RECREATE");
+      hdet_tracks->Write();
+      hdet_showers->Write();
+      fout.Close();
+      cout << "NOTICE: Written " << output << endl;
+    }
   }
 }
