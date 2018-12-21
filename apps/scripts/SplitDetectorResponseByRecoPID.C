@@ -89,7 +89,8 @@ void SplitDetectorResponseByRecoPID() {
     response_mc_vector.push_back(response_mc);
   }
 
-  SummaryParser sp("../../data/ORCA_MC_summary_all_10Apr2018.root");
+  auto summary_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+  SummaryParser sp(summary_file);
   bool writeFiles = true;
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
     sp.GetTree()->GetEntry(i);

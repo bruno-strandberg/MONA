@@ -59,8 +59,8 @@ void SplitDetectorResponse() {
     mc_response_vector.push_back(mc_response);
   }
 
-  //auto simdata_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root"; // To be used once cross-check of file below is done.
-  SummaryParser sp("../../data/ORCA_MC_summary_all_10Apr2018.root");
+  auto summary_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+  SummaryParser sp(summary_file);
   bool writeFiles = true;
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
     if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;

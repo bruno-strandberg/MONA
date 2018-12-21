@@ -42,8 +42,8 @@ void DefaultDetectorResponse() {
   mc_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05, true );
   mc_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(),  0.5, true );
 
-  //auto simdata_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root"; // To be used once cross-check of file below is done.
-  SummaryParser sp("../../data/ORCA_MC_summary_all_10Apr2018.root");
+  auto summary_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+  SummaryParser sp(summary_file);
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
     if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
     sp.GetTree()->GetEntry(i);
