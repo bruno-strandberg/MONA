@@ -55,8 +55,7 @@ void SplitDetectorResponseByReco2Bins() {
   }
 
   auto summary_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
-  SummaryParser sp("../../data/ORCA_MC_summary_all_10Apr2018.root");
-  bool writeFiles = true;
+  SummaryParser sp(summary_file);
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
     sp.GetTree()->GetEntry(i);
     SummaryEvent *evt = sp.GetEvt();
@@ -64,13 +63,6 @@ void SplitDetectorResponseByReco2Bins() {
     for (int i = 0; i < N_PID_CLASSES; i++) {
       track_response_vector[i].Fill(evt);
       shower_response_vector[i].Fill(evt);
-    }
-  }
-
-  for (int i = 0; i < N_PID_CLASSES; i++) { 
-    if (writeFiles) { // This flag is to not accidently overwrite with empty files
-      track_response_vector[i].WriteToFile(filefolder + TString::Format("track_response_%s_%.2f.root" , order_string.c_str(), cut_map[i]));
-      shower_response_vector[i].WriteToFile(filefolder + TString::Format("shower_response_%s_%.2f.root", order_string.c_str(), cut_map[i]));
     }
   }
 
