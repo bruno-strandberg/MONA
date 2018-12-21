@@ -32,7 +32,7 @@ void SplitDetectorResponseByReco2Bins() {
   //----------------------------------------------------------
   std::vector<DetResponse> track_response_vector;
   for (int i = 0; i < N_PID_CLASSES; i++) {
-    DetResponse track_response(DetResponse::track, TString::Format("track_response_%s_%.2f", order_string.c_str(), cut_map[i]), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    DetResponse track_response(DetResponse::track, TString::Format("track_response_%.2f", cut_map[i]), 40, 1, 100, 40, -1, 1, 1, 0, 1);
     track_response.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   , 0.5         , true );
     track_response.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   , 0.5         , true );
     track_response.AddCut( &SummaryEvent::Get_RDF_track_score , std::greater<double>()   , cut_map[i]  , true );
@@ -44,7 +44,7 @@ void SplitDetectorResponseByReco2Bins() {
 
   std::vector<DetResponse> shower_response_vector;
   for (int i = 0; i < N_PID_CLASSES; i++) {
-    DetResponse shower_response(DetResponse::shower, TString::Format("shower_response_%s_%.2f", order_string.c_str(), cut_map[i]), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    DetResponse shower_response(DetResponse::shower, TString::Format("shower_response_%.2f", cut_map[i]), 40, 1, 100, 40, -1, 1, 1, 0, 1);
     shower_response.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   , 0.5         , true );
     shower_response.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   , 0.5         , true );
     shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::greater<double>()   , cut_map[i]  , true );
@@ -64,6 +64,10 @@ void SplitDetectorResponseByReco2Bins() {
       track_response_vector[i].Fill(evt);
       shower_response_vector[i].Fill(evt);
     }
+  }
+  for (int i = 0; i < N_PID_CLASSES; i++) {
+    drts[i].WriteToFile(filefolder + TString::Format("track_response_%.2f.root" , cut_map[i]));
+    drss[i].WriteToFile(filefolder + TString::Format("shower_response_%.2f.root", cut_map[i]));
   }
 
   cout << "NOTICE: Finished filling response" << endl;
