@@ -530,13 +530,13 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_tru
 
 //***************************************************************************
 
-/** This function is called from inside `FitPDF::evaluate()` and returns the number of expected events in a \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ bin.
+/** This function is called from inside `FitPDF::evaluate()` and returns the expected event density at a \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ value.
 
     The argument map is created in `FitPDF` and contains names and corresponding proxies for all parameters in `fParSet`. The detector response is also part of the `FitPDF` class and configures what kind of an event selection the pdf is used to fit.
 
     \param parmap   Reference to a map with parameter names and corresponding `RooRealProxy`'s.
     \param resp     Pointer to `DetResponse` instance used with the `FitPDF` class.
-    \return         Expected number of events in a 
+    \return         Expected event density, calculated by dividing the expected number of events in a bin by bin width.
 
 */
 Double_t FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp) {
@@ -553,7 +553,12 @@ Double_t FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, De
   Double_t Dm21      = *( parmap.at( (TString)fDm21->GetName() ) );
   Double_t Dm31      = *( parmap.at( (TString)fDm31->GetName() ) );
 
-  return RecoEvts(resp, E_reco, Ct_reco, By_reco, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first;
+  Double_t e_w  = fHB->GetXaxis()->GetBinWidth( fHB->GetXaxis()->FindBin( E_reco )  );
+  Double_t ct_w = fHB->GetYaxis()->GetBinWidth( fHB->GetYaxis()->FindBin( Ct_reco ) );
+  Double_t by_w = fHB->GetZaxis()->GetBinWidth( fHB->GetZaxis()->FindBin( By_reco ) );
+  Double_t binw = e_w * ct_w * by_w;
+  
+  return RecoEvts(resp, E_reco, Ct_reco, By_reco, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first/binw;
 
 }
 
