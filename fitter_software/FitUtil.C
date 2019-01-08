@@ -553,6 +553,8 @@ Double_t FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, De
   Double_t Dm21      = *( parmap.at( (TString)fDm21->GetName() ) );
   Double_t Dm31      = *( parmap.at( (TString)fDm31->GetName() ) );
 
+  // calculate the bin width to convert number of events to event density
+
   Double_t e_w  = fHB->GetXaxis()->GetBinWidth( fHB->GetXaxis()->FindBin( E_reco )  );
   Double_t ct_w = fHB->GetYaxis()->GetBinWidth( fHB->GetYaxis()->FindBin( Ct_reco ) );
   Double_t by_w = fHB->GetZaxis()->GetBinWidth( fHB->GetZaxis()->FindBin( By_reco ) );
