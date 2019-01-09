@@ -94,7 +94,6 @@ int main(const int argc, const char **argv) {
   //parse command line arguments
   //------------------------------------------------------  
   TString        summary_file;
-  TString        gseagen_file;
   TString        output_dir;
   JRange<double> energy_range;
   Int_t          nebins;
@@ -115,7 +114,7 @@ int main(const int argc, const char **argv) {
     string binningcomment = "This is chosen a large number that can be re-binned to a suitable number for analysis. The default value of 240 can be re-binned to 20, 24, 40, 48, ..., which are typically used in ORCA NMO.";
 
     zap['s'] = make_field(summary_file, "Summary file with reconstructed neutrino events");
-    zap['g'] = make_field(gseagen_file, "GSeaGen file where all of the generated MC events are");
+    zap['g'] = make_field(fG, "GSeaGen file(s) where all of the generated MC events of the corresponding summary file are. Note that several gSeaGen files can be input to match one summary file, this can happen when e.g. 10 KM3Sim files are combined to create 1 JTE file.");
     zap['d'] = make_field(output_dir, "Directory where output file is written") = "output/";
     zap['E'] = make_field(nebins , "Number of energy bins. " + binningcomment) = 240;
     zap['C'] = make_field(nctbins, "Number of cos-theta bins. See comment for -E") = 240;
@@ -138,15 +137,22 @@ int main(const int argc, const char **argv) {
     throw std::invalid_argument("ERROR! EffMhists() veff_option " + to_string(veff_option) + " not supported." );
   }
 
-  if ( !NMHUtils::FileExists(summary_file) || !NMHUtils::FileExists(gseagen_file) ) {
+  if ( !NMHUtils::FileExists(summary_file) || fG.getFilelist().size() == 0 ) {
     throw std::invalid_argument("ERROR! EffMhists() input file(s) missing." );
+  }
+  else {
+    for (auto gsgf: fG.getFilelist()) {
+      if ( !NMHUtils::FileExists(gsgf) ) {
+	throw std::invalid_argument("ERROR! EffMhists() gSeaGen file " + gsgf + " missing." );
+      }
+    }
   }
 
   //------------------------------------------------------
   //init datafile parsers, create output name and init hists
   //------------------------------------------------------  
+
   fS = new SummaryParser(summary_file);
-  fG = JMultipleFileScanner<Evt>((string)gseagen_file);
   const JHead aahead = getHeader(fG);
 
   // read the flavor and the interaction type from the first event in the summary file
@@ -166,7 +172,7 @@ int main(const int argc, const char **argv) {
     zmax_vol = aahead.can.zmax;
   }
 
-  if ( run_nr != fS->GetEvt(0)->Get_MC_runID() ) {
+  if ( run_nr != fS->GetEvt(0)->Get_MC_runID() && fG.getFilelist().size() == 1 ) {
     throw std::invalid_argument("ERROR! EffMhists() gSeaGen and summary file run numbers are different.");
   }
 
@@ -199,10 +205,13 @@ int main(const int argc, const char **argv) {
   // write out the histograms. Division of det/gen and scaling has to be done 
   // later, this allows easy combining of the outputs
   //------------------------------------------------------
+  TString gseagen_files = "";
+  for ( auto gsgf: fG.getFilelist() ) gseagen_files += (TString)gsgf + ";";
+
   FileHeader h("EffMhists");
   h.ReadHeader(summary_file); // read the header from summary file, contains the tag
   h.AddParameter("summary_file", summary_file);
-  h.AddParameter("gseagen_file", gseagen_file);
+  h.AddParameter("gseagen_file", gseagen_files);
   h.AddParameter("emin", (TString)to_string(energy_range.getLowerLimit()) );
   h.AddParameter("emax", (TString)to_string(energy_range.getUpperLimit()) );
   h.AddParameter("ctmin", (TString)to_string( fCtmin ) );
