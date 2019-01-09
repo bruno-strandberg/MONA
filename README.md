@@ -97,4 +97,10 @@ For each reconstruction there are branches called `<reco>_ql0, <reco>_ql1, ...`,
 
 * Quality level 2 is the highest quality level. It is the same as above, but the vertex needs to be inside the instrumented volume.
 
-We are usually (March 2018) advised to use ql1, as it selects more events and improves statistics. For shower there is no level 2 defined. I have suggested that we should agree within the ORCA working group what the quality levels are, such that various people working on the analysis could use the same cuts. This was not successful, instead people wish to keep using variables as `gandalf_is_good` and `gandalf_is_selected`. I guess future prospects are to use `gandalf_is_nice` and `gandalf_is_great`.
+For ECAP April 2018 MC data We are usually advised to use ql1, as it selects more events and improves statistics. For shower there is no level 2 defined.
+
+The quality levels are populated by the user in applications `apps/data_sorting/Alpha(Beta...)ToSummary`. In the end, it is up to the user to choose what sort of qualities these flags are used for. There is freedom to create custom quality cuts when PID tree is converted to summary formate, e.g. the user can create a new variable in the summary event 
+```
+Double_t fTrack_ql3 = (nhits > 30)
+```
+and use it when filtering events for `EventSelection` and `DetResponse`.

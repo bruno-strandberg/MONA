@@ -91,7 +91,8 @@ int main(const int argc, const char **argv) {
     out.GetEvt()->Set_MC_dir(PIDR.dir_x, PIDR.dir_y, PIDR.dir_z);
     out.GetEvt()->Set_MC_pos(PIDR.pos_x, PIDR.pos_y, PIDR.pos_z);
 
-    //for quality levels of tracks and showers, see NMH/common_software/README.md
+    // for quality levels of tracks and showers, see NMH/common_software/README.md. Here it is up to the
+    // user to select what the quality levels are used for
 
     out.GetEvt()->Set_track_energy(PIDR.gandalf_energy);
     out.GetEvt()->Set_track_bjorkeny(0.);                        //currently gandalf has no bjorkeny
