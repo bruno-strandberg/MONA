@@ -3,7 +3,7 @@ include $(NMHDIR)/Makerules
 CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS) $(JPPCFLAGS)
 LFLAGS = $(ROOTLIBS) $(NMHLIB)
 
-COMMON   = RDFPIDReader.C
+COMMON   = PIDAlpha.C PIDBeta.C
 SOURCES  = $(filter-out $(COMMON), $(wildcard *.C))
 PACKAGES = $(SOURCES:.C=)
 

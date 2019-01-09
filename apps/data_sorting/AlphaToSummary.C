@@ -5,7 +5,7 @@
 
 // NMH headers
 #include "SummaryParser.h"
-#include "RDFPIDReader.h"
+#include "PIDAlpha.h"
 #include "FileHeader.h"
 
 // jpp headers
@@ -33,9 +33,9 @@ int main(const int argc, const char **argv) {
 
   try {
 
-    JParser<> zap("This program takes the ECAP PID summary file as input and converts it to `SummaryEvent` format for usage with NMH software.");
+    JParser<> zap("This program takes the ECAP PID summary file as input, reading it with PIDAlpha.h/C class, and converts it to `SummaryEvent` format for usage with NMH software.");
 
-    zap['f'] = make_field(fin_name , "PID file from ECAP, e.g. ../../data/pid_result_XXX.root") = "";
+    zap['f'] = make_field(fin_name , "PID file from ECAP with the PID TTree that was used to create PIDAlpha.h/C class") = (string)getenv("NMHDIR") + "/data/pid_result_10Apr2018_ORCA115.root";
     zap['d'] = make_field(fout_dir , "Output directory where the data file in SummarEvent format is written, e.g. ../../data/") = "";
     zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. ORCA115_23x9m_ECAP0418. Choose this wisely.") = "";
 
@@ -47,7 +47,7 @@ int main(const int argc, const char **argv) {
   }
 
   if (fin_name == "" || fout_dir  == "" || tag == "") {
-    throw std::invalid_argument("ERROR! RDFPID_to_Summary() all command line arguments need to be specified!");
+    throw std::invalid_argument("ERROR! AlphaToSummary() all command line arguments need to be specified!");
   }
 
   //----------------------------------------------------------------------------
@@ -57,9 +57,9 @@ int main(const int argc, const char **argv) {
   TFile *fin = new TFile((TString)fin_name, "READ");
   TTree *tin = (TTree*)fin->Get("PID");
   if (tin == NULL) {
-    throw std::invalid_argument("ERROR! RDFPID_to_Summary() cannot find tree PID in file " + fin_name);
+    throw std::invalid_argument("ERROR! AlphaToSummary() cannot find tree PID in file " + fin_name);
   }
-  RDFPIDReader PIDR(tin);
+  PIDAlpha PIDR(tin);
   PIDR.fChain->SetBranchStatus("*",1);
 
   //----------------------------------------------------------------------------
@@ -67,7 +67,7 @@ int main(const int argc, const char **argv) {
   //----------------------------------------------------------------------------
 
   string fout_name = fout_dir + "ORCA_MC_summary_" + tag + ".root";
-  cout << "NOTICE RDFPID_to_Summary() creating file " << fout_name << endl;
+  cout << "NOTICE AlphaToSummary() creating file " << fout_name << endl;
 
   SummaryParser out(fout_name, kFALSE); //false means writing mode
 
@@ -118,7 +118,7 @@ int main(const int argc, const char **argv) {
   }
 
   // add the tag to the header
-  FileHeader head("RDFPID_to_Summary");
+  FileHeader head("AlphaToSummary");
   head.AddParameter("datatag", (TString)tag);
   head.WriteHeader(out.GetFile());
 
