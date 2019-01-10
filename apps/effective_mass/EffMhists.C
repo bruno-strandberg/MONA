@@ -205,13 +205,10 @@ int main(const int argc, const char **argv) {
   // write out the histograms. Division of det/gen and scaling has to be done 
   // later, this allows easy combining of the outputs
   //------------------------------------------------------
-  TString gseagen_files = "";
-  for ( auto gsgf: fG.getFilelist() ) gseagen_files += (TString)gsgf + ";";
 
   FileHeader h("EffMhists");
   h.ReadHeader(summary_file); // read the header from summary file, contains the tag
   h.AddParameter("summary_file", summary_file);
-  h.AddParameter("gseagen_file", gseagen_files);
   h.AddParameter("emin", (TString)to_string(energy_range.getLowerLimit()) );
   h.AddParameter("emax", (TString)to_string(energy_range.getUpperLimit()) );
   h.AddParameter("ctmin", (TString)to_string( fCtmin ) );
@@ -224,6 +221,12 @@ int main(const int argc, const char **argv) {
   h.AddParameter("rvol", (TString)to_string(rvol) );
   h.AddParameter("zmin", (TString)to_string(zmin_vol) );
   h.AddParameter("zmax", (TString)to_string(zmax_vol) );
+
+  for ( Int_t i = 0; i < (Int_t)fG.getFilelist().size(); i++ ) {
+    TString parname  = "gseagen_file_" + (TString)to_string(i);
+    TString parvalue = fG.getFilelist()[i];
+    h.AddParameter(parname, parvalue);
+  }
 
   TFile *fout = new TFile(out_name, "RECREATE");
   fh_gen_nu ->Write();
