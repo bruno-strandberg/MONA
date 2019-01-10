@@ -24,7 +24,6 @@ void DefaultDetectorResponse() {
 
   TString filefolder = "./default_detres/RooFit/";
 
-  gROOT->ProcessLine(".L FitFunction.C+");
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
 
   //----------------------------------------------------------
@@ -52,9 +51,7 @@ void DefaultDetectorResponse() {
   SummaryParser sp(summary_file);
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
     if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
-    sp.GetTree()->GetEntry(i);
-    SummaryEvent *evt = sp.GetEvt();
-    if (evt->Get_MC_is_neutrino() < 0.5) continue; // Is this still relevant?
+    SummaryEvent *evt = sp.GetEvt(i);
     track_response.Fill(evt);
     shower_response.Fill(evt);
     mc_response.Fill(evt);
@@ -86,11 +83,19 @@ void DefaultDetectorResponse() {
   Double_t dm21      = 7.53e-5;
   Double_t DM        = dm32 + 0.5*dm21;
 
+  // deconstrain th23 and dm31, when fitting you want constraints, otherwise you dont.
+  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setMin( -1 );
+  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setMax(  1 );
+  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setMin( -1 );
+  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setMax(  1 );
+
+  // set parameter values 
   ( (RooRealVar*)fitutil->GetSet().find("SinsqTh12") )->setVal( sinsqth12 );
   ( (RooRealVar*)fitutil->GetSet().find("SinsqTh13") )->setVal( sinsqth13 );
   ( (RooRealVar*)fitutil->GetSet().find("dcp") )->setVal( dcp );
   ( (RooRealVar*)fitutil->GetSet().find("Dm21") )->setVal( dm21 );
   ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setVal( sinsqth23 );
+
 
   //----------------------------------------------------------
   // set normal hierarchy
