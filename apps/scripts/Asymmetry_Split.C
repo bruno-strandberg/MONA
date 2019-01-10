@@ -25,7 +25,7 @@ void Asymmetry_Split() {
   bool b_plot = false;
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
-  TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
+  TString filefolder = TString::Format("./pid_detres/RooFit/pid_binning_%i/", N_PID_CLASSES);
 
   vector<Double_t> asym_ts(N_PID_CLASSES);
   vector<Double_t> asym_ss(N_PID_CLASSES);
@@ -36,22 +36,19 @@ void Asymmetry_Split() {
 
   cout << "Asymmetries per single bin: " << endl;
   for (int i = 0; i < N_PID_CLASSES; i++) {
-    TString file_NO = filefolder + TString::Format("split_expected_evts_NO_%.2f.root", PID_step * i);
-    TString file_IO = filefolder + TString::Format("split_expected_evts_IO_%.2f.root", PID_step * i);
+    TString file_NO = filefolder + TString::Format("split_expectated_evts_NO_%.2f.root", PID_step * i);
+    TString file_IO = filefolder + TString::Format("split_expectated_evts_IO_%.2f.root", PID_step * i);
     TString output  = filefolder + TString::Format("asymmetry_split_%.2f.root", PID_step * i);
     
     TFile *f_NO  = TFile::Open(file_NO, "READ");
     TFile *f_IO  = TFile::Open(file_IO, "READ");
 
-    std::tuple<TH2D*, TH2D*, TH2D*> h_tuple_NO = ReadDetectorResponseFile(file_NO);
-    std::tuple<TH2D*, TH2D*, TH2D*> h_tuple_IO = ReadDetectorResponseFile(file_IO);
-
-    TH2D *h_t_NO = std::get<0>(h_tuple_NO);
-    TH2D *h_s_NO = std::get<1>(h_tuple_NO);
-    TH2D *h_m_NO = std::get<2>(h_tuple_NO);
-    TH2D *h_t_IO = std::get<0>(h_tuple_IO);
-    TH2D *h_s_IO = std::get<1>(h_tuple_IO);
-    TH2D *h_m_IO = std::get<2>(h_tuple_IO);
+    TH2D *h_t_NO = (TH2D*)f_NO->Get("detected_tracks");
+    TH2D *h_s_NO = (TH2D*)f_NO->Get("detected_showers");
+    TH2D *h_m_NO = (TH2D*)f_NO->Get("detected_mc");
+    TH2D *h_t_IO = (TH2D*)f_IO->Get("detected_tracks");
+    TH2D *h_s_IO = (TH2D*)f_IO->Get("detected_showers");
+    TH2D *h_m_IO = (TH2D*)f_IO->Get("detected_mc");
 
     h_t_NO->SetName("detected_tracks_NO");
     h_s_NO->SetName("detected_showers_NO");
