@@ -36,8 +36,8 @@ void Asymmetry_Split() {
 
   cout << "Asymmetries per single bin: " << endl;
   for (int i = 0; i < N_PID_CLASSES; i++) {
-    TString file_NO = filefolder + TString::Format("split_expectated_evts_NO_%.2f.root", PID_step * i);
-    TString file_IO = filefolder + TString::Format("split_expectated_evts_IO_%.2f.root", PID_step * i);
+    TString file_NO = filefolder + TString::Format("split_expected_evts_NO_%.2f.root", PID_step * i);
+    TString file_IO = filefolder + TString::Format("split_expected_evts_IO_%.2f.root", PID_step * i);
     TString output  = filefolder + TString::Format("asymmetry_split_%.2f.root", PID_step * i);
     
     TFile *f_NO  = TFile::Open(file_NO, "READ");

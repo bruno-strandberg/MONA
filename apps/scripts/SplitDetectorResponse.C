@@ -136,7 +136,7 @@ void SplitDetectorResponse() {
     //----------------------------------------------------------
     // set inverted hierarchy
     //----------------------------------------------------------
-    dm31 = -DM + 0.5*dm21; //IO
+    dm31 = -DM + 0.5*dm21;
     ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setVal( dm31 );
 
     TH2D *tracks_IO  = (TH2D*)pdf_tracks.GetExpValHist()->Project3D("yx");
@@ -150,14 +150,14 @@ void SplitDetectorResponse() {
     //----------------------------------------------------------
     // save output
     //----------------------------------------------------------
-    TString output_NO = TString::Format("split_expectated_evts_NO_%.2f.root", PID_step * i);
+    TString output_NO = TString::Format("split_expected_evts_NO_%.2f.root", PID_step * i);
     TFile fout_NO(filefolder + output_NO,"RECREATE");
     tracks_NO->Write();
     showers_NO->Write();
     mc_NO->Write();
     fout_NO.Close();
 
-    TString output_IO = TString::Format("split_expectated_evts_IO_%.2f.root", PID_step * i);
+    TString output_IO = TString::Format("split_expected_evts_IO_%.2f.root", PID_step * i);
     TFile fout_IO(filefolder + output_IO,"RECREATE");
     tracks_IO->Write();
     showers_IO->Write();

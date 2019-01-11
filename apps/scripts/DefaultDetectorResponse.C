@@ -43,7 +43,7 @@ void DefaultDetectorResponse() {
   shower_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05, true );
   shower_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(),  0.5, true );
 
-  DetResponse mc_response(DetResponse::mc_truth, "mc_response", 40, 1, 100, 40, -1, 1, 1, 0, 1); // Are these cuts necessary in MC?
+  DetResponse mc_response(DetResponse::mc_truth, "mc_response", 40, 1, 100, 40, -1, 1, 1, 0, 1);
   mc_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05, true );
   mc_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(),  0.5, true );
 
@@ -128,14 +128,14 @@ void DefaultDetectorResponse() {
   //----------------------------------------------------------
   // save output
   //----------------------------------------------------------
-  TString output_NO = "default_expectated_evts_NO.root";
+  TString output_NO = "default_expected_evts_NO.root";
   TFile fout_NO(filefolder + output_NO,"RECREATE");
   tracks_NO->Write();
   showers_NO->Write();
   mc_NO->Write();
   fout_NO.Close();
 
-  TString output_IO = "default_expectated_evts_IO.root";
+  TString output_IO = "default_expected_evts_IO.root";
   TFile fout_IO(filefolder + output_IO,"RECREATE");
   tracks_IO->Write();
   showers_IO->Write();
