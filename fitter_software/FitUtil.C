@@ -532,14 +532,17 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_tru
 
 /** This function is called from inside `FitPDF::evaluate()` and returns the expected event density at a \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ value.
 
+    Note that the return of this function is normalised by RooFit by dividing with \f$ \int f(\vec{x})d\vec{x} \f$, where f(x) is the value returned by this function and \f$ \vec{x} \f$ are energy, cos-theta and bjorken-y.
+
     The argument map is created in `FitPDF` and contains names and corresponding proxies for all parameters in `fParSet`. The detector response is also part of the `FitPDF` class and configures what kind of an event selection the pdf is used to fit.
 
     \param parmap   Reference to a map with parameter names and corresponding `RooRealProxy`'s.
     \param resp     Pointer to `DetResponse` instance used with the `FitPDF` class.
-    \return         Expected event density, calculated by dividing the expected number of events in a bin by bin width.
+    \return         a pair with the un-normalised event density (calculated by dividing the expected number of events in a bin by bin width) and the associated statistical uncertainty
 
 */
-Double_t FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp) {
+std::pair<Double_t, Double_t> FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap,
+						   DetResponse *resp) {
 
   // get the parameter values from the proxies
 
@@ -553,14 +556,16 @@ Double_t FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, De
   Double_t Dm21      = *( parmap.at( (TString)fDm21->GetName() ) );
   Double_t Dm31      = *( parmap.at( (TString)fDm31->GetName() ) );
 
-  // calculate the bin width to convert number of events to event density
+  // calculate the bin width to convert the number of events to event density
 
   Double_t e_w  = fHB->GetXaxis()->GetBinWidth( fHB->GetXaxis()->FindBin( E_reco )  );
   Double_t ct_w = fHB->GetYaxis()->GetBinWidth( fHB->GetYaxis()->FindBin( Ct_reco ) );
   Double_t by_w = fHB->GetZaxis()->GetBinWidth( fHB->GetZaxis()->FindBin( By_reco ) );
   Double_t binw = e_w * ct_w * by_w;
+
+  auto recoevts = RecoEvts(resp, E_reco, Ct_reco, By_reco, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
   
-  return RecoEvts(resp, E_reco, Ct_reco, By_reco, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first/binw;
+  return std::make_pair(recoevts.first/binw, recoevts.second/binw);
 
 }
 
@@ -573,20 +578,12 @@ Double_t FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, De
     \param parmap     Reference to a map with parameter names and corresponding `RooRealProxy`'s.
     \param resp       Pointer to `DetResponse` instance used with the `FitPDF` class.
     \param rangeName  Range string as used in `RooFit`, currently dummy.
-    \return           A pair; first is a 3D histogram in reco variables with exepectation values as bin contents, second is an integral over energy, cos-theta and bjorken-y, taking the bin widths into account.
+    \return           a 3D histogram in reco variables with exepectation values as bin contents
 
 */
-std::pair<TH3D*, Double_t> FitUtil::PdfExpectation(const std::map<TString, RooRealProxy*> &parmap,
-						   DetResponse *resp, const char* rangeName) {
-
-  // get the parameter values from the proxies
-  Double_t SinsqTh12 = *( parmap.at( (TString)fSinsqTh12->GetName() ) );
-  Double_t SinsqTh13 = *( parmap.at( (TString)fSinsqTh13->GetName() ) );
-  Double_t SinsqTh23 = *( parmap.at( (TString)fSinsqTh23->GetName() ) );
-  Double_t Dcp       = *( parmap.at( (TString)fDcp->GetName() ) );
-  Double_t Dm21      = *( parmap.at( (TString)fDm21->GetName() ) );
-  Double_t Dm31      = *( parmap.at( (TString)fDm31->GetName() ) );
-
+TH3D* FitUtil::PdfExpectation(const std::map<TString, RooRealProxy*> &parmap,
+			      DetResponse *resp, const char* rangeName) {
+  
   // create the histogram with expectation values
   TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
   TString hname = resp->Get_RespName() + "_expct";
@@ -594,33 +591,32 @@ std::pair<TH3D*, Double_t> FitUtil::PdfExpectation(const std::map<TString, RooRe
   hexp->Reset();
   hexp->SetNameTitle(hname, hname);
 
-  // calculate the integral that takes bin width into account
-  Double_t integral = 0.;
-
-  // loop over bins and fill the expectation value histogram and integral
+  // loop over bins and fill the expectation value histogram
   for (Int_t ebin = fEbin_min; ebin <= fEbin_max; ebin++) {
     for (Int_t ctbin = fCtbin_min; ctbin <= fCtbin_max; ctbin++) {
       for (Int_t bybin = fBybin_min; bybin <= fBybin_max; bybin++) {
 
-        Double_t E  = hexp->GetXaxis()->GetBinCenter( ebin );
-        Double_t ct = hexp->GetYaxis()->GetBinCenter( ctbin );
-        Double_t by = hexp->GetZaxis()->GetBinCenter( bybin );
-	
+	// set observables to bin center values, otherwise PdfEvaluate will return rubbish
+	fE_reco ->setVal( hexp->GetXaxis()->GetBinCenter( ebin ) );
+	fCt_reco->setVal( hexp->GetYaxis()->GetBinCenter( ctbin ) );
+	fBy_reco->setVal( hexp->GetZaxis()->GetBinCenter( bybin ) );
+
+	// get the bin width to convert event density to number of events in each bin
 	Double_t E_w  = hexp->GetXaxis()->GetBinWidth( ebin );
         Double_t ct_w = hexp->GetYaxis()->GetBinWidth( ctbin );
         Double_t by_w = hexp->GetZaxis()->GetBinWidth( bybin );
-
-	auto recoevts = RecoEvts(resp, E, ct, by, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
+	Double_t binw = E_w * ct_w * by_w;
 	
-	integral += recoevts.first * E_w * ct_w * by_w;
-	hexp->SetBinContent(ebin, ctbin, bybin, recoevts.first );
-	hexp->SetBinError  (ebin, ctbin, bybin, recoevts.second);
+	auto density = PdfEvaluate(parmap, resp);
+	
+	hexp->SetBinContent(ebin, ctbin, bybin, density.first  * binw);
+	hexp->SetBinError  (ebin, ctbin, bybin, density.second * binw);
 	
       }
     }
   }
   
-  return std::make_pair(hexp, integral);
+  return hexp;
     
 }
 
@@ -688,4 +684,24 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(DetResponse *resp,
   
   return std::make_pair(det_count, det_err);
 
+}
+
+//***************************************************************************
+
+/** Public function to fetch a pointer to a variable in the member `fParSet`.
+
+    If the variable is not in the parameter set an exception is thrown.
+
+    \param varname   Name of the variable
+    \return          Pointer to the variable
+ */
+RooRealVar* FitUtil::GetVar(TString varname) {
+
+  RooRealVar * var = (RooRealVar*)fParSet.find(varname);
+
+  if (var == NULL) {
+    throw std::invalid_argument("ERROR! FitUtil::GetVar() cannot find variable " + (string)varname);
+  }
+  
+  return var;
 }

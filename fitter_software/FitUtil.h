@@ -29,7 +29,7 @@
 
     The `FitPDF` class that uses `FitUtil` is a modification of a class that was auto-generated with `RooClassFactory::makePdf`. The idea is that `FitPDF` acts merely as a wrapper class to get access to `RooFit` niceties (such as simultaneous fitting), the model calculations and parameters are defined here in `FitUtil` class.
 
-    <B> How to extend? </B> Simply put, the `FitPDF::evaluate` method is called each time during the fitting (`pdf->fitTo`) when the fitter moves to a new \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ bin. `FitPDF::evaluate` calls `PdfEvaluate` of this class, which returns the number of expected events in the reco bin. Let's say one now wishes to add another fit parameter that scales the atmospheric flux. To do that, one must: 
+    <B> How to extend? </B> Simply put, the `FitPDF::evaluate` method is called each time during the fitting (`pdf->fitTo`) when the fitter moves to a new \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ bin. `FitPDF::evaluate` calls `PdfEvaluate` of this class, which returns the expected event density in the reco bin. Let's say one now wishes to add another fit parameter that scales the atmospheric flux. To do that, one must: 
 
     -# create a new `RooRealVar*` member in this class, initialise it <B> and add it to `fParSet` </B>. Basically, one must do exactly what is done for `fDm31`. `FitPDF` class creates a `RooRealProxy` for each parameter in `fParSet`, such that the map given to `FitUtil::PdfEvaluate` contains an entry for each parameter `fParSet`. The nice thing in such a setup is that `FitPDF` does not need to be modified, parameters are added in this class and used in this class.
     -# extend the argument list of `FitUtil::RecoEvts` by the new parameter, extract the new parameter from the map in `FitUtil::PdfEvaluate` and give it to `FitUtil::RecoEvts`.
@@ -53,8 +53,8 @@ class FitUtil {
   //------------------------------------------------------------------
   // public functions that are called in `FitPDF`
   //------------------------------------------------------------------
-  Double_t PdfEvaluate (const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp);
-  std::pair<TH3D*, Double_t> PdfExpectation(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp, const char* rangeName);
+  std::pair<Double_t, Double_t> PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp);
+  TH3D* PdfExpectation(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp, const char* rangeName);
 
   // setters/getters
 
@@ -69,6 +69,8 @@ class FitUtil {
   /** Get the 3D histogram that stores the binning information
       \return `TH3D` with the binning used in the analysis.
    */
+  
+  RooRealVar* GetVar(TString varname);
   TH3D*       GetBinningHist() { return fHB;      }
   void        SetNOlims();
   void        SetNOcentvals();
