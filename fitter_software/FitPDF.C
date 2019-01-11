@@ -38,8 +38,8 @@ FitPDF::FitPDF(const FitPDF& other, const char* name) : RooAbsPdf(other, name) {
 
     \param name   Name of the pdf
     \param title  Title of the pdf
-    \futil        Pointer to the `FitUtil` class
-    \resp         Pointer to a `DetResponse` instance
+    \param futil  Pointer to the `FitUtil` class
+    \param resp   Pointer to a `DetResponse` instance
 
  */
 FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp) : RooAbsPdf(name, title) {
