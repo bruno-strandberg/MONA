@@ -20,13 +20,17 @@
 using namespace std;
 using namespace RooFit;
 
-void SplitDetectorResponse() {
+void SplitDetectorResponseByReco2Bins() {
 
-  const int N_PID_CLASSES = 10;
-  Double_t PID_step = 1 / float(N_PID_CLASSES);
-  TString filefolder = TString::Format("./pid_detres/RooFit/pid_binning_%i/", N_PID_CLASSES);
+  const int N_PID_CLASSES = 2;
+  TString filefolder = "./quality_detres/";
 
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
+
+  std::map<int, float> cut_map;
+  cut_map.insert(std::make_pair(0, 0.0));
+  cut_map.insert(std::make_pair(1, 0.6));
+  cut_map.insert(std::make_pair(2, 1.0));
 
   //----------------------------------------------------------
   // detector response for tracks and showers
@@ -39,29 +43,29 @@ void SplitDetectorResponse() {
     if (i == 0) { comparison_operator = std::greater_equal<double>(); // The first bin needs to include the lower limit.
     } else { comparison_operator = std::greater<double>(); }
 
-    DetResponse track_response(DetResponse::track, TString::Format("track_response_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
-    track_response.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   , 0.5             , true );
-    track_response.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   , 0.5             , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      , PID_step * i    , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , std::less_equal<double>(), PID_step * (i+1), true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05            , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18            , true );
+    DetResponse track_response(DetResponse::track, TString::Format("track_response_%.2f", cut_map[i]), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    track_response.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   , 0.5         , true );
+    track_response.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   , 0.5         , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      , cut_map[i]  , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , std::less_equal<double>(), cut_map[i+1], true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05        , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18        , true );
     track_response_vector.push_back(track_response);
 
-    DetResponse shower_response(DetResponse::shower, TString::Format("shower_response_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
-    shower_response.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   , 0.5             , true );
-    shower_response.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   , 0.5             , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , PID_step * i    , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), PID_step * (i+1), true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05            , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5             , true );
+    DetResponse shower_response(DetResponse::shower, TString::Format("shower_response_%.2f", cut_map[i]), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    shower_response.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   , 0.5         , true );
+    shower_response.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   , 0.5         , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , cut_map[i]  , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), cut_map[i+1], true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05        , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5         , true );
     shower_response_vector.push_back(shower_response);
 
-    DetResponse mc_response(DetResponse::mc_truth, TString::Format("mc_response_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
-    mc_response.AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , PID_step * i    , true );
-    mc_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), PID_step * (i+1), true );
-    mc_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05            , true );
-    mc_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5             , true ); // Do these cuts make sense?? Yes, we want to compare the DR with "real DR"
+    DetResponse mc_response(DetResponse::mc_truth, TString::Format("mc_response_%.2f", cut_map[i]), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    mc_response.AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , cut_map[i]  , true );
+    mc_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), cut_map[i+1], true );
+    mc_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05        , true );
+    mc_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5         , true );
     mc_response_vector.push_back(mc_response);
   }
 
@@ -77,10 +81,10 @@ void SplitDetectorResponse() {
     }
   }
 
-  for (int i = 0; i < N_PID_CLASSES; i++) {     
-    track_response_vector[i].WriteToFile(filefolder + TString::Format("track_response_%.2f.root" , PID_step * i));       
-    shower_response_vector[i].WriteToFile(filefolder + TString::Format("shower_response_%.2f.root", PID_step * i));       
-    mc_response_vector[i].WriteToFile(filefolder + TString::Format("mc_response_%.2f.root", PID_step * i));     
+  for (int i = 0; i < N_PID_CLASSES; i++) {
+    track_response_vector[i].WriteToFile(filefolder + TString::Format("track_response_%.2f.root" , cut_map[i]));
+    shower_response_vector[i].WriteToFile(filefolder + TString::Format("shower_response_%.2f.root", cut_map[i]));
+    mc_response_vector[i].WriteToFile(filefolder + TString::Format("mc_response_%.2f.root", cut_map[i]));
   }
 
   cout << "NOTICE: Finished filling response" << endl;
@@ -150,14 +154,14 @@ void SplitDetectorResponse() {
     //----------------------------------------------------------
     // save output
     //----------------------------------------------------------
-    TString output_NO = TString::Format("split_expected_evts_NO_%.2f.root", PID_step * i);
+    TString output_NO = TString::Format("split_expected_evts_NO_%.2f.root", cut_map[i]);
     TFile fout_NO(filefolder + output_NO,"RECREATE");
     tracks_NO->Write();
     showers_NO->Write();
     mc_NO->Write();
     fout_NO.Close();
 
-    TString output_IO = TString::Format("split_expected_evts_IO_%.2f.root", PID_step * i);
+    TString output_IO = TString::Format("split_expected_evts_IO_%.2f.root", cut_map[i]);
     TFile fout_IO(filefolder + output_IO,"RECREATE");
     tracks_IO->Write();
     showers_IO->Write();

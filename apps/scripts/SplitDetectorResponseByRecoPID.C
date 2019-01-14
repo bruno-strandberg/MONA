@@ -4,22 +4,28 @@
 #include "TH3.h"
 #include "TFile.h"
 #include "TStopwatch.h"
+#include "TString.h"
 
 #include "DetResponse.h"
-#include "FitFunction.h"
 #include "SummaryParser.h"
 #include "SummaryEvent.h"
 
+#include "FitUtil.h"
+#include "FitPDF.h"
+
+#include "RooRealVar.h"
+
+
 #include <iostream>
 using namespace std;
+using namespace RooFit;
 
 void SplitDetectorResponseByRecoPID() {
 
-  TString filefolder = "./energy_detres/pid_bins_10/";
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
+  TString filefolder = TString::Format("./energy_detres/pid_bins_%i/", N_PID_CLASSES);
 
-  gROOT->ProcessLine(".L FitFunction.C+");
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
 
   //----------------------------------------------------------
@@ -27,6 +33,7 @@ void SplitDetectorResponseByRecoPID() {
   //----------------------------------------------------------
   // Good tracks only, no overlap with good showers
   // gt = good track, gs = good shower, ge = good event
+  // The track response has been split into these 3 types, shower has not.
   std::vector<DetResponse> response_good_track_vector; // good tracks in track channel
   std::vector<DetResponse> response_good_shower_vector; // good showers in track channel
   std::vector<DetResponse> response_good_event_vector; // good events in track channel
@@ -92,9 +99,8 @@ void SplitDetectorResponseByRecoPID() {
   auto summary_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
   SummaryParser sp(summary_file);
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
-    sp.GetTree()->GetEntry(i);
-    SummaryEvent *evt = sp.GetEvt();
-    if (evt->Get_MC_is_neutrino() < 0.5) continue;
+    if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
+    SummaryEvent *evt = sp.GetEvt(i);
     for (int i = 0; i < N_PID_CLASSES; i++) {
       response_good_track_vector[i].Fill(evt);
       response_good_shower_vector[i].Fill(evt);
@@ -115,83 +121,94 @@ void SplitDetectorResponseByRecoPID() {
   cout << "NOTICE: Finished filling response" << endl;
 
   //----------------------------------------------------------
-  // fill a detected histogram using the fit function
+  // set up the PDFs and static oscillation parameters
   //----------------------------------------------------------
 
-  auto effmass_folder = (TString)getenv("NMHDIR") + "/data/eff_mass/";
-  for (int i = 0; i < N_PID_CLASSES; i++){
-    FitFunction gtfitf(&response_good_track_vector[i], 3, effmass_folder + "EffMhists_elec_CC.root", effmass_folder + "EffMhists_muon_CC.root", effmass_folder + "EffMhists_tau_CC.root", effmass_folder + "EffMhists_elec_NC.root");
-    FitFunction gsfitf(&response_good_shower_vector[i], 3, effmass_folder + "EffMhists_elec_CC.root", effmass_folder + "EffMhists_muon_CC.root", effmass_folder + "EffMhists_tau_CC.root", effmass_folder + "EffMhists_elec_NC.root");
-    FitFunction gefitf(&response_good_event_vector[i], 3, effmass_folder + "EffMhists_elec_CC.root", effmass_folder + "EffMhists_muon_CC.root", effmass_folder + "EffMhists_tau_CC.root", effmass_folder + "EffMhists_elec_NC.root");
-    FitFunction sfitf(&response_shower_vector[i], 3, effmass_folder + "EffMhists_elec_CC.root", effmass_folder + "EffMhists_muon_CC.root", effmass_folder + "EffMhists_tau_CC.root", effmass_folder + "EffMhists_elec_NC.root");
-    FitFunction mfitf(&response_mc_vector[i], 3, effmass_folder + "EffMhists_elec_CC.root", effmass_folder + "EffMhists_muon_CC.root", effmass_folder + "EffMhists_tau_CC.root", effmass_folder + "EffMhists_elec_NC.root");
+  auto meff_file = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+  FitUtil *fitutil = new FitUtil(3, response_good_track.GetHist3D(),
+                 1, 100, -1, 1, 0, 1, meff_file);
 
-    TH3D *hdet_good_t  = (TH3D*)response_good_track_vector[i].GetHist3D()->Clone("detected_tracks_gt"); // Track channel, using good tracks, etc.
-    TH3D *hdet_good_s  = (TH3D*)response_good_shower_vector[i].GetHist3D()->Clone("detected_tracks_gs");
-    TH3D *hdet_good_e  = (TH3D*)response_good_event_vector[i].GetHist3D()->Clone("detected_tracks_ge");
-    TH3D *hdet_showers = (TH3D*)response_shower_vector[i].GetHist3D()->Clone("detected_showers");
-    TH3D *hdet_mc      = (TH3D*)response_mc_vector[i].GetHist3D()->Clone("detected_mc");
-    hdet_good_t->Reset();
-    hdet_good_s->Reset();
-    hdet_good_e->Reset();
-    hdet_showers->Reset();
-    hdet_mc->Reset();
+  Double_t sinsqth12 = TMath::Power( TMath::Sin( 33.4 * TMath::Pi()/180. ), 2 );
+  Double_t sinsqth13 = TMath::Power( TMath::Sin( 8.42 * TMath::Pi()/180. ), 2 );
+  Double_t sinsqth23 = TMath::Power( TMath::Sin( 45   * TMath::Pi()/180. ), 2 );
+  Double_t dcp       = 0.;
+  Double_t dm32      = 2.44e-3;
+  Double_t dm21      = 7.53e-5;
+  Double_t DM        = dm32 + 0.5*dm21;
 
-    // This is so rediculous, the construction of TString is complaining about a conversion when inside a tuple...
-    std::vector<std::tuple<string, Double_t>> orderings; // Value is dm32
-    orderings.push_back(std::make_tuple("NO", 2.52e-3));
-    orderings.push_back(std::make_tuple("IO", -2.44e-3));
+  // deconstrain th23 and dm31, when fitting you want constraints, otherwise you dont.
+  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setMin( -1 );
+  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setMax(  1 );
+  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setMin( -1 );
+  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setMax(  1 );
 
-    for (auto order: orderings) {
-      double p[] = {0.303, 0.0214, 0.5, 0, 7.53e-5, std::get<1>(order)}; // dm32 is last parameter.
-      string order_string = std::get<0>(order);  
+  // set parameter values 
+  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh12") )->setVal( sinsqth12 );
+  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh13") )->setVal( sinsqth13 );
+  ( (RooRealVar*)fitutil->GetSet().find("dcp") )->setVal( dcp );
+  ( (RooRealVar*)fitutil->GetSet().find("Dm21") )->setVal( dm21 );
+  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setVal( sinsqth23 );
 
-      TStopwatch timer;
-    
-      for (Int_t ebin = 1; ebin <= hdet_showers->GetXaxis()->GetNbins(); ebin++) {
-        for (Int_t ctbin = 1; ctbin <= hdet_showers->GetYaxis()->GetNbins(); ctbin++) {
-          for (Int_t bybin = 1; bybin <= hdet_showers->GetZaxis()->GetNbins(); bybin++) {
-    
-            Double_t E  = hdet_showers->GetXaxis()->GetBinCenter( ebin );
-            Double_t ct = hdet_showers->GetYaxis()->GetBinCenter( ctbin );
-            Double_t by = hdet_showers->GetZaxis()->GetBinCenter( bybin );
-    
-            double x[] = {E, ct, by};
-    
-            // With Errors
-            std::tuple<double, double> track_response_gt = gtfitf.operator()(x, p);
-            std::tuple<double, double> track_response_gs = gsfitf.operator()(x, p);
-            std::tuple<double, double> track_response_ge = gefitf.operator()(x, p);
-            std::tuple<double, double> shower_response   = sfitf.operator()(x, p);
-            std::tuple<double, double> mc_response       = mfitf.operator()(x, p);
-    
-            hdet_good_t->SetBinContent(  ebin, ctbin, bybin, std::get<0>(track_response_gt) );
-            hdet_good_t->SetBinError(    ebin, ctbin, bybin, std::get<1>(track_response_gt) );
-            hdet_good_s->SetBinContent(  ebin, ctbin, bybin, std::get<0>(track_response_gs) );
-            hdet_good_s->SetBinError(    ebin, ctbin, bybin, std::get<1>(track_response_gs) );
-            hdet_good_e->SetBinContent(  ebin, ctbin, bybin, std::get<0>(track_response_ge) );
-            hdet_good_e->SetBinError(    ebin, ctbin, bybin, std::get<1>(track_response_ge) );
-            hdet_showers->SetBinContent( ebin, ctbin, bybin, std::get<0>(shower_response) );
-            hdet_showers->SetBinError(   ebin, ctbin, bybin, std::get<1>(shower_response) );
-            hdet_mc->SetBinContent( ebin, ctbin, bybin, std::get<0>(mc_response) );
-            hdet_mc->SetBinError(   ebin, ctbin, bybin, std::get<1>(mc_response) );
-    
-          }
-        }
-      }
-      
-      cout << "NOTICE: Finished filling histograms" << endl;
-      cout << "NOTICE: Time for filling hists " << (Double_t)timer.RealTime() << endl;
+
+  //----------------------------------------------------------
+  // set normal hierarchy
+  //----------------------------------------------------------
+  Double_t dm31 = DM + 0.5*dm21;
+  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setVal( dm31 );
+
+  for (int i = 0; i < N_PID_CLASSES; i++) {
+    FitPDF pdf_track_gt("pdf_tracks_gt", "pdf_tracks_gt", fitutil, &track_response_gt[i]);
+    FitPDF pdf_tracks_gs("pdf_tracks_gs", "pdf_tracks_gs", fitutil, &track_response_gs[i]);
+    FitPDF pdf_tracks_ge("pdf_tracks_ge", "pdf_tracks_ge", fitutil, &track_response_ge[i]);
+    FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, &shower_response[i]);
+    FitPDF pdf_mc("pdf_mc", "pdf_mc", fitutil, &mc_response[i]);
+
+    TH2D *tracks_gt_NO = (TH2D*)pdf_tracks_gt.GetExpValHist()->Project3D("yx");
+    TH2D *tracks_gs_NO = (TH2D*)pdf_tracks_gs.GetExpValHist()->Project3D("yx");
+    TH2D *tracks_ge_NO = (TH2D*)pdf_tracks_ge.GetExpValHist()->Project3D("yx");
+    TH2D *showers_NO   = (TH2D*)pdf_showers.GetExpValHist()->Project3D("yx");
+    TH2D *mc_NO        = (TH2D*)pdf_mc.GetExpValHist()->Project3D("yx");
+
+    tracks_gt_NO->SetNameTitle("detected_tracks_gt", "detected_tracks_gt");
+    tracks_gs_NO->SetNameTitle("detected_tracks_gs", "detected_tracks_gs");
+    tracks_ge_NO->SetNameTitle("detected_tracks_ge", "detected_tracks_ge");
+    showers_NO->SetNameTitle("detected_showers", "detected_showers");
+    mc_NO->SetNameTitle("detected_mc", "detected_mc");
  
- 
-      TString output = Form("split_expected_evts_by_energy_%s_%.2f.root", order_string.c_str(), PID_step * i);
-      TFile fout(filefolder + output,"RECREATE");
-      hdet_good_t->Write();
-      hdet_good_s->Write();
-      hdet_good_e->Write();
-      hdet_showers->Write();
-      hdet_mc->Write();
-      fout.Close();
-    }
+    //----------------------------------------------------------
+    // set inverted hierarchy
+    //----------------------------------------------------------
+    Double_t dm31 = -DM + 0.5*dm21;
+    TH2D *tracks_gt_IO = (TH2D*)pdf_tracks_gt.GetExpValHist()->Project3D("yx");
+    TH2D *tracks_gs_IO = (TH2D*)pdf_tracks_gs.GetExpValHist()->Project3D("yx");
+    TH2D *tracks_ge_IO = (TH2D*)pdf_tracks_ge.GetExpValHist()->Project3D("yx");
+    TH2D *showers_IO   = (TH2D*)pdf_showers.GetExpValHist()->Project3D("yx");
+    TH2D *mc_IO        = (TH2D*)pdf_mc.GetExpValHist()->Project3D("yx");
+
+    tracks_gt_IO->SetNameTitle("detected_tracks_gt", "detected_tracks_gt");
+    tracks_gs_IO->SetNameTitle("detected_tracks_gs", "detected_tracks_gs");
+    tracks_ge_IO->SetNameTitle("detected_tracks_ge", "detected_tracks_ge");
+    showers_IO->SetNameTitle("detected_showers", "detected_showers");
+    mc_IO->SetNameTitle("detected_mc", "detected_mc");
+
+    //----------------------------------------------------------
+    // save output
+    //----------------------------------------------------------
+    TString output_NO = TString::Format("split_expected_evts_NO_%.2f.root", N_PID_CLASSES * i);
+    TFile fout_NO(filefolder + output_NO,"RECREATE");
+    tracks_gt_NO->Write();
+    tracks_gs_NO->Write();
+    tracks_ge_NO->Write();
+    showers_NO->Write();
+    mc_NO->Write();
+    fout_NO.Close();
+
+    TString output_IO = TString::Format("split_expected_evts_IO_%.2f.root", N_PID_CLASSES * i);
+    TFile fout_IO(filefolder + output_IO,"RECREATE");
+    tracks_gt_IO->Write();
+    tracks_gs_IO->Write();
+    tracks_ge_IO->Write();
+    showers_IO->Write();
+    mc_IO->Write();
   }
 }
