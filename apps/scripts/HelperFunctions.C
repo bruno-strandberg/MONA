@@ -140,6 +140,8 @@ TH2D* GetErrorHisto2D(TH2D* input) {
   return output;
 }
 
+  /* Function to return a vector containing the Y slices of a TH2D
+   */
 std::vector<TH1D*> VectorProjectionY2D(TH2D* input) {
   std::vector<TH1D*> output;
   for(Int_t i = 1; i < input->GetYaxis()->GetNbins() + 1; i++) {
@@ -188,4 +190,26 @@ void GetValues3D(TH3D* input) {
       }
     }
   }
+}
+
+  /* Plotting functions
+   */
+
+void SetPlotTitle(TH1* h1, TString title) {
+  h1->SetTitle(title);
+  h1->SetXTitle("E_{reco} [GeV]");
+  h1->SetYTitle("cos(#theta_{reco})");
+}
+
+void SetLabelSizes(TH1* h1, Double_t size) {
+  h1->GetXaxis()->SetTitleSize(size);
+  h1->GetXaxis()->SetTitleOffset(1.2);
+  h1->GetXaxis()->SetTitleFont(62);
+  h1->GetXaxis()->SetLabelFont(62);
+  h1->GetXaxis()->SetLabelSize(size);
+  h1->GetYaxis()->SetTitleSize(size);
+  h1->GetYaxis()->SetTitleOffset(1.2);
+  h1->GetYaxis()->SetTitleFont(62);
+  h1->GetYaxis()->SetLabelFont(62);
+  h1->GetYaxis()->SetLabelSize(size);
 }

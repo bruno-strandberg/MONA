@@ -10,25 +10,13 @@
 
 #include "DetResponse.h"
 #include "FitFunction.h"
+#include "HelperFunctions.C"
 #include "NMHUtils.h"
 #include "SummaryParser.h"
 #include "SummaryEvent.h"
 
 #include <iostream>
 using namespace std;
-
-void MakePlotNice(Double_t size, TH2D* h1) {
-  h1->GetXaxis()->SetTitleSize(size);
-  h1->GetXaxis()->SetTitleOffset(1.2);
-  h1->GetXaxis()->SetTitleFont(62);
-  h1->GetXaxis()->SetLabelFont(62);
-  h1->GetXaxis()->SetLabelSize(size);
-  h1->GetYaxis()->SetTitleSize(size);
-  h1->GetYaxis()->SetTitleOffset(1.2);
-  h1->GetYaxis()->SetTitleFont(62);
-  h1->GetYaxis()->SetLabelFont(62);
-  h1->GetYaxis()->SetLabelSize(size);
-}
 
 TH2D* GetRelativeErrorHistogram(TH2D* h1) { 
   TH2D* h2 = (TH2D*)h1->Clone();
@@ -66,7 +54,7 @@ void Plot_Detected_Event_Errors(bool mass_ordering=true) {
   
   TFile *f_IO = TFile::Open(input, "READ");
 
-  gStyle->SetPalette(kLightTemperature);
+  gStyle->SetPalette(kBird);
   gStyle->SetOptStat(0);
 
   TH3D *h1 = (TH3D*)f_IO->Get("detected_tracks");
