@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# The print function for simplified errors is in pid_detres/simplified_error_calc/
+# The print function for simplified errors is in ./pid_detres/
 
 import os
 
@@ -32,15 +32,15 @@ def asym_print(filename):
                     pass
     return [tr_num, tr_err, sh_num, sh_err, cm_num, cm_err]
 
-bins_2 = asym_print(basedir + "default_detres/asym_output_correlations.txt")
-bins_5 = asym_print(basedir + "pid_detres/pid_binning_5/asym_output_correlations.txt")
-bins_10 = asym_print(basedir + "pid_detres/asym_output_correlations.txt")
-bins_15 = asym_print(basedir + "pid_detres/pid_binning_15/asym_output_correlations.txt")
-bins_20 = asym_print(basedir + "pid_detres/pid_binning_20/asym_output_correlations.txt")
-bins_25 = asym_print(basedir + "pid_detres/pid_binning_25/asym_output_correlations.txt")
-bins_30 = asym_print(basedir + "pid_detres/pid_binning_30/asym_output_correlations.txt")
-bins_35 = asym_print(basedir + "pid_detres/pid_binning_35/asym_output_correlations.txt")
-bins_40 = asym_print(basedir + "pid_detres/pid_binning_40/asym_output_correlations.txt")
+bins_2 = asym_print(basedir + "default_detres/asym_output.txt")
+bins_5 = asym_print(basedir + "pid_detres/pid_binning_5/asym_output.txt")
+bins_10 = asym_print(basedir + "pid_detres/asym_output.txt")
+bins_15 = asym_print(basedir + "pid_detres/pid_binning_15/asym_output.txt")
+bins_20 = asym_print(basedir + "pid_detres/pid_binning_20/asym_output.txt")
+bins_25 = asym_print(basedir + "pid_detres/pid_binning_25/asym_output.txt")
+bins_30 = asym_print(basedir + "pid_detres/pid_binning_30/asym_output.txt")
+bins_35 = asym_print(basedir + "pid_detres/pid_binning_35/asym_output.txt")
+bins_40 = asym_print(basedir + "pid_detres/pid_binning_40/asym_output.txt")
 
 bins = [bins_2, bins_5, bins_10, bins_15, bins_20, bins_25, bins_30, bins_35, bins_40]
 

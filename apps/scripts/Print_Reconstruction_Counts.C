@@ -16,10 +16,10 @@
 #include <iostream>
 using namespace std;
 
-void reconstruction_counts(TString sum_file="../../data/ORCA_MC_summary_all_10Apr2018.root") { 
+void Print_Reconstruction_Counts(TString summary_file=(TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root") { 
   SummaryParser sp(sum_file);
   
-  bool plot = true;
+  bool plot = false;
   int n_bins = 40;
   std::vector<Double_t> e_edges  = NMHUtils::GetLogBins(n_bins, 1, 100);
   std::vector<Double_t> ct_edges = NMHUtils::GetBins(n_bins, -1, 1);
@@ -36,20 +36,20 @@ void reconstruction_counts(TString sum_file="../../data/ORCA_MC_summary_all_10Ap
   std::vector<Int_t> total_events(10);
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
 
-    // Filter shyte
+    // Filters, DR does not seem to be able to do what I want, so improving it is!
     bool good_tr = false;
     bool good_sh = false;
-    sp.GetTree()->GetEntry(i);
+    SummaryEvent *evt = sp.GetEvt(i);
 
     // We order the histograms by quality: 0.0-0.1 --> 0, 0.1-0.2 --> 1, etc.
-    q = sp.GetEvt()->Get_RDF_track_score();
+    q = evt->Get_RDF_track_score();
     int index = (int)(TMath::Floor(q * 10));
     if (index == 10) { index = 9; } // A perfect track will get an index 10, which does not exist
 
     total_events[index]++;
-    if ((sp.GetEvt()->Get_RDF_muon_score() > 0.05) or (sp.GetEvt()->Get_RDF_noise_score() > 0.18)) { rejected[index]++; continue; } // Filters for the events
-    if ((sp.GetEvt()->Get_track_ql0() > 0.5) and (sp.GetEvt()->Get_track_ql1() > 0.5)) { good_tr = true; }
-    if ((sp.GetEvt()->Get_shower_ql0() > 0.5) and (sp.GetEvt()->Get_shower_ql1() > 0.5)) { good_sh = true; }
+    if ((evt->Get_RDF_muon_score() > 0.05) or (evt->Get_RDF_noise_score() > 0.18)) { rejected[index]++; continue; } // Filters for the events
+    if ((evt->Get_track_ql0() > 0.5) and (evt->Get_track_ql1() > 0.5)) { good_tr = true; }
+    if ((evt->Get_shower_ql0() > 0.5) and (evt->Get_shower_ql1() > 0.5)) { good_sh = true; }
     if ((good_tr) and (good_sh)) { good_track_and_shower[index]++; }
     if (good_tr) { good_track[index]++; } 
     if (good_sh) { good_shower[index]++; }
@@ -73,34 +73,34 @@ void reconstruction_counts(TString sum_file="../../data/ORCA_MC_summary_all_10Ap
   }
 
   // Then showers
-  // I do not trust the clear method, so for now I just overwrite all elements with 0.
+  // The clear method gives some issues, so for now I just overwrite all elements with 0.
   for (Int_t i = 0; i < 10; i++) {
     good_track_and_shower[i] = 0;
-    good_track[i] = 0;
-    good_shower[i] = 0;
-    bad_track[i] = 0;
-    bad_shower[i] = 0;
-    bad_track_and_shower[i] = 0;
-    rejected[i] = 0;
-    total_events[i] = 0;
+    good_track[i]            = 0;
+    good_shower[i]           = 0;
+    bad_track[i]             = 0;
+    bad_shower[i]            = 0;
+    bad_track_and_shower[i]  = 0;
+    rejected[i]              = 0;
+    total_events[i]          = 0;
   }
 
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
 
-    // Filter shyte
+    // Filter
     bool good_tr = false;
     bool good_sh = false;
     sp.GetTree()->GetEntry(i);
 
     // We order the histograms by quality: 0.0-0.1 --> 0, 0.1-0.2 --> 1, etc.
-    q = sp.GetEvt()->Get_RDF_track_score();
+    q = evt->Get_RDF_track_score();
     int index = (int)(TMath::Floor(q * 10));
     if (index == 10) { index = 9; } // A perfect track will get an index 10, which does not exist
 
     total_events[index]++;
-    if ((sp.GetEvt()->Get_RDF_muon_score() > 0.05) or (sp.GetEvt()->Get_RDF_noise_score() > 0.50)) { rejected[index]++; continue; } // Filters for the events
-    if ((sp.GetEvt()->Get_track_ql0() > 0.5) and (sp.GetEvt()->Get_track_ql1() > 0.5)) { good_tr = true; }
-    if ((sp.GetEvt()->Get_shower_ql0() > 0.5) and (sp.GetEvt()->Get_shower_ql1() > 0.5)) { good_sh = true; }
+    if ((evt->Get_RDF_muon_score() > 0.05) or (evt->Get_RDF_noise_score() > 0.50)) { rejected[index]++; continue; } // Filters for the events
+    if ((evt->Get_track_ql0() > 0.5) and (evt->Get_track_ql1() > 0.5)) { good_tr = true; }
+    if ((evt->Get_shower_ql0() > 0.5) and (evt->Get_shower_ql1() > 0.5)) { good_sh = true; }
     if ((good_tr) and (good_sh)) { good_track_and_shower[index]++; }
     if (good_tr) { good_track[index]++; } 
     if (good_sh) { good_shower[index]++; }
