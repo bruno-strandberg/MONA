@@ -69,34 +69,6 @@ std::tuple<TH2D*, TH2D*, TH2D*> ReadCorrelationFile(TString filename) {
 }
 
 
- /* Small function to read a detector response file and take the TH3D
-  * responses of tracks and showers and project them into the 2D E-ct
-  * plane
-  */
-std::tuple<TH2D*, TH2D*, TH2D*, TH2D*, TH2D*> ReadDetectorResFileEnergySplit(TString filename) {
-
-  TFile *f = TFile::Open(filename, "READ");
-
-  TH3D *h3_t_gt = (TH3D*)f->Get("detected_tracks_gt")->Clone();
-  TH3D *h3_t_gs = (TH3D*)f->Get("detected_tracks_gs")->Clone();
-  TH3D *h3_t_ge = (TH3D*)f->Get("detected_tracks_ge")->Clone();
-  TH3D *h3_s    = (TH3D*)f->Get("detected_showers")->Clone();
-  TH3D *h3_m    = (TH3D*)f->Get("detected_mc")->Clone();
-  h3_t_gt->SetDirectory(0);
-  h3_t_gs->SetDirectory(0);
-  h3_t_ge->SetDirectory(0);
-  h3_s->SetDirectory(0);
-  h3_m->SetDirectory(0);
-
-  TH2D *h_t_gt = (TH2D*)h3_t_gt->Project3D("yx");
-  TH2D *h_t_gs = (TH2D*)h3_t_gs->Project3D("yx");
-  TH2D *h_t_ge = (TH2D*)h3_t_ge->Project3D("yx");
-  TH2D *h_s = (TH2D*)h3_s->Project3D("yx");
-  TH2D *h_m = (TH2D*)h3_m->Project3D("yx");
-
-  return std::make_tuple(h_t_gt, h_t_gs, h_t_ge, h_s, h_m);
-}
-
   /* Printer functions
    */
 

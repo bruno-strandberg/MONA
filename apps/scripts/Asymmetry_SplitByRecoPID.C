@@ -10,20 +10,21 @@
 
 #include "DetResponse.h"
 #include "FitFunction.h"
+#include "HelperFunctions.C"
 #include "NMHUtils.h"
 #include "SummaryParser.h"
 #include "SummaryEvent.h"
-#include "HelperFunctions.C"
 
 #include <iostream>
 using namespace std;
 
-// This script calculates the asymmetry for track energy binned data in good track, good shower and good event.
+// This script calculates the asymmetry for track energy binned data in good track, good shower and good event
+// and using N (default=10) PID bins to split the data along the quality axis.
 
 
 void asymmetry_energy_split_by_reco() {
 
-  bool b_plot = true;
+  bool b_plot = false;
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
   TString filefolder = Form("./energy_detres/pid_bins_%i/", N_PID_CLASSES);
@@ -49,26 +50,23 @@ void asymmetry_energy_split_by_reco() {
     TFile *f_NO  = TFile::Open(file_NO, "READ");
     TFile *f_IO  = TFile::Open(file_IO, "READ");
 
-    std::tuple<TH2D*, TH2D*, TH2D*, TH2D*, TH2D*> h_tuple_NO = ReadDetectorResFileEnergySplit(file_NO);
-    std::tuple<TH2D*, TH2D*, TH2D*, TH2D*, TH2D*> h_tuple_IO = ReadDetectorResFileEnergySplit(file_IO);
-
-    TH2D *h_t_gt_NO = std::get<0>(h_tuple_NO);
-    TH2D *h_t_gs_NO = std::get<1>(h_tuple_NO);
-    TH2D *h_t_ge_NO = std::get<2>(h_tuple_NO);
-    TH2D *h_s_NO = std::get<3>(h_tuple_NO);
-    TH2D *h_m_NO = std::get<4>(h_tuple_NO);
-
-    TH2D *h_t_gt_IO = std::get<0>(h_tuple_IO);
-    TH2D *h_t_gs_IO = std::get<1>(h_tuple_IO);
-    TH2D *h_t_ge_IO = std::get<2>(h_tuple_IO);
-    TH2D *h_s_IO = std::get<3>(h_tuple_IO);
-    TH2D *h_m_IO = std::get<4>(h_tuple_IO);
+    TH2D *h_t_gt_NO = (TH2D*)f_NO->Get("detected_tracks_gt");
+    TH2D *h_t_gs_NO = (TH2D*)f_NO->Get("detected_tracks_gs");
+    TH2D *h_t_ge_NO = (TH2D*)f_NO->Get("detected_tracks_ge");
+    TH2D *h_s_NO = (TH2D*)f_NO->Get("detected_showers");
+    TH2D *h_m_NO = (TH2D*)f_NO->Get("detected_mc");
 
     h_t_gt_NO->SetName("detected_tracks_gt_NO");
     h_t_gs_NO->SetName("detected_tracks_gs_NO");
     h_t_ge_NO->SetName("detected_tracks_ge_NO");
     h_s_NO->SetName("detected_showers_NO");
     h_m_NO->SetName("detected_mc_NO");
+
+    TH2D *h_t_gt_IO = (TH2D*)f_IO->Get("detected_tracks_gt");
+    TH2D *h_t_gs_IO = (TH2D*)f_IO->Get("detected_tracks_gs");
+    TH2D *h_t_ge_IO = (TH2D*)f_IO->Get("detected_tracks_ge");
+    TH2D *h_s_IO = (TH2D*)f_IO->Get("detected_showers");
+    TH2D *h_m_IO = (TH2D*)f_IO->Get("detected_mc");
 
     h_t_gt_IO->SetName("detected_tracks_gt_IO");
     h_t_gs_IO->SetName("detected_tracks_gs_IO");

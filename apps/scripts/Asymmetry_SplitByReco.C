@@ -13,7 +13,6 @@
 #include "NMHUtils.h"
 #include "SummaryParser.h"
 #include "SummaryEvent.h"
-#include "HelperFunctions.C"
 
 #include <iostream>
 using namespace std;
@@ -23,7 +22,7 @@ using namespace std;
 
 void asymmetry_energy() {
 
-  bool b_plot = true;
+  bool b_plot = false;
   TString filefolder = "./energy_detres/";
 
   Double_t asym_t_gt;
@@ -38,33 +37,30 @@ void asymmetry_energy() {
   Double_t asym_s_err;
   Double_t asym_m_err;
 
-  TString file_NO = filefolder + "split_expected_evts_by_energy_NO.root";
-  TString file_IO = filefolder + "split_expected_evts_by_energy_IO.root";
+  TString file_NO = filefolder + "split_expected_evts_NO.root";
+  TString file_IO = filefolder + "split_expected_evts_IO.root";
   TString output  = filefolder + "asymmetry_split_by_energy.root";
   
   TFile *f_NO  = TFile::Open(file_NO, "READ");
   TFile *f_IO  = TFile::Open(file_IO, "READ");
 
-  std::tuple<TH2D*, TH2D*, TH2D*, TH2D*, TH2D*> h_tuple_NO = ReadDetectorResFileEnergySplit(file_NO);
-  std::tuple<TH2D*, TH2D*, TH2D*, TH2D*, TH2D*> h_tuple_IO = ReadDetectorResFileEnergySplit(file_IO);
-
-  TH2D *h_t_gt_NO = std::get<0>(h_tuple_NO);
-  TH2D *h_t_gs_NO = std::get<1>(h_tuple_NO);
-  TH2D *h_t_ge_NO = std::get<2>(h_tuple_NO);
-  TH2D *h_s_NO = std::get<3>(h_tuple_NO);
-  TH2D *h_m_NO = std::get<4>(h_tuple_NO);
-
-  TH2D *h_t_gt_IO = std::get<0>(h_tuple_IO);
-  TH2D *h_t_gs_IO = std::get<1>(h_tuple_IO);
-  TH2D *h_t_ge_IO = std::get<2>(h_tuple_IO);
-  TH2D *h_s_IO = std::get<3>(h_tuple_IO);
-  TH2D *h_m_IO = std::get<4>(h_tuple_IO);
+  TH2D *h_t_gt_NO = (TH2D*)f_NO->Get("detected_tracks_gt");
+  TH2D *h_t_gs_NO = (TH2D*)f_NO->Get("detected_tracks_gs");
+  TH2D *h_t_ge_NO = (TH2D*)f_NO->Get("detected_tracks_ge");
+  TH2D *h_s_NO = (TH2D*)f_NO->Get("detected_showers");
+  TH2D *h_m_NO = (TH2D*)f_NO->Get("detected_mc");
 
   h_t_gt_NO->SetName("detected_tracks_gt_NO");
   h_t_gs_NO->SetName("detected_tracks_gs_NO");
   h_t_ge_NO->SetName("detected_tracks_ge_NO");
   h_s_NO->SetName("detected_showers_NO");
   h_m_NO->SetName("detected_mc_NO");
+
+  TH2D *h_t_gt_IO = (TH2D*)f_IO->Get("detected_tracks_gt");
+  TH2D *h_t_gs_IO = (TH2D*)f_IO->Get("detected_tracks_gs");
+  TH2D *h_t_ge_IO = (TH2D*)f_IO->Get("detected_tracks_ge");
+  TH2D *h_s_IO = (TH2D*)f_IO->Get("detected_showers");
+  TH2D *h_m_IO = (TH2D*)f_IO->Get("detected_mc");
 
   h_t_gt_IO->SetName("detected_tracks_gt_IO");
   h_t_gs_IO->SetName("detected_tracks_gs_IO");
@@ -122,19 +118,19 @@ void asymmetry_energy() {
   asym_t_ge_err = std::get<2>(asym_t_ge_tuple);
   asym_s_err    = std::get<2>(asym_s_tuple);
   asym_m_err    = std::get<2>(asym_m_tuple);
-
-  cout << "Asymmetry for tracks (good tracks): " << asym_t_gt << " +- " << asym_t_gt_err << " (" << 100*asym_t_gt_err/asym_t_gt << "%)" << endl;
-  cout << "Asymmetry for tracks (good showrs): " << asym_t_gs << " +- " << asym_t_gs_err << " (" << 100*asym_t_gs_err/asym_t_gs << "%)" << endl;
-  cout << "Asymmetry for tracks (good events): " << asym_t_ge << " +- " << asym_t_ge_err << " (" << 100*asym_t_ge_err/asym_t_ge << "%)" << endl;
-  cout << "Asymmetry for showers: " << asym_s << " +- " << asym_s_err << " (" << 100*asym_s_err/asym_s << "%)" << endl;
-  cout << "Asymmetry for mc     : " << asym_m << " +- " << asym_m_err << " (" << 100*asym_m_err/asym_m << "%)" << endl;
+  
+  PrintAsymmetryWithErrors("tracks (good tracks)", asym_t_gt, asym_t_gt_err);
+  PrintAsymmetryWithErrors("tracks (good showrs)", asym_t_gs, asym_t_gs_err);
+  PrintAsymmetryWithErrors("tracks (good events)", asym_t_ge, asym_t_ge_err);
+  PrintAsymmetryWithErrors("showers             ", asym_s, asym_s_err);
+  PrintAsymmetryWithErrors("mc                  ", asym_m, asym_m_err);
 
   std::tuple<Double_t, Double_t> sq_sum = NMHUtils::SquaredSumErrorProp({asym_t_gt, asym_t_gs, asym_t_ge, asym_s, asym_m}, 
                                                                         {asym_t_gt_err, asym_t_gs_err, asym_t_ge_err, asym_s_err, asym_m_err});
   double asym_tot_value = std::get<0>(sq_sum);
   double asym_tot_err   = std::get<1>(sq_sum);
   cout << "-----------------------------" << endl;
-  cout << "Asymmetry total combined   : " << asym_tot_value << " +- " << asym_tot_err << " (" << 100*asym_tot_err/asym_tot_value << "%)" << endl;
+  PrintAsymmetryWithErrors("total combined      ", asym_tot_value, asym_tot_err);
   
   TFile fout(output, "RECREATE");
   c1->Write();
