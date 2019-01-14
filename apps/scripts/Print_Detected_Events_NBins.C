@@ -19,7 +19,7 @@
 #include <iostream>
 using namespace std;
 
-void histo_detected_total_entries() {
+void Print_Detected_Events_NBins() {
 
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
@@ -28,10 +28,10 @@ void histo_detected_total_entries() {
   
   TFile *f_def = TFile::Open(input_def, "READ");
 
-  TH2D *h_t_NO_def = (TH2D*)f_def->Get("detected_tracks_NO");
-  TH2D *h_s_NO_def = (TH2D*)f_def->Get("detected_showers_NO");
-  TH2D *h_t_IO_def = (TH2D*)f_def->Get("detected_tracks_IO");
-  TH2D *h_s_IO_def = (TH2D*)f_def->Get("detected_showers_IO");
+  TH3D *h_t_NO_def = (TH3D*)f_def->Get("detected_tracks_NO");
+  TH3D *h_s_NO_def = (TH3D*)f_def->Get("detected_showers_NO");
+  TH3D *h_t_IO_def = (TH3D*)f_def->Get("detected_tracks_IO");
+  TH3D *h_s_IO_def = (TH3D*)f_def->Get("detected_showers_IO");
 
   Double_t n_t_NO_def = h_t_NO_def->Integral();
   Double_t n_s_NO_def = h_s_NO_def->Integral();
@@ -48,10 +48,10 @@ void histo_detected_total_entries() {
     
     TFile *f = TFile::Open(input, "READ");
 
-    TH2D *h_t_NO = (TH2D*)f->Get("detected_tracks_NO");
-    TH2D *h_t_IO = (TH2D*)f->Get("detected_tracks_IO");
-    TH2D *h_s_NO = (TH2D*)f->Get("detected_showers_NO");
-    TH2D *h_s_IO = (TH2D*)f->Get("detected_showers_IO");
+    TH3D *h_t_NO = (TH3D*)f->Get("detected_tracks_NO");
+    TH3D *h_t_IO = (TH3D*)f->Get("detected_tracks_IO");
+    TH3D *h_s_NO = (TH3D*)f->Get("detected_showers_NO");
+    TH3D *h_s_IO = (TH3D*)f->Get("detected_showers_IO");
 
     Double_t n_t_NO = h_t_NO->Integral();
     Double_t n_t_IO = h_t_IO->Integral();
@@ -64,7 +64,5 @@ void histo_detected_total_entries() {
     cout.precision(7);
     cout << "Values for " << Form("%.2f", i * PID_step) << " < q < " << Form("%.2f", (i+1) * PID_step) << " | " 
          << n_t_NO << " | " << n_t_IO << " | " << n_s_NO << " | " << n_s_IO << " | " << endl;
-         //<< cout.width(12) << n_t_NO << " | " << cout.width(12) << n_t_IO << " | " << cout.width(12) << n_s_NO << " | " << cout.width(12) << n_s_IO << " | " << endl;
-
   }
 }

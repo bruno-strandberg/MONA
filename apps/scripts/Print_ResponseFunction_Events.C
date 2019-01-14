@@ -19,7 +19,7 @@
 #include <iostream>
 using namespace std;
 
-void histo_MC_total_entries() {
+void Print_ResponseFunction_Events() {
 
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
@@ -42,8 +42,8 @@ void histo_MC_total_entries() {
   
 
   for (int i = 0; i < N_PID_CLASSES; i++){
-    TString input_t = Form("./pid_detres/pid_binning_10/track_response_%.2f.root", i * N_PID_CLASSES);
-    TString input_s = Form("./pid_detres/pid_binning_10/shower_response_%.2f.root", i * N_PID_CLASSES);
+    TString input_t = Form("./pid_detres/pid_binning_%i/track_response_%.2f.root",  N_PID_CLASSES, i * PID_step);
+    TString input_s = Form("./pid_detres/pid_binning_%i/shower_response_%.2f.root", N_PID_CLASSES, i * PID_step);
     
     TFile *f_t = TFile::Open(input_t, "READ");
     TFile *f_s = TFile::Open(input_s, "READ");
