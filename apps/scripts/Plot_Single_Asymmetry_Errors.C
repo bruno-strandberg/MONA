@@ -17,12 +17,14 @@
 #include <iostream>
 using namespace std;
 
+ /* Script to print the relative errors of an asymmetry histogram for one file and one histogram
+  */
 
-void plot_asymmetry_errors() {
+void Plot_Single_Asymmetry_Errors(TString filepath="./pid_detres/pid_binning_10/asymmetry_split_0.90.root",
+                           TString name="asymmetry_track_0.90") {
 
-    TString file = "./pid_detres/pid_binning_10/asymmetry_split_0.90.root";
-    TFile *f = TFile::Open(file, "READ");
-    TH2D *h_asym = (TH2D*)f->Get("asymmetry_track_0.90");
+    TFile *f = TFile::Open(filepath, "READ");
+    TH2D *h_asym = (TH2D*)f->Get(name);
     h_asym->SetDirectory(0);
 
     TH2D *h_asym_err = (TH2D*)h_asym->Clone("h_a_rel_err");
@@ -35,13 +37,12 @@ void plot_asymmetry_errors() {
 	
         Double_t N_h_asym     = h_asym->GetBinContent(xb, yb);
         Double_t N_h_asym_err = h_asym->GetBinError(xb, yb);
-        Double_t rel_err = 0;
+        Double_t relative_err = 0;
         if (N_h_asym != 0) {
-          rel_err = N_h_asym_err / N_h_asym;
+          relative_err = N_h_asym_err / N_h_asym;
         } else {
-          rel_err = 0;
+          relative_err = 0;
         }
-        
         h_asym_err->SetBinContent(xb, yb, std::abs(rel_err));
       }
     }
@@ -52,6 +53,4 @@ void plot_asymmetry_errors() {
     h_asym_err->GetZaxis()->UnZoom();
     c1->SetLogx();
     c1->SetLogz();
-
-    
 }
