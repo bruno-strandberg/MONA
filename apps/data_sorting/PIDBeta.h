@@ -239,6 +239,7 @@ public :
    Double_t        noise_score;
    Double_t        _crossValidationTrainingMask_muon_score_retrain;
    Double_t        muon_score_retrain;
+   Double_t        dusj_energy_corrected;
 
    // List of branches
    TBranch        *b_gandalf_JENERGY_CHI2;   //!
@@ -446,6 +447,7 @@ public :
    TBranch        *b_noise_score;   //!
    TBranch        *b__crossValidationTrainingMask_muon_score_retrain;   //!
    TBranch        *b_muon_score_retrain;   //!
+   TBranch        *b_dusj_energy_corrected;   //!
 
    PIDBeta(TTree *tree=0);
    virtual ~PIDBeta();
@@ -722,6 +724,7 @@ void PIDBeta::Init(TTree *tree)
    fChain->SetBranchAddress("noise_score", &noise_score, &b_noise_score);
    fChain->SetBranchAddress("_crossValidationTrainingMask_muon_score_retrain", &_crossValidationTrainingMask_muon_score_retrain, &b__crossValidationTrainingMask_muon_score_retrain);
    fChain->SetBranchAddress("muon_score_retrain", &muon_score_retrain, &b_muon_score_retrain);
+   fChain->SetBranchAddress("dusj_energy_corrected", &dusj_energy_corrected, &b_dusj_energy_corrected);
    Notify();
 }
 

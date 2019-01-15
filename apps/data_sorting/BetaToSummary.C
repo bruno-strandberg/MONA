@@ -102,7 +102,7 @@ int main(const int argc, const char **argv) {
     out.GetEvt()->Set_track_dir(PIDR.gandalf_dir_x, PIDR.gandalf_dir_y, PIDR.gandalf_dir_z);
     out.GetEvt()->Set_track_pos(PIDR.gandalf_pos_x, PIDR.gandalf_pos_y, PIDR.gandalf_pos_z);
 
-    out.GetEvt()->Set_shower_energy(PIDR.dusj_energy);
+    out.GetEvt()->Set_shower_energy(PIDR.dusj_energy_corrected);
     out.GetEvt()->Set_shower_bjorkeny(PIDR.dusj_best_DusjOrcaUsingProbabilitiesFinalFit_BjorkenY);
     out.GetEvt()->Set_shower_ql0(PIDR.dusj_is_good);     
     out.GetEvt()->Set_shower_ql1(0.);                            //no pre-defined quality levels for 7-line prod
@@ -110,7 +110,7 @@ int main(const int argc, const char **argv) {
     out.GetEvt()->Set_shower_dir(PIDR.dusj_dir_x, PIDR.dusj_dir_y, PIDR.dusj_dir_z);
     out.GetEvt()->Set_shower_pos(PIDR.dusj_pos_x, PIDR.dusj_pos_y, PIDR.dusj_pos_z);
 
-    out.GetEvt()->Set_RDF_muon_score(PIDR.muon_score);
+    out.GetEvt()->Set_RDF_muon_score(PIDR.muon_score_retrain);   //better suppression by retrain score
     out.GetEvt()->Set_RDF_track_score(PIDR.track_score);
     out.GetEvt()->Set_RDF_noise_score(PIDR.noise_score);
 
