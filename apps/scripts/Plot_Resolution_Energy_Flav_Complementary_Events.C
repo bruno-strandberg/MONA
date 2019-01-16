@@ -18,10 +18,10 @@
 #include <iostream>
 using namespace std;
 
-void resolution_plot_flav_complementary_events(TString sum_file="../../data/ORCA_MC_summary_all_10Apr2018.root") {
+void Plot_Resolution_Energy_Flav_Complementary_Events(TString summary_file=(TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root") {
   SummaryParser sp(sum_file);
   
-  bool plot = true;
+  bool plot = false;
   int n_bins = 40;
   std::vector<Double_t> e_edges  = NMHUtils::GetLogBins(n_bins, 1, 100);
   std::vector<Double_t> ct_edges = NMHUtils::GetBins(n_bins, -1, 1);
@@ -34,7 +34,7 @@ void resolution_plot_flav_complementary_events(TString sum_file="../../data/ORCA
     h2_g_tr.push_back(new TH2D(Form("h2_g_tr_%i", i), Form("Energy resolution nu_m_CC q_0.%i [good tr]", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
     h2_g_sh.push_back(new TH2D(Form("h2_g_sh_%i", i), Form("Energy resolution nu_m_CC q_0.%i [good sh]", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
     h2_g_ev.push_back(new TH2D(Form("h2_g_ev_%i", i), Form("Energy resolution nu_m_CC q_0.%i [good ev]", i), n_bins, &e_edges[0], n_bins, &e_edges[0]));
-  } 
+  }
 
   Double_t q;
   Double_t good_tr_count = 0;
@@ -42,44 +42,47 @@ void resolution_plot_flav_complementary_events(TString sum_file="../../data/ORCA
   Double_t good_ev_count = 0;
   // Good Tracks only, no good showers
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
-    // Filter shyte
+    // Filters 
     bool good_tr = false;
     bool good_sh = false;
-    sp.GetTree()->GetEntry(i);
-    if ((sp.GetEvt()->Get_RDF_muon_score() > 0.05) or (sp.GetEvt()->Get_RDF_noise_score() > 0.5)) { continue; } // Filters for the events
-    if ((sp.GetEvt()->Get_track_ql0() > 0.5) and (sp.GetEvt()->Get_track_ql1() > 0.5)) { good_tr = true; }
-    if ((sp.GetEvt()->Get_shower_ql0() > 0.5) and (sp.GetEvt()->Get_shower_ql1() > 0.5)) { good_sh = true; }
+
+    SummaryEvent *evt = sp.GetEvt(i);
+    if ((evt->Get_RDF_muon_score() > 0.05) or (evt->Get_RDF_noise_score() > 0.5)) { continue; } // Filters for the events
+    if ((evt->Get_track_ql0() > 0.5) and (evt->Get_track_ql1() > 0.5)) { good_tr = true; }
+    if ((evt->Get_shower_ql0() > 0.5) and (evt->Get_shower_ql1() > 0.5)) { good_sh = true; }
     if ((good_tr) and (not good_sh)) { 
       good_tr_count++;
-      q = sp.GetEvt()->Get_RDF_track_score();
+      q = evt->Get_RDF_track_score();
       int index = (int)(TMath::Floor(q * 10));
       if (index == 10) { index = 9; } // A perfect track will get an index 10, which does not exist
-      if ((std::abs(sp.GetEvt()->Get_MC_type()) == 13) or (std::abs(sp.GetEvt()->Get_MC_type()) == 14)) {
-        if (sp.GetEvt()->Get_MC_is_CC()) h2_g_tr[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_track_energy());
+      if ((std::abs(evt->Get_MC_type()) == 13) or (std::abs(evt->Get_MC_type()) == 14)) {
+        if (evt->Get_MC_is_CC()) h2_g_tr[index]->Fill(evt->Get_MC_energy(), evt->Get_track_energy());
       }
     }
     if ((good_sh) and (not good_tr)) {
       good_sh_count++;
-      q = sp.GetEvt()->Get_RDF_track_score();
+      q = evt->Get_RDF_track_score();
       int index = (int)(TMath::Floor(q * 10));
-      if (index == 10) { index = 9; } // A perfect track will get an index 10, which does not exist
-      if ((std::abs(sp.GetEvt()->Get_MC_type()) == 13) or (std::abs(sp.GetEvt()->Get_MC_type()) == 14)) {
-        if (sp.GetEvt()->Get_MC_is_CC()) h2_g_sh[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_shower_energy());
+      if (index == 10) { index = 9; }
+      if ((std::abs(evt->Get_MC_type()) == 13) or (std::abs(evt->Get_MC_type()) == 14)) {
+        if (evt->Get_MC_is_CC()) h2_g_sh[index]->Fill(evt->Get_MC_energy(), evt->Get_shower_energy());
       }
     }
     if ((good_sh) and (good_tr)) {
       good_ev_count++;
-      q = sp.GetEvt()->Get_RDF_track_score();
+      q = evt->Get_RDF_track_score();
       int index = (int)(TMath::Floor(q * 10));
-      if (index == 10) { index = 9; } // A perfect track will get an index 10, which does not exist
-      if ((std::abs(sp.GetEvt()->Get_MC_type()) == 13) or (std::abs(sp.GetEvt()->Get_MC_type()) == 14)) {
-        if (sp.GetEvt()->Get_MC_is_CC()) h2_g_ev[index]->Fill(sp.GetEvt()->Get_MC_energy(), sp.GetEvt()->Get_shower_energy());
+      if (index == 10) { index = 9; }
+      if ((std::abs(evt->Get_MC_type()) == 13) or (std::abs(evt->Get_MC_type()) == 14)) {
+        if (evt->Get_MC_is_CC()) h2_g_ev[index]->Fill(evt->Get_MC_energy(), evt->Get_shower_energy());
       }
     }
   }
-  cout << "Good tracks [no showers] : " << good_tr_count << endl;
-  cout << "Good showers [no tracks] : " << good_sh_count << endl;
-  cout << "Good events [overlap]    : " << good_ev_count << endl;
+  if (print) {
+    cout << "Good tracks [no showers] : " << good_tr_count << endl;
+    cout << "Good showers [no tracks] : " << good_sh_count << endl;
+    cout << "Good events [overlap]    : " << good_ev_count << endl;
+  }
 
   if (plot) {
     TCanvas *c1 = new TCanvas("c1", "c1", 1800, 500);
@@ -124,8 +127,8 @@ void resolution_plot_flav_complementary_events(TString sum_file="../../data/ORCA
       c3->cd(i+1)->SetLogz();
     }
 
-    c1->SaveAs("./pid_detres/energy_resolution_complementing_events/energy_resolution_mucc_per_q_track_events.pdf");
-    c2->SaveAs("./pid_detres/energy_resolution_complementing_events/energy_resolution_mucc_per_q_shower_events.pdf");
-    c3->SaveAs("./pid_detres/energy_resolution_complementing_events/energy_resolution_mucc_per_q_good_events.pdf");
+    c1->SaveAs("./pid_detres/energy_resolution_complementing_events/energy_resolution_mucc_track_events.pdf");
+    c2->SaveAs("./pid_detres/energy_resolution_complementing_events/energy_resolution_mucc_shower_events.pdf");
+    c3->SaveAs("./pid_detres/energy_resolution_complementing_events/energy_resolution_mucc_good_events.pdf");
   }
 }
