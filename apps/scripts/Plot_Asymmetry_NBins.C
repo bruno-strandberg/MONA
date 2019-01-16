@@ -10,7 +10,6 @@
 #include "TString.h"
 
 #include "DetResponse.h"
-#include "FitFunction.h"
 #include "HelperFunctions.C"
 #include "NMHUtils.h"
 #include "SummaryParser.h"

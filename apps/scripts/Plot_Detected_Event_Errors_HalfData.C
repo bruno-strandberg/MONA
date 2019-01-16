@@ -8,7 +8,6 @@
 #include "TStyle.h"
 
 #include "DetResponse.h"
-#include "FitFunction.h"
 #include "NMHUtils.h"
 #include "SummaryParser.h"
 #include "SummaryEvent.h"

@@ -9,7 +9,6 @@
 #include "TStyle.h"
 
 #include "DetResponse.h"
-#include "FitFunction.h"
 #include "NMHUtils.h"
 #include "SummaryParser.h"
 #include "SummaryEvent.h"
@@ -20,7 +19,7 @@ using namespace std;
 
 // This script calculates the asymmetry for 10 binned data in pid_detres.
 
-void Asymmetry_Split() {
+void Asymmetry_SplitNBins() {
 
   bool b_plot = false;
   const int N_PID_CLASSES = 10;
