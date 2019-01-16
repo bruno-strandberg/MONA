@@ -5,6 +5,7 @@
 #ifndef SUMMARYUTILS
 #define SUMMARYUTILS
 
+/** This namespace stores the members that are necessary for `SummaryEvent::FillPseudoData()`. */
 namespace SUMMARYUTILS {
 
   TRandom3 fRand(0);

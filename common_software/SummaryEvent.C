@@ -55,6 +55,11 @@ SummaryEvent::~SummaryEvent() {}
 
 //***************************************************************************************
 
+/** This function writes simplistic pseudodata to the member variables and is mainly useful for testing.
+
+    For example, the pseudo-events can be processed through event filters/selections/detector responses.
+
+*/
 void SummaryEvent::FillPseudoData() {
 
   //-----------------------------------------------------------------------------
