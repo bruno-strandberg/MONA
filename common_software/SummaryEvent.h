@@ -1,8 +1,22 @@
-#ifndef SummaryEvent_h
-#define SummaryEvent_h
-
 #include "TObject.h"
 #include "TVector3.h"
+#include "TRandom3.h"
+
+#ifndef SUMMARYUTILS
+#define SUMMARYUTILS
+
+/** This namespace stores the members that are necessary for `SummaryEvent::FillPseudoData()`. */
+namespace SUMMARYUTILS {
+
+  TRandom3 fRand(0);
+  std::vector<Double_t> fFlavs = {12.,14.,16.,-12.,-14.,-16.};
+
+};
+
+#endif
+
+#ifndef SummaryEvent_h
+#define SummaryEvent_h
 
 /**
    Data format for NMH analysis.
@@ -135,6 +149,8 @@ class SummaryEvent : public TObject {
   Double_t Get_RDF_track_score() { return fRDF_track_score; }
   Double_t Get_RDF_noise_score() { return fRDF_noise_score; }
   
+  // other functions
+  void FillPseudoData();
 
  private:
 

@@ -1,14 +1,14 @@
-#define RDFPIDReader_cxx
-#include "RDFPIDReader.h"
+#define PIDAlpha_cxx
+#include "PIDAlpha.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
 
-void RDFPIDReader::Loop()
+void PIDAlpha::Loop()
 {
 //   In a ROOT session, you can do:
-//      root> .L RDFPIDReader.C
-//      root> RDFPIDReader t
+//      root> .L PIDAlpha.C
+//      root> PIDAlpha t
 //      root> t.GetEntry(12); // Fill t data members with entry number 12
 //      root> t.Show();       // Show values of entry 12
 //      root> t.Show(16);     // Read and show values of entry 16

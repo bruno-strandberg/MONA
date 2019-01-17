@@ -40,7 +40,7 @@ namespace RESTOREPARITY {
 using namespace JTOOLS;
 using namespace RESTOREPARITY;
 
-/** This program takes the file resulting from RDFPID_to_Summary as argument and splits it up to NMH/data/mcsummary/ directories to match the file scheme used throughout the MC chain.
+/** This program takes the file resulting from Alpha(Beta...)ToSummary as argument and splits it up to NMH/data/mcsummary/ directories to match the file scheme used throughout the MC chain.
     
    See NMH/data/README.md for more details.
  
@@ -56,9 +56,9 @@ int main(const int argc, const char **argv) {
   JRange<double> E_high;
 
   try {
-    JParser<> zap("This program takes the file resulting from RDFPID_to_Summary as argument and splits it up to NMH/data/mcsummary/ directories to match the file scheme used throughout the MC chain.");
+    JParser<> zap("This program takes the file resulting from Alpha(Beta...)ToSummary as argument and splits it up to NMH/data/mcsummary/ directories to match the file scheme used throughout the MC chain.");
 
-    zap['f'] = make_field(fname , "Name of the file created by RDFPID_to_Summary");
+    zap['f'] = make_field(fname , "Name of the file created by Alpha(Beta...)ToSummary");
     zap['l'] = make_field(E_low , "For ORCA, typically two energy ranges are used with gSeaGen, events from both are present in the -f argument file. Provide the low range") = JRange<double>(1, 5);
     zap['u'] = make_field(E_high, "For ORCA, typically two energy ranges are used with gSeaGen, events from both are present in the -f argument file. Provide the high range") = JRange<double>(3, 100);
 

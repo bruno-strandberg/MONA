@@ -175,8 +175,12 @@ class DetResponse : public EventFilter {
   void                WriteToFile(TString filename);
   void                ReadFromFile(TString filename);
   std::tuple<TCanvas*, TCanvas*, TCanvas*> DisplayResponse(Double_t e_reco, Double_t ct_reco, TString outname="");
-  /// Return pointer to the 3D histogram with selected reco events
+  /// Get pointer to the 3D histogram with selected reco events
   TH3D*               GetHist3D() { return fHResp; }
+  /// Get pointer to the histogram with atmospheric muon counts in 1y
+  TH3D*               GetHistAtmMu1y() { return fhAtmMuCount1y; }
+  /// Get pointer to the histogram with noise counts in 1y
+  TH3D*               GetHistNoise1y() { return fhNoiseCount1y; }
   /// Get response name
   TString             Get_RespName() { return fRespName; }
 

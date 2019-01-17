@@ -1,5 +1,5 @@
-NMH data directory
-==================
+Data directory
+==============
 
 This is the data directory distributed with the repo. The sub-directories are described below.
 
@@ -15,15 +15,17 @@ This is the data directory distributed with the repo. The sub-directories are de
 
 
 ECAP PID output format
-==============================================
+======================
 
 File versions
 --------------
 See https://wiki.km3net.de/mediawiki/index.php/ORCA_PID for info regarding various versions.
 
 Info in the ECAP PID `TTree`
+---------------------------
 
-###MC info
+### MC info
+
 * `dir_x, dir_y, dir_z`     -  for MC direction
 * `pos_x, pos_y, pos_z`     -  for MC vertex
 * `Erange_min, Erange_max`  -  tell you the lower and upper limit of the MC neutrinos
@@ -33,14 +35,16 @@ Info in the ECAP PID `TTree`
 * `is_cc`                   - separate cc/nc events
 * `type`                    - neutrino type by PDG
 
-###Reco info
+### Reco info
+
 * `reconame_pos(dir)_x(yz)` -  for direction and position
 
 * `gandalf(dusj)_energy_corrected, recolns_energy_neutrino` - for neutrino energy
 
 * `dusj_best_DusjOrcaUsingProbabilitiesFinalFit_BjorkenY, recolns_bjorken_y` - for bjorken-y (nothing from gandalf, yet)
 
-Selections:
+### Selection variables
+
 * `reconame_is_good`     - whether the reco converged (i.e. did not give NaN)
 * `reconame_is_selected` - whether the reco passes selection cuts, as discussed in [selection cuts](https://wiki.km3net.de/mediawiki/index.php/Simulations/ORCA_productions#Default_Event_Selection_Cuts) and [Moritz' script](http://git.km3net.de/moritz/beluga/blob/master/beluga/cut_sets.py).
 * `reconame_loose_is_selected` - a looser containment cut for event selection.

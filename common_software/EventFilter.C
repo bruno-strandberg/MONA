@@ -1,4 +1,5 @@
 #include "EventFilter.h"
+#include<iostream>
 
 /**
    Constructor.
@@ -7,6 +8,18 @@
  */
 EventFilter::EventFilter(reco reco_type) {
   fRecoType = reco_type;
+
+  // the pointers to custom observable functions are initialized to NULL and need to be configured
+  // by the user, if "custom" reco type is used.
+  GetCustomEnergy = NULL;
+  GetCustomDir    = NULL;
+  GetCustomPos    = NULL;
+  GetCustomBy     = NULL;
+
+  if (fRecoType == customreco) {
+    std::cout << "NOTICE EventFilter::EventFilter() initialised with a customised reco type, call SetObsFuncPtrs() to configure the observables to be used." << std::endl;
+  }
+
 }
 
 //***************************************************************************************
@@ -113,24 +126,59 @@ void EventFilter::SetObservables(SummaryEvent *evt) {
     fDir      = evt->Get_shower_dir();
     fPos      = evt->Get_shower_pos();
     break;
-
-  case trackWshowerE:
-    fEnergy   = evt->Get_shower_energy();
-    fBy       = evt->Get_track_bjorkeny();
-    fDir      = evt->Get_track_dir();
-    fPos      = evt->Get_track_pos();
-    break; 
+   
+  case customreco:
     
-  case hybridE:
-    if (has_shower_energy) {
-      fEnergy = evt->Get_shower_energy();
-    } else {
-      fEnergy = evt->Get_track_energy();
+    if ( &GetCustomEnergy == NULL || &GetCustomDir == NULL || &GetCustomPos == NULL || GetCustomBy == NULL) {
+      throw std::logic_error("ERROR! EventFilter::SetObservables() When using custom observables, pointers to the functions that return the observables need to be configured first by calling EventFilter::SetObsFuncPtrs(...)");
     }
-    fBy       = evt->Get_track_bjorkeny();
-    fDir      = evt->Get_track_dir();
-    fPos      = evt->Get_track_pos();
-    break;
+
+    fEnergy = GetCustomEnergy(evt);
+    fBy     = GetCustomBy(evt);
+    fDir    = GetCustomDir(evt);
+    fPos    = GetCustomPos(evt);
+
   }
   
+}
+
+//***************************************************************************************
+
+/**
+   This function has to be used to set the function pointers when reconstruction type "customreco" is used.
+
+   Although it may seem complicated, the idea is actually rather simple. For example, consider that one wishes to use the direction of track reco, but the energy of a shower reco. This would be easy to implement without any pointers in the `switch` statement in `EventFilter::SetObservables`. However, typically one requires further logic, i.e. use shower reco energy only if it's quality level is at 1, otherwise use track reco. And then there is another thought that use shower energy estimate in one track score region and track energy estimate in another track score region. What I am trying to illustrate here, is that it will be unsustainable to add another switch element to `EventFilter::SetObservables` for each specific case.
+
+   For this reason, an elegant alternative is provided. For such cases as illustrated above, the user can choose `customreco` at initialisation. Then, the user needs to define four functions in his/her application:
+   ```
+   Double_t MyCustomEnergy(SummaryEvent* evt) {...};
+   TVector3 MyCustomDir(SummaryEvent* evt) {...};
+   TVector3 MyCustomPos(SummaryEvent* evt) {...};
+   Double_t MyCustomBY(SummaryEvent* evt) {...};
+   ```
+   In each function, the user has access to all of the data members of the `SummaryEvent` class (through the getter's) to make a specific selection which reconstruction variable is to be used in which circumstances. For example, is nothing specific is required for the direction reconstruction, the user can simply define:
+   ```
+   TVector3 MyCustomDir(SummaryEvent* evt) { return evt->Get_track_dir() };
+   ```
+   Having defined the four functions, the user needs to use this function to let the class know what to call. Example usage:
+   ```
+   EventFilter f1(EventFilter::customreco);
+   f1.SetObsFuncPtrs( &MyCustomEnergy, &MyCustomDir, &MyCustomPos, &MyCustomBY);
+   ```
+
+
+   \param E   Address of the function that returns the custom energy
+   \param ct  Address of the function that returns the custom direction vector
+   \param pos Address of the function that returns the custom position vector
+   \param by  Address of the function that returns the custom bjorken-y
+
+ */
+void EventFilter::SetObsFuncPtrs( Double_t (*E)(SummaryEvent*)  , TVector3 (*ct)(SummaryEvent*), 
+				  TVector3 (*pos)(SummaryEvent*), Double_t (*by)(SummaryEvent*) ) {
+
+  GetCustomEnergy = E;
+  GetCustomDir = ct;
+  GetCustomPos = pos;
+  GetCustomBy  = by;
+
 }

@@ -64,6 +64,10 @@ cutobj(): getter_ptr(0), value(0), comp_ptr(0) {};
    observables. The observables are typically used in inheriting classes (```EventSelection``` and 
    ```DetResponse```) in filling data structures.
 
+   There is a slightly more advanced option to use a custom reconstruction type. This is very useful in cases where, say, the user wishes to use shower energy estimate with track direction estimate. Consult the documentation of the function `EventFilter::SetObsFuncPtrs` for details how to achieve this.
+
+   Examples and test for `EventFilter` and inheriting classes `DetResponse` and `EventSelection` can be found at `NMH/tests/EventFiltering`.
+
    Future developments: if SummaryEvent is changed to consist also of other variable types than
    doubles, then this class needs to be templated.
  */
@@ -72,7 +76,12 @@ class EventFilter {
  public:
 
   /// enum to determine which reco type is used in filling hists in inheriting classes
-  enum reco {mc_truth, track, shower, trackWshowerE, hybridE};
+  enum reco {
+    mc_truth,  //!< use monte-carlo truth for energy, direction, bjorken-y and position
+    track,     //!< use track-reco for energy, direction, bjorken-y and position
+    shower,    //!< use shower-reco for energy, direction, bjorken-y and position
+    customreco //!< use user-defined energy, dir, bjorken-y and pos; see `EventFilter::SetObsFuncPtrs` doc.
+  };
   
   EventFilter(reco reco_type = EventFilter::mc_truth);
   ~EventFilter();
@@ -81,6 +90,9 @@ class EventFilter {
   void   SetObservables(SummaryEvent *evt);
   void   AddCut( std::function<Double_t(SummaryEvent&)> getter_ptr,
 		 std::function<bool(double, double)> comp_ptr, Double_t value, Bool_t AndCut);
+
+  void   SetObsFuncPtrs( Double_t (*E)(SummaryEvent*)  , TVector3 (*ct)(SummaryEvent*), 
+			 TVector3 (*pos)(SummaryEvent*), Double_t (*by)(SummaryEvent*) );
 
   reco     fRecoType;    //!< variable to determine which reco type is used
   Double_t fEnergy;      //!< energy observable for inheriting classes, depending on reco type
@@ -92,6 +104,11 @@ class EventFilter {
   
   std::vector<cutobj> fAndCuts; //!< vector with 'and' cuts
   std::vector<cutobj> fOrCuts;  //!< vector with 'or' cuts
+
+  Double_t (*GetCustomEnergy)(SummaryEvent*);
+  TVector3 (*GetCustomDir)(SummaryEvent*);
+  TVector3 (*GetCustomPos)(SummaryEvent*);
+  Double_t (*GetCustomBy)(SummaryEvent*);
   
 };
 

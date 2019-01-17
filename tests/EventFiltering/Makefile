@@ -1,28 +1,28 @@
 include $(NMHDIR)/Makerules
 
-CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS) $(JPPCFLAGS)
+CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS)
 LFLAGS = $(ROOTLIBS) $(NMHLIB)
 
-COMMON   = PIDAlpha.C PIDBeta.C
-SOURCES  = $(filter-out $(COMMON), $(wildcard *.C))
+SOURCES  = $(wildcard *.C)
+HEADERS  = $(wildcard *.h)
 PACKAGES = $(SOURCES:.C=)
 
 all: $(PACKAGES)
 
-$(PACKAGES): % : %.C $(COMMON)
+$(PACKAGES): %: %.C
 	@echo "  Building $@ with pre-requisities $^..."
 	@g++ -O3 -o $@ $^ $(LFLAGS) $(CFLAGS)
-
 
 .PHONY: clean
 
 clean:
 	rm -f $(PACKAGES)
 
-
 .PHONY: print
 
 print:
-	@echo ${COMMON}
-	@echo ${SOURCES}
-	@echo ${PACKAGES}
+	@echo $(SOURCES)
+	@echo $(HEADERS)
+	@echo $(PACKAGES)
+	@echo $(LFLAGS)
+	@echo $(CFLAGS)

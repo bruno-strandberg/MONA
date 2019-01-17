@@ -2,13 +2,16 @@
 """
 This script can be used to call the EffMhists program for processing many files with default settings (useful for ORCA analyses). For each file in SUMMARYDIR, it will look for a file in GSGDIR; if the file is not found the summary file is ignored. If the gSeaGen file is found, the script sets up a call to EffMhists program.
  
+Alternatively, the script can take a directory with trigger files as argument, in which case the gSeaGen directory is ignored. It will look up a trigger file per each summary file and extract the input gSeaGen file(s) corresponding to the summary file by using JPringMeta of Jpp. It will check whether it can access/find the corresponding gSeaGen files, if that is the case it will create and call commands for EffMhists execution.
+
 Usage:
-    EMH_caller --gsgdir GSGDIR --summarydir SUMMARYDIR [--odir OUTPUTDIR] [--rmin RMIN] [--rmax RMAX] [--selstr SELSTR] [--nmin NMIN] (--local | --farm) 
+    EMH_caller --summarydir SUMMARYDIR [--gsgdir GSGDIR] [--trigdir TRIGDIR] [--odir OUTPUTDIR] [--rmin RMIN] [--rmax RMAX] [--selstr SELSTR] [--nmin NMIN] (--local | --farm) 
     EMH_caller -h                                                                     
                                                                                           
 Option:
-    --gsgdir GSGDIR             Local gSeaGen directory
     --summarydir SUMMARYDIR     Local summary files directory
+    --gsgdir GSGDIR             Local gSeaGen directory [default: ]
+    --trigdir TRIGDIR           Local trigger files directory [default: ]
     --odir OUTPUTDIR            Output dir [default: output/]
     --rmin RMIN                 Lowest run number [default: 1]
     --rmax RMAX                 Highest run number [default: 10000]
@@ -27,12 +30,14 @@ import sys
 import os
 import math
 import time
+import re
 
 #*****************************************************************
 # some global directories
 nmhdir        = os.environ['NMHDIR']
 summary_dir   = os.path.abspath(args['--summarydir'])
 gseagen_dir   = os.path.abspath(args['--gsgdir'])
+trigger_dir   = os.path.abspath(args['--trigdir'])
 
 #*****************************************************************
 
@@ -48,6 +53,9 @@ def execute_effmass_calc(args):
 
     summaryfiles = os.popen( "ls {}/{}".format(args['--summarydir'], args['--selstr']) ).read().split()
     gseagenfiles = os.popen( "ls {}".format(args['--gsgdir']) ).read().split()
+    triggerfiles = ''
+    if (trigger_dir != ''):
+        triggerfiles = os.popen( "ls {}".format(args['--trigdir']) ).read().split()
 
     flavors      = ['elec', 'muon', 'tau']
     interactions = ['NC','CC']
@@ -56,29 +64,60 @@ def execute_effmass_calc(args):
 
     for sf in summaryfiles:
         
+        #--------------------------------------------------------------------------
         # extract flavor, NC/CC, energy range and file number from summary file name
         # and look for the corresponding gSeaGen file
+        #--------------------------------------------------------------------------
 
         flav = inter = erange = fnr = ''
 
         flav  = [f for f in flavors if f in sf]
         inter = [i for i in interactions if i in sf]
-        erange = sf[ sf[0:sf.index("GeV")].rfind('_')+1 : sf.index("GeV") ]
+        erange = sf[ sf[0:sf.index("GeV")].rfind('_')+1 : sf.index("GeV") ] + "GeV"
         fnr = sf[ sf.rfind('_') : sf.rfind('.')+1 ]
 
         if ( len(flav) != 1 or len(inter) != 1 or flav[0] == '' or inter[0] == '' or erange == '' or fnr == '' ):
             raise Exception("Flavor and interaction extraction failed!")
-        
-        gsgfile = [g for g in gseagenfiles if (flav[0] in g and inter[0] in g and erange in g and fnr in g)]
 
-        if (len(gsgfile) != 1):
-            print ("WARNING! Could not find gSeaGen file for summary file {}".format(sf))
-            continue
+        #--------------------------------------------------------------------------
+        # no trigger directory specified, look up a gSeaGen file for each summary file and
+        # add an execution command to jobcmds list
+        #--------------------------------------------------------------------------
+        if trigger_dir == '':
 
-        sumf = os.path.abspath(args['--summarydir']) + "/" + sf[ sf.rfind('/')+1 : ]
-        gsgf = os.path.abspath(args['--gsgdir']) + "/" + gsgfile[0]
+            gsgfile = [g for g in gseagenfiles if (flav[0] in g and inter[0] in g and erange in g and fnr in g)]
+            
+            if (len(gsgfile) != 1):
+                print ("WARNING! Could not find gSeaGen file for summary file {}".format(sf))
+                continue
+            
+            sumf = os.path.abspath(args['--summarydir']) + "/" + sf[ sf.rfind('/')+1 : ]
+            gsgf = []
+            gsgf.append( os.path.abspath(args['--gsgdir']) + "/" + gsgfile[0] )
+            
+            jobcmds.append( get_execution_cmd( sumf, gsgf, os.path.abspath(args['--odir']) ) )
 
-        jobcmds.append( get_execution_cmd( sumf, gsgf, os.path.abspath(args['--odir']) ) )
+        #--------------------------------------------------------------------------
+        # trigger directory specified; look up trigger files corresponding to the summary file,
+        # extract gSeaGen files and create commands
+        #--------------------------------------------------------------------------
+
+        else:
+            
+            fnr = fnr[:-1]+'-' # replace filenr search string to form _nr- instead of _nr.
+
+            # fnr in searched in the part after GeV, otherwise the range _1-5 always matches for fnr=_1-
+            trigfile = [ t for t in triggerfiles if ( flav[0] in t and inter[0] in t and erange in t and 
+                                                      fnr in t[t.index("GeV"):] ) ]
+
+            if (len(trigfile) != 1):
+                print (trigfile)
+                raise Exception("ERROR! Found the above list of trigger files, but should have 1 file exactly")
+
+            sumf = os.path.abspath(args['--summarydir']) + "/" + sf[ sf.rfind('/')+1 : ]
+            gsgf = get_gsg_filelist( os.path.abspath(args['--trigdir']) + "/" + trigfile[0] )
+
+            jobcmds.append( get_execution_cmd( sumf, gsgf, os.path.abspath(args['--odir']) ) )            
 
     #===========================================================
     # now bundle the commands into farm scripts
@@ -110,16 +149,59 @@ def execute_effmass_calc(args):
         os.system(syscmd)
 
 #*****************************************************************
+
+def get_gsg_filelist(trigfile):
+    """
+    This function uses JPrintMeta to extract the list of gSeaGen files input to the trigger file
+    """
+    
+    #-----------------------------------------------------------------------
+    # read the meta-data
+    #-----------------------------------------------------------------------
+    metaout = os.popen( "JPrintMeta -f {}".format(trigfile) ).read()
+
+    #-----------------------------------------------------------------------
+    # file list starts with -f, ends whenever there is another argument (e.g. "-o "),
+    # hence locate the next argument after the file-list and cut there
+    #-----------------------------------------------------------------------
+
+    flist = metaout[ metaout.index('-f ')+len('-f ') : ].split() # all text after '-f ', split at spaces
+    regex = re.compile('-.')                                     # argument pattern "-*", where . stands for *
+    flags = [str for str in flist if re.match(regex, str)]       # all arguments in the list
+    
+    # if no flags are found, raise error. This can actually happen if the -f filelist comes last,
+    # but protect against that for now
+    if len(flags) == 0:
+        raise Exception("ERROR! get_gsg_filelist() could not find any more command line arguments")
+
+    # finally, cut out everything after the first argument after the filelist
+    flist = flist[ : flist.index(flags[0]) ]
+
+    #-----------------------------------------------------------------------
+    # check that all files exist
+    #-----------------------------------------------------------------------
+    for f in flist:
+        if ( not os.path.isfile(f) ):
+            raise Exception("ERROR! get_gsg_filelist() cannot find file {}".format(f))
+
+    print ( "NOTICE found {} gSeaGen files input to trigger file {}".format(len(flist), trigfile) )
+
+    return flist
+
+
+#*****************************************************************
         
-def get_execution_cmd(summaryfile, gseagenfile, outputdir):
+def get_execution_cmd(summaryfile, gseagenfiles, outputdir):
     """
     This function creates the execution command for the application.
     """
     
     syscmd  = os.getcwd() + "/./EffMhists "
     syscmd += "-d {} ".format(outputdir)
-    syscmd += "-g {} ".format(gseagenfile)
     syscmd += "-s {} ".format(summaryfile)
+
+    for gsgf in gseagenfiles:
+        syscmd += "-g {} ".format(gsgf)
 
     return syscmd
 
