@@ -1,5 +1,4 @@
 #include "NMHUtils.h"
-
 #include "TAxis.h"
 #include "TMath.h"
 #include <fstream>
@@ -277,11 +276,14 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
         A_err = std::pow(0.5*(N_h1 + N_h2) / std::pow(N_h1, 1.5), 2.) * std::pow(N_h1_err, 2.) +
                 std::pow(-1 / std::sqrt(N_h1), 2.) * std::pow(N_h2_err, 2.) -
                 2 * 1 * N_h1_err * N_h2_err * (0.5*(N_h1 + N_h2) / std::pow(N_h1, 2.));
-        if ((A_err < 0) and (std::abs(A_err) < 1e-10)) { A_err = 0.; } // This happens occosionally, but it fucks up the calculation.
+        if ((A_err < 0)) { 
+          if (std::abs(A_err) < 1e-12) { A_err = 0.; } // Very rarely the number is -1e-15 to -1e-18, due to our assumptions.
+                                                       // For positive numbers the smallest are 1e9 to 1e10 which is already rare.
+          else {
+            throw std::domain_error("ERROR! Asymmetry error squared is smaller than 0, unable to squareroot."); 
+          }
+        }
         A_err = std::sqrt(A_err);
-        
-        // Overwrite the error to check this simplified version.
-        //A_err = A * N_h1_err / N_h1;
       }
       else { 
         A = 0.; 
@@ -298,7 +300,6 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
         Nbins += 1;
       }
 
-    //  if ((xb == 11) and (yb == 7)) { cout << A << " " << A_err << endl; }
       h_asym->SetBinContent(xb, yb, A);
       h_asym->SetBinError(xb, yb, A_err);
 
@@ -307,12 +308,10 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
 
     }
   }
-
   asym = TMath::Sqrt( asym );
   asym_err = 1. / asym * TMath::Sqrt( asym_err );
 
   return std::make_tuple(h_asym, asym, asym_err, Nbins);
-
 }
 
 

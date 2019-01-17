@@ -21,7 +21,7 @@ using namespace std;
 
 void Asymmetry_SplitNBins() {
 
-  bool b_plot = false;
+  bool plot = false;
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
   TString filefolder = TString::Format("./pid_detres/RooFit/pid_binning_%i/", N_PID_CLASSES);
@@ -69,7 +69,7 @@ void Asymmetry_SplitNBins() {
 
     TCanvas *c1 = new TCanvas(TString::Format("c1_%.2f", PID_step * i), "c1", 1200, 1200); // has to be outside of the if, so that the writing below works.
     gStyle->SetPalette(kBird);
-    if (b_plot) { 
+    if (plot) { 
       c1->Divide(3,3);
 
       vector<TH2D*> plots = {h_t_NO, h_s_NO, h_m_NO, h_t_IO, h_s_IO, h_m_IO, h_asym_t, h_asym_s, h_asym_m};
@@ -113,7 +113,7 @@ void Asymmetry_SplitNBins() {
     fout.Write();
     fout.Close();
 
-    if (b_plot) { // To keep the memory low (esp. over tunnels) close the canvas.
+    if (plot) { // To keep the memory low (esp. over tunnels) close the canvas.
       c1->Close(); 
       gSystem->ProcessEvents(); 
     }
