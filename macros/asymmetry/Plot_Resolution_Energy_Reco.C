@@ -22,7 +22,6 @@ void Plot_Resolution_Energy_Reco(TString summary_file=(TString)getenv("NMHDIR") 
   SummaryParser sp(sum_file);
   
   bool plot = false;
-  bool print = false;
 
   int n_bins = 40;
   std::vector<Double_t> e_edges  = NMHUtils::GetLogBins(n_bins, 1, 100);
@@ -41,11 +40,6 @@ void Plot_Resolution_Energy_Reco(TString summary_file=(TString)getenv("NMHDIR") 
   } 
 
   Double_t q;
-  Int_t good_track_and_shower = 0;
-  Int_t bad_track = 0;
-  Int_t bad_shower = 0;
-  Int_t bad_track_and_shower = 0;
-  Int_t total_events = 0;
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
     total_events++;
     // Filters 
@@ -56,10 +50,9 @@ void Plot_Resolution_Energy_Reco(TString summary_file=(TString)getenv("NMHDIR") 
     if ((evt->Get_RDF_muon_score() > 0.5) or (evt->Get_RDF_noise_score() > 0.5)) { continue; } // Filters for the events
     if ((evt->Get_track_ql0() > 0.5) and (evt->Get_track_ql1() > 0.5)) { good_tr = true; }
     if ((evt->Get_shower_ql0() > 0.5) and (evt->Get_shower_ql1() > 0.5)) { good_sh = true; }
-    if ((not good_tr) and (not good_sh)) { bad_track_and_shower++; continue; }
-    else if (not good_tr) { bad_track++; continue; }
-    else if (not good_sh) { bad_shower++; continue; }
-    good_track_and_shower++;
+    if ((not good_tr) and (not good_sh)) { continue; }
+    else if (not good_tr) { continue; }
+    else if (not good_sh) { continue; }
 
     // We order the histograms by quality: 0.0-0.1 --> 0, 0.1-0.2 --> 1, etc.
     q = evt->Get_RDF_track_score();
@@ -72,13 +65,6 @@ void Plot_Resolution_Energy_Reco(TString summary_file=(TString)getenv("NMHDIR") 
 
     if (q > 0.6) { ht_def->Fill(evt->Get_MC_energy(), evt->Get_track_energy()); }
     if (q < 0.6) { hs_def->Fill(evt->Get_MC_energy(), evt->Get_shower_energy()); }
-  }
-  if (print) {
-    cout << "Total events: " << total_events << endl;
-    cout << "Good events : " << good_track_and_shower << endl;
-    cout << "Bad tracks  : " << bad_track << endl;
-    cout << "Bad showers : " << bad_shower << endl;
-    cout << "Bad both    : " << bad_track_and_shower << endl;
   }
 
   if (plot) {

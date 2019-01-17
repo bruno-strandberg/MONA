@@ -37,9 +37,6 @@ void Plot_Resolution_Energy_Flav_Complementary_Events(TString summary_file=(TStr
   }
 
   Double_t q;
-  Double_t good_tr_count = 0;
-  Double_t good_sh_count = 0;
-  Double_t good_ev_count = 0;
   // Good Tracks only, no good showers
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
     // Filters 
@@ -51,7 +48,6 @@ void Plot_Resolution_Energy_Flav_Complementary_Events(TString summary_file=(TStr
     if ((evt->Get_track_ql0() > 0.5) and (evt->Get_track_ql1() > 0.5)) { good_tr = true; }
     if ((evt->Get_shower_ql0() > 0.5) and (evt->Get_shower_ql1() > 0.5)) { good_sh = true; }
     if ((good_tr) and (not good_sh)) { 
-      good_tr_count++;
       q = evt->Get_RDF_track_score();
       int index = (int)(TMath::Floor(q * 10));
       if (index == 10) { index = 9; } // A perfect track will get an index 10, which does not exist
@@ -60,7 +56,6 @@ void Plot_Resolution_Energy_Flav_Complementary_Events(TString summary_file=(TStr
       }
     }
     if ((good_sh) and (not good_tr)) {
-      good_sh_count++;
       q = evt->Get_RDF_track_score();
       int index = (int)(TMath::Floor(q * 10));
       if (index == 10) { index = 9; }
@@ -69,7 +64,6 @@ void Plot_Resolution_Energy_Flav_Complementary_Events(TString summary_file=(TStr
       }
     }
     if ((good_sh) and (good_tr)) {
-      good_ev_count++;
       q = evt->Get_RDF_track_score();
       int index = (int)(TMath::Floor(q * 10));
       if (index == 10) { index = 9; }
@@ -77,11 +71,6 @@ void Plot_Resolution_Energy_Flav_Complementary_Events(TString summary_file=(TStr
         if (evt->Get_MC_is_CC()) h2_g_ev[index]->Fill(evt->Get_MC_energy(), evt->Get_shower_energy());
       }
     }
-  }
-  if (print) {
-    cout << "Good tracks [no showers] : " << good_tr_count << endl;
-    cout << "Good showers [no tracks] : " << good_sh_count << endl;
-    cout << "Good events [overlap]    : " << good_ev_count << endl;
   }
 
   if (plot) {
