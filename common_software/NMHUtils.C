@@ -229,23 +229,10 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
   // check that both histograms have the same binning
   //------------------------------------------------------------
 
-  if ( ( h1->GetXaxis()->GetNbins() != h2->GetXaxis()->GetNbins() ) || 
-       ( h1->GetYaxis()->GetNbins() != h2->GetYaxis()->GetNbins() ) ) {
-    throw std::invalid_argument( "ERROR! NMHUtils::Asymmetry() input histograms bin count mismatch.");
+  if ( !NMHUtils::BinsMatch(h1, h2) ) {
+    throw std::invalid_argument( "ERROR! NMHUtils::Asymmetry() input histograms bins mismatch.");
   }
-
-  for (Int_t i = 1; i <= h1->GetXaxis()->GetNbins(); i++) {
-    if ( h1->GetXaxis()->GetBinLowEdge(i) != h2->GetXaxis()->GetBinLowEdge(i) ) {
-      throw std::invalid_argument( "ERROR! NMHUtils::Asymmetry() input histograms bin low edge mismatch on X axis" );
-    }
-  }
-
-  for (Int_t i = 1; i <= h1->GetYaxis()->GetNbins(); i++) {
-    if ( h1->GetYaxis()->GetBinLowEdge(i) != h2->GetYaxis()->GetBinLowEdge(i) ) {
-      throw std::invalid_argument( "ERROR! NMHUtils::Asymmetry() input histograms bin low edge mismatch on Y axis" );
-    }
-  }
-
+  
   //------------------------------------------------------------
   // calculate the asymmetry
   //------------------------------------------------------------
@@ -270,18 +257,26 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
       Double_t A_err = 0;
 
       if ( N_h1 > 0 ) { 
+
         A = (N_h1 - N_h2)/TMath::Sqrt(N_h1); 
+
         A_err = std::pow(0.5*(N_h1 + N_h2) / std::pow(N_h1, 1.5), 2.) * std::pow(N_h1_err, 2.) +
                 std::pow(-1 / std::sqrt(N_h1), 2.) * std::pow(N_h2_err, 2.) -
                 2 * 1 * N_h1_err * N_h2_err * (0.5*(N_h1 + N_h2) / std::pow(N_h1, 2.));
-        if ((A_err < 0)) { 
-          if (std::abs(A_err) < 1e-12) { A_err = 0.; } // Very rarely the number is -1e-15 to -1e-18, due to our assumptions.
-                                                       // For positive numbers the smallest are 1e9 to 1e10 which is already rare.
+	
+	// Very rarely the number is -1e-15 to -1e-18, due to our assumptions.
+	// For positive numbers the smallest are 1e-9 to 1e-10 which is already rare.
+	if ( A_err < 0 ) { 
+
+          if ( std::abs(A_err) < 1e-12 ) { A_err = 0.; }                                                       
           else {
             throw std::domain_error("ERROR! Asymmetry error squared is smaller than 0, unable to squareroot."); 
           }
+	  
         }
+	
         A_err = std::sqrt(A_err);
+	
       }
       else { 
         A = 0.; 
@@ -292,7 +287,8 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
       Double_t yc = h_asym->GetYaxis()->GetBinCenter(yb);
 
       if ( (xc < xlow) || (xc > xhigh) || ( yc < ylow) || ( yc > yhigh ) ) {
-        A = 0.;
+        A     = 0.;
+	A_err = 0.;
       }
 
       h_asym->SetBinContent(xb, yb, A);
