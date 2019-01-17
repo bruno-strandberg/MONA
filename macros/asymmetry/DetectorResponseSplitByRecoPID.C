@@ -15,6 +15,7 @@
 
 #include "RooRealVar.h"
 
+#include "CustomEventFilters.h"
 
 #include <iostream>
 using namespace std;
@@ -44,7 +45,9 @@ void DetectorResponseSplitByRecoPID() {
     std::function<bool(double, double)> comparison_operator;
     if (i == 0) { comparison_operator = std::greater_equal<double>(); // The first bin needs to include the lower limit.
     } else { comparison_operator = std::greater<double>(); }
-    DetResponse response_good_track(DetResponse::hybridE, TString::Format("track_response_gt_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    DetResponse response_good_track(DetResponse::customreco, TString::Format("track_response_gt_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    response_good_track.SetObsFuncPtrs( &CUSTOMEF::HybridEnergy, &CUSTOMEF::TrackDir, &CUSTOMEF::TrackPos, &CUSTOMEF::TrackBY );
+
     response_good_track.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   ,  0.5, true );
     response_good_track.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   ,  0.5, true );
     response_good_track.AddCut( &SummaryEvent::Get_shower_ql0      , std::less<double>()      ,  0.5, true );
@@ -56,7 +59,9 @@ void DetectorResponseSplitByRecoPID() {
     response_good_track_vector.push_back(response_good_track);
 
     // Good showers only, no overlap with good tracks
-    DetResponse response_good_shower(DetResponse::hybridE, TString::Format("track_response_gs_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    DetResponse response_good_shower(DetResponse::customreco, TString::Format("track_response_gs_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    response_good_shower.SetObsFuncPtrs( &CUSTOMEF::HybridEnergy, &CUSTOMEF::TrackDir, &CUSTOMEF::TrackPos, &CUSTOMEF::TrackBY );
+
     response_good_shower.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   ,  0.5, true ); // This would cut almost all events, since they all have fTrack_ql0 > 0.5
     response_good_shower.AddCut( &SummaryEvent::Get_track_ql1       , std::less<double>()      ,  0.5, true ); // Moreover: the numbers are consistent with resolution_plot_flav_complementary_events.C
     response_good_shower.AddCut( &SummaryEvent::Get_shower_ql0      , std::greater<double>()   ,  0.5, true );
@@ -68,7 +73,9 @@ void DetectorResponseSplitByRecoPID() {
     response_good_shower_vector.push_back(response_good_shower);
 
     // Good events only, no overlap with bad tracks or bad showers
-    DetResponse response_good_event(DetResponse::hybridE, TString::Format("track_response_ge_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    DetResponse response_good_event(DetResponse::customreco, TString::Format("track_response_ge_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    response_good_event.SetObsFuncPtrs( &CUSTOMEF::HybridEnergy, &CUSTOMEF::TrackDir, &CUSTOMEF::TrackPos, &CUSTOMEF::TrackBY );
+
     response_good_event.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   ,  0.5, true );
     response_good_event.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   ,  0.5, true );
     response_good_event.AddCut( &SummaryEvent::Get_shower_ql0      , std::greater<double>()   ,  0.5, true );
@@ -79,7 +86,9 @@ void DetectorResponseSplitByRecoPID() {
     response_good_event.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );
     response_good_event_vector.push_back(response_good_event);
 
-    DetResponse response_shower(DetResponse::hybridE, TString::Format("shower_response_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    DetResponse response_shower(DetResponse::customreco, TString::Format("shower_response_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    response_shower.SetObsFuncPtrs( &CUSTOMEF::HybridEnergy, &CUSTOMEF::TrackDir, &CUSTOMEF::TrackPos, &CUSTOMEF::TrackBY );
+
     response_shower.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   ,  0.5, true );
     response_shower.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   ,  0.5, true );
     response_shower.AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      , PID_step * i    , true );
@@ -88,7 +97,9 @@ void DetectorResponseSplitByRecoPID() {
     response_shower.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(),  0.5, true );
     response_shower_vector.push_back(response_shower);
 
-    DetResponse response_mc(DetResponse::hybridE, TString::Format("mc_response_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    DetResponse response_mc(DetResponse::customreco, TString::Format("mc_response_%.2f", PID_step * i), 40, 1, 100, 40, -1, 1, 1, 0, 1);
+    response_mc.SetObsFuncPtrs( &CUSTOMEF::HybridEnergy, &CUSTOMEF::TrackDir, &CUSTOMEF::TrackPos, &CUSTOMEF::TrackBY );
+
     response_mc.AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      , PID_step * i    , true );
     response_mc.AddCut( &SummaryEvent::Get_RDF_track_score , std::less_equal<double>(), PID_step * (i+1), true );
     response_mc.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05, true );

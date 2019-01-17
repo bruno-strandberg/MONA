@@ -15,6 +15,8 @@
 
 #include "RooRealVar.h"
 
+#include "CustomEventFilters.h"
+
 
 #include <iostream>
 using namespace std;
@@ -32,7 +34,9 @@ void DetectorResponseSplitByReco() {
   // Good tracks only, no overlap with good showers
   // gt = good track, gs = good shower, ge = good event
   // The track response has been split into these 3 types, shower has not.
-  DetResponse track_response_gt(DetResponse::hybridE, "track_track_response_gt", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  DetResponse track_response_gt(DetResponse::customreco, "track_track_response_gt", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  track_response_gt.SetObsFuncPtrs( &CUSTOMEF::HybridEnergy, &CUSTOMEF::TrackDir, &CUSTOMEF::TrackPos, &CUSTOMEF::TrackBY );
+
   track_response_gt.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   ,  0.5, true );
   track_response_gt.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   ,  0.5, true );
   track_response_gt.AddCut( &SummaryEvent::Get_shower_ql0      , std::less<double>()      ,  0.5, true );
@@ -42,7 +46,9 @@ void DetectorResponseSplitByReco() {
   track_response_gt.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );
 
   // Good showers only, no overlap with good tracks
-  DetResponse track_response_gs(DetResponse::hybridE, "track_track_response_gs", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  DetResponse track_response_gs(DetResponse::customreco, "track_track_response_gs", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  track_response_gs.SetObsFuncPtrs( &CUSTOMEF::HybridEnergy, &CUSTOMEF::TrackDir, &CUSTOMEF::TrackPos, &CUSTOMEF::TrackBY );
+
   track_response_gs.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   ,  0.5, true ); // This would cut almost all events, since they all have fTrack_ql0 > 0.5
   track_response_gs.AddCut( &SummaryEvent::Get_track_ql1       , std::less<double>()      ,  0.5, true ); // Moreover: the numbers are consistent with resolution_plot_flav_complementary_events.C
   track_response_gs.AddCut( &SummaryEvent::Get_shower_ql0      , std::greater<double>()   ,  0.5, true );
@@ -52,7 +58,9 @@ void DetectorResponseSplitByReco() {
   track_response_gs.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );
 
   // Good events only, no overlap with bad tracks or bad showers
-  DetResponse track_response_ge(DetResponse::hybridE, "track_track_response_ge", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  DetResponse track_response_ge(DetResponse::customreco, "track_track_response_ge", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  track_response_ge.SetObsFuncPtrs( &CUSTOMEF::HybridEnergy, &CUSTOMEF::TrackDir, &CUSTOMEF::TrackPos, &CUSTOMEF::TrackBY );
+
   track_response_ge.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   ,  0.5, true );
   track_response_ge.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   ,  0.5, true );
   track_response_ge.AddCut( &SummaryEvent::Get_shower_ql0      , std::greater<double>()   ,  0.5, true );
@@ -61,7 +69,9 @@ void DetectorResponseSplitByReco() {
   track_response_ge.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05, true );
   track_response_ge.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );
 
-  DetResponse shower_response(DetResponse::hybridE, "shower_response", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  DetResponse shower_response(DetResponse::customreco, "shower_response", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  shower_response.SetObsFuncPtrs( &CUSTOMEF::HybridEnergy, &CUSTOMEF::TrackDir, &CUSTOMEF::TrackPos, &CUSTOMEF::TrackBY );
+
   shower_response.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   ,  0.5, true );
   shower_response.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   ,  0.5, true );
   shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(),  0.6, true );
