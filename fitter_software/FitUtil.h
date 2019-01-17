@@ -69,9 +69,8 @@ class FitUtil {
   /** Get the 3D histogram that stores the binning information
       \return `TH3D` with the binning used in the analysis.
    */
-  
-  RooRealVar* GetVar(TString varname);
   TH3D*       GetBinningHist() { return fHB;      }
+  RooRealVar* GetVar(TString varname);
   void        SetNOlims();
   void        SetNOcentvals();
   void        SetIOlims();
