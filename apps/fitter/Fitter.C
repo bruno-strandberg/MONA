@@ -23,6 +23,7 @@
 #include "RooSimultaneous.h"
 #include "RooFitResult.h"
 #include "RooMinimizer.h"
+#include "RooDataSet.h"
 
 // cpp headers
 #include <iostream>
@@ -45,7 +46,7 @@ namespace FITTER {
 
   // functions
   void InitRespsAndSels();
-  void FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response);
+  void FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response, FitUtil *futil);
   void FillSelections();
   void Cleanup();
   
@@ -53,7 +54,7 @@ namespace FITTER {
   static const Int_t    fENB    =  40;
   static const Double_t fEmin   =   1;
   static const Double_t fEmax   = 100;
-  static const Int_t    fCtNB   =  40;
+  static const Int_t    fCtNB   =  80;
   static const Double_t fCtmin  =  -1;
   static const Double_t fCtmax  =   1;
   static const Int_t    fByNB   =   1;
@@ -65,6 +66,8 @@ namespace FITTER {
   DetResponse    *fSHres;
   EventSelection *fTRsel;
   EventSelection *fSHsel;
+  RooDataSet     *fTRset;
+  RooDataSet     *fSHset;
 
 };
 
@@ -80,6 +83,7 @@ int main(const int argc, const char **argv) {
   string        simdata_file;
   string        expdata_file;
   bool          refill_response;
+  bool          unbinned;
   TString       meff_file;
 
   try {
@@ -92,6 +96,8 @@ int main(const int argc, const char **argv) {
     zap['e'] = make_field(expdata_file, "File with experimental data sample");
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
+
+    zap['u'] = make_field(unbinned, "Flag to request unbinned fitting");
     
     zap['M'] = make_field(meff_file, "Effective mass file created by using `EffMass` class") = 
       (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
@@ -105,21 +111,24 @@ int main(const int argc, const char **argv) {
   //----------------------------------------------------------
   // call methods to initialise and fill responses
   //----------------------------------------------------------
-  
-  InitRespsAndSels();
-  FillRespsAndSels(simdata_file, expdata_file, refill_response);
 
+  InitRespsAndSels();
+  
+  FitUtil *fitutil = new FitUtil(3, fTRres->GetHist3D(), 1, 100, -1, 0, 0, 1, meff_file);
+  fTRset = new RooDataSet("tracks_unbinned","tracks_unbinned"  , fitutil->GetObs() );
+  fSHset = new RooDataSet("showers_unbinned","showers_unbinned", fitutil->GetObs() );
+  
+  FillRespsAndSels(simdata_file, expdata_file, refill_response, fitutil);
+  
   //----------------------------------------------------------
   // set up the PDFs for fitting
   //----------------------------------------------------------
-  FitUtil *fitutil = new FitUtil(3, fTRres->GetHist3D(),
-				 1, 100, -1, 0, 0, 1, meff_file);
 
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, fTRres);  
   FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, fSHres);
 
   //----------------------------------------------------------
-  // set up data for simultaneous fitting and fit
+  // set up data for simultaneous fitting for binned data
   //----------------------------------------------------------
   std::map<string, TH1* > hist_map = { { (string)fTRsel->Get_SelName() , fTRsel->Get_h_E_costh_by() }, 
 				       { (string)fSHsel->Get_SelName() , fSHsel->Get_h_E_costh_by() } };
@@ -129,18 +138,46 @@ int main(const int argc, const char **argv) {
   categs.defineType( fTRsel->Get_SelName() );
   categs.defineType( fSHsel->Get_SelName() );
   
-  // create combined data set
+  // create combined data set for the histogram
   RooDataHist combData("combData", "combined data", fitutil->GetObs(), categs, hist_map);
-
+  
   // create simultaneous pdf
   RooSimultaneous simPdf("simPdf", "simultaneous Pdf", categs);
   simPdf.addPdf(pdf_tracks , fTRsel->Get_SelName() );
   simPdf.addPdf(pdf_showers, fSHsel->Get_SelName() );
 
+  //----------------------------------------------------------
+  // set up data for simultaneous fitting for un-binned data
+  //----------------------------------------------------------
+
+  RooCategory categsUB("categsUB", "data categories, unbinned");
+  categs.defineType( fTRset->GetName() );
+  categs.defineType( fSHset->GetName() );
+  
+  RooDataSet combDataUB("combDataUB","combined data, unbinned", fitutil->GetObs(),
+			Index(categsUB), Import(fTRset->GetName(), *fTRset), Import(fSHset->GetName(), *fSHset) );
+
+  RooSimultaneous simPdfUB("simPdf","simultaneous pdf, unbinned", categsUB);
+  simPdfUB.addPdf( pdf_tracks , fTRset->GetName() );
+  simPdfUB.addPdf( pdf_showers, fSHset->GetName() );
+  
+  //----------------------------------------------------------
+  // do the fitting, either binned or un-binned
+  //----------------------------------------------------------
+    
   cout << "NOTICE Fitter started fitting" << endl;
   
   TStopwatch timer;
-  RooAbsReal *nll = simPdf.createNLL(combData);
+
+  RooAbsReal *nll = NULL;
+
+  if (unbinned) {
+    nll = simPdfUB.createNLL(combDataUB);
+  }
+  else {
+    nll = simPdf.createNLL(combData);
+  }
+ 
   RooMinimizer m(*nll);
   const char* minimizer = "Minuit";
   const char* minalg    = "minuit";
@@ -192,7 +229,7 @@ void FITTER::InitRespsAndSels() {
 
   fTRsel = new EventSelection(EventSelection::track, "track_sel", NULL, 
 			      fENB, fEmin, fEmax, fCtNB, fCtmin, fCtmax, fByNB, fBymin, fBymax);
-
+  
   fTRres = new DetResponse(DetResponse::track, "track_resp", 
 			   fENB, fEmin, fEmax, fCtNB, fCtmin, fCtmax, fByNB, fBymin, fBymax);
 
@@ -229,14 +266,15 @@ void FITTER::InitRespsAndSels() {
 
 //**********************************************************************************
 
-void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response) {
+void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file,
+			      Bool_t refill_response, FitUtil *fitutil) {
 
   using namespace FITTER;
 
   if ( !fTRres || !fSHres || !fTRsel || !fSHsel ) {
     throw std::logic_error("ERROR! FITTER::FillRespsAndSels() DetResponse's and EventSelection's are not yet initialized!");
   }
-
+  
   //----------------------------------------------------------
   // fill the responses
   //----------------------------------------------------------
@@ -257,7 +295,7 @@ void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t
       SummaryEvent *evt = sp.GetEvt(i);
       fTRres->Fill(evt);
       fSHres->Fill(evt);
-
+      
     }
 
     fTRres->WriteToFile(track_resp_name);
@@ -279,11 +317,30 @@ void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t
   //----------------------------------------------------------
   SummaryParser sp(expdata_file);
 
+  RooRealVar *e  = fitutil->GetVar("E_reco");
+  RooRealVar *ct = fitutil->GetVar("ct_reco");
+  RooRealVar *by = fitutil->GetVar("by_reco");
+  
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
 
     SummaryEvent *evt = sp.GetEvt(i);
     fTRsel->Fill(evt);
     fSHsel->Fill(evt);
+
+    // fill the sets
+    if ( fTRsel->PassesCuts(evt) ) {
+      e ->setVal(  fTRsel->fEnergy );
+      ct->setVal( -fTRsel->fDir.z() );
+      by->setVal(  fTRsel->fBy );
+      fTRset->add( fitutil->GetObs() );
+    }
+
+    if ( fSHsel->PassesCuts(evt) ) {
+      e ->setVal(  fSHsel->fEnergy );
+      ct->setVal( -fSHsel->fDir.z() );
+      by->setVal(  fSHsel->fBy );
+      fSHset->add( fitutil->GetObs() );
+    }
 
   }
 
@@ -300,6 +357,8 @@ void FITTER::Cleanup() {
   if (fSHres) delete fSHres;
   if (fTRsel) delete fTRsel;
   if (fSHsel) delete fSHsel;
-
+  // if (fTRset) delete fTRset;
+  // if (fSHsel) delete fSHsel;
+  
 }
 
