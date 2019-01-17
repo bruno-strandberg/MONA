@@ -100,10 +100,6 @@ Bool_t EventFilter::PassesCuts(SummaryEvent *evt) {
 */
 void EventFilter::SetObservables(SummaryEvent *evt) {
 
-  Bool_t has_shower_energy = kFALSE;
-  // Showers that are not reconstructed properly get an energy of -727.2
-  if ((evt->Get_shower_energy()) > 0 and (evt->Get_shower_energy() <= 100)) { has_shower_energy = kTRUE; }
-
   switch (fRecoType) {
 
   case mc_truth:
