@@ -20,11 +20,11 @@
 using namespace std;
 using namespace RooFit;
 
-void SplitDetectorResponseNBins() {
+void DetectorResponseSplitNBins() {
 
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
-  TString filefolder = TString::Format("./pid_detres/RooFit/pid_binning_%i/", N_PID_CLASSES);
+  TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
 
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
 

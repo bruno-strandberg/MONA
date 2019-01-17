@@ -23,7 +23,7 @@ void Asymmetry_Default() {
 
   bool plot = false;
 
-  TString filefolder = "./default_detres/RooFit/";
+  TString filefolder = "./default_detres/";
 
   TString file_NO = filefolder + "default_expected_evts_NO.root";
   TString file_IO = filefolder + "default_expected_evts_IO.root";

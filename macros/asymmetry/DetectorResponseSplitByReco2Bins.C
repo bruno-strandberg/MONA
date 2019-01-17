@@ -20,7 +20,7 @@
 using namespace std;
 using namespace RooFit;
 
-void SplitDetectorResponseByReco2Bins() {
+void DetectorResponseSplitByReco2Bins() {
 
   const int N_PID_CLASSES = 2;
   TString filefolder = "./quality_detres/";

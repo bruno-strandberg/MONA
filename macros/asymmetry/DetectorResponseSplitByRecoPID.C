@@ -20,7 +20,7 @@
 using namespace std;
 using namespace RooFit;
 
-void SplitDetectorResponseByRecoPID() {
+void DetectorResponseSplitByRecoPID() {
 
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);

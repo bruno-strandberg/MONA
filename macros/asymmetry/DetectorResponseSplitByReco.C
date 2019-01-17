@@ -20,7 +20,7 @@
 using namespace std;
 using namespace RooFit;
 
-void SplitDetectorResponseByReco() {
+void DetectorResponseSplitByReco() {
 
   TString filefolder = "./energy_detres/";
 

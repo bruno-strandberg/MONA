@@ -20,9 +20,9 @@
 using namespace std;
 using namespace RooFit;
 
-void DefaultDetectorResponse() {
+void DetectorResponseDefault() {
 
-  TString filefolder = "./default_detres/RooFit/";
+  TString filefolder = "./default_detres/";
 
   gSystem->Load("$OSCPROBDIR/libOscProb.so");
 
