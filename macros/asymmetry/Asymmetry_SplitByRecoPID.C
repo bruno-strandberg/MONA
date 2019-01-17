@@ -73,16 +73,11 @@ void asymmetry_energy_split_by_reco() {
     h_s_IO->SetName("detected_showers_IO");
     h_m_IO->SetName("detected_mc_IO");
 
-    std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_t_gt_tuple = 
-    NMHUtils::Asymmetry(h_t_gt_NO, h_t_gt_IO, TString::Format("asymmetry_track_gt_%.2f", i * PID_step), 2, 80, -1, 0);
-    std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_t_gs_tuple = 
-    NMHUtils::Asymmetry(h_t_gs_NO, h_t_gs_IO, TString::Format("asymmetry_track_gs_%.2f", i * PID_step), 2, 80, -1, 0);
-    std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_t_ge_tuple = 
-    NMHUtils::Asymmetry(h_t_ge_NO, h_t_ge_IO, TString::Format("asymmetry_track_ge_%.2f", i * PID_step), 2, 80, -1, 0);
-    std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_s_tuple = 
-    NMHUtils::Asymmetry(h_s_NO, h_s_IO, TString::Format("asymmetry_shower_%.2f", i * PID_step), 2, 80, -1, 0);
-    std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_m_tuple = 
-    NMHUtils::Asymmetry(h_m_NO, h_m_IO, TString::Format("asymmetry_mc_%.2f", i * PID_step), 2, 80, -1, 0);
+    auto asym_t_gt_tuple = NMHUtils::Asymmetry(h_t_gt_NO, h_t_gt_IO, TString::Format("asymmetry_track_gt_%.2f", i * PID_step), 2, 80, -1, 0);
+    auto asym_t_gs_tuple = NMHUtils::Asymmetry(h_t_gs_NO, h_t_gs_IO, TString::Format("asymmetry_track_gs_%.2f", i * PID_step), 2, 80, -1, 0);
+    auto asym_t_ge_tuple = NMHUtils::Asymmetry(h_t_ge_NO, h_t_ge_IO, TString::Format("asymmetry_track_ge_%.2f", i * PID_step), 2, 80, -1, 0);
+    auto asym_s_tuple    = NMHUtils::Asymmetry(h_s_NO, h_s_IO, TString::Format("asymmetry_shower_%.2f", i * PID_step), 2, 80, -1, 0);
+    auto asym_m_tuple    = NMHUtils::Asymmetry(h_m_NO, h_m_IO, TString::Format("asymmetry_mc_%.2f", i * PID_step), 2, 80, -1, 0);
 
     TH2D* h_asym_t_gt = std::get<0>(asym_t_gt_tuple);
     TH2D* h_asym_t_gs = std::get<0>(asym_t_gs_tuple);

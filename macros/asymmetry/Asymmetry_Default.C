@@ -46,12 +46,9 @@ void Asymmetry_Default() {
   h_s_IO->SetName("detected_showers_IO");
   h_m_IO->SetName("detected_mc_IO");
 
-  std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_t =
-  NMHUtils::Asymmetry(h_t_NO, h_t_IO, "asymmetry_track", 2, 80, -1, 0);
-  std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_s =
-  NMHUtils::Asymmetry(h_s_NO, h_s_IO, "asymmetry_shower", 2, 80, -1, 0);
-  std::tuple<TH2D*, Double_t, Double_t, Double_t> asym_m =
-  NMHUtils::Asymmetry(h_m_NO, h_m_IO, "asymmetry_mc", 2, 80, -1, 0);
+  auto asym_t = NMHUtils::Asymmetry(h_t_NO, h_t_IO, "asymmetry_track", 2, 80, -1, 0);
+  auto asym_s = NMHUtils::Asymmetry(h_s_NO, h_s_IO, "asymmetry_shower", 2, 80, -1, 0);
+  auto asym_m = NMHUtils::Asymmetry(h_m_NO, h_m_IO, "asymmetry_mc", 2, 80, -1, 0);
 
   TH2D* h_asym_t = std::get<0>(asym_t);
   TH2D* h_asym_s = std::get<0>(asym_s);

@@ -217,11 +217,10 @@ TString NMHUtils::Getcwd() {
  *                     0) a pointer to a histgram with bin-by-bin asymmetries;
  *                     1) the quantity \f$ \sqrt{\sum_{i} A_i^2} \f$ (combined asymmetry); 
  *                     2) the quantity \f$ \Delta A$ (error on combined asymmetry);
- *                     3) the number of considered bins (degress of freedom)
  *                     
  */
 
-std::tuple<TH2D*, Double_t, Double_t, Double_t>
+std::tuple<TH2D*, Double_t, Double_t>
 NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
             Double_t xlow, Double_t xhigh,
             Double_t ylow, Double_t yhigh) {
@@ -258,7 +257,6 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
 
   Double_t asym     = 0.;
   Double_t asym_err = 0.;
-  Double_t Nbins    = 0.;
 
   for (Int_t xb = 1; xb <= h_asym->GetXaxis()->GetNbins(); xb++) {
     for (Int_t yb = 1; yb <= h_asym->GetYaxis()->GetNbins(); yb++) {
@@ -296,9 +294,6 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
       if ( (xc < xlow) || (xc > xhigh) || ( yc < ylow) || ( yc > yhigh ) ) {
         A = 0.;
       }
-      else {
-        Nbins += 1;
-      }
 
       h_asym->SetBinContent(xb, yb, A);
       h_asym->SetBinError(xb, yb, A_err);
@@ -311,7 +306,7 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
   asym = TMath::Sqrt( asym );
   asym_err = 1. / asym * TMath::Sqrt( asym_err );
 
-  return std::make_tuple(h_asym, asym, asym_err, Nbins);
+  return std::make_tuple(h_asym, asym, asym_err);
 }
 
 
