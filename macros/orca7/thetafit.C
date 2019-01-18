@@ -87,50 +87,32 @@ void thetafit(TString dataf  = "../../data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.
   futil.GetVar("SinsqTh23")->randomize();
   th23 = futil.GetVar("SinsqTh23")->getVal();
 
-  TH3D* experiment = (TH3D*)trkpdf.GetExpValHist()->Clone("experiment");
-  experiment->SetDirectory(0);
-
-  futil.SetNOcentvals(); // set back to central values and expand th23 limits
-
+  // experiment
+  TH3D* experiment  = trkpdf.SimplePseudoExp("experiment",kTRUE);
   TH3D* expectation = (TH3D*)trkpdf.GetExpValHist()->Clone("expectation");
   expectation->SetDirectory(0);
+  futil.SetNOcentvals(); 
 
   //------------------------------------------------------------
   // import data to RooFit and fit
   //------------------------------------------------------------
+
+  //create too fit ranges for th23
+  futil.GetVar("SinsqTh23")->setRange( "secondq", futil.GetVar("SinsqTh23")->getMin(), 0.5 );
+  futil.GetVar("SinsqTh23")->setRange( "firstq" , 0.5, futil.GetVar("SinsqTh23")->getMax() );
   
   RooDataHist rfdata("rfdata","rfdata", futil.GetObs(), Import(*experiment) );
-  RooFitResult *fitres = trkpdf.fitTo( rfdata, Save(kTRUE), SumW2Error(kFALSE) );
+  RooFitResult *fitres = trkpdf.fitTo( rfdata, Save(kTRUE), SumW2Error(kFALSE), Range("firstq,secondq") );
+  
+  cout << "*****************************************************************************************" << endl;
   cout << "Theta-23, experiment and fitted: " << th23 << "\t" 
        << ((RooRealVar*)fitres->floatParsFinal().find("SinsqTh23"))->getVal() << endl;
-
   cout << "*****************************************************************************************" << endl;
-  cout << "                                BEZERK MODE ACTIVATED " << endl;
-  cout << "*****************************************************************************************" << endl;
-
-  // calculate the asymmetry between the experiment and the model
-  auto asym = NMHUtils::Asymmetry( (TH2D*)experiment->Project3D("yx")->Clone(), 
-				   (TH2D*)expectation->Project3D("yx")->Clone(), "asym" );
 
   //------------------------------------------------------------
   // create likelihood profile
   //------------------------------------------------------------
   RooNLLVar nll("nll","nll",trkpdf,rfdata, NumCPU(5));
-
-  // TGraph *g1 = new TGraph();
-  // for (Double_t th = 0.2; th < 0.8; th = th + 0.1) {
-
-  //   futil.GetVar("SinsqTh23")->setVal(th23);
-  //   g1->SetPoint( g1->GetN(), th, nll.getVal() );
-  //   cout << th << "\t" << nll.getVal() << endl;
-
-  // }
-
-  // g1->Draw();
-  // cout << "Experiment at theta-23 value: " << th23 << endl;
-
-  // return;
-
   Double_t min = futil.GetVar("SinsqTh23")->getMin();
   Double_t max = futil.GetVar("SinsqTh23")->getMax();
 
@@ -138,16 +120,34 @@ void thetafit(TString dataf  = "../../data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.
   nll.plotOn(frame, LineColor(kRed), ShiftToZero() ) ;
 
 
+  //------------------------------------------------------------
+  // release dm31 and create a contour plot
+  //------------------------------------------------------------
+  futil.GetVar("Dm31")->setConstant(kFALSE);  
+  futil.GetVar("Dm31")->setMin(0);
+  futil.GetVar("Dm31")->setMax(5e-3);
+  futil.GetVar("SinsqTh23")->setMin(0);
+  futil.GetVar("SinsqTh23")->setMax(1);
+  RooMinuit minimizer(nll);
+
+  RooPlot* contplot = minimizer.contour(*(futil.GetVar("SinsqTh23")), *(futil.GetVar("Dm31")), 1, 2, 3) ;
+  contplot->SetTitle("RooMinuit contour plot") ;
+
+  //------------------------------------------------------------
+  // draw the profile; the experiment (at sampled theta value) data; the expectation at central theta value
+  // (fit start point); contour plot...
+  //------------------------------------------------------------
+
   TCanvas *c1 = new TCanvas("c1","c1",1);
   c1->Divide(2,2);
   c1->cd(1);
-  frame->Draw();
+  expectation->Project3D("yx")->Draw("colz");
   c1->cd(2);
   experiment->Project3D("yx")->Draw("colz");
   c1->cd(3);
-  expectation->Project3D("yx")->Draw("colz");
+  frame->Draw();
   c1->cd(4);
-  std::get<0>(asym)->Draw("colz");
+  contplot->Draw();
 
 
 
