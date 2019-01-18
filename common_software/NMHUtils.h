@@ -19,10 +19,12 @@ namespace NMHUtils {
   TString          Getcwd();
   Bool_t           BinsMatch(TH1 *h1, TH1 *h2);
 
-  std::tuple<TH2D*, Double_t> 
+  std::tuple<TH2D*, Double_t, Double_t> 
     Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
 	      Double_t xlow = -1e10, Double_t xhigh = 1e10,
 	      Double_t ylow = -1e10, Double_t yhigh = 1e10);
+  std::tuple<Double_t, Double_t> 
+    SquaredSumErrorProp(std::vector<double> values, std::vector<double> errors);
 };
 
 #endif
