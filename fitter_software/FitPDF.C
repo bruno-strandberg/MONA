@@ -157,20 +157,47 @@ double FitPDF::operator()(double *x, double *p) {
 
 //*******************************************************************************
 
-/** Function to create a TH3D that represents a pseudo-experiment
+/** Function that returns a pointer to a TH3D that represents a pseudo-experiment.
 
-    TO-BE-IMPLEMENTED
+    The function Poisson-smears the the expectation value in each bin. If the expectation has a statistical uncertainty associated with it and stored in the bin error (as is the case in the return value of `FitUtil::PdfExpectation`), the statistical uncertainty of the expectation value can be taken into account.
+
+    \param nametitle      string used as a name and a title for the created TH3D histogram
+    \param IncludeStatErr account for the statistical uncertainty of the expectation in smearing
+    \return               Pointer to a TH3D with pseudoexperiment data. NB! these histograms are created on the stack; it is the responsibility of the user to delete the TH3D hists pointed to by the return value.
 
 */
-TH3D* FitPDF::SimplePseudoExp() {
+TH3D* FitPDF::SimplePseudoExp(TString nametitle, Bool_t IncludeStatErr) {
 
-  TH3D* dummy = NULL;
+  // get the histogram with expectation values
+  TH3D* expectation = fFitUtil->PdfExpectation(fProxies, fResponse,"");
+
+  // create a histogram where the experiment is stored
+  TH3D* experiment  = (TH3D*)expectation->Clone(nametitle);
+  experiment->SetNameTitle(nametitle, nametitle);
+  experiment->SetDirectory(0);
+  experiment->Reset();
+
+  // loop over bins
+  for (Int_t xbin = 1; xbin <= expectation->GetXaxis()->GetNbins(); xbin++) {
+    for (Int_t ybin = 1; ybin <= expectation->GetYaxis()->GetNbins(); ybin++) {
+      for (Int_t zbin = 1; zbin <= expectation->GetZaxis()->GetNbins(); zbin++) {
+
+	// get bin content (expected nr of events) and bin error (statistical error on expectation)
+	Double_t bc = expectation->GetBinContent(xbin, ybin, zbin);
+	Double_t be = expectation->GetBinError(xbin, ybin, zbin);
+	
+	// if stat err taken into account, smear the expectation value by the statistical error
+	Double_t expectation = bc;
+	if ( IncludeStatErr ) expectation = fRand.Gaus(bc, be);
+	
+	// now poisson smear the expectation value to arrive at a "measured" value in the given bin
+	Double_t measured = fRand.PoissonD( expectation );
+	experiment->SetBinContent(xbin, ybin, zbin, measured);
+
+      }
+    }
+  }
   
-  /*
-    To be implemented. GetExpValHist() and perform poisson smearing in each bin.
-    Perhaps take the statistical error of the expectation into account when doing the smearing
-   */
-
-  return dummy;
+  return experiment;
   
 }
