@@ -204,9 +204,12 @@ int main(const int argc, const char **argv) {
     cout << "Started fitting with RooFit" << endl;
     cout << "*************************************************************************" << endl;
 
+    // reset to NO central values
     fitutil->SetNOcentvals();
+
+    // fit
     RooDataHist rf_hist("rf_hist", "rf_hist", fitutil->GetObs(), Import(*tracks_expct) );
-    RooFitResult *fitres = pdf_tracks.fitTo( rf_hist, Save(kTRUE), SumW2Error(kTRUE), Offset(kTRUE), Optimize(kFALSE), NumCPU(ncpu) );
+    RooFitResult *fitres = pdf_tracks.fitTo( rf_hist, Save(kTRUE), SumW2Error(kFALSE), Offset(kTRUE), Optimize(kFALSE), NumCPU(ncpu) );
     RooArgSet result( fitres->floatParsFinal() );
 
     // store roofit results and errors
@@ -228,11 +231,13 @@ int main(const int argc, const char **argv) {
     cout << "Started fitting with ROOT" << endl;
     cout << "*************************************************************************" << endl;
 
+    // reset to NO central values
     fitutil->SetNOcentvals();    
+
+    // configure fit and fit
     TF3 *func = new TF3("fitfunc", pdf_tracks, 1, 100, -1, 0, 0, 1, 6);
     func->SetParameters( rf_sinsqth12->getVal(), rf_sinsqth13->getVal(), rf_sinsqth23->getVal(),
 			 rf_dcp->getVal(), rf_dm21->getVal(), rf_dm31->getVal() );
-    
     func->SetParNames("sinsq12","sinsq13","sinsq23","dcp","dm21","dm31");
     
     func->FixParameter( 0, rf_sinsqth12->getVal() );
@@ -272,6 +277,9 @@ int main(const int argc, const char **argv) {
   
 }
 
+//***************************************************************************************
+
+/** Inline function that configures the output tree with fit results. */
 void EXPCTFIT::ConfigureTree(TTree& tout, FitTrial& trial) {
 
   tout.Branch("true_vals_sinsqth12"  , &trial.true_vals.sinsqth12);
