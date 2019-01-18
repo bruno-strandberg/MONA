@@ -583,7 +583,15 @@ std::pair<Double_t, Double_t> FitUtil::PdfEvaluate(const std::map<TString, RooRe
 */
 TH3D* FitUtil::PdfExpectation(const std::map<TString, RooRealProxy*> &parmap,
 			      DetResponse *resp, const char* rangeName) {
-  
+
+  // get the parameter values from the proxies
+  Double_t SinsqTh12 = *( parmap.at( (TString)fSinsqTh12->GetName() ) );
+  Double_t SinsqTh13 = *( parmap.at( (TString)fSinsqTh13->GetName() ) );
+  Double_t SinsqTh23 = *( parmap.at( (TString)fSinsqTh23->GetName() ) );
+  Double_t Dcp       = *( parmap.at( (TString)fDcp->GetName() ) );
+  Double_t Dm21      = *( parmap.at( (TString)fDm21->GetName() ) );
+  Double_t Dm31      = *( parmap.at( (TString)fDm31->GetName() ) );
+
   // create the histogram with expectation values
   TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
   TString hname = resp->Get_RespName() + "_expct";
@@ -596,21 +604,14 @@ TH3D* FitUtil::PdfExpectation(const std::map<TString, RooRealProxy*> &parmap,
     for (Int_t ctbin = fCtbin_min; ctbin <= fCtbin_max; ctbin++) {
       for (Int_t bybin = fBybin_min; bybin <= fBybin_max; bybin++) {
 
-	// set observables to bin center values, otherwise PdfEvaluate will return rubbish
-	fE_reco ->setVal( hexp->GetXaxis()->GetBinCenter( ebin ) );
-	fCt_reco->setVal( hexp->GetYaxis()->GetBinCenter( ctbin ) );
-	fBy_reco->setVal( hexp->GetZaxis()->GetBinCenter( bybin ) );
-
-	// get the bin width to convert event density to number of events in each bin
-	Double_t E_w  = hexp->GetXaxis()->GetBinWidth( ebin );
-        Double_t ct_w = hexp->GetYaxis()->GetBinWidth( ctbin );
-        Double_t by_w = hexp->GetZaxis()->GetBinWidth( bybin );
-	Double_t binw = E_w * ct_w * by_w;
+        Double_t E  = hexp->GetXaxis()->GetBinCenter( ebin );
+        Double_t ct = hexp->GetYaxis()->GetBinCenter( ctbin );
+        Double_t by = hexp->GetZaxis()->GetBinCenter( bybin );
 	
-	auto density = PdfEvaluate(parmap, resp);
+        auto recoevts = RecoEvts(resp, E, ct, by, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
 	
-	hexp->SetBinContent(ebin, ctbin, bybin, density.first  * binw);
-	hexp->SetBinError  (ebin, ctbin, bybin, density.second * binw);
+	hexp->SetBinContent(ebin, ctbin, bybin, recoevts.first  );
+	hexp->SetBinError  (ebin, ctbin, bybin, recoevts.second );
 	
       }
     }
