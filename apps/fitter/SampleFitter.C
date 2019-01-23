@@ -82,7 +82,7 @@ namespace FITTER {
     This example demonstrates:
     1. the creation of a compiled program with `NMO` libraries and `Jpp` headers;
     2. use of the `DetResponse`, `EventSelection`, `FitUtil`, `FitPDF` classes and `RooFit`;
-    3. simultaneous fitting of two event selections.
+    3. simultaneous fitting of more than one event selections.
 
  
 */
@@ -251,8 +251,8 @@ void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t
   // fill the responses
   //----------------------------------------------------------
 
-  TString track_resp_name  = NMHUtils::Getcwd() + "/rootfiles/track_response.root";
-  TString shower_resp_name = NMHUtils::Getcwd() + "/rootfiles/shower_response.root";
+  TString track_resp_name  = NMHUtils::Getcwd() + "/rootfiles/samplefitter_track_response.root";
+  TString shower_resp_name = NMHUtils::Getcwd() + "/rootfiles/samplefitter_shower_response.root";
 
   if ( !NMHUtils::FileExists(track_resp_name) || !NMHUtils::FileExists(shower_resp_name) || refill_response ) {
 
