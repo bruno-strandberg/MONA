@@ -1,4 +1,5 @@
-#Test scripts
+Test scripts
+============
 
 This directory holds ROOT macros and source code for applications that serve as examples, some of the applications also double as unit tests. The macros and directories are described briefly below.
 

@@ -27,7 +27,8 @@
 #include "Jeep/JParser.hh"
 #include "Jeep/JMessage.hh"
 
-namespace EXPCTFIT {
+/** Namespace that stores structures and functions for the `FitPseudoExperiment` app*/
+namespace PSEUDOFIT {
 
   /** class to store fit parameter instances*/
   struct FitPars {
@@ -59,7 +60,7 @@ namespace EXPCTFIT {
 
 using namespace RooFit;
 using namespace std;
-using namespace EXPCTFIT;
+using namespace PSEUDOFIT;
 
 /** This example application demonstrates the generation of a pseudo-experiment in the track channel and fitting the pseudo-experiment using ROOT and RooFit.
 
@@ -299,7 +300,7 @@ int main(const int argc, const char **argv) {
 //***************************************************************************************
 
 /** Inline function that configures the output tree with fit results. */
-void EXPCTFIT::ConfigureTree(TTree& tout, FitTrial& trial) {
+void PSEUDOFIT::ConfigureTree(TTree& tout, FitTrial& trial) {
 
   tout.Branch("true_vals_sinsqth12"  , &trial.true_vals.sinsqth12);
   tout.Branch("true_vals_sinsqth13"  , &trial.true_vals.sinsqth13);

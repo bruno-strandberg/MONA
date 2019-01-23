@@ -38,7 +38,7 @@
 using namespace RooFit;
 using namespace std;
 
-/** Namespace that collects functions and variables for the `Fitter` application */
+/** Namespace that collects functions and variables for the `SampleFitter` application */
 namespace FITTER {
 
   // functions
