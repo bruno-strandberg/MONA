@@ -66,7 +66,7 @@ cutobj(): getter_ptr(0), value(0), comp_ptr(0) {};
 
    There is a slightly more advanced option to use a custom reconstruction type. This is very useful in cases where, say, the user wishes to use shower energy estimate with track direction estimate. Consult the documentation of the function `EventFilter::SetObsFuncPtrs` for details how to achieve this.
 
-   Examples and test for `EventFilter` and inheriting classes `DetResponse` and `EventSelection` can be found at `NMH/tests/EventFiltering`.
+   Examples and test for `EventFilter` and inheriting classes `DetResponse` and `EventSelection` can be found at `NMH/tests/event_filtering`.
 
    Future developments: if SummaryEvent is changed to consist also of other variable types than
    doubles, then this class needs to be templated.
