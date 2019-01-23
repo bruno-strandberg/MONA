@@ -10,11 +10,11 @@ Directory structure
 ===================
 * `common_software/` - this directory holds the software that provides the base functionality of the package. It has the classes for the data format, atmospheric neutrino count calculation and data filtering. The software is documented carefully in `common_software/README.md`
 * `fitter_software/` - software in this directory is built upon the software in `common_software/` and `RooFit` to provide tools for NMO fits. Documentation in `fitter_software/README.md`
-* `apps/` - this directory has sub-directories for various applications that are built on top of `common_software` and `fitter_software`. The applications should be considered relatively dynamic and expected to develop/change/grow as the analyses become more complicated. Each application directory comes with a README-file that describes the purposes of the application. If the README-file is missing, it means the applications are not ready/meant for wider use.
+* `apps/` - this directory has sub-directories for various applications that are built on top of `common_software` and `fitter_software`. The applications should be considered relatively dynamic and expected to develop/change/grow as the analyses become more complicated. Each application directory comes with a README-file that describes the purposes of the application. If the README-file is missing, it means the applications are not ready/not meant for wider use.
 * `macros/` - this directory has sub-directories for various analyses that are built using the `common_software/` and `fitter_software/` libraries. The `macros/` directory is the most dynamic working directory of the repository and typically documentation is sparse.
 * `data/` - this directory holds data that is necessary for cross-section and atmospheric flux calculations. Additionally, it has sub-directories for Monte-Carlo data storage. More info in `data/README.md`.
 * `doxygen/` - directory that is auto-populated by `doxygen` for documentation.
-* `tests/` - directory that holds some example scripts/applications that also act as tests.
+* `tests/` - directory that holds some example scripts/applications, some of which also act as tests.
 
 Prerequisities
 ==============
@@ -49,21 +49,21 @@ Setup for usage
 ===============
 This really depends on what is the targeted use of the software. For example, for the calculation of the atmosperic neutrino flux, the class `common_software/AtmFlux.h/C` can be used on the `root` prompt after compilation and nothing else is required. However, for something more advanced that requires ORCA MC data, the following tasks are usually required.
 
-Data format conversion
-----------------------
+1. Data format conversion
+-------------------------
 When Monte-Carlo data is in the equation, it needs to be in the analysis format, defined by `common_software/SummaryEvent.h/C` (reasons for this are discussed in detail in section **ORCA Monte-Carlo chain and data format** below). For example, consider ORCA MC summary file from ECAP from April 18 `/sps/km3net/users/shallman/ORCA_PID_OUTPUT/04_18/pid_result_shiftedVertexEventSelection.root`. The applications in `apps/data_sorting/` can be used to perform the conversion, see `apps/data_sorting/README.md` for more info.
 
-Effective mass
---------------
+2. Effective mass
+-----------------
 *Effective mass* is required to predict the number of *selected* neutrino events in the detector in some time period. Typically, *selected* is defined as the events that would pass the trigger and simple atmospheric muon rejection cuts and end up in the ECAP PID output tree. The class `common_software/EffMass.h/C` provides a class that performs effective mass calculations, given an input file with histograms for *selected* (ECAP PID events) and *generated* (gSeaGen) events. The applications in `apps/effective_mass` can be used to create such a file, see `apps/effective_mass/README.md` for more info.
 
-Bjorken-y distributions
-------------------------
+3. Bjorken-y distributions
+---------------------------
 To distribute expectation values for *selected* events in bjorken-y (in addition to the conventional energy and cos-theta), knowledge of a 2D neutrino energy vs bjorken-y distribution is required. Such distributions can be generated from gSeaGen data, the applications in `apps/bjorkeny_dists` create such distributions, see `apps/bjorkeny_dists/README.md` for more info. Note that one such distribution file was generated from gSeaGen v4r1 data and comes with the repo. If significant updates are expected to the cross-section calculation in gSeaGen (this depends on the underlying GENIE version), the `apps/bjorkeny_dists` programs should be run again to update the distribution file `data/cross_sections_gSeaGen_v4r1/by_dists.root`. Otherwise, the existing file can be used. The `by_dists.root` file is used by `common_software/NuXsec.h/C` class.
 
 Available applications
-----------------------
-Other available applications are in `apps/evt_sampler` and `apps/fitter`. The former directory contains applications to create data samples from gSeaGen data that are distributed as experiment data after a selected number of years. The latter directory contains applications to perform various NMO fits and analyses, using both `common_software` and `fitter_software`.
+======================
+As listed in the previous section, generic applications for tasks 1-3 are available in `apps/` directory. Additionally, there in an application `apps/evt_sampler` that provides tools to create data samples from gSeaGen data that are distributed as experiment data after a selected number of years. It outputs `root` files with `TTree`'s with event-by-event data that is distributed as would be expected from sea-data.
 
 ORCA Monte-Carlo chain and *analysis format*
 ============================================

@@ -35,4 +35,4 @@ Finally - this is not a perfect implementation, because it is the first ever eff
 How can I use it?
 -----------------
 
-For now, the easiest way to get an idea is to consult the applications in `NMH/apps/fitter/`.
+Example applications that make use of the software in this directory are available in `tests/fitting`. The software can also be used in ROOT macros like any other ROOT classes; some examples can probably be found in `macros/` directory.
