@@ -1,10 +1,8 @@
-//#include "Fitter.h"
-
-// fitter headers
+// fitter_software headers
 #include "FitUtil.h"
 #include "FitPDF.h"
 
-// NMH headers
+// common_software headers
 #include "SummaryParser.h"
 #include "SummaryEvent.h"
 #include "NMHUtils.h"
@@ -60,15 +58,34 @@ namespace FITTER {
   static const Double_t fBymin  =   0;
   static const Double_t fBymax  =   1;
 
+  // variables for FitUtil configuration
+  static const Double_t fRunTime  = 3;   // 3 years running time
+  static const Double_t fFitEmin  = 3;   // minimum fitted energy range
+  static const Double_t fFitEmax  = 80;  // maximum fitted energy range
+  static const Double_t fFitCTmin = -1;  // minimum fitted cos-theta range
+  static const Double_t fFitCTmax =  0;  // maximum fitted cos-theta range
+  static const Double_t fFitBYmin =  0;  // minimum fitted bjorken-y range
+  static const Double_t fFitBYmax =  1;  // maximum fitted bjorken-y range
+  
   // member selections and responses
-  DetResponse    *fTRres;
-  DetResponse    *fSHres;
-  EventSelection *fTRsel;
-  EventSelection *fSHsel;
+  DetResponse    *fTRres; // detector response for tracks
+  DetResponse    *fSHres; // detector response for showers
+  EventSelection *fTRsel; // event selection for tracks
+  EventSelection *fSHsel; // event selection for showers
 
 };
 
-/** Main function of the program */
+/** This example application can be used to fit an event-by-event experiment sample, created with applications in `apps/evt_sampler`. 
+
+    The example uses the `track` and `shower` event selections as were optimised for ORCA115_23x9m MC production; for a different production the selections of this example are probably not optimal.
+
+    This example demonstrates:
+    1. the creation of a compiled program with `NMO` libraries and `Jpp` headers;
+    2. use of the `DetResponse`, `EventSelection`, `FitUtil`, `FitPDF` classes and `RooFit`;
+    3. simultaneous fitting of two event selections.
+
+ 
+*/
 int main(const int argc, const char **argv) {
 
   using namespace FITTER;
@@ -81,10 +98,11 @@ int main(const int argc, const char **argv) {
   string        expdata_file;
   bool          refill_response;
   TString       meff_file;
+  Int_t         numcpu;
 
   try {
 
-    JParser<> zap("Program to fit the experimental data with standard track-shower separation.");
+    JParser<> zap("This application can be used to fit an event-by-event experiment sample, created with applications in `apps/evt_sampler`. See documentation in the source code for more info.");
 
     zap['s'] = make_field(simdata_file, "File with all summary data") =
       (string)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
@@ -95,6 +113,7 @@ int main(const int argc, const char **argv) {
     
     zap['M'] = make_field(meff_file, "Effective mass file created by using `EffMass` class") = 
       (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+    zap['n'] = make_field(numcpu, "Number of CPUs for fitting") = 1;
 
     if ( zap.read(argc, argv)!= 0 ) return 1;
   }
@@ -105,15 +124,14 @@ int main(const int argc, const char **argv) {
   //----------------------------------------------------------
   // call methods to initialise and fill responses
   //----------------------------------------------------------
-  
   InitRespsAndSels();
   FillRespsAndSels(simdata_file, expdata_file, refill_response);
 
   //----------------------------------------------------------
   // set up the PDFs for fitting
   //----------------------------------------------------------
-  FitUtil *fitutil = new FitUtil(3, fTRres->GetHist3D(),
-				 1, 100, -1, 0, 0, 1, meff_file);
+  FitUtil *fitutil = new FitUtil(fRunTime, fTRres->GetHist3D(), fFitEmin, fFitEmax,
+				 fFitCTmin, fFitCTmax, fFitBYmin, fFitBYmax, meff_file);
 
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, fTRres);  
   FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, fSHres);
@@ -140,19 +158,7 @@ int main(const int argc, const char **argv) {
   cout << "NOTICE Fitter started fitting" << endl;
   
   TStopwatch timer;
-  RooAbsReal *nll = simPdf.createNLL(combData);
-  RooMinimizer m(*nll);
-  const char* minimizer = "Minuit";
-  const char* minalg    = "minuit";
-  m.setMinimizerType(minimizer); // select minimizer
-  m.optimizeConst(kFALSE);       // turn off optimisation
-  m.setOffsetting(kTRUE);        // offset the likelihood, helps with large LLH values
-  m.setEps(1e-5);                // increase MIGRAD precision
-  m.hesse();                     // do initial error evaluation
-  m.minimize(minimizer, minalg);
-  m.hesse();
-  RooFitResult *fitres = m.save();
-
+  RooFitResult *fitres = simPdf.fitTo( combData, Save(kTRUE), NumCPU(numcpu) );
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
   
   //----------------------------------------------------------
@@ -182,12 +188,14 @@ int main(const int argc, const char **argv) {
 
 //**********************************************************************************
 
+/** Internal function to initialise detector responses and event selections */
 void FITTER::InitRespsAndSels() {
 
   using namespace FITTER;
 
   //----------------------------------------------------------
-  //initialise event selection and response for tracks
+  // initialise event selection and response for tracks; the event selection
+  // and the corresponding response need to have the same selection criteria
   //----------------------------------------------------------
 
   fTRsel = new EventSelection(EventSelection::track, "track_sel", NULL, 
@@ -207,7 +215,8 @@ void FITTER::InitRespsAndSels() {
   }
 
   //----------------------------------------------------------
-  //initialise event selection and response for showers
+  // initialise event selection and response for showers; the event selection
+  // and the corresponding response need to have the same selection criteria
   //----------------------------------------------------------
 
   fSHsel = new EventSelection(EventSelection::shower, "shower_sel", NULL,
@@ -229,6 +238,7 @@ void FITTER::InitRespsAndSels() {
 
 //**********************************************************************************
 
+/** Internal function to fill the event selections and responses. */
 void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response) {
 
   using namespace FITTER;
@@ -292,6 +302,7 @@ void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t
 
 //**********************************************************************************
 
+/** Interal function to clean dynamic memory. */
 void FITTER::Cleanup() {
 
   using namespace FITTER;
