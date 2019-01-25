@@ -224,3 +224,34 @@ void SetLabelSizes(TH1* h1, Double_t size) {
   h1->GetYaxis()->SetLabelFont(62);
   h1->GetYaxis()->SetLabelSize(size);
 }
+
+std::tuple<TH1D*, TH1D*> ErrorPlotWithHalfData(TH2D* full_data, TH2D* half_data_gt, TH2D* half_data_lt) {
+  
+    TH2D *h_all = full_data;
+    TH2D *h_gt  = half_data_gt;
+    TH2D *h_lt  = half_data_lt;
+
+    TH1D *h_gt_out = new TH1D("h_gt", "#splitline{Relative error on asymmerty}{compared to using half data}", 30, 0, 3);
+    TH1D *h_lt_out = new TH1D("h_lt", "#splitline{Relative error on asymmerty}{compared to using half data}", 30, 0, 3);
+
+    for (Int_t xb = 1; xb <= h_all->GetXaxis()->GetNbins(); xb++) {
+      for (Int_t yb = 1; yb <= h_all->GetYaxis()->GetNbins(); yb++) {
+        Double_t error_all = h_all->GetBinError(xb,yb);
+        Double_t error_gt  = h_gt ->GetBinError(xb,yb);
+        Double_t error_lt  = h_lt ->GetBinError(xb,yb);
+
+        if (error_all != 0) {
+          error_gt = error_gt / error_all;
+          error_lt = error_lt / error_all;
+        } else {
+          error_gt = 0;
+          error_lt = 0;
+        }
+        
+        if (error_gt != 0) h_gt_out->Fill(error_gt);
+        if (error_lt != 0) h_lt_out->Fill(error_lt);
+      }
+    }
+
+    return std::make_tuple(h_gt_out, h_lt_out);
+}
