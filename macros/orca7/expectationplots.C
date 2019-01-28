@@ -24,8 +24,7 @@ void expectationplots() {
   Double_t trackcut = 0.6;
 
   //------------------------------------------------------------
-  // initialise and fill track and shower responses; note all MC events are filled to both responses
-  // at this time, i.e. I am not using track<->shower separation
+  // initialise and fill track and shower responses
   //------------------------------------------------------------
 
   DetResponse track(DetResponse::track, "track");
@@ -58,7 +57,7 @@ void expectationplots() {
   //------------------------------------------------------------
   // plot the expected number of neutrinos, muons and noise 
   //------------------------------------------------------------
-
+  gStyle->SetOptStat(0);
   vector<FitPDF*> pdfs = {&trackpdf, &showerpdf};
 
   TCanvas *c1 = new TCanvas("c1","c1",1);
@@ -75,10 +74,19 @@ void expectationplots() {
     muons->SetLineColor(kBlack);
     noise->SetLineColor(kGreen);
 
+    nus->GetXaxis()->SetTitle("Reco Energy [GeV]");
+    nus->GetYaxis()->SetTitle("Events [1 year]");
+
+    TLegend *leg = new TLegend(0.6, 0.6, 0.9, 0.9);
+    leg->AddEntry(nus, "neutrinos", "l");
+    leg->AddEntry(muons, "muons", "l");
+    leg->AddEntry(noise, "noise", "l");
+
     c1->cd(pad);
     nus->Draw("HIST");
     noise->Draw("HISTsame");
     muons->Draw("HISTsame");
+    leg->Draw();
     pad++;
 
     cout << "Neutrinos, muons and noise in 1 y for " << pdf->GetResponse()->Get_RespName() << ": " 
@@ -89,37 +97,58 @@ void expectationplots() {
   //------------------------------------------------------------
   // create an asymmetry plot
   //------------------------------------------------------------
-  TH2D* NOtrks = (TH2D*)trackpdf.GetExpValHist()->Project3D("yx")->Clone();
-  TH2D* NOshws = (TH2D*)showerpdf.GetExpValHist()->Project3D("yx")->Clone();
-  NOtrks->SetDirectory(0);
-  NOshws->SetDirectory(0);
+  RooRandom::randomGenerator()->SetSeed(416); // this seed controls the randomisation of osc parameters
 
-  futil.SetIOlims();
+  futil.GetVar("SinsqTh23")->randomize();
+  futil.GetVar("Dm31")->randomize();
+
+  cout << "*********************************************************************" << endl;
+  cout << "First pair: " << futil.GetVar("SinsqTh23")->getVal() << "\t" << futil.GetVar("Dm31")->getVal() << endl;
+  cout << "*********************************************************************" << endl;
+
+  TH2D* trks1 = (TH2D*)trackpdf.GetExpValHist()->Project3D("yx")->Clone();
+  TH2D* shws1 = (TH2D*)showerpdf.GetExpValHist()->Project3D("yx")->Clone();
+
+  futil.GetVar("SinsqTh23")->randomize();
+  futil.GetVar("Dm31")->randomize();
+
+  cout << "*********************************************************************" << endl;
+  cout << "First pair: " << futil.GetVar("SinsqTh23")->getVal() << "\t" << futil.GetVar("Dm31")->getVal() << endl;
+  cout << "*********************************************************************" << endl;
+
+  TH2D* trks2 = (TH2D*)trackpdf.GetExpValHist()->Project3D("yx")->Clone();
+  TH2D* shws2 = (TH2D*)showerpdf.GetExpValHist()->Project3D("yx")->Clone();
   
-  TH2D* IOtrks = (TH2D*)trackpdf.GetExpValHist()->Project3D("yx")->Clone();
-  TH2D* IOshws = (TH2D*)showerpdf.GetExpValHist()->Project3D("yx")->Clone();
-  IOtrks->SetDirectory(0);
-  IOshws->SetDirectory(0);
+  // this is necessary because otherwise ROOT get's confused and the asymmetry calculator somehow
+  // assumes the histograms to be the same...
+  vector<TH2D*> hists = { trks1, shws1, trks2, shws2 }; 
+  for (auto h: hists) h->SetDirectory(0);
 
-  auto trk_asym = NMHUtils::Asymmetry(NOtrks, IOtrks, "trkasym");
-  auto shw_asym = NMHUtils::Asymmetry(NOshws, IOshws, "shwasym");
+  auto trk_asym = NMHUtils::Asymmetry(trks1, trks2, "trkasym");
+  auto shw_asym = NMHUtils::Asymmetry(shws1, shws2, "shwasym");
+
+  hists = { trks1, shws1, std::get<0>(trk_asym), std::get<0>(shw_asym) };
+  
+  for (auto h: hists) {
+    h->GetXaxis()->SetTitle("Reco Energy [GeV]");
+    h->GetYaxis()->SetTitle("Reco cos#theta");
+    h->GetYaxis()->SetRangeUser(-1,0);
+  }
+  
+  trks1->SetTitle("tracks, 1year");
+  shws1->SetTitle("showers, 1year");
+  std::get<0>(trk_asym)->SetTitle("tracks sensitivity, 1year");
+  std::get<0>(shw_asym)->SetTitle("showers sensitivity, 1year");
 
   TCanvas *c2 = new TCanvas("c2","c2",1);
-  c2->Divide(2,1);
+  c2->DivideSquare(4);
   c2->cd(1);
-  std::get<0>(trk_asym)->Draw("colz");
+  trks1->Draw("colz");
   c2->cd(2);
+  shws1->Draw("colz");
+  c2->cd(3);
+  std::get<0>(trk_asym)->Draw("colz");
+  c2->cd(4);
   std::get<0>(shw_asym)->Draw("colz");
-
-  TCanvas *c3 = new TCanvas("c3","c3",1);
-  c3->Divide(2,2);
-  c3->cd(1);
-  NOtrks->Draw("colz");
-  c3->cd(2);
-  IOtrks->Draw("colz");
-  c3->cd(3);
-  NOshws->Draw("colz");
-  c3->cd(4);
-  IOshws->Draw("colz");
 
 }
