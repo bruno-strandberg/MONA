@@ -1,24 +1,19 @@
 Test scripts
 ============
 
-* data_sorting.py - script to check that data_sorting/ scripts worked properly.
+This directory holds ROOT macros and source code for applications that serve as examples, some of the applications also double as unit tests. The macros and directories are described briefly below.
 
-* flux_check_inpol.py - script that compares the honda flux as read from the flux table file and estimated by the AtmFlux interpolator.
+## Directories
 
-* flux_comp_mj.py - script that compares the atm. flux as estimated by the class AtmFlux and as stored in NMH/data/testing/mjongen_plots.root by Martijn's code.
+* `event_filtering` directory: these applications demonstrate the use of `EventFilter`, `EventSelection` and `DetResponse`.
 
-* xsec.py - script that draws xsec/E plots for various interactions.
+* `fitting` directory: these applications demonstrate the use of `common_softare` and `fitter_software` for NMO fits and analysis.
 
-* data_parsers.C - script that demonstrates the usage of `SummaryParser` for summary events and `GSGParser` for gSeaGen events.
+## Macros
 
-* detresponse.C - script that demonstrates the usage of `DetResponse` class.
+* `summaryparser.C` - a macro that demonstrates the usage of `SummaryParser` class for reading and writing data in `SummaryEvent` format.
+* `fileheader.C` - a macro that demonstrates the usage of `FileHeader` class for attaching simple headers to ROOT files.
 
-* eventfilter.C - script that demonstrates the usage of the `EventFilter` class.
+# Suitable for unit tests
 
-* evtid_functionality.C+ - script to check the find and sort algorithms used in evt_sampler/GSGSampler.C
-
-* fileheader.C - a script to check/demostrate FileHeader functionality.
-
-* gsgparser.C - script to compare GSGParser event parsing with different methods.
-
-* sanity_checks.C - script that takes the NMH/data/pid_result_XXX.root as input and draws some plots for sanity checks.
+* All applications in `event_filtering`.

@@ -1,10 +1,8 @@
-//#include "Fitter.h"
-
-// fitter headers
+// fitter_software headers
 #include "FitUtil.h"
 #include "FitPDF.h"
 
-// NMH headers
+// common_software headers
 #include "SummaryParser.h"
 #include "SummaryEvent.h"
 #include "NMHUtils.h"
@@ -23,7 +21,6 @@
 #include "RooSimultaneous.h"
 #include "RooFitResult.h"
 #include "RooMinimizer.h"
-#include "RooDataSet.h"
 
 // cpp headers
 #include <iostream>
@@ -41,12 +38,12 @@
 using namespace RooFit;
 using namespace std;
 
-/** Namespace that collects functions and variables for the `Fitter` application */
+/** Namespace that collects functions and variables for the `SampleFitter` application */
 namespace FITTER {
 
   // functions
   void InitRespsAndSels();
-  void FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response, FitUtil *futil);
+  void FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response);
   void FillSelections();
   void Cleanup();
   
@@ -54,24 +51,41 @@ namespace FITTER {
   static const Int_t    fENB    =  40;
   static const Double_t fEmin   =   1;
   static const Double_t fEmax   = 100;
-  static const Int_t    fCtNB   =  80;
+  static const Int_t    fCtNB   =  40;
   static const Double_t fCtmin  =  -1;
   static const Double_t fCtmax  =   1;
   static const Int_t    fByNB   =   1;
   static const Double_t fBymin  =   0;
   static const Double_t fBymax  =   1;
 
+  // variables for FitUtil configuration
+  static const Double_t fRunTime  = 3;   // 3 years running time
+  static const Double_t fFitEmin  = 3;   // minimum fitted energy range
+  static const Double_t fFitEmax  = 80;  // maximum fitted energy range
+  static const Double_t fFitCTmin = -1;  // minimum fitted cos-theta range
+  static const Double_t fFitCTmax =  0;  // maximum fitted cos-theta range
+  static const Double_t fFitBYmin =  0;  // minimum fitted bjorken-y range
+  static const Double_t fFitBYmax =  1;  // maximum fitted bjorken-y range
+  
   // member selections and responses
-  DetResponse    *fTRres;
-  DetResponse    *fSHres;
-  EventSelection *fTRsel;
-  EventSelection *fSHsel;
-  RooDataSet     *fTRset;
-  RooDataSet     *fSHset;
+  DetResponse    *fTRres; // detector response for tracks
+  DetResponse    *fSHres; // detector response for showers
+  EventSelection *fTRsel; // event selection for tracks
+  EventSelection *fSHsel; // event selection for showers
 
 };
 
-/** Main function of the program */
+/** This example application can be used to fit an event-by-event experiment sample, created with applications in `apps/evt_sampler`. 
+
+    The example uses the `track` and `shower` event selections as were optimised for ORCA115_23x9m MC production; for a different production the selections of this example are probably not optimal.
+
+    This example demonstrates:
+    1. the creation of a compiled program with `NMO` libraries and `Jpp` headers;
+    2. use of the `DetResponse`, `EventSelection`, `FitUtil`, `FitPDF` classes and `RooFit`;
+    3. simultaneous fitting of more than one event selections.
+
+ 
+*/
 int main(const int argc, const char **argv) {
 
   using namespace FITTER;
@@ -83,12 +97,12 @@ int main(const int argc, const char **argv) {
   string        simdata_file;
   string        expdata_file;
   bool          refill_response;
-  bool          unbinned;
   TString       meff_file;
+  Int_t         numcpu;
 
   try {
 
-    JParser<> zap("Program to fit the experimental data with standard track-shower separation.");
+    JParser<> zap("This application can be used to fit an event-by-event experiment sample, created with applications in `apps/evt_sampler`. See documentation in the source code for more info.");
 
     zap['s'] = make_field(simdata_file, "File with all summary data") =
       (string)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
@@ -96,11 +110,10 @@ int main(const int argc, const char **argv) {
     zap['e'] = make_field(expdata_file, "File with experimental data sample");
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
-
-    zap['u'] = make_field(unbinned, "Flag to request unbinned fitting");
     
     zap['M'] = make_field(meff_file, "Effective mass file created by using `EffMass` class") = 
       (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+    zap['n'] = make_field(numcpu, "Number of CPUs for fitting") = 1;
 
     if ( zap.read(argc, argv)!= 0 ) return 1;
   }
@@ -111,24 +124,20 @@ int main(const int argc, const char **argv) {
   //----------------------------------------------------------
   // call methods to initialise and fill responses
   //----------------------------------------------------------
-
   InitRespsAndSels();
-  
-  FitUtil *fitutil = new FitUtil(3, fTRres->GetHist3D(), 1, 100, -1, 0, 0, 1, meff_file);
-  fTRset = new RooDataSet("tracks_unbinned","tracks_unbinned"  , fitutil->GetObs() );
-  fSHset = new RooDataSet("showers_unbinned","showers_unbinned", fitutil->GetObs() );
-  
-  FillRespsAndSels(simdata_file, expdata_file, refill_response, fitutil);
-  
+  FillRespsAndSels(simdata_file, expdata_file, refill_response);
+
   //----------------------------------------------------------
   // set up the PDFs for fitting
   //----------------------------------------------------------
+  FitUtil *fitutil = new FitUtil(fRunTime, fTRres->GetHist3D(), fFitEmin, fFitEmax,
+				 fFitCTmin, fFitCTmax, fFitBYmin, fFitBYmax, meff_file);
 
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, fTRres);  
   FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, fSHres);
 
   //----------------------------------------------------------
-  // set up data for simultaneous fitting for binned data
+  // set up data for simultaneous fitting and fit
   //----------------------------------------------------------
   std::map<string, TH1* > hist_map = { { (string)fTRsel->Get_SelName() , fTRsel->Get_h_E_costh_by() }, 
 				       { (string)fSHsel->Get_SelName() , fSHsel->Get_h_E_costh_by() } };
@@ -138,58 +147,18 @@ int main(const int argc, const char **argv) {
   categs.defineType( fTRsel->Get_SelName() );
   categs.defineType( fSHsel->Get_SelName() );
   
-  // create combined data set for the histogram
+  // create combined data set
   RooDataHist combData("combData", "combined data", fitutil->GetObs(), categs, hist_map);
-  
+
   // create simultaneous pdf
   RooSimultaneous simPdf("simPdf", "simultaneous Pdf", categs);
   simPdf.addPdf(pdf_tracks , fTRsel->Get_SelName() );
   simPdf.addPdf(pdf_showers, fSHsel->Get_SelName() );
 
-  //----------------------------------------------------------
-  // set up data for simultaneous fitting for un-binned data
-  //----------------------------------------------------------
-
-  RooCategory categsUB("categsUB", "data categories, unbinned");
-  categs.defineType( fTRset->GetName() );
-  categs.defineType( fSHset->GetName() );
-  
-  RooDataSet combDataUB("combDataUB","combined data, unbinned", fitutil->GetObs(),
-			Index(categsUB), Import(fTRset->GetName(), *fTRset), Import(fSHset->GetName(), *fSHset) );
-
-  RooSimultaneous simPdfUB("simPdf","simultaneous pdf, unbinned", categsUB);
-  simPdfUB.addPdf( pdf_tracks , fTRset->GetName() );
-  simPdfUB.addPdf( pdf_showers, fSHset->GetName() );
-  
-  //----------------------------------------------------------
-  // do the fitting, either binned or un-binned
-  //----------------------------------------------------------
-    
   cout << "NOTICE Fitter started fitting" << endl;
   
   TStopwatch timer;
-
-  RooAbsReal *nll = NULL;
-
-  if (unbinned) {
-    nll = simPdfUB.createNLL(combDataUB);
-  }
-  else {
-    nll = simPdf.createNLL(combData);
-  }
- 
-  RooMinimizer m(*nll);
-  const char* minimizer = "Minuit";
-  const char* minalg    = "minuit";
-  m.setMinimizerType(minimizer); // select minimizer
-  m.optimizeConst(kFALSE);       // turn off optimisation
-  m.setOffsetting(kTRUE);        // offset the likelihood, helps with large LLH values
-  m.setEps(1e-5);                // increase MIGRAD precision
-  m.hesse();                     // do initial error evaluation
-  m.minimize(minimizer, minalg);
-  m.hesse();
-  RooFitResult *fitres = m.save();
-
+  RooFitResult *fitres = simPdf.fitTo( combData, Save(kTRUE), NumCPU(numcpu) );
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
   
   //----------------------------------------------------------
@@ -219,17 +188,19 @@ int main(const int argc, const char **argv) {
 
 //**********************************************************************************
 
+/** Internal function to initialise detector responses and event selections */
 void FITTER::InitRespsAndSels() {
 
   using namespace FITTER;
 
   //----------------------------------------------------------
-  //initialise event selection and response for tracks
+  // initialise event selection and response for tracks; the event selection
+  // and the corresponding response need to have the same selection criteria
   //----------------------------------------------------------
 
   fTRsel = new EventSelection(EventSelection::track, "track_sel", NULL, 
 			      fENB, fEmin, fEmax, fCtNB, fCtmin, fCtmax, fByNB, fBymin, fBymax);
-  
+
   fTRres = new DetResponse(DetResponse::track, "track_resp", 
 			   fENB, fEmin, fEmax, fCtNB, fCtmin, fCtmax, fByNB, fBymin, fBymax);
 
@@ -244,7 +215,8 @@ void FITTER::InitRespsAndSels() {
   }
 
   //----------------------------------------------------------
-  //initialise event selection and response for showers
+  // initialise event selection and response for showers; the event selection
+  // and the corresponding response need to have the same selection criteria
   //----------------------------------------------------------
 
   fSHsel = new EventSelection(EventSelection::shower, "shower_sel", NULL,
@@ -266,21 +238,21 @@ void FITTER::InitRespsAndSels() {
 
 //**********************************************************************************
 
-void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file,
-			      Bool_t refill_response, FitUtil *fitutil) {
+/** Internal function to fill the event selections and responses. */
+void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file, Bool_t refill_response) {
 
   using namespace FITTER;
 
   if ( !fTRres || !fSHres || !fTRsel || !fSHsel ) {
     throw std::logic_error("ERROR! FITTER::FillRespsAndSels() DetResponse's and EventSelection's are not yet initialized!");
   }
-  
+
   //----------------------------------------------------------
   // fill the responses
   //----------------------------------------------------------
 
-  TString track_resp_name  = NMHUtils::Getcwd() + "/rootfiles/track_response.root";
-  TString shower_resp_name = NMHUtils::Getcwd() + "/rootfiles/shower_response.root";
+  TString track_resp_name  = NMHUtils::Getcwd() + "/rootfiles/samplefitter_track_response.root";
+  TString shower_resp_name = NMHUtils::Getcwd() + "/rootfiles/samplefitter_shower_response.root";
 
   if ( !NMHUtils::FileExists(track_resp_name) || !NMHUtils::FileExists(shower_resp_name) || refill_response ) {
 
@@ -295,7 +267,7 @@ void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file,
       SummaryEvent *evt = sp.GetEvt(i);
       fTRres->Fill(evt);
       fSHres->Fill(evt);
-      
+
     }
 
     fTRres->WriteToFile(track_resp_name);
@@ -317,30 +289,11 @@ void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file,
   //----------------------------------------------------------
   SummaryParser sp(expdata_file);
 
-  RooRealVar *e  = fitutil->GetVar("E_reco");
-  RooRealVar *ct = fitutil->GetVar("ct_reco");
-  RooRealVar *by = fitutil->GetVar("by_reco");
-  
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
 
     SummaryEvent *evt = sp.GetEvt(i);
     fTRsel->Fill(evt);
     fSHsel->Fill(evt);
-
-    // fill the sets
-    if ( fTRsel->PassesCuts(evt) ) {
-      e ->setVal(  fTRsel->fEnergy );
-      ct->setVal( -fTRsel->fDir.z() );
-      by->setVal(  fTRsel->fBy );
-      fTRset->add( fitutil->GetObs() );
-    }
-
-    if ( fSHsel->PassesCuts(evt) ) {
-      e ->setVal(  fSHsel->fEnergy );
-      ct->setVal( -fSHsel->fDir.z() );
-      by->setVal(  fSHsel->fBy );
-      fSHset->add( fitutil->GetObs() );
-    }
 
   }
 
@@ -349,6 +302,7 @@ void FITTER::FillRespsAndSels(TString simdata_file, TString expdata_file,
 
 //**********************************************************************************
 
+/** Interal function to clean dynamic memory. */
 void FITTER::Cleanup() {
 
   using namespace FITTER;
@@ -357,8 +311,6 @@ void FITTER::Cleanup() {
   if (fSHres) delete fSHres;
   if (fTRsel) delete fTRsel;
   if (fSHsel) delete fSHsel;
-  // if (fTRset) delete fTRset;
-  // if (fSHsel) delete fSHsel;
-  
+
 }
 

@@ -27,7 +27,8 @@
 #include "Jeep/JParser.hh"
 #include "Jeep/JMessage.hh"
 
-namespace EXPCTFIT {
+/** Namespace that stores structures and functions for the `FitPseudoExperiment` app*/
+namespace PSEUDOFIT {
 
   /** class to store fit parameter instances*/
   struct FitPars {
@@ -59,8 +60,18 @@ namespace EXPCTFIT {
 
 using namespace RooFit;
 using namespace std;
-using namespace EXPCTFIT;
+using namespace PSEUDOFIT;
 
+/** This example application demonstrates the generation of a pseudo-experiment in the track channel and fitting the pseudo-experiment using ROOT and RooFit.
+
+    The example uses the `track` and `shower` event selections as were optimised for ORCA115_23x9m MC production; for a different production the selections of this example are probably not optimal.
+
+    This example demonstrates:
+    1. the creation of a compiled program with `NMO` libraries and `Jpp` headers;
+    2. use of the `DetResponse`, `EventSelection`, `FitUtil`, `FitPDF` classes and `RooFit`;
+    3. creation of a simple pseudo-experiment.
+
+*/
 int main(const int argc, const char **argv) {
 
   TString rfd = NMHUtils::Getcwd() + "/rootfiles/";
@@ -78,13 +89,13 @@ int main(const int argc, const char **argv) {
 
   try {
 
-    JParser<> zap("Application to fit the expectation value histogram for tracks with the model several times.");
+    JParser<> zap("This example application demonstrates the generation of a pseudo-experiment in the track channel and fitting the pseudo-experiment using ROOT and RooFit. See the documentation in the application for further information.");
 
     zap['s'] = make_field(simdata_file, "File with all summary data") =
       (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
-    zap['o'] = make_field(outputfile, "File where output histograms are written") = rfd + "expectationfit.root";
+    zap['o'] = make_field(outputfile, "File where output histograms are written") = rfd + "pseudoexpfit.root";
     zap['n'] = make_field(nfits, "Number of fits to be performed") = 1;
     zap['M'] = make_field(meff_file, "Effective mass file created by using `EffMass` class") = 
       (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
@@ -100,7 +111,7 @@ int main(const int argc, const char **argv) {
   if (sysret != 0) { throw std::invalid_argument( "ERROR! ExpctFit1H cannot create dir " + (string)rfd ); }
 
   //----------------------------------------------------------
-  // set up the detector response
+  // set up the detector response binning
   //----------------------------------------------------------
   
   Int_t fENB   =  24;
@@ -122,7 +133,7 @@ int main(const int argc, const char **argv) {
   track_resp.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05, true );
   track_resp.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );    
 
-  TString track_resp_name  = rfd + "track_response.root";
+  TString track_resp_name  = rfd + "fitpseudoexperiment_response.root";
   
   if ( !NMHUtils::FileExists(track_resp_name) || refill_response ) {
     cout << "NOTICE ExpctFit1H (Re)filling response" << endl;
@@ -146,20 +157,30 @@ int main(const int argc, const char **argv) {
   // set up the PDF and oscillation parameters limits for normal ordering,
   // get roofit variable pointers; fix th12 and dm21
   //----------------------------------------------------------
+
+  // the fit limits in the observables are configured through `FitUtil` initialisation
+  Int_t    runtime   = 3;
+  Double_t fit_emin  = 1;
+  Double_t fit_emax  = 100;
+  Double_t fit_ctmin = -1;
+  Double_t fit_ctmax = 0;
+  Double_t fit_bymin = 0;
+  Double_t fit_bymax = 1;
   
-  FitUtil *fitutil = new FitUtil(3, track_resp.GetHist3D(),
-  				 1, 100, -1, 0, 0, 1, meff_file);
+  FitUtil *fitutil = new FitUtil(runtime, track_resp.GetHist3D(), fit_emin, fit_emax,
+				 fit_ctmin, fit_ctmax, fit_bymin, fit_bymax, meff_file);
+
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_resp);  
 
   fitutil->SetNOlims();
   fitutil->SetNOcentvals();
 
-  RooRealVar* rf_sinsqth12 = (RooRealVar*)fitutil->GetSet().find("SinsqTh12");
-  RooRealVar* rf_sinsqth13 = (RooRealVar*)fitutil->GetSet().find("SinsqTh13");
-  RooRealVar* rf_sinsqth23 = (RooRealVar*)fitutil->GetSet().find("SinsqTh23");
-  RooRealVar* rf_dcp  = (RooRealVar*)fitutil->GetSet().find("dcp");
-  RooRealVar* rf_dm21 = (RooRealVar*)fitutil->GetSet().find("Dm21");
-  RooRealVar* rf_dm31 = (RooRealVar*)fitutil->GetSet().find("Dm31");
+  RooRealVar* rf_sinsqth12 = fitutil->GetVar("SinsqTh12");
+  RooRealVar* rf_sinsqth13 = fitutil->GetVar("SinsqTh13");
+  RooRealVar* rf_sinsqth23 = fitutil->GetVar("SinsqTh23");
+  RooRealVar* rf_dcp       = fitutil->GetVar("dcp");
+  RooRealVar* rf_dm21      = fitutil->GetVar("Dm21");
+  RooRealVar* rf_dm31      = fitutil->GetVar("Dm31");
 
   rf_sinsqth12->setConstant(kTRUE);
   rf_dm21->setConstant(kTRUE);
@@ -189,8 +210,7 @@ int main(const int argc, const char **argv) {
     rf_dm31->randomize();
     
     // get the expectation value
-    TH3D *tracks_expct = pdf_tracks.GetExpValHist();
-    tracks_expct->SetNameTitle("tracks_expected", "tracks_expected");
+    TH3D *tracks_exp = pdf_tracks.SimplePseudoExp("tracks_exp",kTRUE);
     
     // store the true values of the expectation
     trial.true_vals.sinsqth12 = rf_sinsqth12->getVal();
@@ -204,9 +224,12 @@ int main(const int argc, const char **argv) {
     cout << "Started fitting with RooFit" << endl;
     cout << "*************************************************************************" << endl;
 
+    // reset to NO central values
     fitutil->SetNOcentvals();
-    RooDataHist rf_hist("rf_hist", "rf_hist", fitutil->GetObs(), Import(*tracks_expct) );
-    RooFitResult *fitres = pdf_tracks.fitTo( rf_hist, Save(kTRUE), SumW2Error(kTRUE), Offset(kTRUE), Optimize(kFALSE), NumCPU(ncpu) );
+
+    // fit
+    RooDataHist rf_hist("rf_hist", "rf_hist", fitutil->GetObs(), Import(*tracks_exp) );
+    RooFitResult *fitres = pdf_tracks.fitTo( rf_hist, Save(kTRUE), Offset(kTRUE), NumCPU(ncpu) );
     RooArgSet result( fitres->floatParsFinal() );
 
     // store roofit results and errors
@@ -228,11 +251,13 @@ int main(const int argc, const char **argv) {
     cout << "Started fitting with ROOT" << endl;
     cout << "*************************************************************************" << endl;
 
+    // reset to NO central values
     fitutil->SetNOcentvals();    
-    TF3 *func = new TF3("fitfunc", pdf_tracks, 1, 100, -1, 0, 0, 1, 6);
+
+    // configure fit and fit
+    TF3 *func = new TF3("fitfunc", pdf_tracks, fit_emin, fit_emax, fit_ctmin, fit_ctmax, fit_bymin, fit_bymax, 6);
     func->SetParameters( rf_sinsqth12->getVal(), rf_sinsqth13->getVal(), rf_sinsqth23->getVal(),
 			 rf_dcp->getVal(), rf_dm21->getVal(), rf_dm31->getVal() );
-    
     func->SetParNames("sinsq12","sinsq13","sinsq23","dcp","dm21","dm31");
     
     func->FixParameter( 0, rf_sinsqth12->getVal() );
@@ -242,7 +267,7 @@ int main(const int argc, const char **argv) {
     func->FixParameter( 4, rf_dm21->getVal() );
     func->SetParLimits( 5, rf_dm31->getMin(), rf_dm31->getMax() );
 
-    TFitResultPtr rootres = tracks_expct->Fit("fitfunc", "RSLV");
+    TFitResultPtr rootres = tracks_exp->Fit("fitfunc", "RSLV");
 
     // store ROOT results
     trial.root_vals.sinsqth12 = rf_sinsqth12->getVal();
@@ -261,7 +286,7 @@ int main(const int argc, const char **argv) {
 
     tout.Fill();
 
-    if (tracks_expct) delete tracks_expct;
+    if (tracks_exp) delete tracks_exp;
     
   } // end loop over trials  
 
@@ -272,7 +297,10 @@ int main(const int argc, const char **argv) {
   
 }
 
-void EXPCTFIT::ConfigureTree(TTree& tout, FitTrial& trial) {
+//***************************************************************************************
+
+/** Inline function that configures the output tree with fit results. */
+void PSEUDOFIT::ConfigureTree(TTree& tout, FitTrial& trial) {
 
   tout.Branch("true_vals_sinsqth12"  , &trial.true_vals.sinsqth12);
   tout.Branch("true_vals_sinsqth13"  , &trial.true_vals.sinsqth13);

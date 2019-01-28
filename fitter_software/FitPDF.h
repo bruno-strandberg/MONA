@@ -11,6 +11,7 @@
 #include "DetResponse.h"
 
 #include "TH3.h"
+#include "TRandom3.h"
 
 #include <map>
 
@@ -55,8 +56,12 @@ public:
     return fFitUtil->PdfExpectation(fProxies, fResponse, name);
   }
 
+  /** Set the seed of the random generator (`TRandom3`) that is used for generating pseudo-experiments
+      \param seed  Seed for the `TRandom3` generator `fRand`
+   */
+  void SetSeed(ULong_t seed = 0) { fRand.SetSeed(seed); }
 
-  TH3D*  SimplePseudoExp();
+  TH3D*  SimplePseudoExp(TString nametitle="pseudoexp", Bool_t IncludeStatErr=kFALSE);
   double operator() (double *x, double *p);
   Int_t    getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
   Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
@@ -72,6 +77,8 @@ private:
   FitUtil     *fFitUtil;                     //!< pointer to the fit utility that can be shared between several `FitPDF` instances
   DetResponse *fResponse;                    //!< pointer to a specific fit response that describes the data to be fitted
   std::map<TString, RooRealProxy*> fProxies; //!< map of proxies to the RooRealVar's defined in `FitUtil`
+
+  TRandom3 fRand;                            //!< random generator for pseudoexperiments
 
   ClassDef(FitPDF,1)
 };

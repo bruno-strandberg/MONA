@@ -22,6 +22,11 @@ using namespace RooFit;
 using namespace std;
 using namespace JTOOLS;
 
+/** This example application calculates the asymmetry between normal and inverted mass ordering at specified theta-23 values.
+
+    The example uses the `track` and `shower` event selections as were optimised for ORCA115_23x9m MC production; for a different production the selections of this example are probably not optimal.
+
+*/
 int main(const int argc, const char **argv) {
 
   //----------------------------------------------------------
@@ -40,7 +45,7 @@ int main(const int argc, const char **argv) {
   
   try {
 
-    JParser<> zap("Program to calculate asymmetries with standard track-shower separation.");
+    JParser<> zap("This example application calculates the asymmetry between normal and inverted mass ordering at specified theta-23 values.");
 
     zap['s'] = make_field(simdata_file, "File with all summary data") =
       (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
@@ -101,8 +106,8 @@ int main(const int argc, const char **argv) {
   shower_resp.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05, true );
   shower_resp.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(),  0.5, true );
 
-  TString track_resp_name  = NMHUtils::Getcwd() + "/rootfiles/track_response.root";
-  TString shower_resp_name = NMHUtils::Getcwd() + "/rootfiles/shower_response.root";
+  TString track_resp_name  = NMHUtils::Getcwd() + "/rootfiles/asymmetry_track_response.root";
+  TString shower_resp_name = NMHUtils::Getcwd() + "/rootfiles/asymmetry_shower_response.root";
   
   if ( !NMHUtils::FileExists(track_resp_name) || !NMHUtils::FileExists(shower_resp_name) || refill_response ) {
 
@@ -137,10 +142,18 @@ int main(const int argc, const char **argv) {
   //----------------------------------------------------------
   // set up the PDFs and static oscillation parameters
   //----------------------------------------------------------
-  
-  FitUtil *fitutil = new FitUtil(3, track_resp.GetHist3D(),
-  				 1, 100, -1, 1, 0, 1, meff_file);
 
+  Int_t    runtime   = 3;
+  Double_t fit_emin  = 1;
+  Double_t fit_emax  = 100;
+  Double_t fit_ctmin = -1;
+  Double_t fit_ctmax = 0;
+  Double_t fit_bymin = 0;
+  Double_t fit_bymax = 1;
+
+  FitUtil *fitutil = new FitUtil(runtime, track_resp.GetHist3D(), fit_emin, fit_emax,
+				 fit_ctmin, fit_ctmax, fit_bymin, fit_bymax, meff_file);
+  
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_resp);  
   FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, &shower_resp);
 
@@ -151,16 +164,16 @@ int main(const int argc, const char **argv) {
   Double_t dm21      = 7.53e-5;
   Double_t DM        = dm32 + 0.5*dm21;
 
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh12") )->setVal( sinsqth12 );
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh13") )->setVal( sinsqth13 );
-  ( (RooRealVar*)fitutil->GetSet().find("dcp") )->setVal( dcp );
-  ( (RooRealVar*)fitutil->GetSet().find("Dm21") )->setVal( dm21 );
+  fitutil->GetVar("SinsqTh12")->setVal( sinsqth12 );
+  fitutil->GetVar("SinsqTh13")->setVal( sinsqth13 );
+  fitutil->GetVar("dcp")->setVal( dcp );
+  fitutil->GetVar("Dm21")->setVal( dm21 );
 
   // deconstrain th23 and dm31
-  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setMin( -1 );
-  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setMax(  1 );
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setMin( -1 );
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setMax(  1 );
+  fitutil->GetVar("Dm31")->setMin( -1 );
+  fitutil->GetVar("Dm31")->setMax(  1 );
+  fitutil->GetVar("SinsqTh23")->setMin( -1 );
+  fitutil->GetVar("SinsqTh23")->setMax(  1 );
 
   //----------------------------------------------------------
   // loop over theta23 range and calculate asymmetries
@@ -177,7 +190,7 @@ int main(const int argc, const char **argv) {
   for (Int_t step = 0; step < nsteps; step++) {
 
     Double_t sinsqth23 = range_th23.getLowerLimit() + step * step_size;
-    ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setVal( sinsqth23 );
+    fitutil->GetVar("SinsqTh23")->setVal( sinsqth23 );
     TString th23str = (TString)to_string(sinsqth23*1e3);
     TString prefix = "th23x1e3_" + (TString)th23str(0,3) + "_";
 
@@ -185,7 +198,7 @@ int main(const int argc, const char **argv) {
     // set normal hierarchy
     //----------------------------------------------------------
     Double_t dm31 = DM + 0.5*dm21;
-    ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setVal( dm31 );
+    fitutil->GetVar("Dm31")->setVal( dm31 );
     
     TH2D *tracks_NH  = (TH2D*)pdf_tracks.GetExpValHist()->Project3D("yx");
     TH2D *showers_NH = (TH2D*)pdf_showers.GetExpValHist()->Project3D("yx");
@@ -198,7 +211,7 @@ int main(const int argc, const char **argv) {
     // set inverted hierarchy
     //----------------------------------------------------------
     dm31 = -DM + 0.5*dm21; //IH
-    ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setVal( dm31 );
+    fitutil->GetVar("Dm31")->setVal( dm31 );
   
     TH2D *tracks_IH  = (TH2D*)pdf_tracks.GetExpValHist()->Project3D("yx");
     TH2D *showers_IH = (TH2D*)pdf_showers.GetExpValHist()->Project3D("yx");
