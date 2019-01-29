@@ -1,7 +1,14 @@
 #include "NMHUtils.h"
 
 
-/* Create 3D histograms with expectation values for 1 year of running for tracks and showers. I am performing some optimization of the muon and noise suppression cuts*/
+/* 
+   In this script ORCA 7-line events are distributed to tracks and showers, using track score value 0.6, as in ORCA 115 production from 2015. This script creates:
+   
+   1. plots that depict the number of detected neutrinos, muons and noise in 1 year with ORCA 7-line detector in energy dimension.
+   2. plots that depict the number of detected neutrinos in E-vs-costh plot, for tracks and showers.
+   3. plots that depict the "asymmetry" in the track channel and in the shower channel for two different value pairs of (th23, dm31).
+
+*/
 
 void expectationplots() {
 
@@ -16,8 +23,8 @@ void expectationplots() {
   Double_t ctmax =   1;
   Double_t bymin =   0;
   Double_t bymax =   1;
-  TString dataf  = "../../data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root";
-  TString effmf  = "../../data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root";
+  TString dataf  = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root";
+  TString effmf  = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root";
 
   Double_t muoncut  = 0.05;
   Double_t noisecut = 0.01;
@@ -103,7 +110,7 @@ void expectationplots() {
   futil.GetVar("Dm31")->randomize();
 
   cout << "*********************************************************************" << endl;
-  cout << "First pair: " << futil.GetVar("SinsqTh23")->getVal() << "\t" << futil.GetVar("Dm31")->getVal() << endl;
+  cout << "1st pair: " << futil.GetVar("SinsqTh23")->getVal() << "\t" << futil.GetVar("Dm31")->getVal() << endl;
   cout << "*********************************************************************" << endl;
 
   TH2D* trks1 = (TH2D*)trackpdf.GetExpValHist()->Project3D("yx")->Clone();
@@ -113,7 +120,7 @@ void expectationplots() {
   futil.GetVar("Dm31")->randomize();
 
   cout << "*********************************************************************" << endl;
-  cout << "First pair: " << futil.GetVar("SinsqTh23")->getVal() << "\t" << futil.GetVar("Dm31")->getVal() << endl;
+  cout << "2nd pair: " << futil.GetVar("SinsqTh23")->getVal() << "\t" << futil.GetVar("Dm31")->getVal() << endl;
   cout << "*********************************************************************" << endl;
 
   TH2D* trks2 = (TH2D*)trackpdf.GetExpValHist()->Project3D("yx")->Clone();

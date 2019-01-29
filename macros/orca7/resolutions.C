@@ -1,7 +1,7 @@
 #include "NMHUtils.h"
 
 /* This macro compared track reco energy resolution to shower reco energy resolution for muons*/
-void resolutions(TString fname = "../../data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root") {
+void resolutions(TString fname = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root") {
 
   SummaryParser sp(fname);
 

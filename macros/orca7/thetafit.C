@@ -1,6 +1,8 @@
 #include "NMHUtils.h"
 
-
+//******************************************************************************************
+// functions to  be able to use the shower energy and track direction for high-purity tracks
+//******************************************************************************************
 Double_t CustomEnergy(SummaryEvent* evt) {
 
   if ( evt->Get_shower_ql0() > 0.5 ) { return evt->Get_shower_energy(); }
@@ -16,10 +18,21 @@ Double_t CustomBY (SummaryEvent *evt) { return evt->Get_track_bjorkeny(); }
 
 using namespace RooFit;
 
-void thetafit(TString dataf  = "../../data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root", 
-	      TString effmf  = "../../data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root",
-	      Bool_t redoresp = kFALSE) {
+/* 
+   This macro fits a pseudo-experiment for theta-23. In creates:
+   1. the expectation value plot
+   2. the plot of the pseudo-experiment
+   3. a plot depicting a likelihood scan in theta-23
+   4. plots that compare the model and the pseudo-data at different theta-23 value. It creates many 1D plots in energy for different cos-theta values.
 
+*/
+void thetafit() {
+
+  TString dataf     = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root";
+  TString effmf     = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root";
+  Bool_t   redoresp = kFALSE;
+
+  system("mkdir -p rootfiles");
   TString respn  = "rootfiles/thetafit_resp.root";
 
   if (redoresp) {
@@ -210,6 +223,5 @@ void thetafit(TString dataf  = "../../data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.
     proj_expected[i]->Draw("sameHISTE");
     leg->Draw();
   }
-
 
 }
