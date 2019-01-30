@@ -24,7 +24,7 @@ namespace RESTOREPARITY {
   void  split_to_files_mupage(TString tag, Bool_t overwrite=false, Bool_t separate=false);
   void  split_to_files_noise(TString tag);
   Int_t get_max_run_nr(TString cut_string);
-  void  check_return(Int_t ret);
+  void  systemcmd(TString syscmd);
 
   /// Global pointer to a summary file parser class.
   SummaryParser *fSp;
@@ -34,6 +34,8 @@ namespace RESTOREPARITY {
   TString muondir    = "/data_mupage/";
   TString noisedir   = "/data_noise/";
   TString nudir      = "/data_atmnu/";
+
+  static const double fTauThreshold = 3.4; // tau threshold typically implemented used in gSeaGen for low level production
 
 };
 
@@ -97,10 +99,12 @@ int main(const int argc, const char **argv) {
 /** Function to check the return value of the system call 
     \param ret  return value of `system`.
 */
-void RESTOREPARITY::check_return(Int_t ret) {
+void RESTOREPARITY::systemcmd(TString systemcmd) {
+
+  Int_t ret = system( systemcmd );
 
   if (ret != 0) {
-    cout << "WARNING! RestoreParity::check_return() system returned " << ret << endl;
+    cout << "WARNING! RestoreParity::systemcmd() system returned " << ret << " for command " << systemcmd << endl;
   }
 
 }
@@ -118,7 +122,7 @@ Int_t RESTOREPARITY::get_max_run_nr(TString cut_string) {
   TTree *t_tmp = fSp->GetTree()->CopyTree(cut_string);
   Int_t  max_run_nr = t_tmp->GetMaximum("fMC_runID");
   f_tmp->Close();
-  check_return( system("rm tmp.root") );
+  systemcmd( "rm tmp.root" );
 
   return max_run_nr;
 
@@ -139,8 +143,8 @@ void RESTOREPARITY::split_to_files_mupage(TString tag, Bool_t overwrite, Bool_t 
 
   TString sumdir = summarydir + tag + muondir;
   TString gsgdir = gseagendir + tag + muondir;
-  check_return( system("mkdir -p " + sumdir) );
-  check_return( system("mkdir -p " + gsgdir) );
+  systemcmd( "mkdir -p " + sumdir );
+  systemcmd( "mkdir -p " + gsgdir );
   cout << "NOTICE RESTOREPARITY::split_to_files_mupage() made directories: " << endl << "\t" << sumdir << "\t" << endl << "\t" << gsgdir << endl;
   
   Int_t max_run_nr = fSp->GetTree()->GetMaximum("fMC_runID");
@@ -179,7 +183,7 @@ void RESTOREPARITY::split_to_files_mupage(TString tag, Bool_t overwrite, Bool_t 
 
     fout->Close();
     
-    if (remove) check_return( system ("rm " + name_string) );
+    if (remove) systemcmd( "rm " + name_string );
 
     if (!separate) break;
 
@@ -202,8 +206,8 @@ void RESTOREPARITY::split_to_files_noise(TString tag) {
 
   TString sumdir = summarydir + tag + noisedir;
   TString gsgdir = gseagendir + tag + noisedir;
-  check_return( system("mkdir -p " + sumdir) );
-  check_return( system("mkdir -p " + gsgdir) );
+  systemcmd( "mkdir -p " + sumdir );
+  systemcmd( "mkdir -p " + gsgdir );
   cout << "NOTICE RESTOREPARITY::split_to_files_noise() made directories: " << endl << "\t" << sumdir << "\t" << endl << "\t" << gsgdir << endl;
 
   TString cut_string  = "fMC_type==0";
@@ -224,7 +228,7 @@ void RESTOREPARITY::split_to_files_noise(TString tag) {
   
   fout->Close();
   
-  if (remove) check_return( system ("rm " + name_string) );
+  if (remove) systemcmd( "rm " + name_string );
   
 }
 
@@ -251,8 +255,8 @@ void  RESTOREPARITY::split_to_files_atmnu_fast(TString tag, JRange<double> E_low
 
   TString sumdir = summarydir + tag + nudir;
   TString gsgdir = gseagendir + tag + nudir;
-  check_return( system("mkdir -p " + sumdir) );
-  check_return( system("mkdir -p " + gsgdir) );
+  systemcmd( "mkdir -p " + sumdir );
+  systemcmd( "mkdir -p " + gsgdir );
   cout << "NOTICE RESTOREPARITY::split_to_files_atmnu_fast() made directories: " << endl << "\t" << sumdir << "\t" << endl << "\t" << gsgdir << endl;
 
   //maps to build the filenames
@@ -283,8 +287,20 @@ void  RESTOREPARITY::split_to_files_atmnu_fast(TString tag, JRange<double> E_low
 	TString cut_string = "";
 	cut_string  += "TMath::Abs(fMC_type)==" + (TString)to_string(type.first);
 	cut_string  += "&&fMC_is_CC==" + (TString)to_string(interaction.first);
-	cut_string  += "&&fMC_erange_start==" + (TString)to_string(emin.first);
 
+	// in the low energy range, sometimes tau is cut at threshold, so
+	// when dealing with tau's when emin is below tau threshold, another
+	// tau selection cut is added
+	if ( type.first == 16. && emin.first < fTauThreshold ) {
+	  cut_string += "&&fMC_erange_start<" + (TString)to_string(fTauThreshold + 0.1);
+	}
+	else {
+	  cut_string += "&&fMC_erange_start==" + (TString)to_string(emin.first);
+	}
+
+	cout << "NOTICE RESTOREPARITY::split_to_files_atmnu_fast() selection string: " << endl
+	     << cut_string << endl;
+	
 	TString name_string = summarydir + tag + nudir + "/summary_"; 
 	name_string += type.second + "-";
 	name_string += interaction.second + "_";
@@ -365,7 +381,7 @@ void  RESTOREPARITY::split_to_files_atmnu_fast(TString tag, JRange<double> E_low
 
 	fout_lev1->Close();
 	for (auto f: fouts_lev2) {  f->Close();  delete f; }
-	for (auto fname: temp_files) check_return( system ("rm " + fname) );
+	for (auto fname: temp_files) systemcmd( "rm " + fname );
 	
       } //end loop over energy range
     } //end loop over nc/cc
