@@ -23,6 +23,15 @@ For example, this directory contains a reader class `PIDAlpha` and a correspondi
    
 2. Run `RestoreParity -f ../../data/ORCA_MC_summary_MY_TAG.root -l 1+5 -u 3+100`, use `-h!` for more info. This will split the data up to several files in `NMH/data/mcsumary/MY_TAG/...` to match the file naming and numbering scheme used throughout the MC chain. This will take ~10 minutes. This step is required for the applications in `apps/effective_mass` to work (and some other applications) and allows for more flexibility in choosing how much MC data to use for various studies.
 
+The Greek letters
+=================
+
+* *PIDAlpha* - this is to convert PID summary files from ECAP in April 2018. This uses ORCA 115 geometry with 23x9m layout, the underlying Monte-Carlo chain originates from 2015.
+
+* *PIDBeta* - this is to convert PID summary files from ECAP in October 2018. This is ORCA 7-line MC with 23x9m layout.
+
+* *PIDGamma* - this is to convert PID summary files from ECAP in December 2018. This is ORCA 115 geometry with 20x9m layout, the underlying Monte-Carlo chain originates from autumn 2018.
+
 Maintenance
 ===========
 
