@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Tue Jan  8 16:02:22 2019 by ROOT version 6.10/02
+// Wed Jan 30 10:52:34 2019 by ROOT version 6.10/02
 // from TTree PID/PID
 // found on file: ../../data/pid_result_13Oct2018_ORCA7.root
 //////////////////////////////////////////////////////////
@@ -13,18 +13,6 @@
 #include <TFile.h>
 
 // Header file for the classes stored in the TTree if any.
-
-/** A ROOT generated class to parse `NMH/data/pid_output_XXX.root`.
- 
-   As explained in `NMH/README.md`, `pid_output_XXX.root` is not suitable as a sustainable input to an analysis code. This class helps to convert the data to analysis format. This class is auto-generated using the `MakeClass()` function of the `TTree` object in `root`.
- 
-   When the new version of `pid_result_XXX.root` has changed branch names or has new branches (so far always the case), create a new class, e.g. `PIDGamma`, by doing
-   ```
-   > root new_pid_output.root
-   > PID->MakeClass("PIDGamma")
-   ```
-   and write a new simple application `GammaToSummary` that translates the variables from the PID output tree to analysis format. Check `AlphaToSummary` for guidance, this is an easy task. 
- */
 
 class PIDBeta {
 public :

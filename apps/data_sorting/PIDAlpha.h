@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Mon Jun 18 11:54:19 2018 by ROOT version 6.12/06
+// Tue Jan 29 18:13:11 2019 by ROOT version 6.10/02
 // from TTree PID/
-// found on file: ../data/pid_result_10Apr2018_ORCA115.root
+// found on file: ../../data/pid_result_10Apr2018_ORCA115.root
 //////////////////////////////////////////////////////////
 
 #ifndef PIDAlpha_h
@@ -12,17 +12,7 @@
 #include <TChain.h>
 #include <TFile.h>
 
-/** A ROOT generated class to parse `NMH/data/pid_output_XXX.root`.
- 
-   As explained in `NMH/README.md`, `pid_output_XXX.root` is not suitable as a sustainable input to an analysis code. This class helps to convert the data to analysis format. This class is auto-generated using the `MakeClass()` function of the `TTree` object in `root`.
- 
-   When the new version of `pid_result_XXX.root` has changed branch names or has new branches (so far always the case), create a new class, e.g. `PIDBeta`, by doing
-   ```
-   > root new_pid_output.root
-   > PID->MakeClass("PIDBeta")
-   ```
-   and write a new simple application `BetaToSummary` that translates the variables from the PID output tree to analysis format. Check `AlphaToSummary` for guidance, this is an easy task. 
- */
+// Header file for the classes stored in the TTree if any.
 
 class PIDAlpha {
 public :
@@ -656,9 +646,9 @@ PIDAlpha::PIDAlpha(TTree *tree) : fChain(0)
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("../data/pid_result_10Apr2018_ORCA115.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("../../data/pid_result_10Apr2018_ORCA115.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("../data/pid_result_10Apr2018_ORCA115.root");
+         f = new TFile("../../data/pid_result_10Apr2018_ORCA115.root");
       }
       f->GetObject("PID",tree);
 

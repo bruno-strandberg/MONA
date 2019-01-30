@@ -35,9 +35,9 @@ int main(const int argc, const char **argv) {
 
     JParser<> zap("This program takes the ECAP PID summary file as input, reading it with PIDBeta.h/C class, and converts it to `SummaryEvent` format for usage with NMH software.");
 
-    zap['f'] = make_field(fin_name , "PID file from ECAP with the PID TTree that was used to create PIDBeta.h/C class") = (string)getenv("NMHDIR") + "/data/pid_result_13Oct2018_ORCA7.root";
+    zap['f'] = make_field(fin_name , "PID file from ECAP with the PID TTree that was used to create PIDBeta.h/C class") = "../../data/pid_result_13Oct2018_ORCA7.root";
     zap['d'] = make_field(fout_dir , "Output directory where the data file in SummarEvent format is written, e.g. ../../data/") = "";
-    zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. ORCA7_23x9m_ECAP1018. Choose this wisely.") = "";
+    zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. format ORCA115_23x9m_ECAP0418. Choose this wisely.") = "";
 
     if ( zap.read(argc, argv) != 0 ) return 1;
 
@@ -47,7 +47,7 @@ int main(const int argc, const char **argv) {
   }
 
   if (fin_name == "" || fout_dir  == "" || tag == "") {
-    throw std::invalid_argument("ERROR! BetaToSummary() all command line arguments need to be specified!");
+    throw std::invalid_argument("ERROR! PIDBetaToSummary() all command line arguments need to be specified!");
   }
 
   //----------------------------------------------------------------------------
@@ -57,7 +57,7 @@ int main(const int argc, const char **argv) {
   TFile *fin = new TFile((TString)fin_name, "READ");
   TTree *tin = (TTree*)fin->Get("PID");
   if (tin == NULL) {
-    throw std::invalid_argument("ERROR! BetaToSummary() cannot find tree PID in file " + fin_name);
+    throw std::invalid_argument("ERROR! PIDBetaToSummary() cannot find tree PID in file " + fin_name);
   }
   PIDBeta PIDR(tin);
   PIDR.fChain->SetBranchStatus("*",1);
@@ -67,7 +67,7 @@ int main(const int argc, const char **argv) {
   //----------------------------------------------------------------------------
 
   string fout_name = fout_dir + "ORCA_MC_summary_" + tag + ".root";
-  cout << "NOTICE BetaToSummary() creating file " << fout_name << endl;
+  cout << "NOTICE PIDBetaToSummary() creating file " << fout_name << endl;
 
   SummaryParser out(fout_name, kFALSE); //false means writing mode
 
@@ -77,7 +77,11 @@ int main(const int argc, const char **argv) {
     if (i % 100000 == 0) cout << "Entry " << i << " out of " << nentries << endl;
 
     PIDR.GetEntry(i);
-    
+
+    //********************************************************************************
+    // here the user will need to select what is written to variables
+    //********************************************************************************
+ 
     out.GetEvt()->Set_MC_runID(PIDR.run_id);       
     out.GetEvt()->Set_MC_evtID(PIDR.mc_id);       
     out.GetEvt()->Set_MC_w2(PIDR.weight_w2);    
@@ -90,9 +94,6 @@ int main(const int argc, const char **argv) {
     out.GetEvt()->Set_MC_bjorkeny(PIDR.bjorkeny);
     out.GetEvt()->Set_MC_dir(PIDR.dir_x, PIDR.dir_y, PIDR.dir_z);
     out.GetEvt()->Set_MC_pos(PIDR.pos_x, PIDR.pos_y, PIDR.pos_z);
-
-    // for quality levels of tracks and showers, see NMH/common_software/README.md. Here it is up to the
-    // user to select what the quality levels are used for
 
     out.GetEvt()->Set_track_energy(PIDR.gandalf_energy);
     out.GetEvt()->Set_track_bjorkeny(0.);                        //currently gandalf has no bjorkeny
@@ -113,13 +114,13 @@ int main(const int argc, const char **argv) {
     out.GetEvt()->Set_RDF_muon_score(PIDR.muon_score_retrain);   //better suppression by retrain score
     out.GetEvt()->Set_RDF_track_score(PIDR.track_score);
     out.GetEvt()->Set_RDF_noise_score(PIDR.noise_score);
-
+   
     out.GetTree()->Fill();
 
   }
 
   // add the tag to the header
-  FileHeader head("BetaToSummary");
+  FileHeader head("PIDBetaToSummary");
   head.AddParameter("datatag", (TString)tag);
   head.WriteHeader(out.GetFile());
 

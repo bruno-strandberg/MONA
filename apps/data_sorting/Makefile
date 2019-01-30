@@ -23,6 +23,6 @@ clean:
 .PHONY: print
 
 print:
-	@echo ${COMMON}
-	@echo ${SOURCES}
-	@echo ${PACKAGES}
+	@echo $(COMMON)
+	@echo $(SOURCES)
+	@echo $(PACKAGES)
