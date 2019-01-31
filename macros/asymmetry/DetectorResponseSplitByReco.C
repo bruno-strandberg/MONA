@@ -155,6 +155,12 @@ void DetectorResponseSplitByReco() {
   showers_NO->SetNameTitle("detected_showers", "detected_showers");
   mc_NO->SetNameTitle("detected_mc", "detected_mc");
 
+  TH2D *tracks_gt_NO_err = (TH2D*)pdf_tracks_gt.GetExpValErrHist()->Project3D("yx");
+  TH2D *tracks_gs_NO_err = (TH2D*)pdf_tracks_gs.GetExpValErrHist()->Project3D("yx");
+  TH2D *tracks_ge_NO_err = (TH2D*)pdf_tracks_ge.GetExpValErrHist()->Project3D("yx");
+  TH2D *showers_NO_err   = (TH2D*)pdf_showers.GetExpValErrHist()->Project3D("yx");
+  TH2D *mc_NO_err        = (TH2D*)pdf_mc.GetExpValErrHist()->Project3D("yx");
+
   //----------------------------------------------------------
   // set inverted hierarchy
   //----------------------------------------------------------
@@ -167,29 +173,35 @@ void DetectorResponseSplitByReco() {
   TH2D *showers_IO   = (TH2D*)pdf_showers.GetExpValHist()->Project3D("yx");
   TH2D *mc_IO        = (TH2D*)pdf_mc.GetExpValHist()->Project3D("yx");
 
-  tracks_gt_NO->SetNameTitle("detected_tracks_gt", "detected_tracks_gt");
-  tracks_gs_NO->SetNameTitle("detected_tracks_gs", "detected_tracks_gs");
-  tracks_ge_NO->SetNameTitle("detected_tracks_ge", "detected_tracks_ge");
-  showers_NO->SetNameTitle("detected_showers", "detected_showers");
-  mc_NO->SetNameTitle("detected_mc", "detected_mc");
+  tracks_gt_IO->SetNameTitle("detected_tracks_gt", "detected_tracks_gt");
+  tracks_gs_IO->SetNameTitle("detected_tracks_gs", "detected_tracks_gs");
+  tracks_ge_IO->SetNameTitle("detected_tracks_ge", "detected_tracks_ge");
+  showers_IO->SetNameTitle("detected_showers", "detected_showers");
+  mc_IO->SetNameTitle("detected_mc", "detected_mc");
 
+  TH2D *tracks_gt_IO_err = (TH2D*)pdf_tracks_gt.GetExpValErrHist()->Project3D("yx");
+  TH2D *tracks_gs_IO_err = (TH2D*)pdf_tracks_gs.GetExpValErrHist()->Project3D("yx");
+  TH2D *tracks_ge_IO_err = (TH2D*)pdf_tracks_ge.GetExpValErrHist()->Project3D("yx");
+  TH2D *showers_IO_err   = (TH2D*)pdf_showers.GetExpValErrHist()->Project3D("yx");
+  TH2D *mc_IO_err        = (TH2D*)pdf_mc.GetExpValErrHist()->Project3D("yx");
   //----------------------------------------------------------
   // save output
   //----------------------------------------------------------
   TString output_NO = "split_expected_evts_NO.root";
   TFile fout_NO(filefolder + output_NO,"RECREATE");
-  tracks_gt_NO->Write();
-  tracks_gs_NO->Write();
-  tracks_ge_NO->Write();
-  showers_NO->Write();
-  mc_NO->Write();
+  auto hists_NO = {tracks_gt_NO, tracks_gs_NO, tracks_ge_NO, showers_NO, mc_NO,
+                   tracks_gt_NO_err, tracks_gs_NO_err, tracks_ge_NO_err, showers_NO_err, mc_NO_err};
+  for (auto hist: hists_NO) {
+    hist->Write();
+  }
   fout_NO.Close();
 
   TString output_IO = "split_expected_evts_IO.root";
   TFile fout_IO(filefolder + output_IO,"RECREATE");
-  tracks_gt_IO->Write();
-  tracks_gs_IO->Write();
-  tracks_ge_IO->Write();
-  showers_IO->Write();
-  mc_IO->Write();
+  auto hists_IO = {tracks_gt_IO, tracks_gs_IO, tracks_ge_IO, showers_IO, mc_IO,
+                   tracks_gt_IO_err, tracks_gs_IO_err, tracks_ge_IO_err, showers_IO_err, mc_IO_err};
+  for (auto hist: hists_IO) {
+    hist->Write();
+  }
+  fout_IO.Close();
 }

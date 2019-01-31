@@ -111,6 +111,9 @@ void DetectorResponseDefault() {
   showers_NO->SetNameTitle("detected_showers", "detected_showers");
   mc_NO->SetNameTitle("detected_mc", "detected_mc");
 
+  TH2D* tracks_err_NO  = (TH2D*)pdf_tracks.GetExpValErrHist()->Project3D("yx");
+  TH2D* showers_err_NO = (TH2D*)pdf_showers.GetExpValErrHist()->Project3D("yx");
+  TH2D* mc_err_NO      = (TH2D*)pdf_mc.GetExpValErrHist()->Project3D("yx");
   //----------------------------------------------------------
   // set inverted hierarchy
   //----------------------------------------------------------
@@ -125,20 +128,27 @@ void DetectorResponseDefault() {
   showers_IO->SetNameTitle("detected_showers", "detected_showers");
   mc_IO->SetNameTitle("detected_mc", "detected_mc");
 
+  TH2D* tracks_err_IO  = (TH2D*)pdf_tracks.GetExpValErrHist()->Project3D("yx");
+  TH2D* showers_err_IO = (TH2D*)pdf_showers.GetExpValErrHist()->Project3D("yx");
+  TH2D* mc_err_IO      = (TH2D*)pdf_mc.GetExpValErrHist()->Project3D("yx");
   //----------------------------------------------------------
   // save output
   //----------------------------------------------------------
   TString output_NO = "default_expected_evts_NO.root";
   TFile fout_NO(filefolder + output_NO,"RECREATE");
-  tracks_NO->Write();
-  showers_NO->Write();
-  mc_NO->Write();
+  auto hists_NO = {tracks_NO, showers_NO, mc_NO,
+                   tracks_NO_err, showers_NO_err, mc_NO_err};
+  for (auto hist: hists_NO) {
+    hist->Write();
+  }
   fout_NO.Close();
 
   TString output_IO = "default_expected_evts_IO.root";
   TFile fout_IO(filefolder + output_IO,"RECREATE");
-  tracks_IO->Write();
-  showers_IO->Write();
-  mc_IO->Write();
+  auto hists_IO = {tracks_IO, showers_IO, mc_IO,
+                   tracks_IO_err, showers_IO_err, mc_IO_err};
+  for (auto hist: hists_IO) {
+    hist->Write();
+  }
   fout_IO.Close();
 }
