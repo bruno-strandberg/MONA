@@ -33,13 +33,6 @@ import time
 import re
 
 #*****************************************************************
-# some global directories
-nmhdir        = os.environ['NMHDIR']
-summary_dir   = os.path.abspath(args['--summarydir'])
-gseagen_dir   = os.path.abspath(args['--gsgdir'])
-trigger_dir   = os.path.abspath(args['--trigdir'])
-
-#*****************************************************************
 
 def execute_effmass_calc(args):
     """This function calls the function EffMhists
@@ -52,9 +45,13 @@ def execute_effmass_calc(args):
     #===========================================================
 
     summaryfiles = os.popen( "ls {}/{}".format(args['--summarydir'], args['--selstr']) ).read().split()
-    gseagenfiles = os.popen( "ls {}".format(args['--gsgdir']) ).read().split()
-    triggerfiles = ''
-    if (trigger_dir != ''):
+
+    gseagenfiles = []
+    if (args['--gsgdir'] != ''):
+        gseagenfiles = os.popen( "ls {}".format(args['--gsgdir']) ).read().split()
+
+    triggerfiles = []
+    if (args['--trigdir'] != ''):
         triggerfiles = os.popen( "ls {}".format(args['--trigdir']) ).read().split()
 
     flavors      = ['elec', 'muon', 'tau']
@@ -74,21 +71,29 @@ def execute_effmass_calc(args):
         flav  = [f for f in flavors if f in sf]
         inter = [i for i in interactions if i in sf]
         erange = sf[ sf[0:sf.index("GeV")].rfind('_')+1 : sf.index("GeV") ] + "GeV"
-        fnr = sf[ sf.rfind('_') : sf.rfind('.')+1 ]
+        fnr1 = sf[ sf.rfind('_') : sf.rfind('.')+1 ] + "evt" # file nr search str in format _123.evt
+        fnr2 = "." + fnr1[1:]                                # file nr search str in format .123.evt
 
-        if ( len(flav) != 1 or len(inter) != 1 or flav[0] == '' or inter[0] == '' or erange == '' or fnr == '' ):
+        if ( len(flav) != 1 or len(inter) != 1 or flav[0] == '' or inter[0] == '' or erange == '' or fnr1 == '' ):
             raise Exception("Flavor and interaction extraction failed!")
+
+        # need to make an exception for tau's low-energy; summary file range 1-10, gSeaGen 3.4-10, jeez...
+        if flav[0] == "tau" and float(erange.split('-')[0]) < 3.4:
+            erange = erange[ erange.index('-'): ]
 
         #--------------------------------------------------------------------------
         # no trigger directory specified, look up a gSeaGen file for each summary file and
         # add an execution command to jobcmds list
         #--------------------------------------------------------------------------
-        if trigger_dir == '':
+        if len(triggerfiles) == 0:
 
-            gsgfile = [g for g in gseagenfiles if (flav[0] in g and inter[0] in g and erange in g and fnr in g)]
+            gsgfile = [g for g in gseagenfiles if ( flav[0] in g and inter[0] in g and erange in g 
+                                                    and (fnr1 in g or fnr2 in g) ) ]
             
             if (len(gsgfile) != 1):
-                print ("WARNING! Could not find gSeaGen file for summary file {}".format(sf))
+                print ( "WARNING! Could not find gSeaGen file for summary file {}".format(sf) )
+                print ( "         search string: ;{};{};{};{};{};".format(flav[0], inter[0], erange, fnr1, fnr2) )
+                print ( "         found files  : {}".format(gsgfile) )
                 continue
             
             sumf = os.path.abspath(args['--summarydir']) + "/" + sf[ sf.rfind('/')+1 : ]
