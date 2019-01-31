@@ -148,24 +148,24 @@ void DetectorResponseSplitByRecoPID() {
   Double_t DM        = dm32 + 0.5*dm21;
 
   // deconstrain th23 and dm31, when fitting you want constraints, otherwise you dont.
-  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setMin( -1 );
-  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setMax(  1 );
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setMin( -1 );
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setMax(  1 );
+  fitutil->GetVar("Dm31")->setMin( -1 );
+  fitutil->GetVar("Dm31")->setMax(  1 );
+  fitutil->GetVar("SinsqTh23")->setMin( -1 );
+  fitutil->GetVar("SinsqTh23")->setMax(  1 );
 
   // set parameter values 
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh12") )->setVal( sinsqth12 );
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh13") )->setVal( sinsqth13 );
-  ( (RooRealVar*)fitutil->GetSet().find("dcp") )->setVal( dcp );
-  ( (RooRealVar*)fitutil->GetSet().find("Dm21") )->setVal( dm21 );
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setVal( sinsqth23 );
+  fitutil->GetVar("SinsqTh12")->setVal( sinsqth12 );
+  fitutil->GetVar("SinsqTh13")->setVal( sinsqth13 );
+  fitutil->GetVar("dcp")->setVal( dcp );
+  fitutil->GetVar("Dm21")->setVal( dm21 );
+  fitutil->GetVar("SinsqTh23")->setVal( sinsqth23 );
 
 
   //----------------------------------------------------------
   // set normal hierarchy
   //----------------------------------------------------------
   Double_t dm31 = DM + 0.5*dm21;
-  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setVal( dm31 );
+  fitutil->GetVar("Dm31")->setVal( dm31 );
 
   for (int i = 0; i < N_PID_CLASSES; i++) {
     FitPDF pdf_track_gt("pdf_tracks_gt", "pdf_tracks_gt", fitutil, &track_response_gt[i]);
