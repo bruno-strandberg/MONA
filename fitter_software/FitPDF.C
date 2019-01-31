@@ -201,3 +201,43 @@ TH3D* FitPDF::SimplePseudoExp(TString nametitle, Bool_t IncludeStatErr) {
   return experiment;
   
 }
+
+
+//*******************************************************************************
+
+/** Function that returns a pointer to a TH3D containing the relative errors on 
+    the expectation value histogram `FitPDF::GetExpValHist`.
+
+    \param name     Name of a range as used in `RooFit`, dummy for now
+    \return         Pointer to a TH3D containing the relative errors for GetExpValHist.
+
+*/
+TH3D* FitPDF::GetErrValHist(const char* name) {
+  TH3D* expvalhist = FitPDF::GetExpValHist(name);
+
+  TH3D* errvalhist = (TH3D*)expvalhist->Clone();
+  errvalhist->SetNameTitle(expvalhist->GetTitle() + TString("_err"), 
+                           expvalhist->GetName() + TString("_err"));
+  errvalhist->SetDirectory(0);
+  errvalhist->Reset();
+
+  for (Int_t xbin = 1; xbin <= expvalhist->GetXaxis()->GetNbins(); xbin++) {
+    for (Int_t ybin = 1; ybin <= expvalhist->GetYaxis()->GetNbins(); ybin++) {
+      for (Int_t zbin = 1; zbin <= expvalhist->GetZaxis()->GetNbins(); zbin++) {
+
+        // get bin content (expected nr of events) and bin error (statistical error on expectation)
+        Double_t bincontent = expvalhist->GetBinContent(xbin, ybin, zbin);
+        Double_t binerror   = expvalhist->GetBinError(xbin, ybin, zbin);
+
+        if (bincontent != 0) {
+          errvalhist->SetBinContent(xbin, ybin, zbin, binerror / bincontent);
+        }
+        else {
+          errvalhist->SetBinContent(xbin, ybin, zbin, 0);
+        }
+      }
+    }
+  }
+
+  return errvalhist;
+}
