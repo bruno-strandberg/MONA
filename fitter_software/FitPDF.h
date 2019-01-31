@@ -55,7 +55,7 @@ public:
   TH3D*        GetExpValHist(const char* name=0) {
     return fFitUtil->PdfExpectation(fProxies, fResponse, name);
   }
-  TH3D*        GetErrValHist(const char* name=0); 
+  TH3D*        GetExpValErrHist(const char* name=0); 
 
   /** Set the seed of the random generator (`TRandom3`) that is used for generating pseudo-experiments
       \param seed  Seed for the `TRandom3` generator `fRand`

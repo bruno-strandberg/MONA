@@ -212,7 +212,7 @@ TH3D* FitPDF::SimplePseudoExp(TString nametitle, Bool_t IncludeStatErr) {
     \return         Pointer to a TH3D containing the relative errors for GetExpValHist.
 
 */
-TH3D* FitPDF::GetErrValHist(const char* name) {
+TH3D* FitPDF::GetExpValErrHist(const char* name) {
   TH3D* expvalhist = FitPDF::GetExpValHist(name);
 
   TH3D* errvalhist = (TH3D*)expvalhist->Clone();
