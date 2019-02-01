@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Wed Jan 30 12:06:57 2019 by ROOT version 6.10/02
+// Fri Feb  1 15:47:45 2019 by ROOT version 6.10/02
 // from TTree PID/PID
 // found on file: ../../data/pid_result_18Dec2018_ORCA115_20x9m.root
 //////////////////////////////////////////////////////////
@@ -258,6 +258,7 @@ public :
    Double_t        dusj_log10_energy_corrected;
    Double_t        dusj_energy_corrected_extendedTableRange;
    Double_t        dusj_log10_energy_corrected_extendedTableRange;
+   Double_t        dusj_is_selected_buggedGeoCoverageValues;
 
    // List of branches
    TBranch        *b_weight_w3;   //!
@@ -496,6 +497,7 @@ public :
    TBranch        *b_dusj_log10_energy_corrected;   //!
    TBranch        *b_dusj_energy_corrected_extendedTableRange;   //!
    TBranch        *b_dusj_log10_energy_corrected_extendedTableRange;   //!
+   TBranch        *b_dusj_is_selected_buggedGeoCoverageValues;   //!
 
    PIDGamma(TTree *tree=0);
    virtual ~PIDGamma();
@@ -803,6 +805,7 @@ void PIDGamma::Init(TTree *tree)
    fChain->SetBranchAddress("dusj_log10_energy_corrected", &dusj_log10_energy_corrected, &b_dusj_log10_energy_corrected);
    fChain->SetBranchAddress("dusj_energy_corrected_extendedTableRange", &dusj_energy_corrected_extendedTableRange, &b_dusj_energy_corrected_extendedTableRange);
    fChain->SetBranchAddress("dusj_log10_energy_corrected_extendedTableRange", &dusj_log10_energy_corrected_extendedTableRange, &b_dusj_log10_energy_corrected_extendedTableRange);
+   fChain->SetBranchAddress("dusj_is_selected_buggedGeoCoverageValues", &dusj_is_selected_buggedGeoCoverageValues, &b_dusj_is_selected_buggedGeoCoverageValues);
    Notify();
 }
 

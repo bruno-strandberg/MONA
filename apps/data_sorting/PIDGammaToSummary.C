@@ -81,7 +81,7 @@ int main(const int argc, const char **argv) {
     //********************************************************************************
     // here the user will need to select what is written to variables
     //********************************************************************************
-    
+
     out.GetEvt()->Set_MC_runID(PIDR.run_id);       
     out.GetEvt()->Set_MC_evtID(PIDR.mc_id);       
     out.GetEvt()->Set_MC_w2(PIDR.weight_w2);    
@@ -98,7 +98,7 @@ int main(const int argc, const char **argv) {
     out.GetEvt()->Set_track_energy(PIDR.gandalf_energy);
     out.GetEvt()->Set_track_bjorkeny(0.);  //currently gandalf has no bjorkeny
     out.GetEvt()->Set_track_ql0(PIDR.gandalf_is_good);           
-    out.GetEvt()->Set_track_ql1(0);        // first go don't use any quality levels
+    out.GetEvt()->Set_track_ql1(PIDR.gandalf_loose_is_selected);
     out.GetEvt()->Set_track_ql2(0);
     out.GetEvt()->Set_track_dir(PIDR.gandalf_dir_x, PIDR.gandalf_dir_y, PIDR.gandalf_dir_z);
     out.GetEvt()->Set_track_pos(PIDR.gandalf_pos_x, PIDR.gandalf_pos_y, PIDR.gandalf_pos_z);
@@ -106,8 +106,8 @@ int main(const int argc, const char **argv) {
     out.GetEvt()->Set_shower_energy(PIDR.dusj_energy_corrected);
     out.GetEvt()->Set_shower_bjorkeny(PIDR.dusj_best_DusjOrcaUsingProbabilitiesFinalFit_BjorkenY);
     out.GetEvt()->Set_shower_ql0(PIDR.dusj_is_good);     
-    out.GetEvt()->Set_shower_ql1(0.);      // first go don't use any quality cuts
-    out.GetEvt()->Set_shower_ql2(0.);                            
+    out.GetEvt()->Set_shower_ql1(PIDR.dusj_is_selected);
+    out.GetEvt()->Set_shower_ql2(PIDR.dusj_is_selected_buggedGeoCoverageValues); // for matching to old 23x9m
     out.GetEvt()->Set_shower_dir(PIDR.dusj_dir_x, PIDR.dusj_dir_y, PIDR.dusj_dir_z);
     out.GetEvt()->Set_shower_pos(PIDR.dusj_pos_x, PIDR.dusj_pos_y, PIDR.dusj_pos_z);
 
