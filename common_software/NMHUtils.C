@@ -213,6 +213,8 @@ TString NMHUtils::Getcwd() {
  * \param xhigh        X-bins with centers above xhigh are excluded
  * \param ylow         Y-bins with centers below ylow are excluded
  * \param yhigh        Y-bins with centers above yhigh are excluded
+ * \param simple_error Bool to use a simplified version of the MC uncertainty: 
+ *                     \f$ A_{err}^{bin i} = |A^{bin i}| * N_{h1_{err}}^{bin i} / N_{h1}^{bin i} \f$
  * \return             A std::tuple with elements: 
  *                     0) a pointer to a histgram with bin-by-bin asymmetries;
  *                     1) the quantity \f$ \sqrt{\sum_{i} A_i^2} \f$ (combined asymmetry); 
@@ -223,7 +225,8 @@ TString NMHUtils::Getcwd() {
 std::tuple<TH2D*, Double_t, Double_t>
 NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
             Double_t xlow, Double_t xhigh,
-            Double_t ylow, Double_t yhigh) {
+            Double_t ylow, Double_t yhigh, 
+            Bool_t simple_error) {
   
   //------------------------------------------------------------
   // check that both histograms have the same binning
@@ -260,23 +263,29 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
 
         A = (N_h1 - N_h2)/TMath::Sqrt(N_h1); 
 
-        A_err = std::pow(0.5*(N_h1 + N_h2) / std::pow(N_h1, 1.5), 2.) * std::pow(N_h1_err, 2.) +
-                std::pow(-1 / std::sqrt(N_h1), 2.) * std::pow(N_h2_err, 2.) -
-                2 * 1 * N_h1_err * N_h2_err * (0.5*(N_h1 + N_h2) / std::pow(N_h1, 2.));
-	
-	// Very rarely the number is -1e-15 to -1e-18, due to our assumptions.
-	// For positive numbers the smallest are 1e-9 to 1e-10 which is already rare.
-	if ( A_err < 0 ) { 
+        // Use simplified error or full error
+        if (simple_error) { 
+          A_err = std::abs(A) * N_h1_err / N_h1;
+        } 
+        else {
+          A_err = std::pow(0.5*(N_h1 + N_h2) / std::pow(N_h1, 1.5), 2.) * std::pow(N_h1_err, 2.) +
+                  std::pow(-1 / std::sqrt(N_h1), 2.) * std::pow(N_h2_err, 2.) -
+                  2 * 1 * N_h1_err * N_h2_err * (0.5*(N_h1 + N_h2) / std::pow(N_h1, 2.));
 
-          if ( std::abs(A_err) < 1e-12 ) { A_err = 0.; }                                                       
-          else {
-            throw std::domain_error("ERROR! Asymmetry error squared is smaller than 0, unable to squareroot."); 
+          // Very rarely the number is -1e-15 to -1e-18, due to our assumptions.
+          // For positive numbers the smallest are 1e-9 to 1e-10 which is already rare.
+          if ( A_err < 0 ) { 
+
+            if ( std::abs(A_err) < 1e-12 ) { A_err = 0.; }                                                       
+            else {
+              throw std::domain_error("ERROR! Asymmetry error squared is smaller than 0, unable to squareroot."); 
+            }
+  
           }
-	  
+
+          A_err = std::sqrt(A_err);
+
         }
-	
-        A_err = std::sqrt(A_err);
-	
       }
       else { 
         A = 0.; 
@@ -288,7 +297,7 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
 
       if ( (xc < xlow) || (xc > xhigh) || ( yc < ylow) || ( yc > yhigh ) ) {
         A     = 0.;
-	A_err = 0.;
+        A_err = 0.;
       }
 
       h_asym->SetBinContent(xb, yb, A);

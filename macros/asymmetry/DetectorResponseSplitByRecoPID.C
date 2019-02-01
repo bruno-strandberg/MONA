@@ -148,24 +148,24 @@ void DetectorResponseSplitByRecoPID() {
   Double_t DM        = dm32 + 0.5*dm21;
 
   // deconstrain th23 and dm31, when fitting you want constraints, otherwise you dont.
-  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setMin( -1 );
-  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setMax(  1 );
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setMin( -1 );
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setMax(  1 );
+  fitutil->GetVar("Dm31")->setMin( -1 );
+  fitutil->GetVar("Dm31")->setMax(  1 );
+  fitutil->GetVar("SinsqTh23")->setMin( -1 );
+  fitutil->GetVar("SinsqTh23")->setMax(  1 );
 
   // set parameter values 
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh12") )->setVal( sinsqth12 );
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh13") )->setVal( sinsqth13 );
-  ( (RooRealVar*)fitutil->GetSet().find("dcp") )->setVal( dcp );
-  ( (RooRealVar*)fitutil->GetSet().find("Dm21") )->setVal( dm21 );
-  ( (RooRealVar*)fitutil->GetSet().find("SinsqTh23") )->setVal( sinsqth23 );
+  fitutil->GetVar("SinsqTh12")->setVal( sinsqth12 );
+  fitutil->GetVar("SinsqTh13")->setVal( sinsqth13 );
+  fitutil->GetVar("dcp")->setVal( dcp );
+  fitutil->GetVar("Dm21")->setVal( dm21 );
+  fitutil->GetVar("SinsqTh23")->setVal( sinsqth23 );
 
 
   //----------------------------------------------------------
   // set normal hierarchy
   //----------------------------------------------------------
   Double_t dm31 = DM + 0.5*dm21;
-  ( (RooRealVar*)fitutil->GetSet().find("Dm31") )->setVal( dm31 );
+  fitutil->GetVar("Dm31")->setVal( dm31 );
 
   for (int i = 0; i < N_PID_CLASSES; i++) {
     FitPDF pdf_track_gt("pdf_tracks_gt", "pdf_tracks_gt", fitutil, &track_response_gt[i]);
@@ -186,6 +186,11 @@ void DetectorResponseSplitByRecoPID() {
     showers_NO->SetNameTitle("detected_showers", "detected_showers");
     mc_NO->SetNameTitle("detected_mc", "detected_mc");
  
+    TH2D *tracks_gt_NO_err = (TH2D*)pdf_tracks_gt.GetExpValErrHist()->Project3D("yx");
+    TH2D *tracks_gs_NO_err = (TH2D*)pdf_tracks_gs.GetExpValErrHist()->Project3D("yx");
+    TH2D *tracks_ge_NO_err = (TH2D*)pdf_tracks_ge.GetExpValErrHist()->Project3D("yx");
+    TH2D *showers_NO_err   = (TH2D*)pdf_showers.GetExpValErrHist()->Project3D("yx");
+    TH2D *mc_NO_err        = (TH2D*)pdf_mc.GetExpValErrHist()->Project3D("yx");
     //----------------------------------------------------------
     // set inverted hierarchy
     //----------------------------------------------------------
@@ -202,24 +207,30 @@ void DetectorResponseSplitByRecoPID() {
     showers_IO->SetNameTitle("detected_showers", "detected_showers");
     mc_IO->SetNameTitle("detected_mc", "detected_mc");
 
+    TH2D *tracks_gt_IO_err = (TH2D*)pdf_tracks_gt.GetExpValErrHist()->Project3D("yx");
+    TH2D *tracks_gs_IO_err = (TH2D*)pdf_tracks_gs.GetExpValErrHist()->Project3D("yx");
+    TH2D *tracks_ge_IO_err = (TH2D*)pdf_tracks_ge.GetExpValErrHist()->Project3D("yx");
+    TH2D *showers_IO_err   = (TH2D*)pdf_showers.GetExpValErrHist()->Project3D("yx");
+    TH2D *mc_IO_err        = (TH2D*)pdf_mc.GetExpValErrHist()->Project3D("yx");
     //----------------------------------------------------------
     // save output
     //----------------------------------------------------------
     TString output_NO = TString::Format("split_expected_evts_NO_%.2f.root", N_PID_CLASSES * i);
     TFile fout_NO(filefolder + output_NO,"RECREATE");
-    tracks_gt_NO->Write();
-    tracks_gs_NO->Write();
-    tracks_ge_NO->Write();
-    showers_NO->Write();
-    mc_NO->Write();
+    auto hists_NO = {tracks_gt_NO, tracks_gs_NO, tracks_ge_NO, showers_NO, mc_NO,
+                     tracks_gt_NO_err, tracks_gs_NO_err, tracks_ge_NO_err, showers_NO_err, mc_NO_err};
+    for (auto hist: hists_NO) {
+      hist->Write();
+    }
     fout_NO.Close();
 
     TString output_IO = TString::Format("split_expected_evts_IO_%.2f.root", N_PID_CLASSES * i);
     TFile fout_IO(filefolder + output_IO,"RECREATE");
-    tracks_gt_IO->Write();
-    tracks_gs_IO->Write();
-    tracks_ge_IO->Write();
-    showers_IO->Write();
-    mc_IO->Write();
+    auto hists_IO = {tracks_gt_IO, tracks_gs_IO, tracks_ge_IO, showers_IO, mc_IO,
+                     tracks_gt_IO_err, tracks_gs_IO_err, tracks_ge_IO_err, showers_IO_err, mc_IO_err};
+    for (auto hist: hists_IO) {
+      hist->Write();
+    }
+    fout_IO.Close();
   }
 }
