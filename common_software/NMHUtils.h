@@ -25,7 +25,7 @@ namespace NMHUtils {
           Double_t ylow = -1e10, Double_t yhigh = 1e10,
           Bool_t simple_error=false);
   std::tuple<Double_t, Double_t> 
-    SquaredSumErrorProp(std::vector<double> values, std::vector<double> errors);
+    SquaredSumErrorProp(std::vector<std::pair<Double_t, Double_t>> value_and_error);
 };
 
 #endif
