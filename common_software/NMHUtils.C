@@ -332,6 +332,11 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
  */
 std::tuple<Double_t, Double_t> NMHUtils::SquaredSumErrorProp(std::vector<Double_t> values, std::vector<Double_t> errors) {
   Double_t size = values.size();
+
+  if (values.size() != errors.size() ) {
+    throw std::invalid_argument("ERROR! NMHUtils::SquaredSumErrorProp() input vectors of different length.");
+  }
+
   Double_t total_value = 0;
   Double_t total_error = 0;
   for (int i = 0; i < size; i++) {
