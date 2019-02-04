@@ -49,7 +49,8 @@ public:
       \return Pointer to `FitUtil`
    */
   FitUtil*     GetUtil() { return fFitUtil; }
-  /** Get a 3D histogram with expectation values for this fit model
+  /** Get a 3D histogram with expectation values for this fit model.
+      The histogram which is pointed to is created on the heap and it is the user's responsibility to delete the object.
       \param name Name of a range as used in `RooFit`, dummy for now
    */
   TH3D*        GetExpValHist(const char* name=0) {
