@@ -439,7 +439,7 @@ Bool_t EffMass::InCoveredRange(Double_t E_true, Double_t Ct_true, Double_t By_tr
 TH3D* EffMass::GetMeff3DH(Int_t flavor, Bool_t iscc, Bool_t isnb) {
 
   if (flavor > TAU) {
-    throw std::invalid_argument("ERROR! EffMass::AverageUpgoing() unknown flavor " + to_string(flavor));
+    throw std::invalid_argument("ERROR! EffMass::GetMeff3DH() unknown flavor " + to_string(flavor));
   }
 
   return fhMeff[flavor][(UInt_t)iscc][(UInt_t)isnb];
