@@ -5,7 +5,7 @@ This script can be used to call the EffMhists program for processing many files 
 Alternatively, the script can take a directory with trigger files as argument, in which case the gSeaGen directory is ignored. It will look up a trigger file per each summary file and extract the input gSeaGen file(s) corresponding to the summary file by using JPringMeta of Jpp. It will check whether it can access/find the corresponding gSeaGen files, if that is the case it will create and call commands for EffMhists execution.
 
 Usage:
-    EMH_caller --summarydir SUMMARYDIR [--gsgdir GSGDIR] [--trigdir TRIGDIR] [--odir OUTPUTDIR] [--rmin RMIN] [--rmax RMAX] [--selstr SELSTR] [--nmin NMIN] (--local | --farm) 
+    EMH_caller --summarydir SUMMARYDIR [--gsgdir GSGDIR] [--trigdir TRIGDIR] [--odir OUTPUTDIR] [--rmin RMIN] [--rmax RMAX] [--selstr SELSTR] [--nmin NMIN] (--local | --lyonfarm | --nikheffarm) 
     EMH_caller -h                                                                     
                                                                                           
 Option:
@@ -18,7 +18,8 @@ Option:
     --selstr SELSTR             Selection string for files in SUMMARYDIR, e.g. '*muon-CC*' (note the quotation marks!) [default: ]
     --nmin NMIN                 Minimum nr of files to analyse per farm job [default: 190]
     --local                     Run locally
-    --farm                      Run on the farm
+    --lyonfarm                  Run on the lyon farm
+    --nikeffarm                 Run on the nikhef farm
     -h --help                   Show this screen
 
 """
@@ -147,8 +148,10 @@ def execute_effmass_calc(args):
 
         if args['--local']:
             syscmd = "bash {}".format(js)
-        else:
+        elif args['--lyonfarm']:
             syscmd = "qsub -P P_km3net -l sps=1 -l ct=5:00:00 -o {0} -e {0} {1}".format(os.getcwd()+"/tmp", js)
+        else:
+            syscmd = "qsub -q short7 -o {0} -e {0} {1}".format(os.getcwd()+"/tmp", js)
 
         #print syscmd
         os.system(syscmd)
