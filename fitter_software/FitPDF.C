@@ -208,16 +208,18 @@ TH3D* FitPDF::SimplePseudoExp(TString nametitle, Bool_t IncludeStatErr) {
 /** Function that returns a pointer to a TH3D containing the relative errors on 
     the expectation value histogram `FitPDF::GetExpValHist`.
 
+    The histogram which is pointed to is created on the heap and it is the user's responsibility to delete the object.
+
     \param name     Name of a range as used in `RooFit`, dummy for now
     \return         Pointer to a TH3D containing the relative errors for GetExpValHist.
 
 */
 TH3D* FitPDF::GetExpValErrHist(const char* name) {
+
   TH3D* expvalhist = FitPDF::GetExpValHist(name);
 
   TH3D* errvalhist = (TH3D*)expvalhist->Clone();
-  errvalhist->SetNameTitle(expvalhist->GetTitle() + TString("_err"), 
-                           expvalhist->GetName() + TString("_err"));
+  errvalhist->SetNameTitle( expvalhist->GetName() + TString("_err"), expvalhist->GetTitle() + TString("_err") );
   errvalhist->SetDirectory(0);
   errvalhist->Reset();
 
@@ -238,6 +240,8 @@ TH3D* FitPDF::GetExpValErrHist(const char* name) {
       }
     }
   }
+
+  delete expvalhist;
 
   return errvalhist;
 }
