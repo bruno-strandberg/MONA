@@ -116,23 +116,25 @@ void Asymmetry_SplitNBins() {
     }
   }
 
-  // SINGLE COUNTING WITH q < 0.6
   cout << "Single counting (q<0.6): " << endl;
   int offset = N_PID_CLASSES * 0.6;
 
-  // Wow, slicing a vector in cpp is hard...
-  std::vector<Double_t> asym_ts_q6(asym_ts.begin()+offset, asym_ts.end());
-  std::vector<Double_t> asym_ts_err_q6(asym_ts_err.begin()+offset, asym_ts_err.end());
-  std::vector<Double_t> asym_ss_q6(asym_ss.begin(), asym_ss.begin()+offset);
-  std::vector<Double_t> asym_ss_err_q6(asym_ss_err.begin(), asym_ss_err.begin()+offset);
+  std::vector<std::pair<Double_t, Double_t>> asym_ts_q6;
+  std::vector<std::pair<Double_t, Double_t>> asym_ss_q6;
+  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
+    if (i < offset) {
+      asym_ss_q6_.push_back(std::make_pair(asym_ss[i], asym_ss_err[i]));
+    }
+    else {
+      asym_ts_q6_.push_back(std::make_pair(asym_ts[i], asym_ts_err[i]));
+    }
+  }
 
-  std::tuple<Double_t, Double_t> track_value_squared_q6  = 
-    NMHUtils::SquaredSumErrorProp(asym_ts_q6, asym_ts_err_q6);
-  std::tuple<Double_t, Double_t> shower_value_squared_q6 = 
-    NMHUtils::SquaredSumErrorProp(asym_ss_q6, asym_ss_err_q6);
+  std::tuple<Double_t, Double_t> track_value_squared_q6  = NMHUtils::SquaredSumErrorProp(asym_ts_q6);
+  std::tuple<Double_t, Double_t> shower_value_squared_q6 = NMHUtils::SquaredSumErrorProp(asym_ss_q6);
   std::tuple<Double_t, Double_t> total_value_squared_q6  = 
-    NMHUtils::SquaredSumErrorProp({std::get<0>(track_value_squared_q6), std::get<0>(shower_value_squared_q6)},
-                                  {std::get<1>(track_value_squared_q6), std::get<1>(shower_value_squared_q6)});
+    NMHUtils::SquaredSumErrorProp({std::make_pair(std::get<0>(track_value_squared_q6), std::get<1>(track_value_squared_q6)),
+                                   std::make_pair(std::get<0>(shower_value_squared_q6), std::get<1>(shower_value_squared_q6))});
 
   Double_t track_value_q6  = std::get<0>(track_value_squared_q6);
   Double_t shower_value_q6 = std::get<0>(shower_value_squared_q6);
@@ -144,31 +146,4 @@ void Asymmetry_SplitNBins() {
   cout << "Asymmetry total for tracks : " << track_value_q6  << " +- " << track_error_q6  << " (" << 100*track_error_q6/track_value_q6    << "%)" << endl;
   cout << "Asymmetry total for showers: " << shower_value_q6 << " +- " << shower_error_q6 << " (" << 100*shower_error_q6/shower_value_q6  << "%)" << endl;
   cout << "Asymmetry total combined   : " << total_value_q6  << " +- " << total_error_q6  << " (" << 100*total_error_q6/total_value_q6    << "%)" << endl;
-
-  // SINGLE COUNTING WITH q < 0.9
-  cout << "Single counting (q<0.9): " << endl;
-  offset = 0.9 * N_PID_CLASSES;
-
-  std::vector<Double_t> asym_ts_q9(asym_ts.begin()+offset, asym_ts.end());
-  std::vector<Double_t> asym_ts_err_q9(asym_ts_err.begin()+offset, asym_ts_err.end());
-  std::vector<Double_t> asym_ss_q9(asym_ss.begin(), asym_ss.begin()+offset);
-  std::vector<Double_t> asym_ss_err_q9(asym_ss_err.begin(), asym_ss_err.begin()+offset);
-
-  std::tuple<Double_t, Double_t> track_value_squared_q9  = NMHUtils::SquaredSumErrorProp(asym_ts_q9, asym_ts_err_q9);
-  std::tuple<Double_t, Double_t> shower_value_squared_q9 = NMHUtils::SquaredSumErrorProp(asym_ss_q9, asym_ss_err_q9);
-  std::tuple<Double_t, Double_t> total_value_squared_q9  = 
-    NMHUtils::SquaredSumErrorProp({std::get<0>(track_value_squared_q9), std::get<0>(shower_value_squared_q9)},
-                                  {std::get<1>(track_value_squared_q9), std::get<1>(shower_value_squared_q9)});
-
-  Double_t track_value_q9  = std::get<0>(track_value_squared_q9);
-  Double_t shower_value_q9 = std::get<0>(shower_value_squared_q9);
-  Double_t total_value_q9  = std::get<0>(total_value_squared_q9);
-  Double_t track_error_q9  = std::get<1>(track_value_squared_q9);
-  Double_t shower_error_q9 = std::get<1>(shower_value_squared_q9);
-  Double_t total_error_q9  = std::get<1>(total_value_squared_q9);
-
-  cout << "Asymmetry total for tracks : " << track_value_q9  << " +- " << track_error_q9  << " (" << 100*track_error_q9/track_value_q9    << "%)" << endl;
-  cout << "Asymmetry total for showers: " << shower_value_q9 << " +- " << shower_error_q9 << " (" << 100*shower_error_q9/shower_value_q9  << "%)" << endl;
-  cout << "Asymmetry total combined   : " << total_value_q9  << " +- " << total_error_q9  << " (" << 100*total_error_q9/total_value_q9    << "%)" << endl;
-
 }

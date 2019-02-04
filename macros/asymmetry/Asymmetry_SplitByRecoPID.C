@@ -163,43 +163,50 @@ void asymmetry_energy_split_by_reco() {
       gSystem->ProcessEvents(); 
     }
   }
-  // SINGLE COUNTING WITH q < 0.6
+
   cout << "Single counting (q<0.6): " << endl;
   int offset = N_PID_CLASSES * 0.6;
 
-  // Wow, slicing a vector in cpp is hard...
-  std::vector<Double_t> asym_t_gt_q6(     asym_t_gt.begin()+offset,     asym_t_gt.end());
-  std::vector<Double_t> asym_t_gt_err_q6( asym_t_gt_err.begin()+offset, asym_t_gt_err.end());
-  std::vector<Double_t> asym_t_gs_q6(     asym_t_gs.begin()+offset,     asym_t_gs.end());
-  std::vector<Double_t> asym_t_gs_err_q6( asym_t_gs_err.begin()+offset, asym_t_gs_err.end());
-  std::vector<Double_t> asym_t_ge_q6(     asym_t_gt.begin()+offset,     asym_t_gt.end());
-  std::vector<Double_t> asym_t_ge_err_q6( asym_t_gt_err.begin()+offset, asym_t_gt_err.end());
-  std::vector<Double_t> asym_s_q6(        asym_s.begin(),               asym_s.begin()+offset);
-  std::vector<Double_t> asym_s_err_q6(    asym_s_err.begin(),           asym_s_err.begin()+offset);
+  std::pair<Double_t, Double_t> asym_t_gt_q6;
+  std::pair<Double_t, Double_t> asym_t_gs_q6;
+  std::pair<Double_t, Double_t> asym_t_ge_q6;
+  std::pair<Double_t, Double_t> asym_s_q6;
+  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
+    if (i < offset) {
+      asym_s_q6.push_back(std::make_pair(asym_s[i], asym_s_err[i]));
+    } 
+    else {
+      asym_t_gt_q6.push_back(std::make_pair(asym_t_gt[i], asym_t_gt_err[i]));
+      asym_t_gs_q6.push_back(std::make_pair(asym_t_gs[i], asym_t_gs_err[i]));
+      asym_t_ge_q6.push_back(std::make_pair(asym_t_ge[i], asym_t_ge_err[i]));
+    }
+  }
 
   std::tuple<Double_t, Double_t> track_gt_value_squared_q6 = 
-    NMHUtils::SquaredSumErrorProp(asym_t_gt_q6, asym_t_gt_err_q6);
+    NMHUtils::SquaredSumErrorProp(asym_t_gt_q6);
   std::tuple<Double_t, Double_t> track_gs_value_squared_q6 = 
-    NMHUtils::SquaredSumErrorProp(asym_t_gs_q6, asym_t_gs_err_q6);
+    NMHUtils::SquaredSumErrorProp(asym_t_gs_q6);
   std::tuple<Double_t, Double_t> track_ge_value_squared_q6 = 
-    NMHUtils::SquaredSumErrorProp(asym_t_ge_q6, asym_t_ge_err_q6);
+    NMHUtils::SquaredSumErrorProp(asym_t_ge_q6);
   std::tuple<Double_t, Double_t> shower_value_squared_q6 = 
-    NMHUtils::SquaredSumErrorProp(asym_s_q6, asym_s_err_q6);
+    NMHUtils::SquaredSumErrorProp(asym_s_q6);
   std::tuple<Double_t, Double_t> total_value_squared_q6  = 
-    NMHUtils::SquaredSumErrorProp({std::get<0>(track_gt_value_squared_q6), std::get<0>(track_gs_value_squared_q6), std::get<0>(track_ge_value_squared_q6), std::get<0>(shower_value_squared_q6)},
-                                  {std::get<1>(track_gt_value_squared_q6), std::get<1>(track_gs_value_squared_q6), std::get<1>(track_ge_value_squared_q6), std::get<1>(shower_value_squared_q6)});
+    NMHUtils::SquaredSumErrorProp( { std::make_pair(std::get<0>(track_gt_value_squared_q6), std::get<1>(track_gt_value_squared_q6)),
+                                     std::make_pair(std::get<0>(track_gs_value_squared_q6), std::get<1>(track_gs_value_squared_q6)), 
+                                     std::make_pair(std::get<0>(track_ge_value_squared_q6), std::get<1>(track_ge_value_squared_q6)), 
+                                     std::make_pair(std::get<0>(shower_value_squared_q6), std::get<1>(shower_value_squared_q6)) } );
 
   Double_t track_gt_value_q6  = std::get<0>(track_gt_value_squared_q6);
   Double_t track_gs_value_q6  = std::get<0>(track_gs_value_squared_q6);
   Double_t track_ge_value_q6  = std::get<0>(track_ge_value_squared_q6);
-  Double_t shower_value_q6 = std::get<0>(shower_value_squared_q6);
-  Double_t total_value_q6  = std::get<0>(total_value_squared_q6);
+  Double_t shower_value_q6    = std::get<0>(shower_value_squared_q6);
+  Double_t total_value_q6     = std::get<0>(total_value_squared_q6);
 
   Double_t track_gt_error_q6  = std::get<1>(track_gt_value_squared_q6);
   Double_t track_gs_error_q6  = std::get<1>(track_gs_value_squared_q6);
   Double_t track_ge_error_q6  = std::get<1>(track_ge_value_squared_q6);
-  Double_t shower_error_q6 = std::get<1>(shower_value_squared_q6);
-  Double_t total_error_q6  = std::get<1>(total_value_squared_q6);
+  Double_t shower_error_q6    = std::get<1>(shower_value_squared_q6);
+  Double_t total_error_q6     = std::get<1>(total_value_squared_q6);
 
   PrintAsymmetryWithErrors("tracks (good tracks)", track_gt_value_q6, track_gt_error_q6); 
   PrintAsymmetryWithErrors("tracks (good showrs)", track_gs_value_q6, track_gs_error_q6); 

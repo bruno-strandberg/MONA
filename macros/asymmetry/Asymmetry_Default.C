@@ -97,19 +97,16 @@ void Asymmetry_Default() {
     gSystem->ProcessEvents(); 
   }
 
-  double asym_t_value = std::get<1>(asym_t);
-  double asym_s_value = std::get<1>(asym_s); 
-  double asym_m_value = std::get<1>(asym_m); 
-  double asym_t_err   = std::get<2>(asym_t);
-  double asym_s_err   = std::get<2>(asym_s);
-  double asym_m_err   = std::get<2>(asym_m);
+  std::pair<Double_t, Double_t> asym_t_value = std::make_pair(std::get<1>(asym_t), std::get<2>(asym_t));
+  std::pair<Double_t, Double_t> asym_s_value = std::make_pair(std::get<1>(asym_s), std::get<2>(asym_s)); 
+  std::pair<Double_t, Double_t> asym_m_value = std::make_pair(std::get<1>(asym_m), std::get<2>(asym_m)); 
 
-  std::tuple<Double_t, Double_t> sq_sum = NMHUtils::SquaredSumErrorProp({asym_t_value, asym_s_value}, {asym_t_err, asym_s_err});
+  std::tuple<Double_t, Double_t> sq_sum = NMHUtils::SquaredSumErrorProp({asym_t_value, asym_s_value});
   double asym_tot_value = std::get<0>(sq_sum);
   double asym_tot_err   = std::get<1>(sq_sum);
 
-  cout << "Asymmetry total for tracks : " << asym_t_value   << " +- " << asym_t_err   << " (" << 100*asym_t_err/asym_t_value     << "%)" << endl;
-  cout << "Asymmetry total for showers: " << asym_s_value   << " +- " << asym_s_err   << " (" << 100*asym_s_err/asym_s_value     << "%)" << endl;
-  cout << "Asymmetry for mc           : " << asym_m_value   << " +- " << asym_m_err   << " (" << 100*asym_m_err/asym_m_value     << "%)" << endl;
+  cout << "Asymmetry total for tracks : " << asym_t_value.first   << " +- " << asym_t_value.second << " (" << 100*asym_t_value.second/asym_t_value.first << "%)" << endl;
+  cout << "Asymmetry total for showers: " << asym_s_value.first   << " +- " << asym_s_value.second << " (" << 100*asym_s_value.second/asym_s_value.first << "%)" << endl;
+  cout << "Asymmetry for mc           : " << asym_m_value.first   << " +- " << asym_m_value.second << " (" << 100*asym_m_value.second/asym_m_value.first << "%)" << endl;
   cout << "Asymmetry total combined   : " << asym_tot_value << " +- " << asym_tot_err << " (" << 100*asym_tot_err/asym_tot_value << "%)" << endl;
 }
