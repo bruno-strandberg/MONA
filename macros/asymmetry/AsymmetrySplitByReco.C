@@ -23,7 +23,7 @@ using namespace std;
  */
 
 
-void asymmetry_energy() {
+void AsymmetrySplitByReco() {
 
   bool b_plot = false;
   TString filefolder = "./energy_detres/";

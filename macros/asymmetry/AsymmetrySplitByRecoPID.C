@@ -26,7 +26,7 @@ using namespace std;
 
 
 
-void asymmetry_energy_split_by_reco() {
+void AsymmetrySplitByRecoPID() {
 
   bool b_plot = false;
   const int N_PID_CLASSES = 10;

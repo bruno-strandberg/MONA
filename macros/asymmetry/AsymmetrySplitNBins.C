@@ -22,7 +22,7 @@ using namespace std;
  * The output data is saved into `filefolder`
  */
 
-void Asymmetry_SplitNBins() {
+void AsymmetrySplitNBins() {
 
   bool plot = false;
   const int N_PID_CLASSES = 10;

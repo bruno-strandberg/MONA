@@ -17,12 +17,11 @@
 #include <iostream>
 using namespace std;
 
-  /* Script to plot the histogram for NO, IO and the asymmetry
-   * for tracks and showers.
-   */
+/* Script to plot the histogram for NO, IO and the asymmetry
+ * for tracks and showers.
+ */
 
-
-void Plot_Asymmetry_Default() {
+void PlotAsymmetryDefault() {
 
   TString input   = "./default_detres/asymmetry_default.root";
   

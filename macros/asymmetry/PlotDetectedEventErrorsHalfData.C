@@ -16,7 +16,7 @@
 #include <iostream>
 using namespace std;
 
-void Plot_Detected_Event_Errors_HalfData() {
+void PlotDetectedEventErrorsHalfData() {
   TString filefolder = "./default_detres/";
   TString file_all = filefolder + "default_expectated_evts_NO.root";
   TString file_gt  = filefolder + "/use_half_data_gt300/default_expectated_evts_NO.root";

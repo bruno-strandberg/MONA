@@ -19,7 +19,7 @@ using namespace std;
  /* Script to print the relative errors of an asymmetry histogram for one file and one histogram
   */
 
-void Plot_Single_Asymmetry_Errors(TString filepath="./pid_detres/pid_binning_10/asymmetry_split_0.90.root",
+void PlotSingleAsymmetryErrors(TString filepath="./pid_detres/pid_binning_10/asymmetry_split_0.90.root",
                            TString name="asymmetry_track_0.90") {
 
     TFile *f = TFile::Open(filepath, "READ");

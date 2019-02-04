@@ -22,7 +22,7 @@ using namespace std;
  * The output files are saved into `filefolder`
  */
 
-void Asymmetry_Default() {
+void AsymmetryDefault() {
 
   bool plot = false;
 

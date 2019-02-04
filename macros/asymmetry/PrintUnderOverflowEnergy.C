@@ -18,7 +18,7 @@
 #include <iostream>
 using namespace std;
 
-void Print_UnderOverflow_Energy(TString summary_file=(TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root") { 
+void PrintUnderOverflowEnergy(TString summary_file=(TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root") { 
   SummaryParser sp(sum_file);
   
   bool print = false;

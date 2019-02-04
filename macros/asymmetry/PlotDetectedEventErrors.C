@@ -39,7 +39,7 @@ TH2D* GetRelativeErrorHistogram(TH2D* h1) {
   return h2;
 }
 
-void Plot_Detected_Event_Errors(bool mass_ordering=true) {
+void PlotDetectedEventErrors(bool mass_ordering=true) {
 
   string order_string;
   if (mass_ordering) {
