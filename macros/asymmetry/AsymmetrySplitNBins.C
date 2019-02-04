@@ -17,7 +17,10 @@
 #include <iostream>
 using namespace std;
 
-// This script calculates the asymmetry for 10 binned data in pid_detres.
+/* This script calculates the asymmetry for detector responses binned into N PID bins.
+ *
+ * The output data is saved into `filefolder`
+ */
 
 void Asymmetry_SplitNBins() {
 

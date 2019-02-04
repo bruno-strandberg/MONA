@@ -17,8 +17,13 @@
 #include <iostream>
 using namespace std;
 
-// This script calculates the asymmetry for track energy binned data in good track, good shower and good event
-// and using N (default=10) PID bins to split the data along the quality axis.
+/* This script calculates the asymmetry for track energy binned data in good track, good shower and good event
+ * and simultaneously using N (default=10) PID bins to split the data along the quality axis.
+ * Showers are binned like showers as in the default detector response scheme, but also have the N PID bins.
+ *
+ * The output files are saved into `filefolder`
+ */
+
 
 
 void asymmetry_energy_split_by_reco() {

@@ -17,7 +17,10 @@
 #include <iostream>
 using namespace std;
 
-// This script calculates the asymmetry for default detector response data
+/* This script calculates the asymmetry for default detector response data
+ *
+ * The output files are saved into `filefolder`
+ */
 
 void Asymmetry_Default() {
 

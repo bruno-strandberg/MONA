@@ -16,7 +16,11 @@
 #include <iostream>
 using namespace std;
 
-// This script calculates the asymmetry for track energy binned data in good track, good shower and good event.
+/* This script calculates the asymmetry for track energy binned data in good track, good shower and good event.
+ * Showers are binned like showers as in the default detector response scheme.
+ *
+ * The output files are saved into `filefolder`
+ */
 
 
 void asymmetry_energy() {
