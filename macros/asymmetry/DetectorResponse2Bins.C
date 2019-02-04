@@ -20,7 +20,18 @@
 using namespace std;
 using namespace RooFit;
 
-void DetectorResponseSplitByReco2Bins() {
+/* Macro to generate the detector responses in the default scheme: a track response and a shower
+ * response. The shower response are events with a quality factor of < 0.6, tracks are events with
+ * a quality factor of > 0.6. 
+ * Note: This script differs from the default detector response script in the sense that it saves
+ * responses for both tracks and showers for q < 0.6 and q > 0.6. This was based on an idea that
+ * double counting the reconstructions in both cases might improve the sensitivity, but this idea
+ * has been ABANDONED.
+ *
+ * The responses and all other root files are saved into `filefolder`.
+ */
+
+void DetectorResponse2Bins() {
 
   const int N_PID_CLASSES = 2;
   TString filefolder = "./quality_detres/";

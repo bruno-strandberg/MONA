@@ -22,6 +22,17 @@
 using namespace std;
 using namespace RooFit;
 
+/* Macro to generate the detector responses in the track-split up scheme: to see whether tracks
+ * could give an even more powerfull signature, they are split into three groups with their own
+ * responses: good track (gt), good shower (gs) and good event (ge). These mean respectively:
+ * Track reconstruction worked and shower did not.
+ * Shower reconstruction worked and track did not.
+ * Track and shower reconstruction worked.
+ * Note that this split up is not done for showers.
+ *
+ * The responses and all other root files are saved into `filefolder`.
+ */
+
 void DetectorResponseSplitByReco() {
 
   TString filefolder = "./energy_detres/";

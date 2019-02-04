@@ -20,6 +20,13 @@
 using namespace std;
 using namespace RooFit;
 
+/* Macro to generate the detector responses in the multiple PID scheme: there are N pid classes
+ * defined at the start and they are evenly split into these N classes. For all classes under 0.6
+ * the shower reconstruction is used, for all classes above 0.6 the track reconstruction is used.
+ * 
+ * The responses and all other root files are saved into `filefolder`.
+ */
+
 void DetectorResponseSplitNBins() {
 
   const int N_PID_CLASSES = 10;
