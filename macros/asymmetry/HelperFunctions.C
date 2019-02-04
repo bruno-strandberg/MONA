@@ -1,3 +1,6 @@
+#include <iostream> 
+#include <fstream> 
+
 
  /* IO Functions
   */
@@ -76,6 +79,14 @@ std::tuple<TH2D*, TH2D*, TH2D*> ReadCorrelationFile(TString filename) {
    */
 void PrintAsymmetryWithErrors(string type, double asym, double asym_err) {
     cout << "Asymmetry for " << type << ": " << asym << " +- " << asym_err << " (" << 100*asym_err/asym << "%)" << endl;
+}
+
+void PrintAsymmetryWithErrors(string type, double asym, double asym_err, TString filename) {
+    cout << "Asymmetry for " << type << ": " << asym << " +- " << asym_err << " (" << 100*asym_err/asym << "%)" << endl;
+
+    ofstream outputfile(filename, std::ios_base::app);
+    outputfile << "Asymmetry for " << type << ": " << asym << " +- " << asym_err << " (" << 100*asym_err/asym << "%)" << endl;
+    outputfile.close();
 }
 
 

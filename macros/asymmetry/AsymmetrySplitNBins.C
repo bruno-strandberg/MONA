@@ -95,9 +95,9 @@ void AsymmetrySplitNBins() {
     asym_ss_err[i] = std::get<2>(asym_s);
     asym_ms_err[i] = std::get<2>(asym_m);
 
-    cout << "Asymmetry for tracks : " << asym_ts[i] << " +- " << asym_ts_err[i] << " (" << 100*asym_ts_err[i]/asym_ts[i] << "%)" << endl;
-    cout << "Asymmetry for showers: " << asym_ss[i] << " +- " << asym_ss_err[i] << " (" << 100*asym_ss_err[i]/asym_ss[i] << "%)" << endl;
-    cout << "Asymmetry for mc     : " << asym_ms[i] << " +- " << asym_ms_err[i] << " (" << 100*asym_ms_err[i]/asym_ms[i] << "%)" << endl;
+    PrintAsymmetryWithErrors("tracks  ", asym_ts[i], asym_ts_err[i], filefolder + "asymmetry_output.txt");
+    PrintAsymmetryWithErrors("showers ", asym_ss[i], asym_ss_err[i], filefolder + "asymmetry_output.txt");
+    PrintAsymmetryWithErrors("mc      ", asym_ms[i], asym_ms_err[i], filefolder + "asymmetry_output.txt");
   
     TFile fout(output, "RECREATE");
     c1->Write();
@@ -126,10 +126,10 @@ void AsymmetrySplitNBins() {
   std::vector<std::pair<Double_t, Double_t>> asym_ss_q6;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
     if (i < offset) {
-      asym_ss_q6_.push_back(std::make_pair(asym_ss[i], asym_ss_err[i]));
+      asym_ss_q6.push_back(std::make_pair(asym_ss[i], asym_ss_err[i]));
     }
     else {
-      asym_ts_q6_.push_back(std::make_pair(asym_ts[i], asym_ts_err[i]));
+      asym_ts_q6.push_back(std::make_pair(asym_ts[i], asym_ts_err[i]));
     }
   }
 
@@ -146,7 +146,7 @@ void AsymmetrySplitNBins() {
   Double_t shower_error_q6 = std::get<1>(shower_value_squared_q6);
   Double_t total_error_q6  = std::get<1>(total_value_squared_q6);
 
-  PrintAsymmetryWithErrors("tracks  ", track_value_q6,  track_error_q6);
-  PrintAsymmetryWithErrors("showers ", shower_value_q6, shower_error_q6);
-  PrintAsymmetryWithErrors("combined", total_value_q6,  total_error_q6);
+  PrintAsymmetryWithErrors("all tracks  ", track_value_q6,  track_error_q6,  filefolder + "asymmetry_output.txt");
+  PrintAsymmetryWithErrors("all showers ", shower_value_q6, shower_error_q6, filefolder + "asymmetry_output.txt");
+  PrintAsymmetryWithErrors("combined    ", total_value_q6,  total_error_q6,  filefolder + "asymmetry_output.txt");
 }
