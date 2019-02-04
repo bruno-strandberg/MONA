@@ -108,8 +108,9 @@ void AsymmetryDefault() {
   double asym_tot_value = std::get<0>(sq_sum);
   double asym_tot_err   = std::get<1>(sq_sum);
   
-  PrintAsymmetryWithErrors("tracks        ", asym_t_value.first, asym_t_value.second, filefolder + "asymmetry_output.txt");
-  PrintAsymmetryWithErrors("showers       ", asym_s_value.first, asym_s_value.second, filefolder + "asymmetry_output.txt");
-  PrintAsymmetryWithErrors("mc            ", asym_m_value.first, asym_m_value.second, filefolder + "asymmetry_output.txt");
-  PrintAsymmetryWithErrors("total combined", asym_tot_value,     asym_tot_err,        filefolder + "asymmetry_output.txt");
+  TString asym_output = filefolder + "asymmetry_output.txt";
+  PrintAsymmetryWithErrors("tracks        ", asym_t_value.first, asym_t_value.second, asym_output);
+  PrintAsymmetryWithErrors("showers       ", asym_s_value.first, asym_s_value.second, asym_output);
+  PrintAsymmetryWithErrors("mc            ", asym_m_value.first, asym_m_value.second, asym_output);
+  PrintAsymmetryWithErrors("total combined", asym_tot_value,     asym_tot_err,        asym_output);
 }

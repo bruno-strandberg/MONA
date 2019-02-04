@@ -28,6 +28,7 @@ void AsymmetrySplitNBins() {
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
   TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
+  TString asym_output = filefolder + "asymmetry_output.txt";
 
   vector<Double_t> asym_ts(N_PID_CLASSES);
   vector<Double_t> asym_ss(N_PID_CLASSES);
@@ -95,9 +96,9 @@ void AsymmetrySplitNBins() {
     asym_ss_err[i] = std::get<2>(asym_s);
     asym_ms_err[i] = std::get<2>(asym_m);
 
-    PrintAsymmetryWithErrors("tracks  ", asym_ts[i], asym_ts_err[i], filefolder + "asymmetry_output.txt");
-    PrintAsymmetryWithErrors("showers ", asym_ss[i], asym_ss_err[i], filefolder + "asymmetry_output.txt");
-    PrintAsymmetryWithErrors("mc      ", asym_ms[i], asym_ms_err[i], filefolder + "asymmetry_output.txt");
+    PrintAsymmetryWithErrors("tracks  ", asym_ts[i], asym_ts_err[i], asym_output);
+    PrintAsymmetryWithErrors("showers ", asym_ss[i], asym_ss_err[i], asym_output);
+    PrintAsymmetryWithErrors("mc      ", asym_ms[i], asym_ms_err[i], asym_output);
   
     TFile fout(output, "RECREATE");
     c1->Write();
@@ -146,7 +147,7 @@ void AsymmetrySplitNBins() {
   Double_t shower_error_q6 = std::get<1>(shower_value_squared_q6);
   Double_t total_error_q6  = std::get<1>(total_value_squared_q6);
 
-  PrintAsymmetryWithErrors("all tracks  ", track_value_q6,  track_error_q6,  filefolder + "asymmetry_output.txt");
-  PrintAsymmetryWithErrors("all showers ", shower_value_q6, shower_error_q6, filefolder + "asymmetry_output.txt");
-  PrintAsymmetryWithErrors("combined    ", total_value_q6,  total_error_q6,  filefolder + "asymmetry_output.txt");
+  PrintAsymmetryWithErrors("all tracks  ", track_value_q6,  track_error_q6,  asym_output);
+  PrintAsymmetryWithErrors("all showers ", shower_value_q6, shower_error_q6, asym_output);
+  PrintAsymmetryWithErrors("combined    ", total_value_q6,  total_error_q6,  asym_output);
 }
