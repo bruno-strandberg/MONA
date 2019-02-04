@@ -107,9 +107,9 @@ void AsymmetryDefault() {
   std::tuple<Double_t, Double_t> sq_sum = NMHUtils::SquaredSumErrorProp({asym_t_value, asym_s_value});
   double asym_tot_value = std::get<0>(sq_sum);
   double asym_tot_err   = std::get<1>(sq_sum);
-
-  cout << "Asymmetry total for tracks : " << asym_t_value.first   << " +- " << asym_t_value.second << " (" << 100*asym_t_value.second/asym_t_value.first << "%)" << endl;
-  cout << "Asymmetry total for showers: " << asym_s_value.first   << " +- " << asym_s_value.second << " (" << 100*asym_s_value.second/asym_s_value.first << "%)" << endl;
-  cout << "Asymmetry for mc           : " << asym_m_value.first   << " +- " << asym_m_value.second << " (" << 100*asym_m_value.second/asym_m_value.first << "%)" << endl;
-  cout << "Asymmetry total combined   : " << asym_tot_value << " +- " << asym_tot_err << " (" << 100*asym_tot_err/asym_tot_value << "%)" << endl;
+  
+  PrintAsymmetryWithErrors("tracks        ", asym_t_value.first, asym_t_value.second);
+  PrintAsymmetryWithErrors("showers       ", asym_s_value.first, asym_s_value.second);
+  PrintAsymmetryWithErrors("mc            ", asym_m_value.first, asym_m_value.second);
+  PrintAsymmetryWithErrors("total combined", asym_tot_value,     asym_tot_err);
 }

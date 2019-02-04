@@ -146,7 +146,7 @@ void AsymmetrySplitNBins() {
   Double_t shower_error_q6 = std::get<1>(shower_value_squared_q6);
   Double_t total_error_q6  = std::get<1>(total_value_squared_q6);
 
-  cout << "Asymmetry total for tracks : " << track_value_q6  << " +- " << track_error_q6  << " (" << 100*track_error_q6/track_value_q6    << "%)" << endl;
-  cout << "Asymmetry total for showers: " << shower_value_q6 << " +- " << shower_error_q6 << " (" << 100*shower_error_q6/shower_value_q6  << "%)" << endl;
-  cout << "Asymmetry total combined   : " << total_value_q6  << " +- " << total_error_q6  << " (" << 100*total_error_q6/total_value_q6    << "%)" << endl;
+  PrintAsymmetryWithErrors("tracks  ", track_value_q6,  track_error_q6);
+  PrintAsymmetryWithErrors("showers ", shower_value_q6, shower_error_q6);
+  PrintAsymmetryWithErrors("combined", total_value_q6,  total_error_q6);
 }
