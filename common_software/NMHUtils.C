@@ -1,6 +1,7 @@
 #include "NMHUtils.h"
 #include "TAxis.h"
 #include "TMath.h"
+#include "TH3.h"
 #include <fstream>
 #include <sys/stat.h>
 #include <stdexcept>
@@ -203,47 +204,50 @@ TString NMHUtils::Getcwd() {
 //****************************************************************************
 
 /**
- *  Function to calculate bin-by-bin 'asymmetry' between two histograms.
- *  Asymmetry is defined as \f$ A(i) = (N_{h1}^{bin i} - N_{h2}^{bin i})/\sqrt{N_{h1}^{bin i}} \f$.
- *
- * \param h1           First histogram
- * \param h2           Second histogram
- * \param nametitle    String used as name and title for the created asymmetry histogram
- * \param xlow         X-bins with centers below xlow are excluded
- * \param xhigh        X-bins with centers above xhigh are excluded
- * \param ylow         Y-bins with centers below ylow are excluded
- * \param yhigh        Y-bins with centers above yhigh are excluded
- * \param simple_error Bool to use a simplified version of the MC uncertainty: 
- *                     \f$ A_{err}^{bin i} = |A^{bin i}| * N_{h1_{err}}^{bin i} / N_{h1}^{bin i} \f$
- * \return             A std::tuple with elements: 
- *                     0) a pointer to a histgram with bin-by-bin asymmetries;
- *                     1) the quantity \f$ \sqrt{\sum_{i} A_i^2} \f$ (combined asymmetry); 
- *                     2) the quantity \f$ \Delta A$ (error on combined asymmetry);
- *                     
- */
+   Function to calculate bin-by-bin 'asymmetry' between two histograms.
 
-std::tuple<TH2D*, Double_t, Double_t>
-NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle, 
+   Asymmetry is defined as \f$ A(i) = (N_{h1}^{bin i} - N_{h2}^{bin i})/\sqrt{N_{h1}^{bin i}} \f$. The function works with TH1, TH2 and TH3. However, if TH3 is passed, the histogram that visualises the asymmetry is shown in 2D. For a given Energy and cos-theta value, the bin will show the combined asymmetry of the several bjorken-y bins. 
+ 
+   \param h1           First histogram
+   \param h2           Second histogram
+   \param nametitle    String used as name and title for the created asymmetry histogram
+   \param xlow         X-bins with centers below xlow are excluded
+   \param xhigh        X-bins with centers above xhigh are excluded
+   \param ylow         Y-bins with centers below ylow are excluded
+   \param yhigh        Y-bins with centers above yhigh are excluded
+   \param simple_error Bool to use a simplified version of the MC uncertainty: 
+   \f$ A_{err}^{bin i} = |A^{bin i}| * N_{h1_{err}}^{bin i} / N_{h1}^{bin i} \f$
+   \return             A std::tuple with elements: 
+   0) a pointer to a histgram with bin-by-bin asymmetries;
+   1) the quantity \f$ \sqrt{\sum_{i} A_i^2} \f$ (combined asymmetry); 
+   2) the quantity \f$ \Delta A$ (error on combined asymmetry);
+                      
+*/
+
+std::tuple<TH1*, Double_t, Double_t>
+NMHUtils::Asymmetry(TH1 *h1, TH1* h2, TString nametitle, 
             Double_t xlow, Double_t xhigh,
             Double_t ylow, Double_t yhigh, 
+            Double_t zlow, Double_t zhigh, 
             Bool_t simple_error) {
   
-  //------------------------------------------------------------
   // check that both histograms have the same binning
-  //------------------------------------------------------------
 
   if ( !NMHUtils::BinsMatch(h1, h2) ) {
     throw std::invalid_argument( "ERROR! NMHUtils::Asymmetry() input histograms bins mismatch.");
   }
   
-  //------------------------------------------------------------
-  // calculate the asymmetry
-  //------------------------------------------------------------
+  // create the histogram for bin-by-bin asymmetries; TH3's are projected to 2D for visualisation
 
-  TH2D *h_asym = (TH2D*)h1->Clone();
+  TH1 *h_asym;
+  if ( h1->InheritsFrom( TH3::Class() ) ) { h_asym = (TH1*)((TH3*)h1)->Project3D("yx")->Clone(); }
+  else                                    { h_asym = (TH1*)h1->Clone(); }
+  
   h_asym->SetNameTitle(nametitle,nametitle);
   h_asym->Reset();
   h_asym->SetDirectory(0);
+
+  // perform the calculation
 
   Double_t asym     = 0.;
   Double_t asym_err = 0.;
@@ -251,63 +255,79 @@ NMHUtils::Asymmetry(TH2D *h1, TH2D* h2, TString nametitle,
   for (Int_t xb = 1; xb <= h_asym->GetXaxis()->GetNbins(); xb++) {
     for (Int_t yb = 1; yb <= h_asym->GetYaxis()->GetNbins(); yb++) {
 
-      Double_t N_h1 = h1->GetBinContent(xb, yb);
-      Double_t N_h2 = h2->GetBinContent(xb, yb);
-      Double_t N_h1_err = h1->GetBinError(xb, yb);
-      Double_t N_h2_err = h2->GetBinError(xb, yb);
+      // the visualisation is done in 1D or 2D, these variables help to perform the summation over bjorken-y
+      Double_t A_2D     = 0.;
+      Double_t A_err_2D = 0.;
 
-      Double_t A     = 0;
-      Double_t A_err = 0;
+      for (Int_t zb = 1; zb <= h_asym->GetZaxis()->GetNbins(); zb++) {
 
-      if ( N_h1 > 0 ) { 
+	Double_t N_h1     = h1->GetBinContent(xb, yb, zb);
+	Double_t N_h2     = h2->GetBinContent(xb, yb, zb);
+	Double_t N_h1_err = h1->GetBinError(xb, yb, zb);
+	Double_t N_h2_err = h2->GetBinError(xb, yb, zb);
 
-        A = (N_h1 - N_h2)/TMath::Sqrt(N_h1); 
+	Double_t A     = 0;
+	Double_t A_err = 0;
 
-        // Use simplified error or full error
-        if (simple_error) { 
-          A_err = std::abs(A) * N_h1_err / N_h1;
-        } 
-        else {
-          A_err = std::pow(0.5*(N_h1 + N_h2) / std::pow(N_h1, 1.5), 2.) * std::pow(N_h1_err, 2.) +
-                  std::pow(-1 / std::sqrt(N_h1), 2.) * std::pow(N_h2_err, 2.) -
-                  2 * 1 * N_h1_err * N_h2_err * (0.5*(N_h1 + N_h2) / std::pow(N_h1, 2.));
+	if ( N_h1 > 0 ) {
+	  
+	  A = (N_h1 - N_h2)/TMath::Sqrt(N_h1); 
+	  
+	  // Use simplified error or full error
+	  if ( simple_error ) { 
+	    A_err = std::abs(A) * N_h1_err / N_h1;
+	  } 
+	  else {
 
-          // Very rarely the number is -1e-15 to -1e-18, due to our assumptions.
-          // For positive numbers the smallest are 1e-9 to 1e-10 which is already rare.
-          if ( A_err < 0 ) { 
-
-            if ( std::abs(A_err) < 1e-12 ) { A_err = 0.; }                                                       
-            else {
-              throw std::domain_error("ERROR! Asymmetry error squared is smaller than 0, unable to squareroot."); 
-            }
+	    A_err = std::pow(0.5*(N_h1 + N_h2) / std::pow(N_h1, 1.5), 2.) * std::pow(N_h1_err, 2.) +
+	      std::pow(-1 / std::sqrt(N_h1), 2.) * std::pow(N_h2_err, 2.) -
+	      2 * 1 * N_h1_err * N_h2_err * (0.5*(N_h1 + N_h2) / std::pow(N_h1, 2.));
+	    
+	    // Very rarely the number is -1e-15 to -1e-18, due to assuming gaussian errors and numeric accuracy
+	    // For positive numbers the smallest are 1e-9 to 1e-10 which is already rare, hence some protection
+	    if ( A_err < 0 ) { 
+	      
+	      if ( std::abs(A_err) < 1e-12 ) { A_err = 0.; }                                                      
+	      else { throw std::domain_error("ERROR! NMHUtils::Asymmetry() error squared is smaller than 0, unable to squareroot."); }
   
-          }
+	    }
 
-          A_err = std::sqrt(A_err);
+	    A_err = std::sqrt(A_err);
 
-        }
+	  }
+
+	}
+	else { // bin content 0, set asymmetry and error to 0
+	  A = 0.; 
+	  A_err = 0.;
+	}
+
+	Double_t xc = h_asym->GetXaxis()->GetBinCenter(xb);
+	Double_t yc = h_asym->GetYaxis()->GetBinCenter(yb);
+	Double_t zc = h_asym->GetZaxis()->GetBinCenter(zb);
+
+	if ( (xc < xlow) || (xc > xhigh) || (yc < ylow) || (yc > yhigh) || (zc < zlow) || (zc > zhigh) ) {
+	  A     = 0.;
+	  A_err = 0.;
+	}
+
+	// here summation over bjorken-y is performed for visualisation in 2D
+	A_2D     += A * A;
+	A_err_2D += A_err * A_err;
+
+	// here calculation for combined asymmetry is performed; for the error calculation, the denominator
+	// is a function of all bins, so it is done outside of the for-loop, below. 
+	asym += A * A;
+	asym_err += A * A * A_err * A_err;
+
       }
-      else { 
-        A = 0.; 
-        A_err = 0.;
-      }
 
-      Double_t xc = h_asym->GetXaxis()->GetBinCenter(xb);
-      Double_t yc = h_asym->GetYaxis()->GetBinCenter(yb);
-
-      if ( (xc < xlow) || (xc > xhigh) || ( yc < ylow) || ( yc > yhigh ) ) {
-        A     = 0.;
-        A_err = 0.;
-      }
-
-      h_asym->SetBinContent(xb, yb, A);
-      h_asym->SetBinError(xb, yb, A_err);
-
-      asym += A * A;
-      asym_err += A * A * A_err * A_err; // The denominator is a function of all bins, so it is done outside of the for-loop, below. 
-
+      h_asym->SetBinContent(xb, yb, TMath::Sqrt(A_2D) );
+      h_asym->SetBinError(xb, yb, TMath::Sqrt(A_err_2D) );
+      
     }
   }
+
   asym = TMath::Sqrt( asym );
   asym_err = 1. / asym * TMath::Sqrt( asym_err );
 
