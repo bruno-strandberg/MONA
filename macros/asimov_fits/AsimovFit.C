@@ -33,8 +33,6 @@ void AsimovFit() {
 
   TString filefolder = "./default_detres/";
 
-  gSystem->Load("$OSCPROBDIR/libOscProb.so");
-
   // DetRes input values
   Int_t EBins = 40;
   Int_t EMin = 1;
@@ -108,20 +106,19 @@ void AsimovFit() {
   fitutil->SetNOlims();
   fitutil->SetNOcentvals();
 
-  TH3D* tracks_NO   = (TH3D*)pdf_tracks.GetExpValHist();
-  TH3D* showers_NO  = (TH3D*)pdf_showers.GetExpValHist();
-  tracks_NO->SetName("tracks_expval_NO");
-  showers_NO->SetName("showers_expval_NO");
+  TH3D* tracks_no   = (TH3D*)pdf_tracks.GetExpValHist();
+  TH3D* showers_no  = (TH3D*)pdf_showers.GetExpValHist();
+  tracks_no->SetName("tracks_expval_NO");
+  showers_no->SetName("showers_expval_NO");
 
 
   fitutil->SetIOlims();
   fitutil->SetIOcentvals();
- // fitutil->GetVar("Dm31")->setVal( dm31_IO );
 
-  TH3D* tracks_IO   = (TH3D*)pdf_tracks.GetExpValHist();
-  TH3D* showers_IO  = (TH3D*)pdf_showers.GetExpValHist();
-  tracks_IO->SetName("tracks_expval_IO");
-  showers_IO->SetName("showers_expval_IO");
+  TH3D* tracks_io   = (TH3D*)pdf_tracks.GetExpValHist();
+  TH3D* showers_io  = (TH3D*)pdf_showers.GetExpValHist();
+  tracks_io->SetName("tracks_expval_IO");
+  showers_io->SetName("showers_expval_IO");
 
   fitutil->GetVar("SinsqTh12")->setConstant(kTRUE);
   fitutil->GetVar("SinsqTh13")->setConstant(kTRUE);
@@ -135,40 +132,43 @@ void AsimovFit() {
   
   TStopwatch timer;
 
-  // Fit under IO model, NO data
-  std::map<string, TH1*> hist_map_no = { {(string)tracks_NO->GetName(),  tracks_NO },
-                                         {(string)showers_NO->GetName(), showers_NO }};
+  fitutil->SetIOlims();
+  fitutil->SetIOcentvals();
 
-  RooCategory cats_no("categories","data categories"); // I love cats :3
-  cats_no.defineType( tracks_NO->GetName() );
-  cats_no.defineType( showers_NO->GetName() );
+  // Fit under IO model, NO data
+  std::map<string, TH1*> hist_map_no = { {(string)tracks_no->GetName(),  tracks_no },
+                                         {(string)showers_no->GetName(), showers_no }};
+
+  RooCategory cats_no("categories_no","data categories"); // I love cats :3
+  cats_no.defineType( tracks_no->GetName() );
+  cats_no.defineType( showers_no->GetName() );
 
   RooSimultaneous simPdf_no("simPdf_no", "simultaneous Pdf for NO", cats_no);
-  simPdf_no.addPdf(pdf_tracks,  tracks_NO->GetName() );
-  simPdf_no.addPdf(pdf_showers, showers_NO->GetName() );
+  simPdf_no.addPdf(pdf_tracks,  tracks_no->GetName() );
+  simPdf_no.addPdf(pdf_showers, showers_no->GetName() );
 
-  RooDataHist data_hists_no("data_hists", "track and shower data", fitutil->GetObs(), cats_no, hist_map_no);
+  RooDataHist data_hists_no("data_hists_no", "track and shower data", fitutil->GetObs(), cats_no, hist_map_no);
   RooFitResult *fitres_no = simPdf_no.fitTo( data_hists_no, Save(kTRUE) );
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
   
   RooArgSet result_no ( fitres_no->floatParsFinal() );
 
   // Fit under NO model, IO data
-  std::map<string, TH1*> hist_map_io = { {(string)tracks_IO->GetName(),  tracks_IO },
-                                         {(string)showers_IO->GetName(), showers_IO }};
+  std::map<string, TH1*> hist_map_io = { {(string)tracks_io->GetName(),  tracks_io },
+                                         {(string)showers_io->GetName(), showers_io }};
 
   fitutil->SetNOlims();
   fitutil->SetNOcentvals();
 
-  RooCategory cats_io("categories","data categories");
-  cats_io.defineType( tracks_IO->GetName() );
-  cats_io.defineType( showers_IO->GetName() );
+  RooCategory cats_io("categories_io","data categories");
+  cats_io.defineType( tracks_io->GetName() );
+  cats_io.defineType( showers_io->GetName() );
 
   RooSimultaneous simPdf_io("simPdf_io", "simultaneous Pdf for IO", cats_io);
-  simPdf_io.addPdf(pdf_tracks,  tracks_IO->GetName() );
-  simPdf_io.addPdf(pdf_showers, showers_IO->GetName() );
+  simPdf_io.addPdf(pdf_tracks,  tracks_io->GetName() );
+  simPdf_io.addPdf(pdf_showers, showers_io->GetName() );
 
-  RooDataHist data_hists_io("data_hists", "track and shower data", fitutil->GetObs(), cats_io, hist_map_io);
+  RooDataHist data_hists_io("data_hists_io", "track and shower data", fitutil->GetObs(), cats_io, hist_map_io);
   RooFitResult *fitres_io = simPdf_io.fitTo( data_hists_io, Save(kTRUE) );
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
@@ -198,8 +198,8 @@ void AsimovFit() {
   TH3D *showers_fitted_no = (TH3D*)pdf_showers.GetExpValHist();
   showers_fitted_no->SetName("showers_fitted_no");
 
-  Double_t n_chi2tr_no = HistoChi2Test(tracks_NO, tracks_fitted_no, 2, 80, -1, 0);
-  Double_t n_chi2sh_no = HistoChi2Test(showers_NO, showers_fitted_no, 2, 80, -1, 0);
+  Double_t n_chi2tr_no = HistoChi2Test(tracks_no, tracks_fitted_no, 2, 80, -1, 0);
+  Double_t n_chi2sh_no = HistoChi2Test(showers_no, showers_fitted_no, 2, 80, -1, 0);
 
   cout << "NMHUtils: Chi2 between tracks  NO and tracks  fitted on IO is: " << n_chi2tr_no << endl;
   cout << "NMHUtils: Chi2 between showers NO and showers fitted on IO is: " << n_chi2sh_no << endl;
@@ -214,8 +214,8 @@ void AsimovFit() {
   TH3D *showers_fitted_io = (TH3D*)pdf_showers.GetExpValHist();
   showers_fitted_io->SetName("showers_fitted_io");
 
-  Double_t n_chi2tr_io = HistoChi2Test(tracks_IO, tracks_fitted_io, 2, 80, -1, 0);
-  Double_t n_chi2sh_io = HistoChi2Test(showers_IO, showers_fitted_io, 2, 80, -1, 0);
+  Double_t n_chi2tr_io = HistoChi2Test(tracks_io, tracks_fitted_io, 2, 80, -1, 0);
+  Double_t n_chi2sh_io = HistoChi2Test(showers_io, showers_fitted_io, 2, 80, -1, 0);
 
   cout << "NMHUtils: Chi2 between tracks  IO and tracks  fitted on NO is: " << n_chi2tr_io << endl;
   cout << "NMHUtils: Chi2 between showers IO and showers fitted on NO is: " << n_chi2sh_io << endl;
@@ -225,8 +225,8 @@ void AsimovFit() {
   // print asymmetry 
   //----------------------------------------------------------
 
-  auto asym_track  = NMHUtils::Asymmetry( (TH2D*)tracks_NO ->Project3D("yx"), (TH2D*)tracks_IO ->Project3D("yx"), "asymmetry_track" , 2, 80, -1, 0);
-  auto asym_shower = NMHUtils::Asymmetry( (TH2D*)showers_NO->Project3D("yx"), (TH2D*)showers_IO->Project3D("yx"), "asymmetry_shower", 2, 80, -1, 0);
+  auto asym_track  = NMHUtils::Asymmetry( (TH2D*)tracks_no ->Project3D("yx"), (TH2D*)tracks_io ->Project3D("yx"), "asymmetry_track" , 2, 80, -1, 0);
+  auto asym_shower = NMHUtils::Asymmetry( (TH2D*)showers_no->Project3D("yx"), (TH2D*)showers_io->Project3D("yx"), "asymmetry_shower", 2, 80, -1, 0);
   auto asym_val_track  = std::get<1>(asym_track);
   auto asym_val_shower = std::get<1>(asym_shower);
   cout << "Asym track : " << asym_val_track << endl;

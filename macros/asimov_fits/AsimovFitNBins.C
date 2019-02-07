@@ -36,8 +36,6 @@ void AsimovFitNBins() {
   const Double_t PID_EDGE = 0.6 * N_PID_CLASSES;
   TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
 
-  gSystem->Load("$OSCPROBDIR/libOscProb.so");
-
   // DetRes input values
   Int_t EBins = 40;
   Int_t EMin = 1;

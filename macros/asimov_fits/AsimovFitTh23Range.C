@@ -34,8 +34,6 @@ void AsimovFitTh23Range() {
   TString filefolder = "./";
   TString s_outputfile = "./AsimovFitTh23Range.txt";
 
-  gSystem->Load("$OSCPROBDIR/libOscProb.so");
-
   // DetRes and EvSel input values
   Int_t EBins = 40;
   Int_t EMin = 1;

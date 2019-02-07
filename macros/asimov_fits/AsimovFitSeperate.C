@@ -42,8 +42,6 @@ void AsimovFitSeperate() {
 
   TString filefolder = "./default_detres/";
 
-  gSystem->Load("$OSCPROBDIR/libOscProb.so");
-
   // DetRes and EvSel input values
   Int_t EBins = 40;
   Int_t EMin = 1;
