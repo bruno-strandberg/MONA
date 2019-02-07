@@ -75,6 +75,7 @@ class FitUtil {
   void        SetNOcentvals();
   void        SetIOlims();
   void        SetIOcentvals();
+  void        FreeParLims();
   
   // this function should be private, but is kept public for comparisons with ROOT
   std::pair<Double_t, Double_t> RecoEvts(DetResponse *resp,
@@ -167,6 +168,9 @@ class FitUtil {
   const fpar f_NO_dm31 = fpar(2.56e-3, 2.45e-3, 2.69e-3);  //!< central value and limits for \f$ \Delta m_{31}^2 \f$, normal ordering
   /// central value and limits for \f$ \Delta m_{31}^2 \f$, inverse ordering
   const fpar f_IO_dm31 = fpar(-2.54e-3+f_IO_dm21.cv, -2.66e-3+f_IO_dm21.cv, -2.42e-3+f_IO_dm21.cv);
+
+  const fpar f_free_dm21 = fpar(7.37e-5,  5e-5, 1e-4); //!< free limits for \f$ \Delta m_{21}^2 \f$
+  const fpar f_free_dm31 = fpar(2.56e-3, -5e-3, 5e-3); //!< free limits for \f$ \Delta m_{31}^2 \f$
     
   //------------------------------------------------------------------
   // private members for detected neutrino count calculation

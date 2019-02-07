@@ -159,13 +159,13 @@ void FitUtil::InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t
   fCt_reco   = new RooRealVar("ct_reco", "ct_reco", ctmin, ctmax);
   fBy_reco   = new RooRealVar("by_reco", "by_reco", bymin, bymax);
 
-  // fit parameters, this will probably require some sort of an interface...
-  fSinsqTh12 = new RooRealVar("SinsqTh12", "sin^2(theta12)", f_NO_sinsqth12.cv, f_NO_sinsqth12.min, f_NO_sinsqth12.max);
-  fSinsqTh13 = new RooRealVar("SinsqTh13", "sin^2(theta13)", f_NO_sinsqth13.cv, f_NO_sinsqth13.min, f_NO_sinsqth13.max);
-  fSinsqTh23 = new RooRealVar("SinsqTh23", "sin^2(theta23)", f_NO_sinsqth23.cv, f_NO_sinsqth23.min, f_NO_sinsqth23.max);
-  fDcp       = new RooRealVar(      "dcp",       "delta-cp",       f_NO_dcp.cv,       f_NO_dcp.min, f_NO_dcp.max);
-  fDm21      = new RooRealVar(     "Dm21",         "dm21^2",      f_NO_dm21.cv,      f_NO_dm21.min, f_NO_dm21.max);
-  fDm31      = new RooRealVar(     "Dm31",         "dm31^2",      f_NO_dm31.cv,      f_NO_dm31.min, f_NO_dm31.max);
+  // fit parameters, initialised at NO central values, free ranges
+  fSinsqTh12 = new RooRealVar("SinsqTh12", "sin^2(theta12)", f_NO_sinsqth12.cv, 0., 1.);
+  fSinsqTh13 = new RooRealVar("SinsqTh13", "sin^2(theta13)", f_NO_sinsqth13.cv, 0., 1.);
+  fSinsqTh23 = new RooRealVar("SinsqTh23", "sin^2(theta23)", f_NO_sinsqth23.cv, 0., 1.);
+  fDcp       = new RooRealVar(      "dcp",       "delta-cp",       f_NO_dcp.cv, 0., 2.);
+  fDm21      = new RooRealVar(     "Dm21",         "dm21^2",      f_NO_dm21.cv, f_free_dm21.min, f_free_dm21.max);
+  fDm31      = new RooRealVar(     "Dm31",         "dm31^2",      f_NO_dm31.cv, f_free_dm31.min, f_free_dm31.max);
 
   // add observables to the observables set
   fObsList.add( RooArgList(*fE_reco, *fCt_reco, *fBy_reco) );
@@ -252,6 +252,35 @@ void FitUtil::SetIOcentvals() {
   fDm21->setVal(f_IO_dm21.cv);
   fDm31->setVal(f_IO_dm31.cv);
   
+}
+
+//***************************************************************************
+
+/** This function sets free parameter limits to the oscillation parameters.
+
+    This means that the sin^2 of the angles are between 0 and 1, delta-cp is between 0-2 pi. dm21^2 is limited from 5e-5 to 1e-4, dm31^2 is limited from -5e-3 to 5e-3.
+
+*/
+void FitUtil::FreeParLims() {
+
+  fSinsqTh12->setMin(0.);
+  fSinsqTh12->setMax(1.);
+  
+  fSinsqTh13->setMin(0.);
+  fSinsqTh13->setMax(1.);
+
+  fSinsqTh23->setMin(0.);
+  fSinsqTh23->setMax(1.);
+
+  fDcp->setMin(0.);
+  fDcp->setMax(2.);
+
+  fDm21->setMin(f_free_dm21.min);
+  fDm21->setMax(f_free_dm21.max);
+  
+  fDm31->setMin(f_free_dm31.min);
+  fDm31->setMax(f_free_dm31.max);
+
 }
 
 //***************************************************************************
