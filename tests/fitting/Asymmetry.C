@@ -106,6 +106,9 @@ int main(const int argc, const char **argv) {
   shower_resp.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05, true );
   shower_resp.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(),  0.5, true );
 
+  if ( system("mkdir -p " + NMHUtils::Getcwd() + "/rootfiles") != 0 ) {
+    cout << "WARNING! Asymmetry() creation of rootfiles/ directory returned non-zero" << endl;
+  }
   TString track_resp_name  = NMHUtils::Getcwd() + "/rootfiles/asymmetry_track_response.root";
   TString shower_resp_name = NMHUtils::Getcwd() + "/rootfiles/asymmetry_shower_response.root";
   
@@ -169,12 +172,6 @@ int main(const int argc, const char **argv) {
   fitutil->GetVar("dcp")->setVal( dcp );
   fitutil->GetVar("Dm21")->setVal( dm21 );
 
-  // deconstrain th23 and dm31
-  fitutil->GetVar("Dm31")->setMin( -1 );
-  fitutil->GetVar("Dm31")->setMax(  1 );
-  fitutil->GetVar("SinsqTh23")->setMin( -1 );
-  fitutil->GetVar("SinsqTh23")->setMax(  1 );
-
   //----------------------------------------------------------
   // loop over theta23 range and calculate asymmetries
   //----------------------------------------------------------
@@ -230,8 +227,8 @@ int main(const int argc, const char **argv) {
     Double_t th23 = TMath::ASin( TMath::Sqrt(sinsqth23) ) * 180./TMath::Pi();
     cout << "NOTICE Asymmetry() at th23 = " << th23 << ", tracks: " << std::get<1>(trackasym) << endl;
     cout << "NOTICE Asymmetry() at th23 = " << th23 << ", showers: " << std::get<1>(showerasym) << endl;
-    hlist.push_back( std::get<0>(trackasym)  );
-    hlist.push_back( std::get<0>(showerasym) );    
+    hlist.push_back( (TH2D*)std::get<0>(trackasym)  );
+    hlist.push_back( (TH2D*)std::get<0>(showerasym) );    
 
     Double_t combA = TMath::Sqrt( TMath::Power( std::get<1>(trackasym), 2 ) + 
 				  TMath::Power( std::get<1>(showerasym), 2 ) );
