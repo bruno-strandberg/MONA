@@ -20,6 +20,13 @@
 using namespace std;
 using namespace RooFit;
 
+/* Macro to generate the detector responses in the default scheme: a track response and a shower
+ * response. The shower response are events with a quality factor of < 0.6, tracks are events with
+ * a quality factor of > 0.6.
+ *
+ * The responses and all other root files are saved into `filefolder`.
+ */
+
 void DetectorResponseDefault() {
 
   TString filefolder = "./default_detres/";
@@ -137,7 +144,7 @@ void DetectorResponseDefault() {
   TString output_NO = "default_expected_evts_NO.root";
   TFile fout_NO(filefolder + output_NO,"RECREATE");
   auto hists_NO = {tracks_NO, showers_NO, mc_NO,
-                   tracks_NO_err, showers_NO_err, mc_NO_err};
+                   tracks_err_NO, showers_err_NO, mc_err_NO};
   for (auto hist: hists_NO) {
     hist->Write();
   }
@@ -146,7 +153,7 @@ void DetectorResponseDefault() {
   TString output_IO = "default_expected_evts_IO.root";
   TFile fout_IO(filefolder + output_IO,"RECREATE");
   auto hists_IO = {tracks_IO, showers_IO, mc_IO,
-                   tracks_IO_err, showers_IO_err, mc_IO_err};
+                   tracks_err_IO, showers_err_IO, mc_err_IO};
   for (auto hist: hists_IO) {
     hist->Write();
   }

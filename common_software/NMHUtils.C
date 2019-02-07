@@ -344,24 +344,19 @@ NMHUtils::Asymmetry(TH1 *h1, TH1* h2, TString nametitle,
  *  Sum is defined as \f$ S = \sqrt{ \Sigma_i x_i^2 \f$ for values \f${x_1, ..., x_N} }\f$
  *  with errors \f${\Delta x_1, ..., \Delta x_N } \f$.
  *
- * \param values       Vector of length N with the values to be summed
- * \param errors       Vector of length N with the errors to be propagated
- * \return             A std::tuple with elements:
- *                     0) The square-root of the sum of squares of the values
- *                     1) The propagated error of the sum.
+ * \param value_and_error   Vector of length N with the values to be summed in pairs: <value, error>
+ * \return                  A std::tuple with elements:
+ *                          0) The square-root of the sum of squares of the values
+ *                          1) The propagated error of the sum.
  */
-std::tuple<Double_t, Double_t> NMHUtils::SquaredSumErrorProp(std::vector<Double_t> values, std::vector<Double_t> errors) {
-  Double_t size = values.size();
-
-  if (values.size() != errors.size() ) {
-    throw std::invalid_argument("ERROR! NMHUtils::SquaredSumErrorProp() input vectors of different length.");
-  }
+std::tuple<Double_t, Double_t> NMHUtils::SquaredSumErrorProp(std::vector<std::pair<Double_t, Double_t>> value_and_error) {
+  Double_t size = value_and_error.size();
 
   Double_t total_value = 0;
   Double_t total_error = 0;
   for (int i = 0; i < size; i++) {
-    total_value += values[i] * values[i];
-    total_error += values[i] * values[i] * errors[i] * errors[i];
+    total_value += value_and_error[i].first * value_and_error[i].first;
+    total_error += value_and_error[i].first * value_and_error[i].first * value_and_error[i].second * value_and_error[i].second;
   }
 
   total_value = std::sqrt(total_value);

@@ -20,6 +20,13 @@
 using namespace std;
 using namespace RooFit;
 
+/* Macro to generate the detector responses in the multiple PID scheme: there are N pid classes
+ * defined at the start and they are evenly split into these N classes. For all classes under 0.6
+ * the shower reconstruction is used, for all classes above 0.6 the track reconstruction is used.
+ * 
+ * The responses and all other root files are saved into `filefolder`.
+ */
+
 void DetectorResponseSplitNBins() {
 
   const int N_PID_CLASSES = 10;
@@ -133,9 +140,9 @@ void DetectorResponseSplitNBins() {
     showers_NO->SetNameTitle("detected_showers", "detected_showers");
     mc_NO->SetNameTitle("detected_mc", "detected_mc");
 
-    TH2D *tracks_NO_err  = (TH2D*)pdf_tracks.GetExpValErrHist()->Project3D("yx");
-    TH2D *showers_NO_err = (TH2D*)pdf_showers.GetExpValErrHist()->Project3D("yx");
-    TH2D *mc_NO_err      = (TH2D*)pdf_mc.GetExpValErrHist()->Project3D("yx");
+    TH2D *tracks_err_NO  = (TH2D*)pdf_tracks.GetExpValErrHist()->Project3D("yx");
+    TH2D *showers_err_NO = (TH2D*)pdf_showers.GetExpValErrHist()->Project3D("yx");
+    TH2D *mc_err_NO      = (TH2D*)pdf_mc.GetExpValErrHist()->Project3D("yx");
     //----------------------------------------------------------
     // set inverted hierarchy
     //----------------------------------------------------------
@@ -150,16 +157,16 @@ void DetectorResponseSplitNBins() {
     showers_IO->SetNameTitle("detected_showers", "detected_showers");
     mc_IO->SetNameTitle("detected_mc", "detected_mc");
 
-    TH2D *tracks_IO_err  = (TH2D*)pdf_tracks.GetExpValErrHist()->Project3D("yx");
-    TH2D *showers_IO_err = (TH2D*)pdf_showers.GetExpValErrHist()->Project3D("yx");
-    TH2D *mc_IO_err      = (TH2D*)pdf_mc.GetExpValErrHist()->Project3D("yx");
+    TH2D *tracks_err_IO  = (TH2D*)pdf_tracks.GetExpValErrHist()->Project3D("yx");
+    TH2D *showers_err_IO = (TH2D*)pdf_showers.GetExpValErrHist()->Project3D("yx");
+    TH2D *mc_err_IO      = (TH2D*)pdf_mc.GetExpValErrHist()->Project3D("yx");
     //----------------------------------------------------------
     // save output
     //----------------------------------------------------------
     TString output_NO = TString::Format("split_expected_evts_NO_%.2f.root", PID_step * i);
     TFile fout_NO(filefolder + output_NO,"RECREATE");
     auto hists_NO = {tracks_NO, showers_NO, mc_NO,
-                     tracks_NO_err, showers_NO_err, mc_NO_err};
+                     tracks_err_NO, showers_err_NO, mc_err_NO};
     for (auto hist: hists_NO) {
       hist->Write();
     }
@@ -168,7 +175,7 @@ void DetectorResponseSplitNBins() {
     TString output_IO = TString::Format("split_expected_evts_IO_%.2f.root", PID_step * i);
     TFile fout_IO(filefolder + output_IO,"RECREATE");
     auto hists_IO = {tracks_IO, showers_IO, mc_IO,
-                     tracks_IO_err, showers_IO_err, mc_IO_err};
+                     tracks_err_IO, showers_err_IO, mc_err_IO};
     for (auto hist: hists_IO) {
       hist->Write();
     }

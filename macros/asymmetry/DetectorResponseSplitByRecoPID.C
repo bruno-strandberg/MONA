@@ -21,6 +21,21 @@
 using namespace std;
 using namespace RooFit;
 
+/* Macro to generate the detector responses in the multiple PID scheme: there are N pid classes
+ * defined at the start and they are evenly split into these N classes. For all classes under 0.6
+ * the shower reconstruction is used, for all classes above 0.6 the track reconstruction is used.
+ * Simultaneosly they are split into three groups with their own responses: good track (gt), 
+ * good shower (gs) and good event (ge). These mean respectively:
+ * Track reconstruction worked and shower did not.
+ * Shower reconstruction worked and track did not.
+ * Track and shower reconstruction worked.
+ * Note that this split up is not done for showers.
+ *
+ * This is a combination of *SplitNBins.C and *SplitByReco.C
+ *
+ * The responses and all other root files are saved into `filefolder`.
+ */
+
 void DetectorResponseSplitByRecoPID() {
 
   const int N_PID_CLASSES = 10;

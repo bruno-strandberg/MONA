@@ -18,7 +18,7 @@
 #include <iostream>
 using namespace std;
 
-void Plot_Asymmetry_NBins() {
+void PlotAsymmetryNBins() {
 
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);

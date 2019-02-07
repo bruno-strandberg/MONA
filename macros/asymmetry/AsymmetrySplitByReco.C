@@ -16,10 +16,14 @@
 #include <iostream>
 using namespace std;
 
-// This script calculates the asymmetry for track energy binned data in good track, good shower and good event.
+/* This script calculates the asymmetry for track energy binned data in good track, good shower and good event.
+ * Showers are binned like showers as in the default detector response scheme.
+ *
+ * The output files are saved into `filefolder`
+ */
 
 
-void asymmetry_energy() {
+void AsymmetrySplitByReco() {
 
   bool b_plot = false;
   TString filefolder = "./energy_detres/";
@@ -102,25 +106,19 @@ void asymmetry_energy() {
     }
   }
 
-  asym_t_gt = std::get<1>(asym_t_gt_tuple);
-  asym_t_gs = std::get<1>(asym_t_gs_tuple);
-  asym_t_ge = std::get<1>(asym_t_ge_tuple);
-  asym_s    = std::get<1>(asym_s_tuple);
-  asym_m    = std::get<1>(asym_m_tuple);
-  asym_t_gt_err = std::get<2>(asym_t_gt_tuple);
-  asym_t_gs_err = std::get<2>(asym_t_gs_tuple);
-  asym_t_ge_err = std::get<2>(asym_t_ge_tuple);
-  asym_s_err    = std::get<2>(asym_s_tuple);
-  asym_m_err    = std::get<2>(asym_m_tuple);
+  auto asym_t_gt = std::make_pair(std::get<1>(asym_t_gt_tuple), std::get<2>(asym_t_gt_tuple));
+  auto asym_t_gs = std::make_pair(std::get<1>(asym_t_gs_tuple), std::get<2>(asym_t_gs_tuple));
+  auto asym_t_ge = std::make_pair(std::get<1>(asym_t_ge_tuple), std::get<2>(asym_t_ge_tuple));
+  auto asym_s    = std::make_pair(std::get<1>(asym_s_tuple), std::get<2>(asym_s_tuple));
+  auto asym_m    = std::make_pair(std::get<1>(asym_m_tuple), std::get<2>(asym_m_tuple));
   
-  PrintAsymmetryWithErrors("tracks (good tracks)", asym_t_gt, asym_t_gt_err);
-  PrintAsymmetryWithErrors("tracks (good showrs)", asym_t_gs, asym_t_gs_err);
-  PrintAsymmetryWithErrors("tracks (good events)", asym_t_ge, asym_t_ge_err);
-  PrintAsymmetryWithErrors("showers             ", asym_s, asym_s_err);
-  PrintAsymmetryWithErrors("mc                  ", asym_m, asym_m_err);
+  PrintAsymmetryWithErrors("tracks (good tracks)", asym_t_gt.first, asym_t_gt.second);
+  PrintAsymmetryWithErrors("tracks (good showrs)", asym_t_gs.first, asym_t_gs.second);
+  PrintAsymmetryWithErrors("tracks (good events)", asym_t_ge.first, asym_t_ge.second);
+  PrintAsymmetryWithErrors("showers             ", asym_s.first, asym_s.second);
+  PrintAsymmetryWithErrors("mc                  ", asym_m.first, asym_m.second);
 
-  std::tuple<Double_t, Double_t> sq_sum = NMHUtils::SquaredSumErrorProp({asym_t_gt, asym_t_gs, asym_t_ge, asym_s, asym_m}, 
-                                                                        {asym_t_gt_err, asym_t_gs_err, asym_t_ge_err, asym_s_err, asym_m_err});
+  std::tuple<Double_t, Double_t> sq_sum = NMHUtils::SquaredSumErrorProp({asym_t_gt, asym_t_gs, asym_t_ge, asym_s, asym_m}); 
   double asym_tot_value = std::get<0>(sq_sum);
   double asym_tot_err   = std::get<1>(sq_sum);
   cout << "-----------------------------" << endl;

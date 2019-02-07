@@ -18,7 +18,7 @@
 #include <iostream>
 using namespace std;
 
-void Print_ResponseFunction_Events() {
+void PrintResponseFunctionEvents() {
 
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);

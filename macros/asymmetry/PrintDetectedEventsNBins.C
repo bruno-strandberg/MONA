@@ -18,7 +18,7 @@
 #include <iostream>
 using namespace std;
 
-void Print_Detected_Events_NBins() {
+void PrintDetectedEventsNBins() {
 
   const int N_PID_CLASSES = 10;
   Double_t PID_step = 1 / float(N_PID_CLASSES);
