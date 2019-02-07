@@ -25,7 +25,9 @@
 
 /** This class is used in conjunction with `FitPDF` to fit NMO data with `RooFit`.
 
-    Each `FitPDF` class will require a pointer to a `FitUtil` instance. One `FitUtil` instance can (and should!) be shared between several `FitPDF` instances, if several `FitPDF` instances are required (usually yes - at least one for tracks and one for showers). `FitUtil` employs an internal cache for oscillation parameters, which speeds up the fitting procedure when several histograms/data sets are fitted in parallel (e.g. when several PID bins are used).
+    The class hosts the fit parameters (e.g. the 6 oscillation parameters) and uses elements of `common_software/` and `OscProb` to provide functions that predict the number of expected events in a true and reco (E, cos-theta, bjorken-y) bin. Additionally, it has functions that are to be called inside `FitPDF` class - together, `FitUtil` and `FitPDF` enable the use of `RooFit` for fitting NMO data. See `fitter_software/README.md` for more info.
+
+    Each `FitPDF` class will require a pointer to a `FitUtil` instance. One `FitUtil` instance can (and should!) be shared between several `FitPDF` instances, if several `FitPDF` instances are required (usually yes - at least one for tracks and one for showers). `FitUtil` employs an internal cache for oscillation probabilities, which speeds up the fitting procedure when several histograms/data sets are fitted in parallel (e.g. when several PID bins are used).
 
     The `FitPDF` class that uses `FitUtil` is a modification of a class that was auto-generated with `RooClassFactory::makePdf`. The idea is that `FitPDF` acts merely as a wrapper class to get access to `RooFit` niceties (such as simultaneous fitting), the model calculations and parameters are defined here in `FitUtil` class.
 
