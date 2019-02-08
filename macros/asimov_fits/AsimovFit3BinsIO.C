@@ -29,11 +29,20 @@
 using namespace std;
 using namespace RooFit;
 
-void AsimovFitNBins() {
+void AsimovFit3BinsIO() {
 
-  const int N_PID_CLASSES = 10;
+  const int N_PID_CLASSES = 3;
+  const Double_t PID_CUT = 0.6;
   const Double_t PID_STEP = 1 / float(N_PID_CLASSES);
-  const Double_t PID_EDGE = 0.6 * N_PID_CLASSES;
+  const Double_t PID_EDGE = PID_CUT * N_PID_CLASSES;
+
+
+  std::map<Int_t, Double_t> pid_map;
+  pid_map.insert(std::make_pair(0, 0.0)); // shower
+  pid_map.insert(std::make_pair(1, 0.4)); // middle group: shower
+  pid_map.insert(std::make_pair(2, 0.6)); // track
+  pid_map.insert(std::make_pair(3, 1.0)); // upper limit 
+
   TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
 
   // DetRes input values
@@ -61,22 +70,22 @@ void AsimovFitNBins() {
 
     DetResponse track_response(DetResponse::track, Form("track_response_%.2f", PID_STEP * i), 
                                EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
-    track_response.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   , 0.5             , true );
-    track_response.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   , 0.5             , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      , PID_STEP * i    , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , std::less_equal<double>(), PID_STEP * (i+1), true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05            , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18            , true );
+    track_response.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   , 0.5         , true );
+    track_response.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   , 0.5         , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      , pid_map[i]  , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , std::less_equal<double>(), pid_map[i+1], true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05        , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18        , true );
     track_response_vector.push_back(track_response);
 
     DetResponse shower_response(DetResponse::shower, Form("shower_response_%.2f", PID_STEP * i), 
                                 EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
-    shower_response.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   , 0.5             , true );
-    shower_response.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   , 0.5             , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , PID_STEP * i    , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), PID_STEP * (i+1), true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05            , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5             , true );
+    shower_response.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   , 0.5         , true );
+    shower_response.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   , 0.5         , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , pid_map[i]  , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), pid_map[i+1], true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05        , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5         , true );
     shower_response_vector.push_back(shower_response);
   }
 
@@ -132,15 +141,13 @@ void AsimovFitNBins() {
 
   std::vector<TH3D*> track_vector_no;
   std::vector<TH3D*> shower_vector_no;
-  std::vector<TH3D*> track_vector_io;
-  std::vector<TH3D*> shower_vector_io;
 
   std::vector<FitPDF> pdf_tracks_vector;
   std::vector<FitPDF> pdf_showers_vector;
 
   for (int i = 0; i < N_PID_CLASSES; i++) {
-    FitPDF pdf_tracks(  Form("pdf_tracks_%.2f", i*PID_STEP),  "pdf_tracks",  fitutil, &track_response_vector[i]);
-    FitPDF pdf_showers( Form("pdf_showers_%.2f", i*PID_STEP), "pdf_showers", fitutil, &shower_response_vector[i]);
+    FitPDF pdf_tracks(  Form("pdf_tracks_%.2f", pid_map[i]),  "pdf_tracks",  fitutil, &track_response_vector[i]);
+    FitPDF pdf_showers( Form("pdf_showers_%.2f", pid_map[i]), "pdf_showers", fitutil, &shower_response_vector[i]);
     pdf_tracks_vector.push_back( pdf_tracks );
     pdf_showers_vector.push_back( pdf_showers );
 
@@ -150,21 +157,10 @@ void AsimovFitNBins() {
 
     track_vector_no.push_back(  (TH3D*)pdf_tracks.GetExpValHist() );
     shower_vector_no.push_back( (TH3D*)pdf_showers.GetExpValHist() );
-    TString track_name_no  = Form("tracks_expval_no_%.2f", i*PID_STEP);
-    TString shower_name_no = Form("showers_expval_no_%.2f", i*PID_STEP);
+    TString track_name_no  = Form("tracks_expval_no_%.2f", pid_map[i]);
+    TString shower_name_no = Form("showers_expval_no_%.2f", pid_map[i]);
     track_vector_no[i] ->SetName(track_name_no);
     shower_vector_no[i]->SetName(shower_name_no);
-
-    // Set IO values and make expectation histograms
-    fitutil->SetIOlims();
-    fitutil->SetIOcentvals();
-
-    track_vector_io.push_back(  (TH3D*)pdf_tracks.GetExpValHist() );
-    shower_vector_io.push_back( (TH3D*)pdf_showers.GetExpValHist() );
-    TString track_name_io  = Form("tracks_expval_io_%.2f", i*PID_STEP);
-    TString shower_name_io = Form("showers_expval_io_%.2f", i*PID_STEP);
-    track_vector_io[i] ->SetName(track_name_io);
-    shower_vector_io[i]->SetName(shower_name_io);
 
     // Set parameters to constant
     fitutil->GetVar("SinsqTh12")->setConstant(kTRUE);
@@ -181,83 +177,45 @@ void AsimovFitNBins() {
   TStopwatch timer;
 
   // Fit under IO model, NO data
+  fitutil->SetIOlims();
+  fitutil->SetIOcentvals();
+
   std::map<string, TH1*> hist_map_no;
   RooCategory cats_no("categories_no", "data categories");
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
-      hist_map_no.insert( {(string)shower_vector_no[i]->GetName(), shower_vector_no[i]} );
+    if (pid_map[i] < PID_CUT) {
+      hist_map_no.insert( {(string)shower_vector_no[i]->GetName(), shower_vector_no[i] } );
       cats_no.defineType( shower_vector_no[i]->GetName() );
     }
     else {
-      hist_map_no.insert( {(string)track_vector_no[i]->GetName(),  track_vector_no[i]} );
+      hist_map_no.insert( {(string)track_vector_no[i] ->GetName(),  track_vector_no[i] } );
       cats_no.defineType( track_vector_no[i]->GetName() );
     }
   }
 
   RooSimultaneous simPdf_no("simPdf_no", "simultaneous Pdf for NO", cats_no);
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
-      simPdf_no.addPdf( pdf_showers_vector[i], shower_vector_no[i]->GetName() );
+    if (pid_map[i] < PID_CUT) {
+      simPdf_no.addPdf(pdf_showers_vector[i], shower_vector_no[i]->GetName() );
     }
     else {
-      simPdf_no.addPdf( pdf_tracks_vector[i],  track_vector_no[i]->GetName() );
+      simPdf_no.addPdf(pdf_tracks_vector[i],  track_vector_no[i]->GetName() );
     }
   }
 
   RooDataHist data_hists_no("data_hists_no", "track and shower data", fitutil->GetObs(), cats_no, hist_map_no);
   RooFitResult *fitres_no = simPdf_no.fitTo( data_hists_no, Save(kTRUE) );
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
-  
+
   RooArgSet result_no ( fitres_no->floatParsFinal() );
-
-  // Fit under NO model, IO data
-  fitutil->SetNOlims();
-  fitutil->SetNOcentvals();
-
-  std::map<string, TH1*> hist_map_io;
-  RooCategory cats_io("categories_io", "data categories");
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
-      hist_map_io.insert( {(string)shower_vector_io[i]->GetName(), shower_vector_io[i] } );
-      cats_io.defineType( shower_vector_io[i]->GetName() );
-    }
-    else {
-      cats_io.defineType( track_vector_io[i]->GetName() );
-      hist_map_io.insert( {(string)track_vector_io[i] ->GetName(),  track_vector_io[i] } );
-    }
-  }
-
-  RooSimultaneous simPdf_io("simPdf_io", "simultaneous Pdf for IO", cats_io);
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
-      simPdf_io.addPdf(pdf_showers_vector[i], shower_vector_io[i]->GetName() );
-    }
-    else {
-      simPdf_io.addPdf(pdf_tracks_vector[i],  track_vector_io[i]->GetName() );
-    }
-  }
-
-  RooDataHist data_hists_io("data_hists_io", "track and shower data", fitutil->GetObs(), cats_io, hist_map_io);
-  RooFitResult *fitres_io = simPdf_io.fitTo( data_hists_io, Save(kTRUE) );
-  cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
-
-  RooArgSet result_io ( fitres_io->floatParsFinal() );
-
   cout << "*********Fit result comparison****************************" << endl;
   cout << "dm31       fitted: " << ((RooRealVar*)result_no.find("Dm31"))->getVal() << endl;
   cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_no.find("SinsqTh23"))->getVal() << endl;
-  cout << "*********Fit result comparison****************************" << endl;
-
-  cout << "*********Fit result comparison****************************" << endl;
-  cout << "dm31       fitted: " << ((RooRealVar*)result_io.find("Dm31"))->getVal() << endl;
-  cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_io.find("SinsqTh23"))->getVal() << endl;
   cout << "*********Fit result comparison****************************" << endl;
   //----------------------------------------------------------
   // set hierarchy to fitted values
   //----------------------------------------------------------
 
-  // WARNING: THE NAMES NO AND IO IN THIS SECTION ARE TO SEPERATE THE VARIABLES, NOT TO STATE UNDER
-  // WHICH ORDERING THE OBJECTS ARE USED/EVALUATED/GENERATED.
   Double_t dm31      = ((RooRealVar*)result_no.find("Dm31"))->getVal();
   Double_t sinSqTh23 = ((RooRealVar*)result_no.find("SinsqTh23"))->getVal();
   fitutil->GetVar("Dm31")->setVal( dm31 );
@@ -265,21 +223,21 @@ void AsimovFitNBins() {
 
   std::vector<TH3D*> fitted_no;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
+    if (pid_map[i] < PID_CUT) {
       TH3D *showers_fitted_no = (TH3D*)pdf_showers_vector[i].GetExpValHist();
-      showers_fitted_no->SetName( Form("showers_fitted_no_%.2f", i*PID_STEP) );
+      showers_fitted_no->SetName( Form("showers_fitted_no_%.2f", pid_map[i]) );
       fitted_no.push_back( showers_fitted_no );
     }
     else {
       TH3D *tracks_fitted_no = (TH3D*)pdf_tracks_vector[i].GetExpValHist();
-      tracks_fitted_no->SetName( Form("tracks_fitted_no_%.2f", i*PID_STEP) );
+      tracks_fitted_no->SetName( Form("tracks_fitted_no_%.2f", pid_map[i]) );
       fitted_no.push_back( tracks_fitted_no );
     }
   }
 
   std::vector<Double_t> chi2_no;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) chi2_no.push_back( HistoChi2Test( shower_vector_no[i], fitted_no[i], 2, 80, -1, 0) );
+    if (pid_map[i] < PID_CUT) chi2_no.push_back( HistoChi2Test( shower_vector_no[i], fitted_no[i], 2, 80, -1, 0) );
     else              chi2_no.push_back( HistoChi2Test( track_vector_no[i],  fitted_no[i], 2, 80, -1, 0) );
   }
 
@@ -289,38 +247,5 @@ void AsimovFitNBins() {
     chi2_tot_no += chi2_no[i] * chi2_no[i];
   }
   cout << "Squared sum is : " << std::sqrt( chi2_tot_no ) << endl;
-
-
-  dm31      = ((RooRealVar*)result_io.find("Dm31"))->getVal();
-  sinSqTh23 = ((RooRealVar*)result_io.find("SinsqTh23"))->getVal();
-  fitutil->GetVar("Dm31")->setVal( dm31 );
-  fitutil->GetVar("SinsqTh23")->setVal( sinSqTh23 );
-
-  std::vector<TH3D*> fitted_io;
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
-      TH3D *showers_fitted_io = (TH3D*)pdf_showers_vector[i].GetExpValHist();
-      showers_fitted_io->SetName( Form("showers_fitted_io_%.2f", i*PID_STEP) );
-      fitted_io.push_back( showers_fitted_io );
-    }
-    else {
-      TH3D *tracks_fitted_io = (TH3D*)pdf_tracks_vector[i].GetExpValHist();
-      tracks_fitted_io->SetName( Form("tracks_fitted_io_%.2f", i*PID_STEP) );
-      fitted_io.push_back( tracks_fitted_io );
-    }
-  }
-
-  std::vector<Double_t> chi2_io;
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) chi2_io.push_back( HistoChi2Test( shower_vector_io[i], fitted_io[i], 2, 80, -1, 0) );
-    else              chi2_io.push_back( HistoChi2Test( track_vector_io[i],  fitted_io[i], 2, 80, -1, 0) );
-  }
-
-  Double_t chi2_tot_io = 0;
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    cout << "NMHUtils: Chi2 between events IO and events fitted on NO is: " << chi2_io[i] << endl;
-    chi2_tot_io += chi2_io[i] * chi2_io[i];
-  }
-  cout << "Squared sum is : " << std::sqrt( chi2_tot_io ) << endl;
 
 }

@@ -31,3 +31,4 @@ tests/roofit_example/dic*
 *.root
 *.pdf
 *.png
+*.txt

@@ -29,7 +29,7 @@
 using namespace std;
 using namespace RooFit;
 
-void AsimovFitNBins() {
+void AsimovFitNBinsNO() {
 
   const int N_PID_CLASSES = 10;
   const Double_t PID_STEP = 1 / float(N_PID_CLASSES);
@@ -130,8 +130,6 @@ void AsimovFitNBins() {
   auto meff_file = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
   FitUtil *fitutil = new FitUtil(3, track_response_vector[0].GetHist3D(), 2, 80, -1, 0, 0, 1, meff_file);
 
-  std::vector<TH3D*> track_vector_no;
-  std::vector<TH3D*> shower_vector_no;
   std::vector<TH3D*> track_vector_io;
   std::vector<TH3D*> shower_vector_io;
 
@@ -143,17 +141,6 @@ void AsimovFitNBins() {
     FitPDF pdf_showers( Form("pdf_showers_%.2f", i*PID_STEP), "pdf_showers", fitutil, &shower_response_vector[i]);
     pdf_tracks_vector.push_back( pdf_tracks );
     pdf_showers_vector.push_back( pdf_showers );
-
-    // Set NO values and make expectation histograms
-    fitutil->SetNOlims();
-    fitutil->SetNOcentvals();
-
-    track_vector_no.push_back(  (TH3D*)pdf_tracks.GetExpValHist() );
-    shower_vector_no.push_back( (TH3D*)pdf_showers.GetExpValHist() );
-    TString track_name_no  = Form("tracks_expval_no_%.2f", i*PID_STEP);
-    TString shower_name_no = Form("showers_expval_no_%.2f", i*PID_STEP);
-    track_vector_no[i] ->SetName(track_name_no);
-    shower_vector_no[i]->SetName(shower_name_no);
 
     // Set IO values and make expectation histograms
     fitutil->SetIOlims();
@@ -179,36 +166,6 @@ void AsimovFitNBins() {
   cout << "NOTICE Fitter started fitting" << endl;
   
   TStopwatch timer;
-
-  // Fit under IO model, NO data
-  std::map<string, TH1*> hist_map_no;
-  RooCategory cats_no("categories_no", "data categories");
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
-      hist_map_no.insert( {(string)shower_vector_no[i]->GetName(), shower_vector_no[i]} );
-      cats_no.defineType( shower_vector_no[i]->GetName() );
-    }
-    else {
-      hist_map_no.insert( {(string)track_vector_no[i]->GetName(),  track_vector_no[i]} );
-      cats_no.defineType( track_vector_no[i]->GetName() );
-    }
-  }
-
-  RooSimultaneous simPdf_no("simPdf_no", "simultaneous Pdf for NO", cats_no);
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
-      simPdf_no.addPdf( pdf_showers_vector[i], shower_vector_no[i]->GetName() );
-    }
-    else {
-      simPdf_no.addPdf( pdf_tracks_vector[i],  track_vector_no[i]->GetName() );
-    }
-  }
-
-  RooDataHist data_hists_no("data_hists_no", "track and shower data", fitutil->GetObs(), cats_no, hist_map_no);
-  RooFitResult *fitres_no = simPdf_no.fitTo( data_hists_no, Save(kTRUE) );
-  cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
-  
-  RooArgSet result_no ( fitres_no->floatParsFinal() );
 
   // Fit under NO model, IO data
   fitutil->SetNOlims();
@@ -242,12 +199,6 @@ void AsimovFitNBins() {
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
   RooArgSet result_io ( fitres_io->floatParsFinal() );
-
-  cout << "*********Fit result comparison****************************" << endl;
-  cout << "dm31       fitted: " << ((RooRealVar*)result_no.find("Dm31"))->getVal() << endl;
-  cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_no.find("SinsqTh23"))->getVal() << endl;
-  cout << "*********Fit result comparison****************************" << endl;
-
   cout << "*********Fit result comparison****************************" << endl;
   cout << "dm31       fitted: " << ((RooRealVar*)result_io.find("Dm31"))->getVal() << endl;
   cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_io.find("SinsqTh23"))->getVal() << endl;
@@ -256,43 +207,8 @@ void AsimovFitNBins() {
   // set hierarchy to fitted values
   //----------------------------------------------------------
 
-  // WARNING: THE NAMES NO AND IO IN THIS SECTION ARE TO SEPERATE THE VARIABLES, NOT TO STATE UNDER
-  // WHICH ORDERING THE OBJECTS ARE USED/EVALUATED/GENERATED.
-  Double_t dm31      = ((RooRealVar*)result_no.find("Dm31"))->getVal();
-  Double_t sinSqTh23 = ((RooRealVar*)result_no.find("SinsqTh23"))->getVal();
-  fitutil->GetVar("Dm31")->setVal( dm31 );
-  fitutil->GetVar("SinsqTh23")->setVal( sinSqTh23 );
-
-  std::vector<TH3D*> fitted_no;
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
-      TH3D *showers_fitted_no = (TH3D*)pdf_showers_vector[i].GetExpValHist();
-      showers_fitted_no->SetName( Form("showers_fitted_no_%.2f", i*PID_STEP) );
-      fitted_no.push_back( showers_fitted_no );
-    }
-    else {
-      TH3D *tracks_fitted_no = (TH3D*)pdf_tracks_vector[i].GetExpValHist();
-      tracks_fitted_no->SetName( Form("tracks_fitted_no_%.2f", i*PID_STEP) );
-      fitted_no.push_back( tracks_fitted_no );
-    }
-  }
-
-  std::vector<Double_t> chi2_no;
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) chi2_no.push_back( HistoChi2Test( shower_vector_no[i], fitted_no[i], 2, 80, -1, 0) );
-    else              chi2_no.push_back( HistoChi2Test( track_vector_no[i],  fitted_no[i], 2, 80, -1, 0) );
-  }
-
-  Double_t chi2_tot_no = 0;
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    cout << "NMHUtils: Chi2 between events NO and events fitted on IO is: " << chi2_no[i] << endl;
-    chi2_tot_no += chi2_no[i] * chi2_no[i];
-  }
-  cout << "Squared sum is : " << std::sqrt( chi2_tot_no ) << endl;
-
-
-  dm31      = ((RooRealVar*)result_io.find("Dm31"))->getVal();
-  sinSqTh23 = ((RooRealVar*)result_io.find("SinsqTh23"))->getVal();
+  Double_t dm31      = ((RooRealVar*)result_io.find("Dm31"))->getVal();
+  Double_t sinSqTh23 = ((RooRealVar*)result_io.find("SinsqTh23"))->getVal();
   fitutil->GetVar("Dm31")->setVal( dm31 );
   fitutil->GetVar("SinsqTh23")->setVal( sinSqTh23 );
 

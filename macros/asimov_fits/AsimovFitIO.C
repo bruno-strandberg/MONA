@@ -29,7 +29,7 @@
 using namespace std;
 using namespace RooFit;
 
-void AsimovFit() {
+void AsimovFitIO() {
 
   TString filefolder = "./default_detres/";
 
@@ -101,7 +101,6 @@ void AsimovFit() {
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_response);
   FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, &shower_response);
 
- 
   // Set values to NO
   fitutil->SetNOlims();
   fitutil->SetNOcentvals();
@@ -110,15 +109,6 @@ void AsimovFit() {
   TH3D* showers_no  = (TH3D*)pdf_showers.GetExpValHist();
   tracks_no->SetName("tracks_expval_NO");
   showers_no->SetName("showers_expval_NO");
-
-
-  fitutil->SetIOlims();
-  fitutil->SetIOcentvals();
-
-  TH3D* tracks_io   = (TH3D*)pdf_tracks.GetExpValHist();
-  TH3D* showers_io  = (TH3D*)pdf_showers.GetExpValHist();
-  tracks_io->SetName("tracks_expval_IO");
-  showers_io->SetName("showers_expval_IO");
 
   fitutil->GetVar("SinsqTh12")->setConstant(kTRUE);
   fitutil->GetVar("SinsqTh13")->setConstant(kTRUE);
@@ -132,14 +122,14 @@ void AsimovFit() {
   
   TStopwatch timer;
 
-  fitutil->SetIOlims();
-  fitutil->SetIOcentvals();
-
   // Fit under IO model, NO data
   std::map<string, TH1*> hist_map_no = { {(string)tracks_no->GetName(),  tracks_no },
                                          {(string)showers_no->GetName(), showers_no }};
 
-  RooCategory cats_no("categories_no","data categories"); // I love cats :3
+  fitutil->SetIOlims();
+  fitutil->SetIOcentvals();
+
+  RooCategory cats_no("categories_no","data categories");
   cats_no.defineType( tracks_no->GetName() );
   cats_no.defineType( showers_no->GetName() );
 
@@ -150,45 +140,18 @@ void AsimovFit() {
   RooDataHist data_hists_no("data_hists_no", "track and shower data", fitutil->GetObs(), cats_no, hist_map_no);
   RooFitResult *fitres_no = simPdf_no.fitTo( data_hists_no, Save(kTRUE) );
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
-  
+
   RooArgSet result_no ( fitres_no->floatParsFinal() );
-
-  // Fit under NO model, IO data
-  std::map<string, TH1*> hist_map_io = { {(string)tracks_io->GetName(),  tracks_io },
-                                         {(string)showers_io->GetName(), showers_io }};
-
-  fitutil->SetNOlims();
-  fitutil->SetNOcentvals();
-
-  RooCategory cats_io("categories_io","data categories");
-  cats_io.defineType( tracks_io->GetName() );
-  cats_io.defineType( showers_io->GetName() );
-
-  RooSimultaneous simPdf_io("simPdf_io", "simultaneous Pdf for IO", cats_io);
-  simPdf_io.addPdf(pdf_tracks,  tracks_io->GetName() );
-  simPdf_io.addPdf(pdf_showers, showers_io->GetName() );
-
-  RooDataHist data_hists_io("data_hists_io", "track and shower data", fitutil->GetObs(), cats_io, hist_map_io);
-  RooFitResult *fitres_io = simPdf_io.fitTo( data_hists_io, Save(kTRUE) );
-  cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
-
-  RooArgSet result_io ( fitres_io->floatParsFinal() );
 
   cout << "*********Fit result comparison****************************" << endl;
   cout << "dm31       fitted: " << ((RooRealVar*)result_no.find("Dm31"))->getVal() << endl;
   cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_no.find("SinsqTh23"))->getVal() << endl;
   cout << "*********Fit result comparison****************************" << endl;
 
-  cout << "*********Fit result comparison****************************" << endl;
-  cout << "dm31       fitted: " << ((RooRealVar*)result_io.find("Dm31"))->getVal() << endl;
-  cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_io.find("SinsqTh23"))->getVal() << endl;
-  cout << "*********Fit result comparison****************************" << endl;
   //----------------------------------------------------------
   // set hierarchy to fitted values
   //----------------------------------------------------------
 
-  // WARNING: THE NAMES NO AND IO IN THIS SECTION ARE TO SEPERATE THE VARIABLES, NOT TO STATE UNDER
-  // WHICH ORDERING THE OBJECTS ARE USED/EVALUATED/GENERATED.
   Double_t dm31      = ((RooRealVar*)result_no.find("Dm31"))->getVal();
   Double_t sinSqTh23 = ((RooRealVar*)result_no.find("SinsqTh23"))->getVal();
   fitutil->GetVar("Dm31")->setVal( dm31 );
@@ -205,31 +168,4 @@ void AsimovFit() {
   cout << "NMHUtils: Chi2 between showers NO and showers fitted on IO is: " << n_chi2sh_no << endl;
   cout << "Squared sum is : " << std::sqrt(std::pow(n_chi2tr_no, 2) + std::pow(n_chi2sh_no, 2)) << endl;
 
-  dm31      = ((RooRealVar*)result_io.find("Dm31"))->getVal();
-  sinSqTh23 = ((RooRealVar*)result_io.find("SinsqTh23"))->getVal();
-  fitutil->GetVar("Dm31")->setVal( dm31 );
-  fitutil->GetVar("SinsqTh23")->setVal( sinSqTh23 );
-  TH3D *tracks_fitted_io  = (TH3D*)pdf_tracks.GetExpValHist();
-  tracks_fitted_io->SetName("tracks_fitted_io");
-  TH3D *showers_fitted_io = (TH3D*)pdf_showers.GetExpValHist();
-  showers_fitted_io->SetName("showers_fitted_io");
-
-  Double_t n_chi2tr_io = HistoChi2Test(tracks_io, tracks_fitted_io, 2, 80, -1, 0);
-  Double_t n_chi2sh_io = HistoChi2Test(showers_io, showers_fitted_io, 2, 80, -1, 0);
-
-  cout << "NMHUtils: Chi2 between tracks  IO and tracks  fitted on NO is: " << n_chi2tr_io << endl;
-  cout << "NMHUtils: Chi2 between showers IO and showers fitted on NO is: " << n_chi2sh_io << endl;
-  cout << "Squared sum is : " << std::sqrt(std::pow(n_chi2tr_io, 2) + std::pow(n_chi2sh_io, 2)) << endl;
-
-  //----------------------------------------------------------
-  // print asymmetry 
-  //----------------------------------------------------------
-
-  auto asym_track  = NMHUtils::Asymmetry( (TH2D*)tracks_no ->Project3D("yx"), (TH2D*)tracks_io ->Project3D("yx"), "asymmetry_track" , 2, 80, -1, 0);
-  auto asym_shower = NMHUtils::Asymmetry( (TH2D*)showers_no->Project3D("yx"), (TH2D*)showers_io->Project3D("yx"), "asymmetry_shower", 2, 80, -1, 0);
-  auto asym_val_track  = std::get<1>(asym_track);
-  auto asym_val_shower = std::get<1>(asym_shower);
-  cout << "Asym track : " << asym_val_track << endl;
-  cout << "Asym shower: " << asym_val_shower << endl;
-  cout << "Squared sum is : " << std::sqrt(std::pow(asym_val_track, 2) + std::pow(asym_val_shower, 2)) << endl;
 }
