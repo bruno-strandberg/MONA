@@ -30,7 +30,7 @@ void PlotRelativeErrorNEventsDefault() {
   TFile *f_NO = TFile::Open(s_file_NO, "READ");
   TFile *f_IO = TFile::Open(s_file_IO, "READ");
 
-  gStyle->SetPalette(kBird);
+  gStyle->SetPalette(kLightTemperature);
   gStyle->SetOptStat(0);
 
   TH2D *h_t_err_no = (TH2D*)f_NO->Get("track_response_expct_err_yx");
@@ -47,7 +47,7 @@ void PlotRelativeErrorNEventsDefault() {
   SetLabelSizes(h_t_err_no, 0.035);
   h_t_err_no->GetXaxis()->SetRangeUser(1,100);
   h_t_err_no->GetYaxis()->SetRangeUser(-1,0);
-  h_t_err_no->GetZaxis()->SetRangeUser(1e-3 ,1);
+  h_t_err_no->GetZaxis()->SetRangeUser(1e-2 ,1);
   c1->cd(1)->SetRightMargin(0.15);
   c1->cd(1)->SetLogx();
   c1->cd(1)->SetLogz();
@@ -58,7 +58,7 @@ void PlotRelativeErrorNEventsDefault() {
   SetLabelSizes(h_s_err_no, 0.035);
   h_s_err_no->GetXaxis()->SetRangeUser(1,100);
   h_s_err_no->GetYaxis()->SetRangeUser(-1,0);
-  h_s_err_no->GetZaxis()->SetRangeUser(1e-3, 1);
+  h_s_err_no->GetZaxis()->SetRangeUser(1e-2, 1);
   c1->cd(2)->SetRightMargin(0.15);
   c1->cd(2)->SetLogx();
   c1->cd(2)->SetLogz();
@@ -69,7 +69,7 @@ void PlotRelativeErrorNEventsDefault() {
   SetLabelSizes(h_t_err_io, 0.035);
   h_t_err_io->GetXaxis()->SetRangeUser(1,100);
   h_t_err_io->GetYaxis()->SetRangeUser(-1,0);
-  h_t_err_io->GetZaxis()->SetRangeUser(1e-3, 1);
+  h_t_err_io->GetZaxis()->SetRangeUser(1e-2, 1);
   c1->cd(3)->SetRightMargin(0.15);
   c1->cd(3)->SetLogx();
   c1->cd(3)->SetLogz();
@@ -80,7 +80,7 @@ void PlotRelativeErrorNEventsDefault() {
   SetLabelSizes(h_s_err_io, 0.035);
   h_s_err_io->GetXaxis()->SetRangeUser(1,100);
   h_s_err_io->GetYaxis()->SetRangeUser(-1,0);
-  h_s_err_io->GetZaxis()->SetRangeUser(1e-3, 1);
+  h_s_err_io->GetZaxis()->SetRangeUser(1e-2, 1);
   c1->cd(4)->SetRightMargin(0.15);
   c1->cd(4)->SetLogx();
   c1->cd(4)->SetLogz();
