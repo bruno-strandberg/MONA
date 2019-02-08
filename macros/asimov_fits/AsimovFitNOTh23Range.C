@@ -31,7 +31,7 @@ using namespace RooFit;
 
 void AsimovFitNOTh23Range() {
 
-  TString filefolder = "./";
+  TString filefolder = "./default_detres/";
   TString s_outputfile = "./AsimovFitNOTh23Range.txt";
 
   // DetRes and EvSel input values
@@ -72,7 +72,7 @@ void AsimovFitNOTh23Range() {
   TString track_file = "track_response.root";
   TString shower_file = "shower_response.root";
 
-  if ( !NMHUtils::FileExists(track_file) or !NMHUtils::FileExists(shower_file) ) {
+  if ( !NMHUtils::FileExists(filefolder + track_file) or !NMHUtils::FileExists(filefolder + shower_file) ) {
 
     for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
       if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
@@ -81,15 +81,15 @@ void AsimovFitNOTh23Range() {
       shower_response.Fill(evt);
     }
 
-    track_response.WriteToFile("track_response.root");
-    shower_response.WriteToFile("shower_response.root");
+    track_response.WriteToFile(filefolder + track_file);
+    shower_response.WriteToFile(filefolder + shower_file);
 
     cout << "NOTICE: Finished filling response" << endl;
   } 
   else {
     cout << "NOTICE: Reading responses from disk" << endl;
-    track_response.ReadFromFile("track_response.root");
-    shower_response.ReadFromFile("shower_response.root");
+    track_response.ReadFromFile(filefolder + track_file);
+    shower_response.ReadFromFile(filefolder + shower_file);
   }
 
   //----------------------------------------------------------
@@ -97,10 +97,6 @@ void AsimovFitNOTh23Range() {
   //----------------------------------------------------------
 
   auto meff_file = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
-  FitUtil *fitutil = new FitUtil(3, track_response.GetHist3D(), 1, 100, -1, 0, 0, 1, meff_file);
-
-  FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_response);
-  FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, &shower_response);
 
  
   // Open output stream to save sensitivity values
@@ -108,6 +104,10 @@ void AsimovFitNOTh23Range() {
   outputfile << "th23,sinSqTh23,n_chi2tr_no,n_chi2sh_no" << endl;
 
   for (Int_t i = 0; i < 11; i++) {
+    FitUtil *fitutil = new FitUtil(3, track_response.GetHist3D(), 1, 100, -1, 0, 0, 1, meff_file);
+
+    FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_response);
+    FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, &shower_response);
     Double_t th23 = 40 + i;
     Double_t sinSqTh23_true = TMath::Power(TMath::Sin(th23 * TMath::Pi()/180.), 2);
  
@@ -155,8 +155,8 @@ void AsimovFitNOTh23Range() {
     RooArgSet result_io ( fitres_io->floatParsFinal() );
 
     cout << "*********Fit result comparison****************************" << endl;
-    cout << "sinsq_th23       : " << sinSqTh23 << endl;
     cout << "dm31       fitted: " << ((RooRealVar*)result_io.find("Dm31"))->getVal() << endl;
+    cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_io.find("SinsqTh23"))->getVal() << endl;
     cout << "*********Fit result comparison****************************" << endl;
 
     //----------------------------------------------------------
