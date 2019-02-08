@@ -252,14 +252,14 @@ NMHUtils::Asymmetry(TH1 *h1, TH1* h2, TString nametitle,
   Double_t asym     = 0.;
   Double_t asym_err = 0.;
 
-  for (Int_t xb = 1; xb <= h_asym->GetXaxis()->GetNbins(); xb++) {
-    for (Int_t yb = 1; yb <= h_asym->GetYaxis()->GetNbins(); yb++) {
+  for (Int_t xb = 1; xb <= h1->GetXaxis()->GetNbins(); xb++) {
+    for (Int_t yb = 1; yb <= h1->GetYaxis()->GetNbins(); yb++) {
 
       // the visualisation is done in 1D or 2D, these variables help to perform the summation over bjorken-y
       Double_t A_2D     = 0.;
       Double_t A_err_2D = 0.;
 
-      for (Int_t zb = 1; zb <= h_asym->GetZaxis()->GetNbins(); zb++) {
+      for (Int_t zb = 1; zb <= h1->GetZaxis()->GetNbins(); zb++) {
 
 	Double_t N_h1     = h1->GetBinContent(xb, yb, zb);
 	Double_t N_h2     = h2->GetBinContent(xb, yb, zb);
@@ -302,9 +302,9 @@ NMHUtils::Asymmetry(TH1 *h1, TH1* h2, TString nametitle,
 	  A_err = 0.;
 	}
 
-	Double_t xc = h_asym->GetXaxis()->GetBinCenter(xb);
-	Double_t yc = h_asym->GetYaxis()->GetBinCenter(yb);
-	Double_t zc = h_asym->GetZaxis()->GetBinCenter(zb);
+	Double_t xc = h1->GetXaxis()->GetBinCenter(xb);
+	Double_t yc = h1->GetYaxis()->GetBinCenter(yb);
+	Double_t zc = h1->GetZaxis()->GetBinCenter(zb);
 
 	if ( (xc < xlow) || (xc > xhigh) || (yc < ylow) || (yc > yhigh) || (zc < zlow) || (zc > zhigh) ) {
 	  A     = 0.;
