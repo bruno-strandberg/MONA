@@ -115,12 +115,14 @@ void contours(TString jobname = "contours",
 
   RooRandom::randomGenerator()->SetSeed(416); // this seed controls the randomisation of osc parameters
 
+  futil.SetNOlims();
   futil.GetVar("SinsqTh12")->randomize();
   futil.GetVar("SinsqTh13")->randomize();
   futil.GetVar("SinsqTh23")->randomize();
   futil.GetVar("dcp")->randomize();
   futil.GetVar("Dm21")->randomize();
   futil.GetVar("Dm31")->randomize();
+  futil.FreeParLims();
 
   cout << "**********************************************************************************" << endl;
   cout << "True th23, dm31: " << futil.GetVar("SinsqTh23")->getVal() << "\t" 
@@ -148,12 +150,6 @@ void contours(TString jobname = "contours",
   // other parameters are fixed to NO central values
   //------------------------------------------------------------
   futil.SetNOcentvals();
-
-  futil.GetVar("SinsqTh23")->setMin(0);
-  futil.GetVar("SinsqTh23")->setMax(1);
-  futil.GetVar("Dm31")->setMin(1e-3);
-  futil.GetVar("Dm31")->setMax(5e-3);
-
   futil.GetVar("SinsqTh12")->setConstant(kTRUE);
   futil.GetVar("SinsqTh13")->setConstant(kTRUE);
   futil.GetVar("dcp")->setConstant(kTRUE);

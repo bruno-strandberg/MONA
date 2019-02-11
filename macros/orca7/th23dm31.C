@@ -111,12 +111,14 @@ void th23dm31(TString jobname = "job0", Int_t nexps = 5,
   RooRandom::randomGenerator()->SetSeed(416); // this seed controls the randomisation of fit parameters
   trkpdf.SetSeed(0);                          // this seed controls pseudo-experiments; 0 means always different
 
+  futil.SetNOlims();
   futil.GetVar("SinsqTh12")->randomize();
   futil.GetVar("SinsqTh13")->randomize();
   futil.GetVar("SinsqTh23")->randomize();
   futil.GetVar("dcp")->randomize();
   futil.GetVar("Dm21")->randomize();
   futil.GetVar("Dm31")->randomize();
+  futil.FreeParLims();
 
   enum { EXPNAME, EXPTRK, EXPSHW, EXPMID };
   vector< std::tuple<TString, TH3D*, TH3D*, TH3D*> > experiments;
@@ -144,12 +146,8 @@ void th23dm31(TString jobname = "job0", Int_t nexps = 5,
   //------------------------------------------------------------
   futil.SetNOcentvals();
 
-  futil.GetVar("SinsqTh23")->setMin(0);
-  futil.GetVar("SinsqTh23")->setMax(1);
   futil.GetVar("SinsqTh23")->setRange("firstq" , 0. , 0.5  );
   futil.GetVar("SinsqTh23")->setRange("secondq", 0.5, 1.   );
-  futil.GetVar("Dm31")->setMin(1e-3);
-  futil.GetVar("Dm31")->setMax(5e-3);
 
   futil.GetVar("SinsqTh12")->setConstant(kTRUE);
   futil.GetVar("SinsqTh13")->setConstant(kTRUE);
