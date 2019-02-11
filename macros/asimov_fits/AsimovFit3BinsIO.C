@@ -56,6 +56,11 @@ void AsimovFit3BinsIO() {
   Int_t byMin = 0;
   Int_t byMax = 1;
 
+  // Fitter ranges
+  Int_t fitEMin  = 2;
+  Int_t fitEMax  = 80;
+  Int_t fitctMin = -1;
+  Int_t fitctMax = 0;
   
   //----------------------------------------------------------
   // detector response for tracks and showers
@@ -137,7 +142,7 @@ void AsimovFit3BinsIO() {
   //----------------------------------------------------------
 
   auto meff_file = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
-  FitUtil *fitutil = new FitUtil(3, track_response_vector[0].GetHist3D(), 2, 80, -1, 0, 0, 1, meff_file);
+  FitUtil *fitutil = new FitUtil(3, track_response_vector[0].GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);
 
   std::vector<TH3D*> track_vector_no;
   std::vector<TH3D*> shower_vector_no;
@@ -237,8 +242,8 @@ void AsimovFit3BinsIO() {
 
   std::vector<Double_t> chi2_no;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (pid_map[i] < PID_CUT) chi2_no.push_back( HistoChi2Test( shower_vector_no[i], fitted_no[i], 2, 80, -1, 0) );
-    else              chi2_no.push_back( HistoChi2Test( track_vector_no[i],  fitted_no[i], 2, 80, -1, 0) );
+    if (pid_map[i] < PID_CUT) chi2_no.push_back( HistoChi2Test( shower_vector_no[i], fitted_no[i], fitEMin, fitEMax, fitctMin, fitctMax) );
+    else                      chi2_no.push_back( HistoChi2Test( track_vector_no[i],  fitted_no[i], fitEMin, fitEMax, fitctMin, fitctMax) );
   }
 
   Double_t chi2_tot_no = 0;

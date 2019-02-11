@@ -44,6 +44,11 @@ void AsimovFitIO() {
   Int_t byMin = 0;
   Int_t byMax = 1;
 
+  // Fitter ranges
+  Int_t fitEMin  = 2;
+  Int_t fitEMax  = 80;
+  Int_t fitctMin = -1;
+  Int_t fitctMax = 0;
   
   //----------------------------------------------------------
   // detector response for tracks and showers
@@ -96,7 +101,7 @@ void AsimovFitIO() {
   //----------------------------------------------------------
 
   auto meff_file = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
-  FitUtil *fitutil = new FitUtil(3, track_response.GetHist3D(), 2, 80, -1, 0, 0, 1, meff_file);
+  FitUtil *fitutil = new FitUtil(3, track_response.GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);
 
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_response);
   FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, &shower_response);
@@ -161,8 +166,8 @@ void AsimovFitIO() {
   TH3D *showers_fitted_no = (TH3D*)pdf_showers.GetExpValHist();
   showers_fitted_no->SetName("showers_fitted_no");
 
-  Double_t n_chi2tr_no = HistoChi2Test(tracks_no, tracks_fitted_no, 2, 80, -1, 0);
-  Double_t n_chi2sh_no = HistoChi2Test(showers_no, showers_fitted_no, 2, 80, -1, 0);
+  Double_t n_chi2tr_no = HistoChi2Test(tracks_no, tracks_fitted_no, fitEMin, fitEMax, fitctMin, fitctMax);
+  Double_t n_chi2sh_no = HistoChi2Test(showers_no, showers_fitted_no, fitEMin, fitEMax, fitctMin, fitctMax);
 
   cout << "NMHUtils: Chi2 between tracks  NO and tracks  fitted on IO is: " << n_chi2tr_no << endl;
   cout << "NMHUtils: Chi2 between showers NO and showers fitted on IO is: " << n_chi2sh_no << endl;
