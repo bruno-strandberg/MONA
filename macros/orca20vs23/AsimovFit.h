@@ -26,7 +26,7 @@ struct fitpacket: public TObject {
   TString       fDetString;      //!< detector string to identify which fit this belongs to
   TH3D         *fTrkH;           //!< track expectation value
   TH3D         *fShwH;           //!< shower expectation value
-  RooDataHist  *fCombH;          //!< combined dataset of tracks and showers
+  RooDataHist  *fCombH;          //!< combined dataset in RooFit
   RooArgSet    *fParData;        //!< parameter values at which the expectation data was created
   RooFitResult *fRes_1q;         //!< fit result assuming other ordering, theta-23 first quadrant
   RooFitResult *fRes_2q;         //!< fit result assuming other ordering, theta-23 second quadrant
@@ -35,7 +35,7 @@ struct fitpacket: public TObject {
   ~fitpacket() {};
 
   /** Copy constructor to help with storing data read from input on heap*/
-  fitpacket(const fitpacket &other) {
+ fitpacket(const fitpacket &other): TObject((TObject)other) {
     fDetString = other.fDetString;
     fTrkH      = (TH3D*)other.fTrkH->Clone();
     fShwH      = (TH3D*)other.fShwH->Clone();
@@ -121,8 +121,8 @@ class AsimovFit {
 
   // variables for an external constraint on th13
   RooGaussian     *fTh13C;
-  static const double fTh13mean  = 0.0215;   // from PDG
-  static const double fTh13sigma = 0.0025/3; // 3sigma limits are 0.019, 0.024, i.e. += 0.0025
+  static constexpr double fTh13mean  = 0.0215;   // from PDG
+  static constexpr double fTh13sigma = 0.0025/3; // 3sigma limits are 0.019, 0.024, i.e. += 0.0025
 
   // vector for storing fitpacket's read from a file
   vector< fitpacket* > fFPs;
@@ -150,9 +150,12 @@ class AsimovFit {
   void LikelihoodScan(TString var_name = "SinsqTh23", Double_t var_min = 0.35, 
 		      Double_t var_max = 0.65, Double_t th23 = 0.6);
   void Contour(Double_t th23_data, TString var1="SinsqTh23", TString var2 = "SinsqTh13");
-
-  // dev
   RooDataHist* CombineData(TH1* trkH, TH1* shwH);
+  void SetModelToFitresult(RooFitResult *fr);
+  std::tuple<Double_t, Double_t, Double_t> GetChi2(fitpacket &fp, Bool_t q1);
+  std::tuple<Double_t, Double_t, Double_t> GetAsym(fitpacket &fp, Bool_t q1);
+
+  fitpacket* FindPacket(Double_t sinsqth23, Detector det);
 
 };
 

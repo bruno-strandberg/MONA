@@ -4,6 +4,9 @@
 #include "FileHeader.h"
 #include "SummaryParser.h"
 
+#include "RooChi2Var.h"
+#include "RooMsgService.h"
+
 using namespace RooFit;
 
 /** constructor */
@@ -177,8 +180,12 @@ void AsimovFit::InitPdfs() {
     \param dcp    delta-CP value, (0--2)
     \param dm21   delta-m21^2 value
     \param dm31   delta-m31^2 value
+    \return       fitpacket with members pointing to created data
 */
 fitpacket AsimovFit::CreateData(Bool_t NOdata, Double_t th23, Double_t th12, Double_t th13, Double_t dcp, Double_t dm21, Double_t dm31) {
+
+  // set parameters
+  //----------------
 
   if ( !NOdata ) fFitUtil->SetIOcentvals();
 
@@ -196,6 +203,9 @@ fitpacket AsimovFit::CreateData(Bool_t NOdata, Double_t th23, Double_t th12, Dou
     fFitUtil->GetVar("Dm31")->setVal(dm31);
   }
 
+  // create histograms and a combined dataset
+  //-----------------------------------------
+
   TString trkname = fDetStr + "_trk";
   TString shwname = fDetStr + "_shw";
   TH3D* trkH = fTrkPdf->GetExpValHist();
@@ -205,16 +215,14 @@ fitpacket AsimovFit::CreateData(Bool_t NOdata, Double_t th23, Double_t th12, Dou
   trkH->SetDirectory(0);
   shwH->SetDirectory(0);
 
-  // category <--> data map
-  std::map<string, TH1* > hist_map = { { (string)fTrkCateg, trkH }, 
-				       { (string)fShwCateg, shwH } };    
-  // create combined data sets
-  TString combname = fDetStr + "_comb";
-  RooDataHist *combd = new RooDataHist(combname, combname, fFitUtil->GetObs(), *fCategs, hist_map);
+  RooDataHist *combd = CombineData( trkH, shwH );
     
   // snapshot of the oscillation parameters
+  //----------------------------------------
   RooArgSet *pars = (RooArgSet*)fFitUtil->GetSet().snapshot(kTRUE);
 
+  // set pointers for the fitpacket
+  //-------------------------------
   fitpacket fp;
   fp.fDetString = fDetStr;
   fp.fTrkH      = trkH;
@@ -227,6 +235,11 @@ fitpacket AsimovFit::CreateData(Bool_t NOdata, Double_t th23, Double_t th12, Dou
 
 //*********************************************************************************************
 
+/** Function to combine the track and shower histograms to a combined dataset in RooFit 
+    \param trkH Pointer to track histogram
+    \param shwH Pointer to shower histogram
+    \return A RooDataHist with combined data
+ */
 RooDataHist* AsimovFit::CombineData(TH1* trkH, TH1* shwH) {
 
   // category <--> data map
@@ -234,8 +247,10 @@ RooDataHist* AsimovFit::CombineData(TH1* trkH, TH1* shwH) {
 				       { (string)fShwCateg, shwH } };    
   // create combined data sets
   TString combname = fDetStr + "_comb";
+  RooMsgService::instance().setGlobalKillBelow(FATAL); // don't want to see messages at read-in
   RooDataHist *combd = new RooDataHist(combname, combname, fFitUtil->GetObs(), *fCategs, hist_map);
-  
+  RooMsgService::instance().setGlobalKillBelow(INFO);
+
   return combd;
 
 }
@@ -311,6 +326,8 @@ void AsimovFit::WriteToFile(TString outfile, vector<fitpacket> fps) {
 /** Function to read fitpackets from a ROOT file.
     
     Only fit packets that match the detector string of this instance are read to memory for further manipulation.
+
+    \param infile File where the fitpackets are stored
  */
 void AsimovFit::ReadFromFile(TString infile) {
 
@@ -332,11 +349,17 @@ void AsimovFit::ReadFromFile(TString infile) {
   Int_t ignored = 0;
   for (Int_t i = 0; i < tin->GetEntries(); i++) {
     tin->GetEntry(i);
-    if ( packet->fDetString == fDetStr ) fFPs.push_back( new fitpacket( *packet ) );
-    else ignored++;
 
-    
-    fFPs.back()->fCombH = CombineData( fFPs.back()->fTrkH, fFPs.back()->fShwH );
+    if ( packet->fDetString == fDetStr ) {
+
+      fFPs.push_back( new fitpacket( *packet ) );
+
+      // the combined dataset needs to be re-created because otherwise it is not related to the
+      // fCategs of this class instance
+      fFPs.back()->fCombH = CombineData( fFPs.back()->fTrkH, fFPs.back()->fShwH );
+    }
+    else { ignored++; }
+
   }
 
   cout << "NOTICE AsimovFit::ReadFromFile() Read in: " << fFPs.size() << " fit packets out of "
@@ -399,4 +422,121 @@ void AsimovFit::Contour(Double_t th23_data, TString var1, TString var2) {
   new TCanvas("ccont","ccont",1);
   contour->Draw();
     
+}
+
+//*********************************************************************************************
+
+/** Function to calculate the chi2 values between the model at the fit result and the data as stored in the fitpacket.
+
+    Note on errors and their effect on chi2: RooFit treats the data with errors "RooAbsData::Expected", which, as much as I undertand, means that it assumes the error in the data bin to be sqrt(bin_content). The bin content is the expectation value in a given ordering, the selected error aims to mimic what we do in NMHUtils::Asymmetry, and does not use the MC statistical error that is stored in SumW2 of the expectation value histograms created with FitPDF::GetExpValHist(). The model does not have an associated uncertainty. I tested some of the steps against TH1::Chi2Test function, which seemed to suggest this is a sound procedure.
+
+    \param fp Fit packet with data, parameters at data and parameters at fit
+    \param q1 Boolean to select either first (q1=true) or second (q2=false) th23 quadrant
+    \return a tuple with: <0> combined chi2, including constraint on th13 ; <1> chi2 on tracks ; <2> chi2 on showers. <1-2> do not include info on th13 constraint.
+*/
+std::tuple<Double_t, Double_t, Double_t> AsimovFit::GetChi2(fitpacket &fp, Bool_t q1) {
+
+  // check that fitpacket was created with the same detector selection
+  if ( fDetStr != fp.fDetString ) {
+    throw std::invalid_argument("ERROR! AsimovFit::GetChi2() detector string mismatch");
+  }
+
+  // prepare data
+  RooMsgService::instance().setGlobalKillBelow(FATAL); // don't want to see messages...
+  RooDataHist trkd_rf("trkd_rf","trkd_rf", fFitUtil->GetObs(), Import(*(fp.fTrkH)) );
+  RooDataHist shwd_rf("shwd_rf","shwd_rf", fFitUtil->GetObs(), Import(*(fp.fShwH)) );
+  RooMsgService::instance().setGlobalKillBelow(INFO); // want to see them again...
+
+  //select the fit result depending on the quarter and set model to fit result values
+  RooFitResult *fitres;
+  if (q1) fitres = fp.fRes_1q;
+  else fitres = fp.fRes_2q;
+
+  SetModelToFitresult(fitres);
+
+  // create chi2 variables
+  RooChi2Var chi2_trk("chi2_trk","chi2_trk", *fTrkPdf, trkd_rf, DataError(RooAbsData::Expected) );
+  RooChi2Var chi2_shw("chi2_shw","chi2_shw", *fShwPdf, shwd_rf, DataError(RooAbsData::Expected) );
+
+  // additional chi2 term from the constraint on theta-13
+  Double_t th13_fitted = ( (RooRealVar*)fitres->floatParsFinal().find("SinsqTh13") )->getVal();
+  Double_t chi2_th13 = TMath::Power( (th13_fitted - fTh13mean)/fTh13sigma, 2 );
+
+  Double_t trkX2  = chi2_trk.getVal();
+  Double_t shwX2  = chi2_shw.getVal();
+  Double_t combX2 = trkX2 + shwX2 + chi2_th13;
+
+  return std::make_tuple( combX2, trkX2, shwX2 );
+
+}
+
+//*********************************************************************************************
+
+std::tuple<Double_t, Double_t, Double_t> AsimovFit::GetAsym(fitpacket &fp, Bool_t q1) {
+
+  //prep pdf's
+  if (q1) SetModelToFitresult(fp.fRes_1q);
+  else SetModelToFitresult(fp.fRes_2q);
+
+  // get the histograms of other ordering as established by the minimizer
+  TH3D* trk_fit = fTrkPdf->GetExpValHist();
+  TH3D* shw_fit = fShwPdf->GetExpValHist();
+
+  // calculate asymmetries
+  auto A_trk = NMHUtils::Asymmetry(fp.fTrkH, trk_fit, "asym_trk");
+  auto A_shw = NMHUtils::Asymmetry(fp.fShwH, shw_fit, "asym_shw");
+
+  Double_t combA = std::get<1>(A_trk) * std::get<1>(A_trk) + std::get<1>(A_shw) * std::get<1>(A_shw);
+
+  return std::make_tuple(combA, TMath::Power( std::get<1>(A_trk), 2 ), TMath::Power( std::get<1>(A_shw), 2 ) );
+
+}
+
+//*********************************************************************************************
+
+/** Set model to results from the fit.*/
+void AsimovFit::SetModelToFitresult(RooFitResult *fr) {
+
+  TIterator* constit = fr->constPars().createIterator();
+  TIterator* floatit = fr->floatParsFinal().createIterator();
+
+  RooRealVar *constpar, *floatpar;
+
+  while ( ( constpar = (RooRealVar*)constit->Next() ) ) {
+    //cout << "NOTICE: setting constpar " << constpar->GetName() << " to " << constpar->getVal() << endl;
+    fFitUtil->GetVar( constpar->GetName() )->setVal( constpar->getVal() );
+  }
+
+  while ( ( floatpar = (RooRealVar*)floatit->Next() ) ) {
+    //cout << "NOTICE: setting floatpar " << floatpar->GetName() << " to " << floatpar->getVal() << endl;
+    fFitUtil->GetVar( floatpar->GetName() )->setVal( floatpar->getVal() );
+  }
+
+}
+
+//*********************************************************************************************
+
+/** Function to find a fit packet from member fFPs vector */
+fitpacket* AsimovFit::FindPacket(Double_t sinsqth23, Detector det) {
+
+  TString detstr = fDetStrings[det];
+  
+  fitpacket *fp = NULL;
+
+  for (auto f: fFPs) {
+
+    Double_t _sinsqth23 = ( (RooRealVar*)f->fParData->find("SinsqTh23") )->getVal();
+
+    if ( f->fDetString == detstr && _sinsqth23 == sinsqth23 ) {
+      fp = f;
+      break;
+    }
+
+  }
+
+  if (fp == NULL) {
+    cout << "WARNING! AsimovFit::FindPacket could not find the specified fit result and returns NULL" << endl;
+  }
+
+  return fp;
 }
