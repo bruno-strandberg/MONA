@@ -164,7 +164,6 @@ void AsimovFit::InitPdfs() {
 
   // create a constraint on sinsqth13 and a pdf that includes the constrain
   fTh13C = new RooGaussian("Th13C","Th13C", *(fFitUtil->GetVar("SinsqTh13")),RooConst(fTh13mean),RooConst(fTh13sigma));
-
   // create a 'fitpdf', this is the simultaneous pdf that has an additional constraint on th13
   fFitPdf = new RooProdPdf(fDetStr + "_fitpdf", fDetStr + "_fitpdf", RooArgSet( *fSimPdf, *fTh13C) ) ;
   
@@ -459,8 +458,9 @@ std::tuple<Double_t, Double_t, Double_t> AsimovFit::GetChi2(fitpacket &fp, Bool_
   RooChi2Var chi2_shw("chi2_shw","chi2_shw", *fShwPdf, shwd_rf, DataError(RooAbsData::Expected) );
 
   // additional chi2 term from the constraint on theta-13
-  Double_t th13_fitted = ( (RooRealVar*)fitres->floatParsFinal().find("SinsqTh13") )->getVal();
-  Double_t chi2_th13 = TMath::Power( (th13_fitted - fTh13mean)/fTh13sigma, 2 );
+  Double_t th13_fit     = ( (RooRealVar*)fitres->floatParsFinal().find("SinsqTh13") )->getVal();
+  Double_t th13_fit_err = ( (RooRealVar*)fitres->floatParsFinal().find("SinsqTh13") )->getError();
+  Double_t chi2_th13 = TMath::Power(th13_fit - fTh13mean, 2)/(fTh13sigma*fTh13sigma + th13_fit_err*th13_fit_err);
 
   Double_t trkX2  = chi2_trk.getVal();
   Double_t shwX2  = chi2_shw.getVal();
