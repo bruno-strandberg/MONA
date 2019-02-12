@@ -37,7 +37,7 @@ int main(const int argc, const char** argv) {
   
   AsimovFit AF(det);
 
-  fitpacket data = AF.CreateData(InvertedOrderingData, th23);
+  fitpacket data = AF.CreateData(!InvertedOrderingData, th23);
   AF.FitData(data);
   AF.WriteToFile(outname, data);
   
