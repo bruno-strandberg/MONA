@@ -379,7 +379,7 @@ void AsimovFit::ReadFromFile(TString infile) {
  */
 void AsimovFit::LikelihoodScan(TString var_name, Double_t var_min, Double_t var_max, Double_t th23) {
 
-  auto data = CreateData( th23 );
+  auto data = CreateData( kTRUE, th23 );
  
   // set to IO central values, fix solar parameters
   fFitUtil->SetIOcentvals();
@@ -406,7 +406,7 @@ void AsimovFit::LikelihoodScan(TString var_name, Double_t var_min, Double_t var_
 */
 void AsimovFit::Contour(Double_t th23_data, TString var1, TString var2) {
   
-  auto data = CreateData(th23_data, th23_data, 0.1);
+  auto data = CreateData( kTRUE, th23_data );
 
   // set to IO central values, fix solar parameters
   fFitUtil->SetIOcentvals();
