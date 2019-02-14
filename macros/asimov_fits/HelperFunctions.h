@@ -71,24 +71,11 @@ void ResetToCentral(FitUtil& fitutil) {
  */
 void SetNOlimsChi2Fit(FitUtil* fitutil) {
 
-  fitutil->GetVar("SinsqTh12")->setMin(f_NO_sinsqth12.min);
-  fitutil->GetVar("SinsqTh12")->setMax(f_NO_sinsqth12.max);
-  
-  fitutil->GetVar("SinsqTh13")->setMin(f_NO_sinsqth13.min);
-  fitutil->GetVar("SinsqTh13")->setMax(f_NO_sinsqth13.max);
+  fitutil->SetNOlims();
 
   // If you want to fit both quantiles of th23 you need free limits here
   fitutil->GetVar("SinsqTh23")->setMin(0.);
   fitutil->GetVar("SinsqTh23")->setMax(1.);
-
-  fitutil->GetVar("dcp")->setMin(f_NO_dcp.min);
-  fitutil->GetVar("dcp")->setMax(f_NO_dcp.max);
-
-  fitutil->GetVar("Dm21")->setMin(f_NO_dm21.min);
-  fitutil->GetVar("Dm21")->setMax(f_NO_dm21.max);
-  
-  fitutil->GetVar("Dm31")->setMax(f_NO_dm31.max);
-  fitutil->GetVar("Dm31")->setMin(f_NO_dm31.min);
 }
 
 
@@ -97,22 +84,9 @@ void SetNOlimsChi2Fit(FitUtil* fitutil) {
  */
 void SetIOlimsChi2Fit(FitUtil* fitutil) {
 
-  fitutil->GetVar("SinsqTh12")->setMin(f_IO_sinsqth12.min);
-  fitutil->GetVar("SinsqTh12")->setMax(f_IO_sinsqth12.max);
-  
-  fitutil->GetVar("SinsqTh13")->setMin(f_IO_sinsqth13.min);
-  fitutil->GetVar("SinsqTh13")->setMax(f_IO_sinsqth13.max);
+  fitutil->SetIOlims();
 
   // If you want to fit both quantiles of th23 you need free limits here
   fitutil->GetVar("SinsqTh23")->setMin(0.);
   fitutil->GetVar("SinsqTh23")->setMax(1.);
-
-  fitutil->GetVar("dcp")->setMin(f_IO_dcp.min);
-  fitutil->GetVar("dcp")->setMax(f_IO_dcp.max);
-
-  fitutil->GetVar("Dm21")->setMin(f_IO_dm21.min);
-  fitutil->GetVar("Dm21")->setMax(f_IO_dm21.max);
-  
-  fitutil->GetVar("Dm31")->setMin(f_IO_dm31.min);
-  fitutil->GetVar("Dm31")->setMax(f_IO_dm31.max);
 }
