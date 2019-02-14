@@ -285,11 +285,11 @@ void AsimovFit::FitData(fitpacket& fp) {
 
   ResetToCentral(*fFitUtil);
   fFitUtil->GetVar("SinsqTh23")->setVal(0.4);
-  RooFitResult *res_1q = fFitPdf->chi2FitTo( *d, Save(), Range("firstq"), DataError(RooAbsData::Expected) );
+  RooFitResult *res_1q = fFitPdf->chi2FitTo( *d, Save(), Range("firstq"), DataError(RooAbsData::Poisson) );
 
   ResetToCentral(*fFitUtil);
   fFitUtil->GetVar("SinsqTh23")->setVal(0.6);
-  RooFitResult *res_2q = fFitPdf->chi2FitTo( *d, Save(), Range("secondq"), DataError(RooAbsData::Expected) );
+  RooFitResult *res_2q = fFitPdf->chi2FitTo( *d, Save(), Range("secondq"), DataError(RooAbsData::Poisson) );
 
   fp.fRes_1q = res_1q;
   fp.fRes_2q = res_2q;
@@ -427,7 +427,7 @@ void AsimovFit::Contour(Double_t th23_data, TString var1, TString var2) {
 
 /** Function to calculate the chi2 values between the model at the fit result and the data as stored in the fitpacket.
 
-    Note on errors and their effect on chi2: RooFit treats the data with errors "RooAbsData::Expected", which, as much as I undertand, means that it assumes the error in the data bin to be sqrt(bin_content). The bin content is the expectation value in a given ordering, the selected error aims to mimic what we do in NMHUtils::Asymmetry, and does not use the MC statistical error that is stored in SumW2 of the expectation value histograms created with FitPDF::GetExpValHist(). The model does not have an associated uncertainty. I tested some of the steps against TH1::Chi2Test function, which seemed to suggest this is a sound procedure.
+    Note on errors and their effect on chi2: RooFit treats the data with errors "RooAbsData::Poisson", which, as much as I undertand, means that it assumes the error in the data bin to be sqrt(bin_content). The bin content is the expectation value in a given ordering, the selected error aims to mimic what we do in NMHUtils::Asymmetry, and does not use the MC statistical error that is stored in SumW2 of the expectation value histograms created with FitPDF::GetExpValHist(). The model does not have an associated uncertainty. I tested some of the steps against TH1::Chi2Test function, which seemed to suggest this is a sound procedure.
 
     \param fp Fit packet with data, parameters at data and parameters at fit
     \param q1 Boolean to select either first (q1=true) or second (q2=false) th23 quadrant
@@ -454,8 +454,8 @@ std::tuple<Double_t, Double_t, Double_t> AsimovFit::GetChi2(fitpacket &fp, Bool_
   SetModelToFitresult(fitres);
 
   // create chi2 variables
-  RooChi2Var chi2_trk("chi2_trk","chi2_trk", *fTrkPdf, trkd_rf, DataError(RooAbsData::Expected) );
-  RooChi2Var chi2_shw("chi2_shw","chi2_shw", *fShwPdf, shwd_rf, DataError(RooAbsData::Expected) );
+  RooChi2Var chi2_trk("chi2_trk","chi2_trk", *fTrkPdf, trkd_rf, DataError(RooAbsData::Poisson) );
+  RooChi2Var chi2_shw("chi2_shw","chi2_shw", *fShwPdf, shwd_rf, DataError(RooAbsData::Poisson) );
 
   // additional chi2 term from the constraint on theta-13
   Double_t th13_fit     = ( (RooRealVar*)fitres->floatParsFinal().find("SinsqTh13") )->getVal();
