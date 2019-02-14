@@ -73,9 +73,9 @@ class FitUtil {
    */
   TH3D*       GetBinningHist() { return fHB;      }
   RooRealVar* GetVar(TString varname);
-  void        SetNOlims();
+  void        SetNOlims(Bool_t fitBothQuantiles=kFALSE);
   void        SetNOcentvals();
-  void        SetIOlims();
+  void        SetIOlims(Bool_t fitBothQuantiles=kFALSE);
   void        SetIOcentvals();
   void        FreeParLims();
   

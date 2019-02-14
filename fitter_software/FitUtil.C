@@ -178,8 +178,10 @@ void FitUtil::InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t
 
 //***************************************************************************
 
-/** Function to set the oscillation parameter limits corresponding to normal mass ordering */
-void FitUtil::SetNOlims() {
+/** Function to set the oscillation parameter limits corresponding to normal mass ordering 
+    \param fitBothQuantiles     Sets \f$ sin^2\theta_{12} \f$ value to free s.t. you can fit in both quantiles
+ */
+void FitUtil::SetNOlims(Bool_t fitBothQuantiles) {
 
   fSinsqTh12->setMin(f_NO_sinsqth12.min);
   fSinsqTh12->setMax(f_NO_sinsqth12.max);
@@ -187,8 +189,15 @@ void FitUtil::SetNOlims() {
   fSinsqTh13->setMin(f_NO_sinsqth13.min);
   fSinsqTh13->setMax(f_NO_sinsqth13.max);
 
-  fSinsqTh23->setMin(f_NO_sinsqth23.min);
-  fSinsqTh23->setMax(f_NO_sinsqth23.max);
+  // If you want to fit both quantiles of th23 you need free limits here
+  if (fitBothQuantiles) {
+    fSinsqTh23->setMin(0.);
+    fSinsqTh23->setMax(1.);
+  }
+  else {
+    fSinsqTh23->setMin(f_NO_sinsqth23.min);
+    fSinsqTh23->setMax(f_NO_sinsqth23.max);
+  }
 
   fDcp->setMin(f_NO_dcp.min);
   fDcp->setMax(f_NO_dcp.max);
@@ -217,8 +226,10 @@ void FitUtil::SetNOcentvals() {
 
 //***************************************************************************
 
-/** Function to set the oscillation parameter limits corresponding to inverted mass ordering */
-void FitUtil::SetIOlims() {
+/** Function to set the oscillation parameter limits corresponding to inverted mass ordering 
+    \param fitBothQuantiles     Sets \f$ sin^2\theta_{12} \f$ value to free s.t. you can fit in both quantiles
+ */
+void FitUtil::SetIOlims(Bool_t fitBothQuantiles) {
 
   fSinsqTh12->setMin(f_IO_sinsqth12.min);
   fSinsqTh12->setMax(f_IO_sinsqth12.max);
@@ -226,8 +237,15 @@ void FitUtil::SetIOlims() {
   fSinsqTh13->setMin(f_IO_sinsqth13.min);
   fSinsqTh13->setMax(f_IO_sinsqth13.max);
 
-  fSinsqTh23->setMin(f_IO_sinsqth23.min);
-  fSinsqTh23->setMax(f_IO_sinsqth23.max);
+  // If you want to fit both quantiles of th23 you need free limits here
+  if (fitBothQuantiles) {
+    fSinsqTh23->setMin(0.);
+    fSinsqTh23->setMax(1.);
+  }
+  else {
+    fSinsqTh23->setMin(f_IO_sinsqth23.min);
+    fSinsqTh23->setMax(f_IO_sinsqth23.max);
+  }
 
   fDcp->setMin(f_IO_dcp.min);
   fDcp->setMax(f_IO_dcp.max);
