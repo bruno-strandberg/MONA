@@ -4,13 +4,14 @@
 Script to farm asimovfit.C macro. At each theta-23 value the script calls the asimovfit command for ORCA20 and ORCA23 detectors.
 
 Usage:
-    farm_th23dm31.py --min TH23_MIN --max TH23_MAX --step TH23_STEP (--nikhef | --lyon)
+    farm_th23dm31.py --min TH23_MIN --max TH23_MAX --step TH23_STEP [--IOdata] (--nikhef | --lyon)
     farm_th23dm31.py -h
 
 Option:
     --min TH23_MIN     Start value of sin^2(th23)
     --max TH23_MAX     Stop value of sin^2(th23)
     --step TH23_STEP   Step size to go from min to max
+    --IOdata           Flag to request inverted-ordering data, which is then fitted assuming normal ordering
     --nikhef           qsub command configured for running on nikhef farm
     --lyon             qsub command configured for running on lyon
     -h --help          Show this screen
@@ -44,6 +45,10 @@ while th23 <= float( args['--max'] ):
     jobcmd_O20 = "{}/./callfit -d ORCA20 -t {} -o {}".format(curdir, th23, outname_O20)
     jobcmd_O23 = "{}/./callfit -d ORCA23 -t {} -o {}".format(curdir, th23, outname_O23)
 
+    if args['--IOdata']:        
+        jobcmd_O20 += " -i"
+        jobcmd_O23 += " -i"
+    
     jobcmds.append( jobcmd_O20 )
     jobcmds.append( jobcmd_O23 )
     th23 = th23 + float( args['--step'] )
