@@ -24,7 +24,6 @@
 #include "RooMinimizer.h"
 #include "RooRealVar.h"
 
-#include "HelperFunctions.h"
 
 #include <iostream>
 using namespace std;
