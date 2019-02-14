@@ -148,7 +148,7 @@ void AsimovFit() {
   simPdf_no.addPdf(pdf_showers, showers_no->GetName() );
 
   RooDataHist data_hists_no("data_hists_no", "track and shower data", fitutil->GetObs(), cats_no, hist_map_no);
-  RooFitResult *fitres_no = simPdf_no.fitTo( data_hists_no, Save(kTRUE) );
+  RooFitResult *fitres_no = simPdf_no.fitTo( data_hists_no, Save() );
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
   
   RooArgSet result_no ( fitres_no->floatParsFinal() );
@@ -169,7 +169,7 @@ void AsimovFit() {
   simPdf_io.addPdf(pdf_showers, showers_io->GetName() );
 
   RooDataHist data_hists_io("data_hists_io", "track and shower data", fitutil->GetObs(), cats_io, hist_map_io);
-  RooFitResult *fitres_io = simPdf_io.fitTo( data_hists_io, Save(kTRUE) );
+  RooFitResult *fitres_io = simPdf_io.fitTo( data_hists_io, Save() );
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
   RooArgSet result_io ( fitres_io->floatParsFinal() );

@@ -24,6 +24,7 @@
 #include "RooMinimizer.h"
 #include "RooRealVar.h"
 
+#include "HelperFunctions.h"
 
 #include <iostream>
 using namespace std;
@@ -157,7 +158,6 @@ void AsimovFit3BinsNO() {
     pdf_showers_vector.push_back( pdf_showers );
 
     // Set IO values and make expectation histograms
-    fitutil->SetIOlims();
     fitutil->SetIOcentvals();
 
     track_vector_io.push_back(  (TH3D*)pdf_tracks.GetExpValHist() );
@@ -174,6 +174,10 @@ void AsimovFit3BinsNO() {
     fitutil->GetVar("Dm21")->setConstant(kTRUE);
   }
 
+  // create quantiles for theta23
+  fitutil->GetVar("SinsqTh23")->setRange("firstq" , 0., 0.5);
+  fitutil->GetVar("SinsqTh23")->setRange("secondq", 0.5, 1.);
+  
   //----------------------------------------------------------
   // set up data for simultaneous fitting and fit
   //----------------------------------------------------------
@@ -182,7 +186,7 @@ void AsimovFit3BinsNO() {
   TStopwatch timer;
 
   // Fit under NO model, IO data
-  fitutil->SetNOlims();
+  SetNOlimsChi2Fit(fitutil);
   fitutil->SetNOcentvals();
 
   std::map<string, TH1*> hist_map_io;
@@ -213,20 +217,40 @@ void AsimovFit3BinsNO() {
   }
 
   RooDataHist data_hists_io("data_hists_io", "track and shower data", fitutil->GetObs(), cats_io, hist_map_io);
-  RooFitResult *fitres_io = simPdf_io.fitTo( data_hists_io, Save(kTRUE) );
+
+  // Fit in both quadrants to find the real minimum of Th23.
+  ResetToCentral(*fitutil);
+  fitutil->GetVar("SinsqTh23")->setVal(0.4);
+  RooFitResult *fitres_1q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("firstq"), DataError(RooAbsData::Expected) );
+  RooArgSet result_1q_io ( fitres_1q_io->floatParsFinal() );
+
+  ResetToCentral(*fitutil);
+  fitutil->GetVar("SinsqTh23")->setVal(0.6);
+  RooFitResult *fitres_2q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("secondq"), DataError(RooAbsData::Expected) );
+  RooArgSet result_2q_io ( fitres_2q_io->floatParsFinal() );
+
+  RooArgSet *result_io;
+  Double_t fitChi2_1q = fitres_1q_io->minNll();
+  Double_t fitChi2_2q = fitres_2q_io->minNll();
+  cout << "first q" << fitChi2_1q << endl;
+  cout << "second q" << fitChi2_2q << endl;
+  if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
+  if (fitChi2_1q < fitChi2_2q) result_io = &result_1q_io;
+  else                         result_io = &result_2q_io;
+
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
-  RooArgSet result_io ( fitres_io->floatParsFinal() );
   cout << "*********Fit result comparison****************************" << endl;
-  cout << "dm31       fitted: " << ((RooRealVar*)result_io.find("Dm31"))->getVal() << endl;
-  cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_io.find("SinsqTh23"))->getVal() << endl;
+  cout << "dm31       fitted: " << ((RooRealVar*)result_io->find("Dm31"))->getVal() << endl;
+  cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_io->find("SinsqTh23"))->getVal() << endl;
   cout << "*********Fit result comparison****************************" << endl;
+
   //----------------------------------------------------------
   // set hierarchy to fitted values
   //----------------------------------------------------------
 
-  Double_t dm31      = ((RooRealVar*)result_io.find("Dm31"))->getVal();
-  Double_t sinSqTh23 = ((RooRealVar*)result_io.find("SinsqTh23"))->getVal();
+  Double_t dm31      = ((RooRealVar*)result_io->find("Dm31"))->getVal();
+  Double_t sinSqTh23 = ((RooRealVar*)result_io->find("SinsqTh23"))->getVal();
   fitutil->GetVar("Dm31")->setVal( dm31 );
   fitutil->GetVar("SinsqTh23")->setVal( sinSqTh23 );
 
@@ -244,16 +268,22 @@ void AsimovFit3BinsNO() {
     }
   }
 
-  std::vector<Double_t> chi2_io;
+  std::vector< std::tuple<TH1*, Double_t, Double_t> > chi2_io;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (pid_map[i] < PID_CUT) chi2_io.push_back( HistoChi2Test( shower_vector_io[i], fitted_io[i], fitEMin, fitEMax, fitctMin, fitctMax) );
-    else                      chi2_io.push_back( HistoChi2Test( track_vector_io[i],  fitted_io[i], fitEMin, fitEMax, fitctMin, fitctMax) );
+    if (pid_map[i] < PID_CUT) chi2_io.push_back( NMHUtils::Asymmetry( shower_vector_io[i], fitted_io[i], Form("sensitivity_shower_%i", i),
+                                                 fitEMin, fitEMax, fitctMin, fitctMax) );
+    else                      chi2_io.push_back( NMHUtils::Asymmetry( track_vector_io[i],  fitted_io[i], Form("sensitivity_track_%i", i),
+                                                 fitEMin, fitEMax, fitctMin, fitctMax) );
   }
 
   Double_t chi2_tot_io = 0;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    cout << "NMHUtils: Chi2 between events IO and events fitted on NO is: " << chi2_io[i] << endl;
-    chi2_tot_io += chi2_io[i] * chi2_io[i];
+    cout << "NMHUtils: Chi2 between events IO and events fitted on NO is: " << std::get<1>(chi2_io[i]) << endl;
+    chi2_tot_io += std::get<1>(chi2_io[i]) * std::get<1>(chi2_io[i]);
+    TCanvas* c1 = new TCanvas("c1","c1");
+    std::get<0>(chi2_io[i])->Draw("colz");
+    gPad->SetLogx();
+    c1->SaveAs( Form("./sensitivity_plot_%i.pdf", i) );
   }
   cout << "Squared sum is : " << std::sqrt( chi2_tot_io ) << endl;
 

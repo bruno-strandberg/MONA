@@ -24,6 +24,7 @@
 #include "RooMinimizer.h"
 #include "RooRealVar.h"
 
+#include "HelperFunctions.h"
 
 #include <iostream>
 using namespace std;
@@ -49,7 +50,7 @@ void AsimovFitNO() {
   Int_t fitEMax  = 80;
   Int_t fitctMin = -1;
   Int_t fitctMax = 0;
-  
+
   //----------------------------------------------------------
   // detector response for tracks and showers
   //----------------------------------------------------------
@@ -85,8 +86,8 @@ void AsimovFitNO() {
       shower_response.Fill(evt);
     }
 
-    track_response.WriteToFile(filefolder + "track_response.root");
-    shower_response.WriteToFile(filefolder + "shower_response.root");
+    track_response.WriteToFile(filefolder + track_file);
+    shower_response.WriteToFile(filefolder + shower_file);
 
     cout << "NOTICE: Finished filling response" << endl;
   }
@@ -107,7 +108,6 @@ void AsimovFitNO() {
   FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, &shower_response);
 
   // Set values to IO
-  fitutil->SetIOlims();
   fitutil->SetIOcentvals();
 
   TH3D* tracks_io   = (TH3D*)pdf_tracks.GetExpValHist();
@@ -119,6 +119,10 @@ void AsimovFitNO() {
   fitutil->GetVar("SinsqTh13")->setConstant(kTRUE);
   fitutil->GetVar("dcp")->setConstant(kTRUE);
   fitutil->GetVar("Dm21")->setConstant(kTRUE);
+
+  // create quantiles for theta23
+  fitutil->GetVar("SinsqTh23")->setRange("firstq" , 0., 0.5);
+  fitutil->GetVar("SinsqTh23")->setRange("secondq", 0.5, 1.);
   
   //----------------------------------------------------------
   // set up data for simultaneous fitting and fit
@@ -131,7 +135,7 @@ void AsimovFitNO() {
   std::map<string, TH1*> hist_map_io = { {(string)tracks_io->GetName(),  tracks_io },
                                          {(string)showers_io->GetName(), showers_io }};
 
-  fitutil->SetNOlims();
+  SetNOlimsChi2Fit(fitutil); // True for free Th23
   fitutil->SetNOcentvals();
 
   RooCategory cats_io("categories_io","data categories");
@@ -143,21 +147,40 @@ void AsimovFitNO() {
   simPdf_io.addPdf(pdf_showers, showers_io->GetName() );
 
   RooDataHist data_hists_io("data_hists_io", "track and shower data", fitutil->GetObs(), cats_io, hist_map_io);
-  RooFitResult *fitres_io = simPdf_io.fitTo( data_hists_io, Save(kTRUE) );
+
+  // Fit in both quadrants to find the real minimum of Th23.
+  ResetToCentral(*fitutil);
+  fitutil->GetVar("SinsqTh23")->setVal(0.4);
+  RooFitResult *fitres_1q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("firstq"), DataError(RooAbsData::Expected) );
+  RooArgSet result_1q_io ( fitres_1q_io->floatParsFinal() );
+
+  ResetToCentral(*fitutil);
+  fitutil->GetVar("SinsqTh23")->setVal(0.6);
+  RooFitResult *fitres_2q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("secondq"), DataError(RooAbsData::Expected) );
+  RooArgSet result_2q_io ( fitres_2q_io->floatParsFinal() );
+
+  RooArgSet *result_io;
+  Double_t fitChi2_1q = fitres_1q_io->minNll();
+  Double_t fitChi2_2q = fitres_2q_io->minNll();
+  cout << "first q" << fitChi2_1q << endl;
+  cout << "second q" << fitChi2_2q << endl;
+  if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
+  if (fitChi2_1q < fitChi2_2q) result_io = &result_1q_io;
+  else                         result_io = &result_2q_io;
+
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
-  RooArgSet result_io ( fitres_io->floatParsFinal() );
+  cout << "*********Fit result comparison****************************" << endl;
+  cout << "dm31       fitted: " << ((RooRealVar*)result_io->find("Dm31"))->getVal() << endl;
+  cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_io->find("SinsqTh23"))->getVal() << endl;
+  cout << "*********Fit result comparison****************************" << endl;
 
-  cout << "*********Fit result comparison****************************" << endl;
-  cout << "dm31       fitted: " << ((RooRealVar*)result_io.find("Dm31"))->getVal() << endl;
-  cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_io.find("SinsqTh23"))->getVal() << endl;
-  cout << "*********Fit result comparison****************************" << endl;
   //----------------------------------------------------------
   // set hierarchy to fitted values
   //----------------------------------------------------------
 
-  Double_t dm31      = ((RooRealVar*)result_io.find("Dm31"))->getVal();
-  Double_t sinSqTh23 = ((RooRealVar*)result_io.find("SinsqTh23"))->getVal();
+  Double_t dm31      = ((RooRealVar*)result_io->find("Dm31"))->getVal();
+  Double_t sinSqTh23 = ((RooRealVar*)result_io->find("SinsqTh23"))->getVal();
   fitutil->GetVar("Dm31")->setVal( dm31 );
   fitutil->GetVar("SinsqTh23")->setVal( sinSqTh23 );
   TH3D *tracks_fitted_io  = (TH3D*)pdf_tracks.GetExpValHist();
@@ -165,11 +188,16 @@ void AsimovFitNO() {
   TH3D *showers_fitted_io = (TH3D*)pdf_showers.GetExpValHist();
   showers_fitted_io->SetName("showers_fitted_io");
 
-  Double_t n_chi2tr_io = HistoChi2Test(tracks_io, tracks_fitted_io, fitEMin, fitEMax, fitctMin, fitctMax);
-  Double_t n_chi2sh_io = HistoChi2Test(showers_io, showers_fitted_io, fitEMin, fitEMax, fitctMin, fitctMax);
+  std::tuple<TH1*, Double_t, Double_t> n_chi2tr_io = NMHUtils::Asymmetry(tracks_io, tracks_fitted_io, "sensitivity_track",
+                                                        fitEMin, fitEMax, fitctMin, fitctMax);
+  std::tuple<TH1*, Double_t, Double_t> n_chi2sh_io = NMHUtils::Asymmetry(showers_io, showers_fitted_io, "sensitivity_shower",
+                                                        fitEMin, fitEMax, fitctMin, fitctMax);
 
-  cout << "NMHUtils: Chi2 between tracks  IO and tracks  fitted on NO is: " << n_chi2tr_io << endl;
-  cout << "NMHUtils: Chi2 between showers IO and showers fitted on NO is: " << n_chi2sh_io << endl;
-  cout << "Squared sum is : " << std::sqrt(std::pow(n_chi2tr_io, 2) + std::pow(n_chi2sh_io, 2)) << endl;
+  Double_t chi2tr_io = std::get<1>(n_chi2tr_io);
+  Double_t chi2sh_io = std::get<1>(n_chi2sh_io);
+
+  cout << "NMHUtils: Chi2 between tracks  IO and tracks  fitted on NO is: " << chi2tr_io << endl;
+  cout << "NMHUtils: Chi2 between showers IO and showers fitted on NO is: " << chi2sh_io << endl;
+  cout << "Squared sum is : " << std::sqrt(std::pow(chi2tr_io, 2) + std::pow(chi2sh_io, 2)) << endl;
 
 }
