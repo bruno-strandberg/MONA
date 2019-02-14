@@ -161,8 +161,8 @@ class FitUtil {
   const fpar f_NO_sinsqth23 = fpar(0.425, 0.381, 0.615);   //!< central value and limits for \f$ sin^2\theta_{23} \f$, normal ordering
   const fpar f_IO_sinsqth23 = fpar(0.589, 0.384, 0.636);   //!< central value and limits for \f$ sin^2\theta_{23} \f$, inverse ordering
 
-  const fpar f_NO_dcp = fpar(1.38, 0., 2. );      //!< central value and limits for \f$ \delta_{CP} \f$, normal ordering
-  const fpar f_IO_dcp = fpar(1.31, 0., 2. );      //!< central value and limits for \f$ \delta_{CP} \f$, inverse ordering
+  const fpar f_NO_dcp = fpar(1.38, -0.5, 2.5 ); //!< central value and limits for \f$ \delta_{CP} \f$, normal ordering; the fit parameter range needs to be wider than 2pi, otherwise some value will always coincide with parameter limit during minimization
+  const fpar f_IO_dcp = fpar(1.31, f_NO_dcp.min, f_NO_dcp.max); //!< central value and limits for \f$ \delta_{CP} \f$, inverse ordering; the fit parameter range needs to be wider than 2pi, otherwise some value will always coincide with parameter limit during minimization
 
   const fpar f_NO_dm21 = fpar(7.37e-5, 6.93e-5, 7.96e-5);  //!< central value and limits for \f$ \Delta m_{21}^2 \f$, normal ordering
   const fpar f_IO_dm21 = fpar(7.37e-5, 6.93e-5, 7.96e-5);  //!< central value and limits for \f$ \Delta m_{21}^2 \f$, inverse ordering
