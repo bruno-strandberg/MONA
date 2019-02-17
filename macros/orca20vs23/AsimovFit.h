@@ -16,9 +16,59 @@
 #include "RooPlot.h"
 #include "RooMinuit.h"
 #include "RooConstVar.h"
+#include "RooChi2Var.h"
+#include "RooAbsReal.h"
 
 #include "TH1.h"
 #include "TCanvas.h"
+
+typedef std::tuple<RooRealVar*, Double_t, Double_t> X2_t;
+
+class MyChi2Var : public RooChi2Var {
+
+ private:
+
+  RooChi2Var *fChi2;
+  vector<X2_t> fExtChi2;
+
+  Double_t GetExternalX2() const {
+
+    Double_t extchi2 = 0;
+
+    for (auto x: fExtChi2) {
+      Double_t data  = std::get<0>(x)->getVal();
+      Double_t mean  = std::get<1>(x);
+      Double_t sigma = std::get<2>(x);
+      extchi2 += TMath::Power( (data - mean)/sigma, 2 );
+    }
+
+    return extchi2;
+  }
+
+ public:
+  
+  MyChi2Var(RooChi2Var &chi2, vector<X2_t> &extchi2): RooChi2Var(chi2) {
+    //fChi2 = (RooChi2Var*)this;
+    fChi2 = &chi2;
+    fExtChi2 = extchi2;
+  };
+  
+  MyChi2Var(const MyChi2Var &other) : RooChi2Var( (RooChi2Var)other ) {
+    //fChi2 = (RooChi2Var*)this;
+    fChi2 = other.fChi2;
+    fExtChi2 = other.fExtChi2;
+  }
+
+  ~MyChi2Var() {};
+  
+  virtual Double_t evaluate ( ) const {
+    Double_t extx2 = GetExternalX2();
+    Double_t datax2 = fChi2->getVal();
+    cout << "MyChi2Var::evaluate() dataX2 and externalX2: " << datax2 << "\t" << extx2 << endl;
+    return ( datax2 + extx2 );
+  }
+
+};
 
 /** This structure helps to pass fitting data, starting values and results through various functions of the AsimovFit class and provides IO*/
 struct fitpacket: public TObject {

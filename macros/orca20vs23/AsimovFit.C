@@ -4,7 +4,7 @@
 #include "FileHeader.h"
 #include "SummaryParser.h"
 
-#include "RooChi2Var.h"
+#include "RooMinimizer.h"
 #include "RooMsgService.h"
 
 using namespace RooFit;
@@ -285,14 +285,39 @@ void AsimovFit::FitData(fitpacket& fp) {
 
   ResetToCentral(*fFitUtil);
   fFitUtil->GetVar("SinsqTh23")->setVal(0.4);
-  RooFitResult *res_1q = fFitPdf->chi2FitTo( *d, Save(), Range("firstq"), DataError(RooAbsData::Poisson) );
+  //RooFitResult *res_1q = fSimPdf->chi2FitTo( *d, Save(), Range("firstq"), DataError(RooAbsData::Poisson) );
 
-  ResetToCentral(*fFitUtil);
-  fFitUtil->GetVar("SinsqTh23")->setVal(0.6);
-  RooFitResult *res_2q = fFitPdf->chi2FitTo( *d, Save(), Range("secondq"), DataError(RooAbsData::Poisson) );
+  /****************** STARTING HACKING, FIT MANUALLY **************************************/
+  // fFitUtil->GetVar("dcp")->setConstant(kTRUE);
+  // fFitUtil->GetVar("SinsqTh13")->setConstant(kTRUE);
 
-  fp.fRes_1q = res_1q;
-  fp.fRes_2q = res_2q;
+  RooChi2Var chi2var("chi2var","chi2var", *fSimPdf, *d, DataError(RooAbsData::Poisson) );
+
+  X2_t th13 = std::make_tuple(fFitUtil->GetVar("SinsqTh13"), 0.0215, 0.0025/3);
+  vector<X2_t> extvec = {th13};
+  MyChi2Var test(chi2var, extvec );
+
+  // fFitUtil->GetVar("SinsqTh13")->setVal(0.03);
+  // cout << test.getVal() << endl;
+  // cout << "****************************************" << endl;
+  // cout << test.evaluate() << endl;
+  // return;
+  
+  RooMinimizer m(test);
+  m.setMinimizerType("Minuit"); // select minimizer     
+  m.setVerbose(kTRUE);
+  m.minimize("Minuit","minuit");     
+  m.hesse();     
+  RooFitResult *ref_1q = m.save(); 
+
+  /****************** FINISH HACKING, FIT MANUALLY **************************************/
+
+  // ResetToCentral(*fFitUtil);
+  // fFitUtil->GetVar("SinsqTh23")->setVal(0.6);
+  // RooFitResult *res_2q = fFitPdf->chi2FitTo( *d, Save(), Range("secondq"), DataError(RooAbsData::Poisson) );
+
+  // fp.fRes_1q = res_1q;
+  // fp.fRes_2q = res_2q;
 
 }
 
