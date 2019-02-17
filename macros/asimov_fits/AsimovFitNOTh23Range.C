@@ -34,7 +34,7 @@ void AsimovFitNOTh23Range() {
   TString filefolder = "./default_detres/";
   TString s_outputfile = "./AsimovFitNOTh23Range.txt";
 
-  // DetRes and EvSel input values
+  // DetRes input values
   Int_t EBins = 40;
   Int_t EMin = 1;
   Int_t EMax = 100;
@@ -45,7 +45,12 @@ void AsimovFitNOTh23Range() {
   Int_t byMin = 0;
   Int_t byMax = 1;
 
-  
+  // Fitter ranges
+  Int_t fitEMin  = 2;
+  Int_t fitEMax  = 80;
+  Int_t fitctMin = -1;
+  Int_t fitctMax = 0;
+
   //----------------------------------------------------------
   // detector response for tracks and showers
   //----------------------------------------------------------
@@ -85,7 +90,7 @@ void AsimovFitNOTh23Range() {
     shower_response.WriteToFile(filefolder + shower_file);
 
     cout << "NOTICE: Finished filling response" << endl;
-  } 
+  }
   else {
     cout << "NOTICE: Reading responses from disk" << endl;
     track_response.ReadFromFile(filefolder + track_file);
@@ -98,13 +103,12 @@ void AsimovFitNOTh23Range() {
 
   auto meff_file = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
 
- 
   // Open output stream to save sensitivity values
   ofstream outputfile(s_outputfile);
   outputfile << "th23,sinSqTh23,n_chi2tr_no,n_chi2sh_no" << endl;
 
   for (Int_t i = 0; i < 11; i++) {
-    FitUtil *fitutil = new FitUtil(3, track_response.GetHist3D(), 1, 100, -1, 0, 0, 1, meff_file);
+    FitUtil *fitutil = new FitUtil(3, track_response.GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);
 
     FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_response);
     FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, &shower_response);
@@ -112,7 +116,6 @@ void AsimovFitNOTh23Range() {
     Double_t sinSqTh23_true = TMath::Power(TMath::Sin(th23 * TMath::Pi()/180.), 2);
  
     // Set values to IO
-    fitutil->SetIOlims();
     fitutil->SetIOcentvals();
     fitutil->GetVar("SinsqTh23")->setVal( sinSqTh23_true );
 
@@ -126,6 +129,10 @@ void AsimovFitNOTh23Range() {
     fitutil->GetVar("dcp")->setConstant(kTRUE);
     fitutil->GetVar("Dm21")->setConstant(kTRUE);
     
+    // create quantiles for theta23
+    fitutil->GetVar("SinsqTh23")->setRange("firstq" , 0., 0.5);
+    fitutil->GetVar("SinsqTh23")->setRange("secondq", 0.5, 1.);
+
     //----------------------------------------------------------
     // set up data for simultaneous fitting and fit
     //----------------------------------------------------------
@@ -137,7 +144,7 @@ void AsimovFitNOTh23Range() {
     std::map<string, TH1*> hist_map_io = { {(string)tracks_io->GetName(),  tracks_io },
                                            {(string)showers_io->GetName(), showers_io }};
 
-    fitutil->SetNOlims();
+    SetNOlimsChi2Fit(fitutil); // Free th23 for the double chi2 fit.
     fitutil->SetNOcentvals();
 
     RooCategory cats_io("categories","data categories");
@@ -149,39 +156,63 @@ void AsimovFitNOTh23Range() {
     simPdf_io.addPdf(pdf_showers, showers_io->GetName() );
 
     RooDataHist data_hists_io("data_hists", "track and shower data", fitutil->GetObs(), cats_io, hist_map_io);
-    RooFitResult *fitres_io = simPdf_io.fitTo( data_hists_io, Save(kTRUE) );
+
+    // Fit in both quadrants to find the real minimum of Th23.
+    ResetToCentral(*fitutil);
+    fitutil->GetVar("SinsqTh23")->setVal(0.4);
+    RooFitResult *fitres_1q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("firstq"), DataError(RooAbsData::Expected) );
+    RooArgSet result_1q_io ( fitres_1q_io->floatParsFinal() );
+
+    ResetToCentral(*fitutil);
+    fitutil->GetVar("SinsqTh23")->setVal(0.6);
+    RooFitResult *fitres_2q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("secondq"), DataError(RooAbsData::Expected) );
+    RooArgSet result_2q_io ( fitres_2q_io->floatParsFinal() );
+
+    RooArgSet *result_io;
+    Double_t fitChi2_1q = fitres_1q_io->minNll();
+    Double_t fitChi2_2q = fitres_2q_io->minNll();
+    cout << "first q" << fitChi2_1q << endl;
+    cout << "second q" << fitChi2_2q << endl;
+    if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
+    if (fitChi2_1q < fitChi2_2q) result_io = &result_1q_io;
+    else                         result_io = &result_2q_io;
+
     cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
-    RooArgSet result_io ( fitres_io->floatParsFinal() );
-
     cout << "*********Fit result comparison****************************" << endl;
-    cout << "dm31       fitted: " << ((RooRealVar*)result_io.find("Dm31"))->getVal() << endl;
-    cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_io.find("SinsqTh23"))->getVal() << endl;
+    cout << "dm31       fitted: " << ((RooRealVar*)result_io->find("Dm31"))->getVal() << endl;
+    cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_io->find("SinsqTh23"))->getVal() << endl;
     cout << "*********Fit result comparison****************************" << endl;
 
     //----------------------------------------------------------
     // set hierarchy to fitted values
     //----------------------------------------------------------
 
-    Double_t dm31      = ((RooRealVar*)result_io.find("Dm31"))->getVal();
-    Double_t sinSqTh23 = ((RooRealVar*)result_io.find("SinsqTh23"))->getVal();
+    Double_t dm31      = ((RooRealVar*)result_io->find("Dm31"))->getVal();
+    Double_t sinSqTh23 = ((RooRealVar*)result_io->find("SinsqTh23"))->getVal();
     fitutil->GetVar("Dm31")->setVal( dm31 );
+    fitutil->GetVar("SinsqTh23")->setVal( sinSqTh23 );
     TH3D *tracks_fitted_io  = (TH3D*)pdf_tracks.GetExpValHist();
-    TH3D *showers_fitted_io = (TH3D*)pdf_showers.GetExpValHist();
     tracks_fitted_io->SetName("tracks_fitted_io");
+    TH3D *showers_fitted_io = (TH3D*)pdf_showers.GetExpValHist();
     showers_fitted_io->SetName("showers_fitted_io");
 
-    Double_t n_chi2tr_io = HistoChi2Test(tracks_io, tracks_fitted_io, 2, 80, -1, 0);
-    Double_t n_chi2sh_io = HistoChi2Test(showers_io, showers_fitted_io, 2, 80, -1, 0);
+    std::tuple<TH1*, Double_t, Double_t> n_chi2tr_io = NMHUtils::Asymmetry(tracks_io, tracks_fitted_io, "sensitivity_track",
+                                                        fitEMin, fitEMax, fitctMin, fitctMax);
+    std::tuple<TH1*, Double_t, Double_t> n_chi2sh_io = NMHUtils::Asymmetry(showers_io, showers_fitted_io, "sensitivity_shower",
+                                                        fitEMin, fitEMax, fitctMin, fitctMax);
 
-    cout << "NMHUtils: Chi2 between tracks  IO and tracks  fitted on NO is: " << n_chi2tr_io << endl;
-    cout << "NMHUtils: Chi2 between showers IO and showers fitted on NO is: " << n_chi2sh_io << endl;
-    cout << "Squared sum is : " << std::sqrt(std::pow(n_chi2tr_io, 2) + std::pow(n_chi2sh_io, 2)) << endl;
+    Double_t chi2tr_io = std::get<1>(n_chi2tr_io);
+    Double_t chi2sh_io = std::get<1>(n_chi2sh_io);
+
+    cout << "NMHUtils: Chi2 between tracks  IO and tracks  fitted on NO is: " << chi2tr_io << endl;
+    cout << "NMHUtils: Chi2 between showers IO and showers fitted on NO is: " << chi2sh_io << endl;
+    cout << "Squared sum is : " << std::sqrt(std::pow(chi2tr_io, 2) + std::pow(chi2sh_io, 2)) << endl;
 
     //----------------------------------------------------------
     // save fit results to file
     //----------------------------------------------------------
-    outputfile << th23 << "," << sinSqTh23_true << "," << n_chi2tr_io << "," << n_chi2sh_io  << endl;
+    outputfile << th23 << "," << sinSqTh23_true << "," << chi2tr_io << "," << chi2sh_io  << endl;
   }
   outputfile.close();
 }

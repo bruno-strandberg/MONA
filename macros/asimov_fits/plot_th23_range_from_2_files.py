@@ -20,7 +20,8 @@ df['chi2_io'] = np.sqrt(df['n_chi2tr_io']**2 + df['n_chi2sh_io']**2)
 
 df.plot(x="th23", y=["n_chi2tr_no", "n_chi2sh_no", "chi2_no", "n_chi2tr_io", "n_chi2sh_io", "chi2_io"],
         style=['-','-','-','--','--','--'])
-plt.xlabel(r"$\theta_{23}$")
-plt.ylabel("Sensitivity")
+plt.xlabel(r"$\theta_{23}$", fontsize=14)
+plt.ylabel(r"Sensitivity / $\sigma$ (3 years)", fontsize=14)
+plt.ylim(0,7)
 plt.grid()
 plt.show()

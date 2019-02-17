@@ -32,8 +32,9 @@ using namespace RooFit;
 void AsimovFitNBinsIO() {
 
   const int N_PID_CLASSES = 10;
+  const Double_t PID_CUT = 0.6;
   const Double_t PID_STEP = 1 / float(N_PID_CLASSES);
-  const Double_t PID_EDGE = 0.6 * N_PID_CLASSES;
+  const Double_t PID_EDGE = PID_CUT * N_PID_CLASSES;
   TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
 
   // DetRes input values
@@ -148,7 +149,6 @@ void AsimovFitNBinsIO() {
     pdf_showers_vector.push_back( pdf_showers );
 
     // Set NO values and make expectation histograms
-    fitutil->SetNOlims();
     fitutil->SetNOcentvals();
 
     track_vector_no.push_back(  (TH3D*)pdf_tracks.GetExpValHist() );
@@ -165,6 +165,10 @@ void AsimovFitNBinsIO() {
     fitutil->GetVar("Dm21")->setConstant(kTRUE);
   }
 
+  // create quantiles for theta23
+  fitutil->GetVar("SinsqTh23")->setRange("firstq" , 0., 0.5);
+  fitutil->GetVar("SinsqTh23")->setRange("secondq", 0.5, 1.);
+  
   //----------------------------------------------------------
   // set up data for simultaneous fitting and fit
   //----------------------------------------------------------
@@ -173,7 +177,7 @@ void AsimovFitNBinsIO() {
   TStopwatch timer;
 
   // Fit under IO model, NO data
-  fitutil->SetIOlims();
+  SetIOlimsChi2Fit(fitutil); // Free th23 for the double fit.
   fitutil->SetIOcentvals();
 
   std::map<string, TH1*> hist_map_no;
@@ -182,10 +186,12 @@ void AsimovFitNBinsIO() {
     if (i < PID_EDGE) {
       hist_map_no.insert( {(string)shower_vector_no[i]->GetName(), shower_vector_no[i]} );
       cats_no.defineType( shower_vector_no[i]->GetName() );
+      cout << "NOTICE: Added hist and cat to shower" << endl;
     }
     else {
       hist_map_no.insert( {(string)track_vector_no[i]->GetName(),  track_vector_no[i]} );
       cats_no.defineType( track_vector_no[i]->GetName() );
+      cout << "NOTICE: Added hist and cat to track" << endl;
     }
   }
 
@@ -193,29 +199,48 @@ void AsimovFitNBinsIO() {
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
     if (i < PID_EDGE) {
       simPdf_no.addPdf( pdf_showers_vector[i], shower_vector_no[i]->GetName() );
+      cout << "NOTICE: Added simpdf to shower" << endl;
     }
     else {
       simPdf_no.addPdf( pdf_tracks_vector[i],  track_vector_no[i]->GetName() );
+      cout << "NOTICE: Added simpdf to track" << endl;
     }
   }
 
   RooDataHist data_hists_no("data_hists_no", "track and shower data", fitutil->GetObs(), cats_no, hist_map_no);
-  RooFitResult *fitres_no = simPdf_no.fitTo( data_hists_no, Save(kTRUE) );
+
+  // Fit in both quadrants to find the real minimum of Th23.
+  ResetToCentral(*fitutil);
+  fitutil->GetVar("SinsqTh23")->setVal(0.4);
+  RooFitResult *fitres_1q_no = simPdf_no.chi2FitTo( data_hists_no, Save(), Range("firstq"), DataError(RooAbsData::Expected) );
+  RooArgSet result_1q_no ( fitres_1q_no->floatParsFinal() );
+
+  ResetToCentral(*fitutil);
+  fitutil->GetVar("SinsqTh23")->setVal(0.6);
+  RooFitResult *fitres_2q_no = simPdf_no.chi2FitTo( data_hists_no, Save(), Range("secondq"), DataError(RooAbsData::Expected) );
+  RooArgSet result_2q_no ( fitres_2q_no->floatParsFinal() );
+
+  RooArgSet *result_no;
+  Double_t fitChi2_1q = fitres_1q_no->minNll();
+  Double_t fitChi2_2q = fitres_2q_no->minNll();
+  cout << "first q" << fitChi2_1q << endl;
+  cout << "second q" << fitChi2_2q << endl;
+  if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
+  if (fitChi2_1q < fitChi2_2q) result_no = &result_1q_no;
+  else                         result_no = &result_2q_no;
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
-  RooArgSet result_no ( fitres_no->floatParsFinal() );
-
   cout << "*********Fit result comparison****************************" << endl;
-  cout << "dm31       fitted: " << ((RooRealVar*)result_no.find("Dm31"))->getVal() << endl;
-  cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_no.find("SinsqTh23"))->getVal() << endl;
+  cout << "dm31       fitted: " << ((RooRealVar*)result_no->find("Dm31"))->getVal() << endl;
+  cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_no->find("SinsqTh23"))->getVal() << endl;
   cout << "*********Fit result comparison****************************" << endl;
 
   //----------------------------------------------------------
   // set hierarchy to fitted values
   //----------------------------------------------------------
 
-  Double_t dm31      = ((RooRealVar*)result_no.find("Dm31"))->getVal();
-  Double_t sinSqTh23 = ((RooRealVar*)result_no.find("SinsqTh23"))->getVal();
+  Double_t dm31      = ((RooRealVar*)result_no->find("Dm31"))->getVal();
+  Double_t sinSqTh23 = ((RooRealVar*)result_no->find("SinsqTh23"))->getVal();
   fitutil->GetVar("Dm31")->setVal( dm31 );
   fitutil->GetVar("SinsqTh23")->setVal( sinSqTh23 );
 
@@ -233,16 +258,20 @@ void AsimovFitNBinsIO() {
     }
   }
 
-  std::vector<Double_t> chi2_no;
+  std::vector< std::tuple<TH1*, Double_t, Double_t> > chi2_no;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) chi2_no.push_back( HistoChi2Test( shower_vector_no[i], fitted_no[i], fitEMin, fitEMax, fitctMin, fitctMax) );
-    else              chi2_no.push_back( HistoChi2Test( track_vector_no[i],  fitted_no[i], fitEMin, fitEMax, fitctMin, fitctMax) );
+    if (i < PID_EDGE) chi2_no.push_back( NMHUtils::Asymmetry( shower_vector_no[i], fitted_no[i], Form("sensitivity_shower_%i", i),
+                                         fitEMin, fitEMax, fitctMin, fitctMax) );
+    else              chi2_no.push_back( NMHUtils::Asymmetry( track_vector_no[i],  fitted_no[i], Form("sensitivity_track_%i", i),
+                                         fitEMin, fitEMax, fitctMin, fitctMax) );
   }
 
   Double_t chi2_tot_no = 0;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    cout << "NMHUtils: Chi2 between events NO and events fitted on IO is: " << chi2_no[i] << endl;
-    chi2_tot_no += chi2_no[i] * chi2_no[i];
+    Double_t chi2_no_i = std::get<1>(chi2_no[i]);
+
+    cout << "NMHUtils: Chi2 between events NO and events fitted on IO is: " << chi2_no_i << endl;
+    chi2_tot_no += chi2_no_i * chi2_no_i;
   }
   cout << "Squared sum is : " << std::sqrt( chi2_tot_no ) << endl;
 
