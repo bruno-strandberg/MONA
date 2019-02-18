@@ -3,8 +3,10 @@
 """
 Script to farm asimovfit.C macro. At each theta-23 value the script calls the asimovfit command for ORCA20 and ORCA23 detectors.
 
+If nohup is used, the script will keep running until all jobs are processed.
+
 Usage:
-    farm_th23dm31.py --min TH23_MIN --max TH23_MAX --step TH23_STEP [--IOdata] (--nikhef | --lyon)
+    farm_th23dm31.py --min TH23_MIN --max TH23_MAX --step TH23_STEP [--IOdata] (--nikhef | --lyon | --nohup) [--ncpu N_NOHUPCPU]
     farm_th23dm31.py -h
 
 Option:
@@ -14,6 +16,8 @@ Option:
     --IOdata           Flag to request inverted-ordering data, which is then fitted assuming normal ordering
     --nikhef           qsub command configured for running on nikhef farm
     --lyon             qsub command configured for running on lyon
+    --nohup            run jobs on the local machine using nohup
+    --ncpu N_NOHUPCPU  number of local parallel jobs [default: 4]
     -h --help          Show this screen
 """
 
@@ -80,7 +84,9 @@ for i, cmd in enumerate(jobcmds):
     if args['--nikhef']:
         farm_cmd = "qsub -q short7 -o {0} -e {0} {1}".format(curdir+"/tmp", script_name)
     elif args['--lyon']:
-        syscmd = "qsub -P P_km3net -l sps=1 -l ct=5:00:00 -o {0} -e {0} {1}".format(curdir+"/tmp", script_name)
+        farm_cmd = "qsub -P P_km3net -l sps=1 -l ct=5:00:00 -o {0} -e {0} {1}".format(curdir+"/tmp", script_name)
+    elif args['--nohup']:
+        raise Exception("nohup processing not yet supported, qutting.")
 
     print ("Executing {}".format(farm_cmd))
     os.system(farm_cmd)

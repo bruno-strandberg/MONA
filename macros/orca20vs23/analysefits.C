@@ -132,8 +132,6 @@ void analysefits(AsimovFit::Detector det = AsimovFit::ORCA20,
     cout << fp->fRes_1q->status() << "\t" << fp->fRes_2q->status() << endl;
     cout << "*****************MINIMIZER STATUSES IN FIRST AND SECOND QUADRANT***********" << endl;
 
-    // decide which fit result was the best; it is not completely trivial what to base this decision on...
-    //if ( ( std::get<1>(d_chi2_1q) + std::get<2>(d_chi2_1q) ) < ( std::get<1>(d_chi2_2q) + std::get<2>(d_chi2_2q) ) ) {
     if ( std::get<0>(d_chi2_1q) < std::get<0>(d_chi2_2q) ) {
       d_chi2_best  = d_chi2_1q;
       d_chi2_other = d_chi2_2q;

@@ -490,11 +490,13 @@ std::tuple<Double_t, Double_t, Double_t> AsimovFit::GetChi2(fitpacket &fp, Bool_
   // additional chi2 term from the constraint on theta-13
   Double_t th13_fit     = ( (RooRealVar*)fitres->floatParsFinal().find("SinsqTh13") )->getVal();
   Double_t th13_fit_err = ( (RooRealVar*)fitres->floatParsFinal().find("SinsqTh13") )->getError();
-  Double_t chi2_th13 = TMath::Power(th13_fit - fTh13mean, 2)/(fTh13sigma*fTh13sigma + th13_fit_err*th13_fit_err);
+  Double_t chi2_th13 = TMath::Power(th13_fit - fTh13mean, 2)/(fTh13sigma*fTh13sigma);
 
   Double_t trkX2  = chi2_trk.getVal();
   Double_t shwX2  = chi2_shw.getVal();
   Double_t combX2 = trkX2 + shwX2 + chi2_th13;
+
+  cout << "NOTICE AsimovFit::GetChi2() manual and minimizer chi2: " << combX2 << "\t" << fitres->minNll() << endl;
 
   return std::make_tuple( combX2, trkX2, shwX2 );
 
