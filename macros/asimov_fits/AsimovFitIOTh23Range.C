@@ -32,7 +32,7 @@ using namespace RooFit;
 void AsimovFitIOTh23Range() {
 
   TString filefolder = "./default_detres/";
-  TString s_outputfile = "./AsimovFitIOTh23Range.txt";
+  TString s_outputfile = "output/csv/AsimovFitIOTh23Range.txt";
 
   // DetRes input values
   Int_t EBins = 40;
@@ -160,12 +160,12 @@ void AsimovFitIOTh23Range() {
     // Fit in both quadrants to find the real minimum of Th23.
     ResetToCentral(*fitutil);
     fitutil->GetVar("SinsqTh23")->setVal(0.4);
-    RooFitResult *fitres_1q_no = simPdf_no.chi2FitTo( data_hists_no, Save(), Range("firstq"), DataError(RooAbsData::Expected) );
+    RooFitResult *fitres_1q_no = simPdf_no.chi2FitTo( data_hists_no, Save(), Range("firstq"), DataError(RooAbsData::Poisson) );
     RooArgSet result_1q_no ( fitres_1q_no->floatParsFinal() );
 
     ResetToCentral(*fitutil);
     fitutil->GetVar("SinsqTh23")->setVal(0.6);
-    RooFitResult *fitres_2q_no = simPdf_no.chi2FitTo( data_hists_no, Save(), Range("secondq"), DataError(RooAbsData::Expected) );
+    RooFitResult *fitres_2q_no = simPdf_no.chi2FitTo( data_hists_no, Save(), Range("secondq"), DataError(RooAbsData::Poisson) );
     RooArgSet result_2q_no ( fitres_2q_no->floatParsFinal() );
 
     RooArgSet *result_no;

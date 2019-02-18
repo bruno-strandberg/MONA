@@ -220,12 +220,12 @@ void AsimovFit3BinsNO() {
   // Fit in both quadrants to find the real minimum of Th23.
   ResetToCentral(*fitutil);
   fitutil->GetVar("SinsqTh23")->setVal(0.4);
-  RooFitResult *fitres_1q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("firstq"), DataError(RooAbsData::Expected) );
+  RooFitResult *fitres_1q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("firstq"), DataError(RooAbsData::Poisson) );
   RooArgSet result_1q_io ( fitres_1q_io->floatParsFinal() );
 
   ResetToCentral(*fitutil);
   fitutil->GetVar("SinsqTh23")->setVal(0.6);
-  RooFitResult *fitres_2q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("secondq"), DataError(RooAbsData::Expected) );
+  RooFitResult *fitres_2q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("secondq"), DataError(RooAbsData::Poisson) );
   RooArgSet result_2q_io ( fitres_2q_io->floatParsFinal() );
 
   RooArgSet *result_io;

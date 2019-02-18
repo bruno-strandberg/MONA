@@ -32,7 +32,7 @@ using namespace RooFit;
 void AsimovFitTh23Range() {
 
   TString filefolder = "./";
-  TString s_outputfile = "./AsimovFitTh23Range.txt";
+  TString s_outputfile = "output/csv/AsimovFitTh23Range.txt";
 
   // DetRes and EvSel input values
   Int_t EBins = 40;

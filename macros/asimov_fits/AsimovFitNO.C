@@ -149,19 +149,19 @@ void AsimovFitNO() {
   // Fit in both quadrants to find the real minimum of Th23.
   ResetToCentral(*fitutil);
   fitutil->GetVar("SinsqTh23")->setVal(0.4);
-  RooFitResult *fitres_1q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("firstq"), DataError(RooAbsData::Expected) );
+  RooFitResult *fitres_1q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("firstq"), DataError(RooAbsData::Poisson) );
   RooArgSet result_1q_io ( fitres_1q_io->floatParsFinal() );
 
   ResetToCentral(*fitutil);
   fitutil->GetVar("SinsqTh23")->setVal(0.6);
-  RooFitResult *fitres_2q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("secondq"), DataError(RooAbsData::Expected) );
+  RooFitResult *fitres_2q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("secondq"), DataError(RooAbsData::Poisson) );
   RooArgSet result_2q_io ( fitres_2q_io->floatParsFinal() );
 
   RooArgSet *result_io;
   Double_t fitChi2_1q = fitres_1q_io->minNll();
   Double_t fitChi2_2q = fitres_2q_io->minNll();
-  cout << "first q" << fitChi2_1q << endl;
-  cout << "second q" << fitChi2_2q << endl;
+  cout << "first q " << TMath::Sqrt( fitChi2_1q ) << endl;
+  cout << "second q" << TMath::Sqrt( fitChi2_2q ) << endl;
   if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
   if (fitChi2_1q < fitChi2_2q) result_io = &result_1q_io;
   else                         result_io = &result_2q_io;
