@@ -166,6 +166,9 @@ void AsimovFit::InitPdfs() {
   fTh13C = new RooGaussian("Th13C","Th13C", *(fFitUtil->GetVar("SinsqTh13")),RooConst(fTh13mean),RooConst(fTh13sigma));
   // create a 'fitpdf', this is the simultaneous pdf that has an additional constraint on th13
   fFitPdf = new RooProdPdf(fDetStr + "_fitpdf", fDetStr + "_fitpdf", RooArgSet( *fSimPdf, *fTh13C) ) ;
+
+  // add the constraint term to the member vector
+  fExternalX2terms.push_back( std::make_tuple(fFitUtil->GetVar("SinsqTh13"), (Double_t)fTh13mean, (Double_t)fTh13sigma) );
   
 }
 
@@ -283,42 +286,44 @@ void AsimovFit::FitData(fitpacket& fp) {
     throw std::invalid_argument("ERROR! AsimovFit::FitData() no combined data in the input fit-packet. The input fitpacket should be created with AsimovFit::CreateData()");
   }
 
+  // fit in the first quadrant
+  //--------------------------
+  
+  RooChi2Var chi2sim_1q("chi2var_1q","chi2var_1q", *fSimPdf, *d, DataError(RooAbsData::Poisson), Range("firstq"));
+  MyChi2Var  chi2fit_1q(chi2sim_1q, fExternalX2terms);
+  RooMinimizer *m_1q = new RooMinimizer(chi2fit_1q);
+
   ResetToCentral(*fFitUtil);
   fFitUtil->GetVar("SinsqTh23")->setVal(0.4);
-  //RooFitResult *res_1q = fSimPdf->chi2FitTo( *d, Save(), Range("firstq"), DataError(RooAbsData::Poisson) );
-
-  /****************** STARTING HACKING, FIT MANUALLY **************************************/
-  // fFitUtil->GetVar("dcp")->setConstant(kTRUE);
-  // fFitUtil->GetVar("SinsqTh13")->setConstant(kTRUE);
-
-  RooChi2Var chi2var("chi2var","chi2var", *fSimPdf, *d, DataError(RooAbsData::Poisson) );
-
-  X2_t th13 = std::make_tuple(fFitUtil->GetVar("SinsqTh13"), 0.0215, 0.0025/3);
-  vector<X2_t> extvec = {th13};
-  MyChi2Var test(chi2var, extvec );
-
-  // fFitUtil->GetVar("SinsqTh13")->setVal(0.03);
-  // cout << test.getVal() << endl;
-  // cout << "****************************************" << endl;
-  // cout << test.evaluate() << endl;
-  // return;
   
-  RooMinimizer m(test);
-  m.setMinimizerType("Minuit"); // select minimizer     
-  m.setVerbose(kTRUE);
-  m.minimize("Minuit","minuit");     
-  m.hesse();     
-  RooFitResult *ref_1q = m.save(); 
+  m_1q->setMinimizerType("Minuit"); // select minimizer     
+  m_1q->hesse();
+  m_1q->minimize("Minuit","minuit");     
+  m_1q->hesse();     
+  RooFitResult *res_1q = m_1q->save(); 
+  
+  // fit in the second quadrant
+  //---------------------------
+  
+  RooChi2Var chi2sim_2q("chi2var_2q","chi2var_2q", *fSimPdf, *d, DataError(RooAbsData::Poisson), Range("secondq"));
+  MyChi2Var  chi2fit_2q(chi2sim_2q, fExternalX2terms);
+  RooMinimizer *m_2q = new RooMinimizer(chi2fit_2q);
 
-  /****************** FINISH HACKING, FIT MANUALLY **************************************/
+  ResetToCentral(*fFitUtil);
+  fFitUtil->GetVar("SinsqTh23")->setVal(0.6);
+  
+  m_2q->setMinimizerType("Minuit"); // select minimizer     
+  m_2q->hesse();
+  m_2q->minimize("Minuit","minuit");     
+  m_2q->hesse();     
+  RooFitResult *res_2q = m_2q->save(); 
 
-  // ResetToCentral(*fFitUtil);
-  // fFitUtil->GetVar("SinsqTh23")->setVal(0.6);
-  // RooFitResult *res_2q = fFitPdf->chi2FitTo( *d, Save(), Range("secondq"), DataError(RooAbsData::Poisson) );
+  fp.fRes_1q = res_1q;
+  fp.fRes_2q = res_2q;
 
-  // fp.fRes_1q = res_1q;
-  // fp.fRes_2q = res_2q;
-
+  delete m_1q;
+  delete m_2q;
+  
 }
 
 //*********************************************************************************************
