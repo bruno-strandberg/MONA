@@ -22,15 +22,27 @@
 #include "TH1.h"
 #include "TCanvas.h"
 
+//**********************************************************************************************************
+
+/** structure to feed external chi2 terms to `MyChi2Var`; <0> is the pointer to the variable, <1> is the mean of the external measurement and <2> is the sigma of the external measurement */
 typedef std::tuple<RooRealVar*, Double_t, Double_t> X2_t;
 
+//**********************************************************************************************************
+
+/** Dirty hack class to be able to add external chi^2 terms when performing chi^2 minimization with RooFit.
+
+    RooFit works well with external constraints when using likelihood minimization, but the external terms are ignored when a chi2 fit is performed. This class helps to circumvent this problem.
+*/
 class MyChi2Var : public RooChi2Var {
 
  private:
 
-  RooChi2Var *fChi2;
-  vector<X2_t> fExtChi2;
+  RooChi2Var *fChi2;     //!< pointer to the input `RooChi2Var`
+  vector<X2_t> fExtChi2; //!< vector with data structures for external constraints
 
+  /** This funcion returns the summed chi^2 of all of the external constraint terms in member `fExtChi2`
+      \return summed chi2 of the external contraint terms
+   */
   Double_t GetExternalX2() const {
 
     Double_t extchi2 = 0;
@@ -46,29 +58,37 @@ class MyChi2Var : public RooChi2Var {
   }
 
  public:
-  
+
+  /** Default constructor
+      \param chi2      A `RooChi2Var` between the model and the data
+      \paran extchi2   Vector with external chi^2 term structures
+   */
   MyChi2Var(RooChi2Var &chi2, vector<X2_t> &extchi2): RooChi2Var(chi2) {
-    //fChi2 = (RooChi2Var*)this;
-    fChi2 = &chi2;
+    fChi2 = &chi2;       // save a pointer to the input `RooChi2Var`, need this in `evaluate()`
     fExtChi2 = extchi2;
   };
-  
+
+  /** Copy constructor */
   MyChi2Var(const MyChi2Var &other) : RooChi2Var( (RooChi2Var)other ) {
-    //fChi2 = (RooChi2Var*)this;
     fChi2 = other.fChi2;
     fExtChi2 = other.fExtChi2;
   }
 
   ~MyChi2Var() {};
-  
+
+  /** Overloaded function that adds the external chi2 terms to the input `RooChi2Var`
+      Note the use of member `fChi2->getVal()`, this returns the chi^2 of the input `RooChi2Var` without external constraints. Then the external constraint terms are added manually and the sum is returned. The return of this function is the number visible to the minimizer class, e.g. `RooMinimizer`.
+   */
   virtual Double_t evaluate ( ) const {
     Double_t extx2 = GetExternalX2();
     Double_t datax2 = fChi2->getVal();
-    cout << "MyChi2Var::evaluate() dataX2 and externalX2: " << datax2 << "\t" << extx2 << endl;
+    //cout << "MyChi2Var::evaluate() dataX2 and externalX2: " << datax2 << "\t" << extx2 << endl;
     return ( datax2 + extx2 );
   }
 
 };
+
+//**********************************************************************************************************
 
 /** This structure helps to pass fitting data, starting values and results through various functions of the AsimovFit class and provides IO*/
 struct fitpacket: public TObject {
@@ -166,14 +186,15 @@ class AsimovFit {
   FitUtil         *fFitUtil;
   FitPDF          *fTrkPdf;
   FitPDF          *fShwPdf;
-  RooSimultaneous *fSimPdf;
-  RooProdPdf      *fFitPdf;
+  RooSimultaneous *fSimPdf; // a joint pdf for tracks and showers, does not include external constraints
+  RooProdPdf      *fFitPdf; // pdf that includes external constraints, useful for `LikelihoodScan` and `Contour`
 
   // variables for an external constraint on th13
   RooGaussian     *fTh13C;
   static constexpr double fTh13mean  = 0.0215;   // from PDG
   static constexpr double fTh13sigma = 0.0025/3; // 3sigma limits are 0.019, 0.024, i.e. += 0.0025
-
+  vector<X2_t> fExternalX2terms;                 // vector with external chi^2 terms
+  
   // vector for storing fitpacket's read from a file
   vector< fitpacket* > fFPs;
   

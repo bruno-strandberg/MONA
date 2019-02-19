@@ -140,6 +140,10 @@ void plot20vs23(TString infile = "rootfiles/asimov_th23scan_0.35-0.65_v8_chi2fit
   g_O23->SetLineColor(kBlue);
   g_O23->SetLineStyle(9);
 
+  g_O20->GetYaxis()->SetRangeUser(0,7);
+  g_O20->SetMinimum(0);
+  g_O20->SetMaximum(7);
+
   TLegend *leg = new TLegend(0.15, 0.6, 0.45, 0.9);
   leg->AddEntry(g_O20, "ORCA 20x9m", "l");
   leg->AddEntry(g_O23, "ORCA 23x9m", "l");
