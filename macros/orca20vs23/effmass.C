@@ -27,7 +27,6 @@ void effmass(Int_t nu_pdg = 14, Bool_t iscc = 1, TString outname = "") {
     throw std::invalid_argument("ERROR! effmass() Unknown neutrino flavor, supported are +- 12, 14, 16");
   }
 
-
   TString effmf_orca23 = "../../data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
   TString effmf_orca20 = "../../data/eff_mass/EffMass_ORCA115_20x9m_ECAP1218.root";
 
@@ -35,7 +34,7 @@ void effmass(Int_t nu_pdg = 14, Bool_t iscc = 1, TString outname = "") {
   TString dataf_orca20 = "../../data/ORCA_MC_summary_ORCA115_20x9m_ECAP1218.root";
 
   Int_t nebins  = 40;
-  Int_t nctbins = 40;
+  Int_t nctbins = 4;
 
   //------------------------------------------------------------------
   // init eff masses; configure the responses to create approximately comparable event selections
