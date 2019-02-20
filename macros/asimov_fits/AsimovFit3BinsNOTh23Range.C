@@ -196,7 +196,7 @@ void AsimovFit3BinsNOTh23Range() {
     TStopwatch timer;
 
     // Fit under NO model, IO data
-    SetNOlimsChi2Fit(fitutil);
+    SetNOlimsChi2Fit(fitutil); // This turned out to be necessary for more than 2 bins
     fitutil->SetNOcentvals();
 
     std::map<string, TH1*> hist_map;
