@@ -108,10 +108,10 @@ void AsimovFitNO() {
   // Set values to IO
   fitutil->SetIOcentvals();
 
-  TH3D* tracks_io   = (TH3D*)pdf_tracks.GetExpValHist();
-  TH3D* showers_io  = (TH3D*)pdf_showers.GetExpValHist();
-  tracks_io->SetName("tracks_expval_IO");
-  showers_io->SetName("showers_expval_IO");
+  TH3D* tracks_true   = (TH3D*)pdf_tracks.GetExpValHist();
+  TH3D* showers_true  = (TH3D*)pdf_showers.GetExpValHist();
+  tracks_true->SetName("tracks_expval_true");
+  showers_true->SetName("showers_expval_true");
 
   fitutil->GetVar("SinsqTh12")->setConstant(kTRUE);
   fitutil->GetVar("SinsqTh13")->setConstant(kTRUE);
@@ -130,72 +130,72 @@ void AsimovFitNO() {
   TStopwatch timer;
 
   // Fit under NO model, IO data
-  std::map<string, TH1*> hist_map_io = { {(string)tracks_io->GetName(),  tracks_io },
-                                         {(string)showers_io->GetName(), showers_io }};
+  std::map<string, TH1*> hist_map = { {(string)tracks_true->GetName(),  tracks_true },
+                                      {(string)showers_true->GetName(), showers_true }};
 
-  SetNOlimsChi2Fit(fitutil); // True for free Th23
+  SetNOlimsChi2Fit(fitutil);
   fitutil->SetNOcentvals();
 
-  RooCategory cats_io("categories_io","data categories");
-  cats_io.defineType( tracks_io->GetName() );
-  cats_io.defineType( showers_io->GetName() );
+  RooCategory cats("categories","data categories");
+  cats.defineType( tracks_true->GetName() );
+  cats.defineType( showers_true->GetName() );
 
-  RooSimultaneous simPdf_io("simPdf_io", "simultaneous Pdf for IO", cats_io);
-  simPdf_io.addPdf(pdf_tracks,  tracks_io->GetName() );
-  simPdf_io.addPdf(pdf_showers, showers_io->GetName() );
+  RooSimultaneous simPdf("simPdf", "simultaneous Pdf for IO", cats);
+  simPdf.addPdf(pdf_tracks,  tracks_true->GetName() );
+  simPdf.addPdf(pdf_showers, showers_true->GetName() );
 
-  RooDataHist data_hists_io("data_hists_io", "track and shower data", fitutil->GetObs(), cats_io, hist_map_io);
+  RooDataHist data_hists("data_hists", "track and shower data", fitutil->GetObs(), cats, hist_map);
 
   // Fit in both quadrants to find the real minimum of Th23.
-  ResetToCentral(*fitutil);
+  fitutil->SetNOcentvals();
   fitutil->GetVar("SinsqTh23")->setVal(0.4);
-  RooFitResult *fitres_1q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("firstq"), DataError(RooAbsData::Expected) );
-  RooArgSet result_1q_io ( fitres_1q_io->floatParsFinal() );
+  RooFitResult *fitres_1q = simPdf.chi2FitTo( data_hists, Save(), Range("firstq"), DataError(RooAbsData::Poisson) );
+  RooArgSet result_1q ( fitres_1q->floatParsFinal() );
 
-  ResetToCentral(*fitutil);
+  fitutil->SetNOcentvals();
   fitutil->GetVar("SinsqTh23")->setVal(0.6);
-  RooFitResult *fitres_2q_io = simPdf_io.chi2FitTo( data_hists_io, Save(), Range("secondq"), DataError(RooAbsData::Expected) );
-  RooArgSet result_2q_io ( fitres_2q_io->floatParsFinal() );
+  RooFitResult *fitres_2q = simPdf.chi2FitTo( data_hists, Save(), Range("secondq"), DataError(RooAbsData::Poisson) );
+  RooArgSet result_2q ( fitres_2q->floatParsFinal() );
 
-  RooArgSet *result_io;
-  Double_t fitChi2_1q = fitres_1q_io->minNll();
-  Double_t fitChi2_2q = fitres_2q_io->minNll();
-  cout << "first q" << fitChi2_1q << endl;
-  cout << "second q" << fitChi2_2q << endl;
+  RooArgSet *result;
+  Double_t fitChi2_1q = fitres_1q->minNll();
+  Double_t fitChi2_2q = fitres_2q->minNll();
+  cout << "first q " << TMath::Sqrt( fitChi2_1q ) << endl;
+  cout << "second q" << TMath::Sqrt( fitChi2_2q ) << endl;
   if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
-  if (fitChi2_1q < fitChi2_2q) result_io = &result_1q_io;
-  else                         result_io = &result_2q_io;
+  if (fitChi2_1q < fitChi2_2q) result = &result_1q;
+  else                         result = &result_2q;
 
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
   cout << "*********Fit result comparison****************************" << endl;
-  cout << "dm31       fitted: " << ((RooRealVar*)result_io->find("Dm31"))->getVal() << endl;
-  cout << "sinsq_th23 fitted: " << ((RooRealVar*)result_io->find("SinsqTh23"))->getVal() << endl;
+  cout << "dm31       fitted: " << ((RooRealVar*)result->find("Dm31"))->getVal() << endl;
+  cout << "sinsq_th23 fitted: " << ((RooRealVar*)result->find("SinsqTh23"))->getVal() << endl;
   cout << "*********Fit result comparison****************************" << endl;
 
   //----------------------------------------------------------
   // set hierarchy to fitted values
   //----------------------------------------------------------
 
-  Double_t dm31      = ((RooRealVar*)result_io->find("Dm31"))->getVal();
-  Double_t sinSqTh23 = ((RooRealVar*)result_io->find("SinsqTh23"))->getVal();
+  Double_t dm31      = ((RooRealVar*)result->find("Dm31"))->getVal();
+  Double_t sinSqTh23 = ((RooRealVar*)result->find("SinsqTh23"))->getVal();
   fitutil->GetVar("Dm31")->setVal( dm31 );
   fitutil->GetVar("SinsqTh23")->setVal( sinSqTh23 );
-  TH3D *tracks_fitted_io  = (TH3D*)pdf_tracks.GetExpValHist();
-  tracks_fitted_io->SetName("tracks_fitted_io");
-  TH3D *showers_fitted_io = (TH3D*)pdf_showers.GetExpValHist();
-  showers_fitted_io->SetName("showers_fitted_io");
+  TH3D *tracks_fitted  = (TH3D*)pdf_tracks.GetExpValHist();
+  tracks_fitted->SetName("tracks_fitted_io");
+  TH3D *showers_fitted = (TH3D*)pdf_showers.GetExpValHist();
+  showers_fitted->SetName("showers_fitted_io");
 
-  std::tuple<TH1*, Double_t, Double_t> n_chi2tr_io = NMHUtils::Asymmetry(tracks_io, tracks_fitted_io, "sensitivity_track",
-                                                        fitEMin, fitEMax, fitctMin, fitctMax);
-  std::tuple<TH1*, Double_t, Double_t> n_chi2sh_io = NMHUtils::Asymmetry(showers_io, showers_fitted_io, "sensitivity_shower",
-                                                        fitEMin, fitEMax, fitctMin, fitctMax);
+  std::tuple<TH1*, Double_t, Double_t> n_chi2tr = NMHUtils::Asymmetry(tracks_true, tracks_fitted, "sensitivity_track",
+                                                     fitEMin, fitEMax, fitctMin, fitctMax);
+  std::tuple<TH1*, Double_t, Double_t> n_chi2sh = NMHUtils::Asymmetry(showers_true, showers_fitted, "sensitivity_shower",
+                                                     fitEMin, fitEMax, fitctMin, fitctMax);
 
-  Double_t chi2tr_io = std::get<1>(n_chi2tr_io);
-  Double_t chi2sh_io = std::get<1>(n_chi2sh_io);
+  Double_t chi2tr = std::get<1>(n_chi2tr);
+  Double_t chi2sh = std::get<1>(n_chi2sh);
 
-  cout << "NMHUtils: Chi2 between tracks  IO and tracks  fitted on NO is: " << chi2tr_io << endl;
-  cout << "NMHUtils: Chi2 between showers IO and showers fitted on NO is: " << chi2sh_io << endl;
-  cout << "Squared sum is : " << std::sqrt(std::pow(chi2tr_io, 2) + std::pow(chi2sh_io, 2)) << endl;
+  cout << "NMHUtils: Chi2 between tracks  IO and tracks  fitted on NO is: " << chi2tr << endl;
+  cout << "NMHUtils: Chi2 between showers IO and showers fitted on NO is: " << chi2sh << endl;
+  cout << "Squared sum is : " << std::sqrt(std::pow(chi2tr, 2) + std::pow(chi2sh, 2)) << endl;
 
 }
