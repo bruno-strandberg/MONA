@@ -161,6 +161,22 @@ Double_t NuXsec::GetXsec(Double_t E) {
 //*************************************************************************
 
 /**
+ * This function returns the cross-section per nucleon in H20 in units m^2.
+ *
+ * \param  nu_flavor     Neutrino flavor
+ * \param  is_cc         Interaction type (0 - nc, 1 - cc)
+ * \param  is_nubar      0 - particle, 1 - antiparticle.
+ * \param                E  Neutrino energy
+ * \return               (2 x cs_proton + cs_oxygen)/18
+ */
+Double_t NuXsec::GetXsec(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar, Double_t E) {
+  SelectInteraction(nu_flavor, is_cc, is_nubar);
+  return GetXsec(E);
+}
+
+//*************************************************************************
+
+/**
    This function specifies the fraction of events that lie in a bjorken-y bin corresponding to argument by at neutrino energy E.
 
    \param E   Neutrino energy
@@ -197,6 +213,23 @@ Double_t NuXsec::GetBYfrac(Double_t E, Double_t by) {
 
   return f_h_by->GetBinContent(ebin, bybin);
 
+}
+
+//*************************************************************************
+
+/**
+   This function specifies the fraction of events that lie in a bjorken-y bin corresponding to argument by at neutrino energy E.
+
+   \param  nu_flavor     Neutrino flavor
+   \param  is_cc         Interaction type (0 - nc, 1 - cc)
+   \param  is_nubar      0 - particle, 1 - antiparticle.
+   \param                E   Neutrino energy
+   \param by             Bjorken-y value
+   \return               Fraction of events in a bjorken-y bin for given energy
+ */
+Double_t NuXsec::GetBYfrac(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar, Double_t E, Double_t by) {
+  SelectInteraction(nu_flavor, is_cc, is_nubar);
+  return GetBYfrac(E, by);
 }
 
 //*************************************************************************

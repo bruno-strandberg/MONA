@@ -39,6 +39,8 @@ class NuXsec {
   void     SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar);
   Double_t GetXsec(Double_t E);
   Double_t GetBYfrac(Double_t E, Double_t by);
+  Double_t GetXsec(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar, Double_t E);
+  Double_t GetBYfrac(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar, Double_t E, Double_t by);
 
  private:
   void     InitMaps(TString xsecfile, TString byfile, UInt_t bybins);
