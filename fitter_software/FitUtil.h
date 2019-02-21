@@ -215,6 +215,7 @@ class FitUtil {
   // private members for monitoring performance
   //------------------------------------------------------------------
   Long64_t    fOscCalls;         //!< counts the number of oscillator calls
+  Long64_t    fTrueEvtsCalls;    //!< counts the number of calls to `FitUtil::TrueEvts`
   TStopwatch *fOscCalcTime;      //!< counts the accumulated time for oscillation calculation
 
   //------------------------------------------------------------------

@@ -172,8 +172,8 @@ int main(const int argc, const char **argv) {
 
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_resp);  
 
-  fitutil->SetNOlims();
   fitutil->SetNOcentvals();
+  fitutil->SetNOlims();
 
   RooRealVar* rf_sinsqth12 = fitutil->GetVar("SinsqTh12");
   RooRealVar* rf_sinsqth13 = fitutil->GetVar("SinsqTh13");
@@ -295,6 +295,7 @@ int main(const int argc, const char **argv) {
   tout.Write();
   fout.Close();
   
+  delete fitutil;
 }
 
 //***************************************************************************************

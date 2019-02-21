@@ -57,6 +57,7 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
   f_cache_dm31      = 0;
 
   fOscCalls    = 0;
+  fTrueEvtsCalls = 0;
   fOscCalcTime = new TStopwatch();
   fOscCalcTime->Stop(); fOscCalcTime->Reset();
 
@@ -70,6 +71,7 @@ FitUtil::~FitUtil() {
   cout << "FitUtil::~FitUtil() total oscillator calls: " << fOscCalls << endl;
   cout << "FitUtil::~FitUtil() duration of oscillation calculations [s]: "
        << (Double_t)fOscCalcTime->RealTime() << endl;
+  cout << "FitUtil::~FitUtil() total `FitUtil::TrueEvts` calls: " << fTrueEvtsCalls << endl;
 
   if (fOscCalcTime) delete fOscCalcTime;
 
@@ -393,8 +395,7 @@ void FitUtil::FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time
 	for (Int_t ebin = 1; ebin <= hxsec->GetXaxis()->GetNbins(); ebin++) {
 
 	  Double_t E = hxsec->GetXaxis()->GetBinCenter(ebin);
-	  xsec->SelectInteraction(f, iscc, isnb);
-	  hxsec->SetBinContent(ebin, xsec->GetXsec(E) );
+	  hxsec->SetBinContent(ebin, xsec->GetXsec(f, iscc, isnb, E) );
 
 	}
 	
@@ -504,6 +505,8 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_tru
 						Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
 						Double_t Dcp, Double_t Dm21, Double_t Dm31) {
 
+  fTrueEvtsCalls++;
+
   // check that the bins are in the range
   if ( ebin_true  < 1 || ebin_true  > fHB->GetXaxis()->GetNbins() || 
        ctbin_true < 1 || ctbin_true > fHB->GetYaxis()->GetNbins() || 
@@ -541,16 +544,16 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_tru
   // get the interacted neutrino count in operation time (in units 1/MTon)
   Double_t int_count = osc_count * fhXsecCache[flav][iscc][isnb]->GetBinContent(ebin_true)/fMN * fKg_per_MTon;
   
-  // get the effective mass
-  Double_t meff  = fMeff->GetMeffBC( flav, iscc, isnb, ebin_true, ctbin_true, bybin_true );
-
-  // find true observable values necassary to split events to bjorken-y bins
+  // find true observable values necassary for the effective mass and to split events to bjorken-y bins
   Double_t e_true  = fHB->GetXaxis()->GetBinCenter( ebin_true );
+  Double_t ct_true = fHB->GetYaxis()->GetBinCenter( ctbin_true );
   Double_t by_true = fHB->GetZaxis()->GetBinCenter( bybin_true );
-  fXsec->SelectInteraction(flav, iscc, isnb);
+
+  // get the effective mass
+  Double_t meff  = fMeff->GetMeff( flav, iscc, isnb, e_true, ct_true, by_true );
 
   // calculate the number of detected events (unitless)
-  Double_t det_count = int_count * fXsec->GetBYfrac(e_true, by_true) * meff * 1e-6;
+  Double_t det_count = int_count * fXsec->GetBYfrac(flav, iscc, isnb, e_true, by_true) * meff * 1e-6;
 
   // MC stat err, coming from eff mass and BY distribution (0 for now)
   Double_t det_err   = 0.;
