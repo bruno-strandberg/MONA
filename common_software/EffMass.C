@@ -59,7 +59,7 @@ EffMass::EffMass(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, D
 
     In this case the generated and selected histograms are read from the file and the effective mass historams are initiated, using the binning given through the constructor. Then the functions `EffMass::GetMeff...` can be used to get the effective mass value for a neutrino type at certain energy, cos-theta, bjorken-y.
 
-    As a special case, the constructor can be initialised as `EffMass em(EffMass::DUMMYFILE,...)`, in which case a dummy value of 8e6*rho_sw is always returned as the effective mass. This is useful for test applications.
+    As a special case, the constructor can be initialised as `EffMass em(EffMass::DUMMYFILE,...)`, in which case a dummy value of \f$ \rho * 8e6 * ( 1 - e^{-0.5*energy} )\f$ is returned as the effective mass. This is useful for test applications.
 
     \param fname   File where the effective mass data have been written
     \param nebins  Number of energy bins to use
