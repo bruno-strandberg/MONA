@@ -18,6 +18,8 @@ class EffMass {
 
  public:
 
+  static const TString DUMMYFILE; //!< static member that specifies an argument for running in dummy mode
+
   EffMass(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax, TString datatag);
   EffMass(TString fname, Int_t nebins, Int_t nctbins, Int_t nbybins, Double_t rho_sw = 1.0397500);
   ~EffMass();
@@ -37,6 +39,7 @@ class EffMass {
  private:
   
   void ReadFromFile(TString filename);
+  void CreateDummyData();
   void CreateMeffHists(Int_t nebins, Int_t nctbins, Int_t nbybins);
   Bool_t InCoveredRange(Double_t E_true, Double_t Ct_true, Double_t By_true);
 

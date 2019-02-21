@@ -3,11 +3,15 @@
 #include "NMHUtils.h"
 
 #include "TFile.h"
+#include "TF1.h"
 
 #include<stdexcept>
 #include<iostream>
 
 using namespace std;
+
+// define the dummyfile keyword
+const TString EffMass::DUMMYFILE = "dummy";
 
 /** Constructor for creating the file with effective mass histograms (use for writing).
     
@@ -55,6 +59,8 @@ EffMass::EffMass(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, D
 
     In this case the generated and selected histograms are read from the file and the effective mass historams are initiated, using the binning given through the constructor. Then the functions `EffMass::GetMeff...` can be used to get the effective mass value for a neutrino type at certain energy, cos-theta, bjorken-y.
 
+    As a special case, the constructor can be initialised as `EffMass em(EffMass::DUMMYFILE,...)`, in which case a dummy value of 8e6*rho_sw is always returned as the effective mass. This is useful for test applications.
+
     \param fname   File where the effective mass data have been written
     \param nebins  Number of energy bins to use
     \param nctbins Number of cos-theta bins to use
@@ -64,7 +70,13 @@ EffMass::EffMass(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, D
 EffMass::EffMass(TString fname, Int_t nebins, Int_t nctbins, Int_t nbybins, Double_t rho_sw) {
 
   fRhoSW = rho_sw;
-  ReadFromFile(fname);
+
+  if (DUMMYFILE == fname) {
+    CreateDummyData();
+    cout << "NOTICE EffMass::EffMass() running in dummy mode, not suitable for physics analyses" << endl;
+  }
+  else ReadFromFile(fname);
+
   CreateMeffHists(nebins, nctbins, nbybins);
 
 }
@@ -259,6 +271,78 @@ void EffMass::ReadFromFile(TString fname) {
   }
 
   fin.Close();
+
+}
+
+//********************************************************************
+
+/** 
+    This function sets up the `selected` and `generated` histograms for use in dummy mode.
+
+    In this case the function `EffMass::GetMeff(...)` returns \f$ \rho * 8e6 * ( 1 - e^{-0.5*energy} )\f$ for the effective mass at a certain energy. This reaches a plateu of approx. 8e6 around 20 GeV and roughly mimics a turn-on region below that energy.
+
+*/
+void EffMass::CreateDummyData() {
+
+  //---------------------------------------------------------------------
+  // configure ranges, binning and volume for dummy data
+  //---------------------------------------------------------------------
+
+  fDataTag = "dummy";
+
+  Int_t nebins  = 240;      // the binning settings as in `apps/effective_mass/EffMhists`
+  Int_t nctbins = 240;
+  Int_t nbybins = 24;
+  Double_t dummyvol = 8e6; // dummy volume is 8 MTon
+  Double_t alpha = -0.5;   // parameter that defines the "turn-on" region.
+  fEmin  =  1;             // dummy range is 1-100 GeV
+  fEmax  =  1e2;
+  fCtmin = -1;
+  fCtmax =  1;
+  fBymin =  0;
+  fBymax =  1;
+
+  TF1 func("func", "1 - TMath::Exp( [0]*x )", fEmin, fEmax);
+  func.SetParameter(0, alpha);
+
+  for (auto f: fFlavMap) {
+    for (auto i: fIntMap) {
+      for (auto p: fPolMap) {
+
+	TString typestr = f.second + "_" + i.second + "_" + p.second;
+	TString genname = "hgen_" + typestr;
+	TString selname = "hsel_" + typestr;
+	TString volname = "vol_" + typestr;
+
+	//---------------------------------------------------------------------
+	// create dummy histograms, such that gen/sel is always 1; then `EffMass::CreateMeffHists` 
+	// will create effective mass histograms that return an effective mass of dummyvol * rho
+	//---------------------------------------------------------------------
+
+	fVgen[f.first][i.first][p.first] = dummyvol;
+	fhGen[f.first][i.first][p.first] = new TH3D(genname, genname, nebins, fEmin, fEmax, 
+						    nctbins, fCtmin, fCtmax, nbybins, fBymin, fBymax);
+	fhSel[f.first][i.first][p.first] = new TH3D(selname, selname, nebins, fEmin, fEmax, 
+						    nctbins, fCtmin, fCtmax, nbybins, fBymin, fBymax);
+	fhGen[f.first][i.first][p.first]->SetDirectory(0);
+	fhSel[f.first][i.first][p.first]->SetDirectory(0);
+
+	for (Int_t xbin = 1; xbin <= fhGen[f.first][i.first][p.first]->GetXaxis()->GetNbins(); xbin++) {
+	  for (Int_t ybin = 1; ybin <= fhGen[f.first][i.first][p.first]->GetYaxis()->GetNbins(); ybin++) {
+	    for (Int_t zbin = 1; zbin <= fhGen[f.first][i.first][p.first]->GetZaxis()->GetNbins(); zbin++) {
+
+	      Double_t E = fhGen[f.first][i.first][p.first]->GetXaxis()->GetBinCenter( xbin );
+	      
+	      fhSel[f.first][i.first][p.first]->SetBinContent(xbin, ybin, zbin, func.Eval(E) );
+	      fhGen[f.first][i.first][p.first]->SetBinContent(xbin, ybin, zbin, 1.0);
+
+	    }
+	  }
+	}
+
+      }
+    }
+  }
 
 }
 
