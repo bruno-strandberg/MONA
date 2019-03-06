@@ -85,7 +85,7 @@ int main(const int argc, const char **argv) {
     // calculate flux difference
     //-------------------------------------------------------------
     Double_t flux_conv = e_w * ct_w * sec_per_y * 3;
-    Double_t flux_diff = futil.GetCachedFlux(tb) - flux->Flux_dE_dcosz(flav, isnb, E, ct) * flux_conv;
+    Double_t flux_diff = futil.GetCachedFlux(flav, isnb, tb) - flux->Flux_dE_dcosz(flav, isnb, E, ct) * flux_conv;
 
     //-------------------------------------------------------------
     // calcuate osc difference

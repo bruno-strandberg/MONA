@@ -75,13 +75,19 @@ FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse 
 
 /** This method is called by the minimiser to get the expected number of events in a bin 
 
-    This function is a wrapper around `FitUtil::PdfEvaluate`, all the work is done in `FitUtil` class.
+    This function is a wrapper around `FitUtil::RecoEvts`, all the work is done in `FitUtil` class.
 
     \return Expected event density in a reco bin.
 */
 Double_t FitPDF::evaluate() const { 
-  
-  return fFitUtil->PdfEvaluate(fProxies, fResponse).first;
+
+  // instead of doing fProxies.at( "E_reco" ), getting the name of the variable adds a minimal
+  // protection as implemented in `GetVar`. A better solution is under consideration
+  Double_t E_reco  = *( fProxies.at( fFitUtil->GetVar("E_reco") ->GetName() ) );
+  Double_t Ct_reco = *( fProxies.at( fFitUtil->GetVar("ct_reco")->GetName() ) );
+  Double_t By_reco = *( fProxies.at( fFitUtil->GetVar("by_reco")->GetName() ) );
+
+  return fFitUtil->RecoEvts(E_reco, Ct_reco, By_reco, fResponse, fProxies).first;
 
 } 
 
@@ -117,7 +123,7 @@ Double_t FitPDF::analyticalIntegral(Int_t code, const char* rangeName) const {
   Double_t integral = 0.;
   
   if ( code == I_E_CT_BY ) {
-    auto expct = fFitUtil->PdfExpectation(fProxies, fResponse, rangeName);
+    auto expct = fFitUtil->Expectation(fResponse, fProxies, rangeName);
     integral = expct->Integral();
     delete expct;
   }
@@ -140,18 +146,23 @@ Double_t FitPDF::analyticalIntegral(Int_t code, const char* rangeName) const {
  */
 double FitPDF::operator()(double *x, double *p) {
 
-  Double_t E  = x[0];
-  Double_t ct = x[1];
-  Double_t by = x[2];
+  // set `RooFit` parameters to the values from the arguments
+  fFitUtil->GetVar("SinsqTh12")->setVal( p[0] );
+  fFitUtil->GetVar("SinsqTh13")->setVal( p[1] );
+  fFitUtil->GetVar("SinsqTh23")->setVal( p[2] );
+  fFitUtil->GetVar("dcp")      ->setVal( p[3] );
+  fFitUtil->GetVar("Dm21")     ->setVal( p[4] );
+  fFitUtil->GetVar("Dm31")     ->setVal( p[5] );
 
-  Double_t sinsqth12  = p[0];
-  Double_t sinsqth13  = p[1];
-  Double_t sinsqth23  = p[2];
-  Double_t dcp        = p[3];
-  Double_t dm21       = p[4];
-  Double_t dm31       = p[5];
+  // calculate the bin width to conver the event density to number of events
+  TH3D *hb = fResponse->GetHist3D();
 
-  return fFitUtil->RecoEvts(fResponse, E, ct, by, sinsqth12, sinsqth13, sinsqth23, dcp, dm21, dm31).first;
+  Double_t e_w  = hb->GetXaxis()->GetBinWidth( hb->GetXaxis()->FindBin(x[0]) );
+  Double_t ct_w = hb->GetYaxis()->GetBinWidth( hb->GetYaxis()->FindBin(x[1]) );
+  Double_t by_w = hb->GetZaxis()->GetBinWidth( hb->GetZaxis()->FindBin(x[2]) );
+  Double_t bw = e_w * ct_w * by_w;
+  
+  return fFitUtil->RecoEvts(x[0], x[1], x[2], fResponse, fProxies).first * bw;
   
 }
 
@@ -159,7 +170,7 @@ double FitPDF::operator()(double *x, double *p) {
 
 /** Function that returns a pointer to a TH3D that represents a pseudo-experiment.
 
-    The function Poisson-smears the the expectation value in each bin. If the expectation has a statistical uncertainty associated with it and stored in the bin error (as is the case in the return value of `FitUtil::PdfExpectation`), the statistical uncertainty of the expectation value can be taken into account.
+    The function Poisson-smears the the expectation value in each bin. If the expectation has a statistical uncertainty associated with it and stored in the bin error (as is the case in the return value of `FitUtil::Expectation`), the statistical uncertainty of the expectation value can be taken into account.
 
     \param nametitle      string used as a name and a title for the created TH3D histogram
     \param IncludeStatErr account for the statistical uncertainty of the expectation in smearing
@@ -169,7 +180,7 @@ double FitPDF::operator()(double *x, double *p) {
 TH3D* FitPDF::SimplePseudoExp(TString nametitle, Bool_t IncludeStatErr) {
 
   // get the histogram with expectation values
-  TH3D* expectation = fFitUtil->PdfExpectation(fProxies, fResponse,"");
+  TH3D* expectation = fFitUtil->Expectation(fResponse, fProxies, "");
 
   // create a histogram where the experiment is stored
   TH3D* experiment  = (TH3D*)expectation->Clone(nametitle);

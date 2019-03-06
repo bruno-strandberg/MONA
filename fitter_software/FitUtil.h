@@ -23,6 +23,7 @@
 // standard cpp
 #include <map>
 
+/// type definition for passing arguments between RooFit wrapper class `FitPDF` and worker-functions in `FitUtil`.
 typedef std::map<TString, RooRealProxy*> proxymap_t;
 
 /** This class is used in conjunction with `FitPDF` to fit NMO data with `RooFit`.
@@ -57,8 +58,8 @@ class FitUtil {
   //------------------------------------------------------------------
   // public functions that are called in `FitPDF`
   //------------------------------------------------------------------  
-  std::pair<Double_t, Double_t> PdfEvaluate(const proxymap_t &parmap, DetResponse *resp);
-  TH3D* PdfExpectation(const proxymap_t &parmap, DetResponse *resp, const char* rangeName);
+  std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap);
+  TH3D* Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName);
 
   // setters/getters
 
@@ -73,7 +74,7 @@ class FitUtil {
   /** Get the 3D histogram that stores the binning information
       \return `TH3D` with the binning used in the analysis.
    */
-  TH3D*       GetBinningHist() { return fHB;      }
+  TH3D*       GetBinningHist() { return fHB; }
   RooRealVar* GetVar(TString varname);
   void        SetNOlims();
   void        SetNOcentvals();
@@ -81,35 +82,36 @@ class FitUtil {
   void        SetIOcentvals();
   void        FreeParLims();
 
+  /** Get the a pointer to `AtmFlux` member of `FitUtil` that is used to fill caches.
+      \return pointer to `AtmFlux` instance.
+   */
   AtmFlux* GetFluxCalculator() { return fFlux; }
+  /** Get the a pointer to `NuXsec` member of `FitUtil` that is used to fill caches.
+      \return pointer to `NuXsec` instance.
+   */
   NuXsec*  GetXsecCalculator() { return fXsec; }
+  /** Get the a pointer to `OscProb::PMNS_Fast` member of `FitUtil` that is used to fill caches.
+      \return pointer to `OscProb::PMNS_Fast` instance.
+   */
   OscProb::PMNS_Fast* GetOscCalculator() { return fProb; }
+  /** Get the a pointer to `OscProb::PremModel` member of `FitUtil` that is used to fill caches.
+      \return pointer to `OscProb::PremModel` instance.
+   */
   OscProb::PremModel* GetEarthModel() { return fPrem; }
   
-  Double_t GetCachedFlux(TrueB &tb);
-  Double_t GetCachedOsc(UInt_t flav_in, TrueB &tb, proxymap_t& proxymap);
-  Double_t GetCachedXsec(TrueB &tb);
-  
-  // this function should be private, but is kept public for comparisons with ROOT
-  std::pair<Double_t, Double_t> RecoEvts(DetResponse *resp,
-					 Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
-					 Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
-					 Double_t Dcp, Double_t Dm21, Double_t Dm31);
+  Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, const TrueB &tb);
+  Double_t GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t& proxymap);
+  Double_t GetCachedXsec(const TrueB &tb);
+    
  private:
 
   //------------------------------------------------------------------
   // private functions
   //------------------------------------------------------------------
 
-  std::pair<Double_t, Double_t> TrueEvts(Int_t ebin_true, Int_t ctbin_true, Int_t bybin_true,
-					 UInt_t flav, UInt_t iscc, UInt_t isnb,
-					 Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
-					 Double_t Dcp, Double_t Dm21, Double_t Dm31);
+  std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
 
-  void ProbCacher(proxymap_t& proxymap);
-  void ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
-		  Double_t Dcp, Double_t Dm21, Double_t Dm31);
-  
+  void ProbCacher(const proxymap_t& proxymap);  
   void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
   void InitCacheHists(TH3D *h_template);
   void FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time);
@@ -227,7 +229,6 @@ class FitUtil {
   // private members for monitoring performance
   //------------------------------------------------------------------
   Long64_t    fOscCalls;         //!< counts the number of oscillator calls
-  Long64_t    fTrueEvtsCalls;    //!< counts the number of calls to `FitUtil::TrueEvts`
   TStopwatch *fOscCalcTime;      //!< counts the accumulated time for oscillation calculation
 
   //------------------------------------------------------------------

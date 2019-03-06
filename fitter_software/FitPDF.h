@@ -58,7 +58,7 @@ public:
       \param name Name of a range as used in `RooFit`, dummy for now
    */
   TH3D*        GetExpValHist(const char* name=0) {
-    return fFitUtil->PdfExpectation(fProxies, fResponse, name);
+    return fFitUtil->Expectation(fResponse, fProxies, name);
   }
   TH3D*        GetExpValErrHist(const char* name=0); 
 

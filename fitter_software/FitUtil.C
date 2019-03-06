@@ -57,7 +57,6 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
   f_cache_dm31      = 0;
 
   fOscCalls    = 0;
-  fTrueEvtsCalls = 0;
   fOscCalcTime = new TStopwatch();
   fOscCalcTime->Stop(); fOscCalcTime->Reset();
 
@@ -71,7 +70,6 @@ FitUtil::~FitUtil() {
   cout << "FitUtil::~FitUtil() total oscillator calls: " << fOscCalls << endl;
   cout << "FitUtil::~FitUtil() duration of oscillation calculations [s]: "
        << (Double_t)fOscCalcTime->RealTime() << endl;
-  cout << "FitUtil::~FitUtil() total `FitUtil::TrueEvts` calls: " << fTrueEvtsCalls << endl;
 
   if (fOscCalcTime) delete fOscCalcTime;
 
@@ -407,13 +405,37 @@ void FitUtil::FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time
 
 //***************************************************************************
 
-Double_t FitUtil::GetCachedFlux(TrueB &tb) {
-  return fhFluxCache[tb.fFlav][tb.fIsNB]->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin);
+/** 
+    Function that returns the cached atmospheric flux value for a certain true bin.
+    \param flav  Neutrino flavor, 0 - elec, 1 - muon, 2 - tau
+    \param isnb  Flag for anti-neutrino, 0 - neutrino, 1 - anti-neutrino
+    \param tb    A `TrueB` object (see `DetResponse.h`) that stores the true bin coordinate info.
+    \return      Cached atmoshperic neutrino flux in specified bin.
+*/
+Double_t FitUtil::GetCachedFlux(UInt_t flav, Bool_t isnb, const TrueB &tb) {
+
+  if (flav > TAU) {
+    throw std::invalid_argument("ERROR! FitUtil::GetCachedFlux() unknown flavor " + to_string(flav));
+  }
+
+  return fhFluxCache[flav][(UInt_t)isnb]->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin);
 }
 
 //***************************************************************************
 
-Double_t FitUtil::GetCachedOsc(UInt_t flav_in, TrueB &tb, proxymap_t& proxymap) {
+/** 
+    Function that returns the cached oscillation probability for a certain true bin.
+
+    The function handles re-calculation of the cached values by calling `FitUtil::ProbCacher` whenever any of the oscillation parameters change.
+
+    For example, to retrieve the oscillation probability of elec-->muon for a certain energy and cos-theta combination, the param `flav_in` should be `ELEC`, and `tb` should specify a muon-neutrino with a certain energy and cos-theta bin coordinates.
+
+    \param flav_in     Incoming atmospheric neutrino flavor (0-elec, 1 - muon). Tau (2) not supported, as atmospheric tau flux in negligible.
+    \param tb          A `TrueB` object (see `DetResponse.h`) that stores the neutrino type and true bin coordinate info. The flavor stored in `tb` is the oscillated neutrino flavor.
+    \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contains the oscillation parameters. 
+    \return            Cached neutrino oscillation probability in specified bin.
+*/
+Double_t FitUtil::GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t &proxymap) {
 
   if (flav_in > MUON) {
     throw std::invalid_argument("ERROR! FitUtil::GetCachedOsc() tau-->flavor oscillations are not calculated by FitUtil::ProbCacher(), as the atmospheric flux of tau's is negligible compared to muon and elec flux at ORCA energies");
@@ -427,24 +449,13 @@ Double_t FitUtil::GetCachedOsc(UInt_t flav_in, TrueB &tb, proxymap_t& proxymap) 
 
 //***************************************************************************
 
-Double_t FitUtil::GetCachedXsec(TrueB &tb) {
+/** 
+    Function that returns the cached neutrino cross-section value for a certain true bin.
+    \param tb    A `TrueB` object (see `DetResponse.h`) that stores the neutrino type and true bin coordinate info.
+    \return      Cached cross-section value in a specified bin.
+*/
+Double_t FitUtil::GetCachedXsec(const TrueB &tb) {
   return fhXsecCache[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent(tb.fE_true_bin);
-}
-
-//***************************************************************************
-
-void FitUtil::ProbCacher(proxymap_t& proxymap) {
-
-  // get the parameter values from the proxies
-  Double_t SinsqTh12 = *( proxymap.at( (TString)fSinsqTh12->GetName() ) );
-  Double_t SinsqTh13 = *( proxymap.at( (TString)fSinsqTh13->GetName() ) );
-  Double_t SinsqTh23 = *( proxymap.at( (TString)fSinsqTh23->GetName() ) );
-  Double_t Dcp       = *( proxymap.at( (TString)fDcp->GetName() ) );
-  Double_t Dm21      = *( proxymap.at( (TString)fDm21->GetName() ) );
-  Double_t Dm31      = *( proxymap.at( (TString)fDm31->GetName() ) );
-
-  ProbCacher(SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
-    
 }
 
 //***************************************************************************
@@ -456,22 +467,24 @@ void FitUtil::ProbCacher(proxymap_t& proxymap) {
 
    NB! The oscillations tau-> (elec, muon, tau) are not calculated to save time; tau flux is assumed 0.
 
-   \param SinsqTh12   \f$ sin^2\theta_{12} \f$ value
-   \param SinsqTh13   \f$ sin^2\theta_{13} \f$ value
-   \param SinsqTh23   \f$ sin^2\theta_{23} \f$ value
-   \param Dcp         \f$ \delta_{CP} \f$ value
-   \param Dm21        \f$ \Delta m_{21}^2 \f$ value
-   \param Dm31        \f$ \Delta m_{31}^2 \f$ value
+   \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all observables and parameters, including the oscillation parameters. 
  */
-void FitUtil::ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
-			 Double_t Dcp, Double_t Dm21, Double_t Dm31) {
+void FitUtil::ProbCacher(const proxymap_t &proxymap) {
+
+  // get the parameter values from the proxies
+  Double_t SinsqTh12 = *( proxymap.at( (TString)fSinsqTh12->GetName() ) );
+  Double_t SinsqTh13 = *( proxymap.at( (TString)fSinsqTh13->GetName() ) );
+  Double_t SinsqTh23 = *( proxymap.at( (TString)fSinsqTh23->GetName() ) );
+  Double_t Dcp       = *( proxymap.at( (TString)fDcp->GetName() ) );
+  Double_t Dm21      = *( proxymap.at( (TString)fDm21->GetName() ) );
+  Double_t Dm31      = *( proxymap.at( (TString)fDm31->GetName() ) );
 
   if (SinsqTh12 != f_cache_sinsqth12 || SinsqTh13 != f_cache_sinsqth13 || SinsqTh23 != f_cache_sinsqth23 || 
       Dcp != f_cache_dcp || Dm21 != f_cache_dm21 || Dm31 != f_cache_dm31) {
 
     fOscCalcTime->Start(kFALSE);
 
-    // set the cache variables
+    // update the cache variables
     f_cache_sinsqth12 = SinsqTh12;
     f_cache_sinsqth13 = SinsqTh13;
     f_cache_sinsqth23 = SinsqTh23;
@@ -522,126 +535,47 @@ void FitUtil::ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqT
   }
   // osc pars have not changed, return
   else { return; }
-
+      
 }
 
 //***************************************************************************
 
 /** Private function that calculates the number of events in a \f$ (E_{\rm true}, cos\theta_{\rm true}, by_{\rm true}) \f$ bin.
-    \param ebin_true   Number of true energy bin
-    \param ctbin_true  Number of true cos-theta bin
-    \param bybin_true  Number of true bjorken-y bin
-    \param flav        neutrino flavor (0 - elec, 1 - tau, 2 - muon)
-    \param iscc        0 - NC, 1 - CC
-    \param isnb        0 - nu, 1 - nub
-    \param SinsqTh12   \f$ sin^2\theta_{12} \f$ value
-    \param SinsqTh13   \f$ sin^2\theta_{13} \f$ value
-    \param SinsqTh23   \f$ sin^2\theta_{23} \f$ value
-    \param Dcp         \f$ \delta_{CP} \f$ value
-    \param Dm21        \f$ \Delta m_{21}^2 \f$ value
-    \param Dm31        \f$ \Delta m_{31}^2 \f$ value
+    \param tb          A `TrueB` object (see `DetResponse.h`) that stores the neutrino type and true bin coordinate info.
+    \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all observables and parameters, including the oscillation parameters. 
     \return            A pair; first is the number of expected events in the true bin, second is the MC statistical uncertainty
 */
-std::pair<Double_t, Double_t> FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_true, Int_t bybin_true, 
-						UInt_t flav, UInt_t iscc, UInt_t isnb, 
-						Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
-						Double_t Dcp, Double_t Dm21, Double_t Dm31) {
-
-  fTrueEvtsCalls++;
-
-  // check that the bins are in the range
-  if ( ebin_true  < 1 || ebin_true  > fHB->GetXaxis()->GetNbins() || 
-       ctbin_true < 1 || ctbin_true > fHB->GetYaxis()->GetNbins() || 
-       bybin_true < 1 || bybin_true > fHB->GetZaxis()->GetNbins() ) {
-    throw std::invalid_argument("ERROR! FitUtil::TrueEvts() event out of binning bounds (ebin, ctbin, bybin): " + 
-				to_string(ebin_true) + " " + to_string(ctbin_true) + " " + to_string(bybin_true));
-  }
-
-  if (flav >= fFlavs) {
-    throw std::invalid_argument("ERROR! FitUtil::TrueEvts() unknown flavor " + to_string(flav) );
-  }
-
-  if (iscc >= fInts) {
-    throw std::invalid_argument("ERROR! FitUtil::TrueEvts() unknown interaction " + to_string(iscc) );
-  }
-
-  if (isnb >= fPols) {
-    throw std::invalid_argument("ERROR! FitUtil::TrueEvts() unknown polarisation " + to_string(isnb) );
-  }
-
-  // pass the oscillation parameters to the oscillation cache handler
-  ProbCacher(SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
-
+std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_t &proxymap) {
+  
   // get the atm nu count
-  Double_t atm_count_e = fhFluxCache[ELEC][isnb]->GetBinContent(ebin_true, ctbin_true);
-  Double_t atm_count_m = fhFluxCache[MUON][isnb]->GetBinContent(ebin_true, ctbin_true);
+  Double_t atm_count_e = GetCachedFlux(ELEC, tb.fIsNB, tb);
+  Double_t atm_count_m = GetCachedFlux(MUON, tb.fIsNB, tb);
   
   // get the oscillation probabilities
-  Double_t prob_elec = fhOscCache[ELEC][flav][isnb]->GetBinContent(ebin_true, ctbin_true);
-  Double_t prob_muon = fhOscCache[MUON][flav][isnb]->GetBinContent(ebin_true, ctbin_true);
-
+  Double_t prob_elec = GetCachedOsc(ELEC, tb, proxymap);
+  Double_t prob_muon = GetCachedOsc(MUON, tb, proxymap);
+  
   // get the oscillated nu count in operation time (in units 1/m2)
   Double_t osc_count = ( atm_count_e * prob_elec + atm_count_m * prob_muon );
 
   // get the interacted neutrino count in operation time (in units 1/MTon)
-  Double_t int_count = osc_count * fhXsecCache[flav][iscc][isnb]->GetBinContent(ebin_true)/fMN * fKg_per_MTon;
+  Double_t int_count = osc_count * GetCachedXsec(tb)/fMN * fKg_per_MTon;
   
   // find true observable values necassary for the effective mass and to split events to bjorken-y bins
-  Double_t e_true  = fHB->GetXaxis()->GetBinCenter( ebin_true );
-  Double_t ct_true = fHB->GetYaxis()->GetBinCenter( ctbin_true );
-  Double_t by_true = fHB->GetZaxis()->GetBinCenter( bybin_true );
+  Double_t e_true  = fHB->GetXaxis()->GetBinCenter( tb.fE_true_bin );
+  Double_t ct_true = fHB->GetYaxis()->GetBinCenter( tb.fCt_true_bin );
+  Double_t by_true = fHB->GetZaxis()->GetBinCenter( tb.fBy_true_bin );
 
   // get the effective mass
-  Double_t meff  = fMeff->GetMeff( flav, iscc, isnb, e_true, ct_true, by_true );
+  Double_t meff  = fMeff->GetMeff( tb.fFlav, tb.fIsCC, tb.fIsNB, e_true, ct_true, by_true );
 
   // calculate the number of detected events (unitless)
-  Double_t det_count = int_count * fXsec->GetBYfrac(flav, iscc, isnb, e_true, by_true) * meff * 1e-6;
+  Double_t det_count = int_count * fXsec->GetBYfrac(tb.fFlav, tb.fIsCC, tb.fIsNB, e_true, by_true) * meff * 1e-6;
 
   // MC stat err, coming from eff mass and BY distribution (0 for now)
-  Double_t det_err   = 0.;
+  Double_t det_err = 0.;
 
   return std::make_pair(det_count, det_err);
-
-}
-
-//***************************************************************************
-
-/** This function is called from inside `FitPDF::evaluate()` and returns the expected event density at a \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ value.
-
-    Note that the return of this function is normalised by RooFit by dividing with \f$ \int f(\vec{x})d\vec{x} \f$, where f(x) is the value returned by this function and \f$ \vec{x} \f$ are energy, cos-theta and bjorken-y.
-
-    The argument map is created in `FitPDF` and contains names and corresponding proxies for all parameters in `fParSet`. The detector response is also part of the `FitPDF` class and configures what kind of an event selection the pdf is used to fit.
-
-    \param parmap   Reference to a map with parameter names and corresponding `RooRealProxy`'s.
-    \param resp     Pointer to `DetResponse` instance used with the `FitPDF` class.
-    \return         a pair with the un-normalised event density (calculated by dividing the expected number of events in a bin by bin width) and the associated statistical uncertainty
-
-*/
-std::pair<Double_t, Double_t> FitUtil::PdfEvaluate(const proxymap_t &parmap,
-						   DetResponse *resp) {
-
-  // get the parameter values from the proxies
-
-  Double_t E_reco    = *( parmap.at( (TString)fE_reco->GetName() ) );
-  Double_t Ct_reco   = *( parmap.at( (TString)fCt_reco->GetName() ) );
-  Double_t By_reco   = *( parmap.at( (TString)fBy_reco->GetName() ) );
-  Double_t SinsqTh12 = *( parmap.at( (TString)fSinsqTh12->GetName() ) );
-  Double_t SinsqTh13 = *( parmap.at( (TString)fSinsqTh13->GetName() ) );
-  Double_t SinsqTh23 = *( parmap.at( (TString)fSinsqTh23->GetName() ) );
-  Double_t Dcp       = *( parmap.at( (TString)fDcp->GetName() ) );
-  Double_t Dm21      = *( parmap.at( (TString)fDm21->GetName() ) );
-  Double_t Dm31      = *( parmap.at( (TString)fDm31->GetName() ) );
-
-  // calculate the bin width to convert the number of events to event density
-
-  Double_t e_w  = fHB->GetXaxis()->GetBinWidth( fHB->GetXaxis()->FindBin( E_reco )  );
-  Double_t ct_w = fHB->GetYaxis()->GetBinWidth( fHB->GetYaxis()->FindBin( Ct_reco ) );
-  Double_t by_w = fHB->GetZaxis()->GetBinWidth( fHB->GetZaxis()->FindBin( By_reco ) );
-  Double_t binw = e_w * ct_w * by_w;
-
-  auto recoevts = RecoEvts(resp, E_reco, Ct_reco, By_reco, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
-  
-  return std::make_pair(recoevts.first/binw, recoevts.second/binw);
 
 }
 
@@ -651,22 +585,21 @@ std::pair<Double_t, Double_t> FitUtil::PdfEvaluate(const proxymap_t &parmap,
 
     The argument map is created in `FitPDF` and contains names and corresponding proxies for all parameters in `fParSet`. The detector response is also part of the `FitPDF` class and configures what kind of an event selection the pdf is used to fit.
     
-    \param parmap     Reference to a map with parameter names and corresponding `RooRealProxy`'s.
     \param resp       Pointer to `DetResponse` instance used with the `FitPDF` class.
+    \param proxymap   A proxy map with `RooFit` variables from `FitPDF` that contain all observables and parameters, including the oscillation parameters. 
     \param rangeName  Range string as used in `RooFit`, currently dummy.
     \return           a 3D histogram in reco variables with exepectation values as bin contents
 
 */
-TH3D* FitUtil::PdfExpectation(const proxymap_t &parmap,
-			      DetResponse *resp, const char* rangeName) {
+TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName) {
 
   // get the parameter values from the proxies
-  Double_t SinsqTh12 = *( parmap.at( (TString)fSinsqTh12->GetName() ) );
-  Double_t SinsqTh13 = *( parmap.at( (TString)fSinsqTh13->GetName() ) );
-  Double_t SinsqTh23 = *( parmap.at( (TString)fSinsqTh23->GetName() ) );
-  Double_t Dcp       = *( parmap.at( (TString)fDcp->GetName() ) );
-  Double_t Dm21      = *( parmap.at( (TString)fDm21->GetName() ) );
-  Double_t Dm31      = *( parmap.at( (TString)fDm31->GetName() ) );
+  // Double_t SinsqTh12 = *( proxymap.at( (TString)fSinsqTh12->GetName() ) );
+  // Double_t SinsqTh13 = *( proxymap.at( (TString)fSinsqTh13->GetName() ) );
+  // Double_t SinsqTh23 = *( proxymap.at( (TString)fSinsqTh23->GetName() ) );
+  // Double_t Dcp       = *( proxymap.at( (TString)fDcp->GetName() ) );
+  // Double_t Dm21      = *( proxymap.at( (TString)fDm21->GetName() ) );
+  // Double_t Dm31      = *( proxymap.at( (TString)fDm31->GetName() ) );
 
   // create the histogram with expectation values
   TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
@@ -674,7 +607,7 @@ TH3D* FitUtil::PdfExpectation(const proxymap_t &parmap,
   hexp->SetDirectory(0);
   hexp->Reset();
   hexp->SetNameTitle(hname, hname);
-
+  
   // loop over bins and fill the expectation value histogram
   for (Int_t ebin = fEbin_min; ebin <= fEbin_max; ebin++) {
     for (Int_t ctbin = fCtbin_min; ctbin <= fCtbin_max; ctbin++) {
@@ -683,11 +616,17 @@ TH3D* FitUtil::PdfExpectation(const proxymap_t &parmap,
         Double_t E  = hexp->GetXaxis()->GetBinCenter( ebin );
         Double_t ct = hexp->GetYaxis()->GetBinCenter( ctbin );
         Double_t by = hexp->GetZaxis()->GetBinCenter( bybin );
+
+	// calculate the bin width, necessary to convert event density to event count
+	Double_t e_w  = hexp->GetXaxis()->GetBinWidth( ebin  );
+	Double_t ct_w = hexp->GetYaxis()->GetBinWidth( ctbin );
+	Double_t by_w = hexp->GetZaxis()->GetBinWidth( bybin );
+	Double_t binw = e_w * ct_w * by_w;
+
+        auto recoevts = RecoEvts(E, ct, by, resp, proxymap);
 	
-        auto recoevts = RecoEvts(resp, E, ct, by, SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
-	
-	hexp->SetBinContent(ebin, ctbin, bybin, recoevts.first  );
-	hexp->SetBinError  (ebin, ctbin, bybin, recoevts.second );
+	hexp->SetBinContent(ebin, ctbin, bybin, recoevts.first*binw  );
+	hexp->SetBinError  (ebin, ctbin, bybin, recoevts.second*binw );
 	
       }
     }
@@ -699,23 +638,20 @@ TH3D* FitUtil::PdfExpectation(const proxymap_t &parmap,
 
 //***************************************************************************
 
-/** Private function that calculates the number of events in a \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ bin.
-    \param E_reco      Reconstructed energy
-    \param Ct_reco     Reconstructed cos-theta
-    \param By_reco     Reconstructed bjorken-y
-    \param SinsqTh12   \f$ sin^2\theta_{12} \f$ value
-    \param SinsqTh13   \f$ sin^2\theta_{13} \f$ value
-    \param SinsqTh23   \f$ sin^2\theta_{23} \f$ value
-    \param Dcp         \f$ \delta_{CP} \f$ value
-    \param Dm21        \f$ \Delta m_{21}^2 \f$ value
-    \param Dm31        \f$ \Delta m_{31}^2 \f$ value
-    \return            A pair; first is the number of expected events in the reco bin, second is the MC statistical uncertainty
-*/
-std::pair<Double_t, Double_t> FitUtil::RecoEvts(DetResponse *resp, 
-						Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
-						Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23,
-						Double_t Dcp, Double_t Dm21, Double_t Dm31) {
+/** This function is called from inside `FitPDF::evaluate()` and returns the expected event density at a \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ value.
 
+    Note that the return of this function is normalised by RooFit by dividing with \f$ \int f(\vec{x})d\vec{x} \f$, where f(x) is the value returned by this function and \f$ \vec{x} \f$ are energy, cos-theta and bjorken-y.
+
+    The argument map is created in `FitPDF` and contains names and corresponding proxies for all parameters in `fParSet`. The detector response is also part of the `FitPDF` class and configures what kind of an event selection the pdf is used to fit.
+
+    \param E_reco      Reco energy
+    \param Ct_reco     Reco cos-theta
+    \param By_reco     Reco bjorken-y
+    \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contains the fit parameters, including oscillation parameters.
+    \param resp        Pointer to `DetResponse` instance used with the `FitPDF` class.
+    \return            a pair with the un-normalised event density (calculated by dividing the expected number of events in a bin by bin width) and the associated statistical uncertainty */
+std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap) {
+    
   auto true_bins = resp->GetBinWeights( E_reco, Ct_reco, By_reco );
 
   Double_t det_count = 0.;
@@ -725,9 +661,7 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(DetResponse *resp,
     
     if (tb.fIsCC) {
       
-      Double_t TE = TrueEvts(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin, 
-			     tb.fFlav, tb.fIsCC, tb.fIsNB,
-			     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first;
+      Double_t TE = TrueEvts(tb, proxymap).first;
 
       det_count += tb.fW * TE;
       det_err   += TMath::Power(tb.fWE * TE, 2);
@@ -737,15 +671,23 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(DetResponse *resp,
 
       Double_t TE = 0.;
 
-      TE += TrueEvts(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin, ELEC, tb.fIsCC, tb.fIsNB,
-		     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first;
+      /* for NC events the response only says how the elec-NC events from the considered true bin contribute
+	 to the reco-bin. However, in the flux chain we have we also have a contribution from muon-NC and tau-NC true bin
+	 to the reco bin, which are assumed to look identical to the detector as elec-NC (this is why we only simulate
+	 elec-NC). Hence for NC events I need to add `TrueEvts` contributions from the three NC flavours
+      */
+
+      TrueB elecTB( tb );
+      TrueB muonTB( tb );
+      TrueB tauTB ( tb );
+      elecTB.fFlav = ELEC;
+      muonTB.fFlav = MUON;
+      tauTB.fFlav  = TAU;
       
-      TE += TrueEvts(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin, MUON, tb.fIsCC, tb.fIsNB,
-		     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first;
-
-      TE += TrueEvts(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin,  TAU, tb.fIsCC, tb.fIsNB,
-		     SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31).first;
-
+      TE += TrueEvts(elecTB, proxymap).first;
+      TE += TrueEvts(muonTB, proxymap).first;
+      TE += TrueEvts(tauTB , proxymap).first;
+      
       det_count += tb.fW * TE;
       det_err   += TMath::Power(tb.fWE * TE, 2);
       
@@ -758,8 +700,14 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(DetResponse *resp,
   //det_count += resp->GetNoiseCount1y(E_reco, ct_reco, by_reco) * fOpTime;
 
   det_err = TMath::Sqrt(det_err);
+
+  // finally, convert the event counts in reco bin to event density
+  Double_t e_w  = fHB->GetXaxis()->GetBinWidth( fHB->GetXaxis()->FindBin( E_reco )  );
+  Double_t ct_w = fHB->GetYaxis()->GetBinWidth( fHB->GetYaxis()->FindBin( Ct_reco ) );
+  Double_t by_w = fHB->GetZaxis()->GetBinWidth( fHB->GetZaxis()->FindBin( By_reco ) );
+  Double_t binw = e_w * ct_w * by_w;
   
-  return std::make_pair(det_count, det_err);
+  return std::make_pair(det_count/binw, det_err/binw);
 
 }
 
