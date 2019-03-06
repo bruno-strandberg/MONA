@@ -43,7 +43,7 @@ void AsimovFit3BinsNOTh23Range() {
   pid_map.insert(std::make_pair(3, 1.0)); // upper limit 
 
   TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
-  TString s_outputfile = "output/csv/PoissonError/AsimovFit3BinsNOTh23Range.txt";
+  TString s_outputfile = "output/csv/AsimovFit3BinsNOTh23Range.txt";
 
   // DetRes input values
   Int_t EBins = 40;

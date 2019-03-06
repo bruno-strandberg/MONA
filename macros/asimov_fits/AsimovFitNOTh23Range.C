@@ -31,7 +31,7 @@ using namespace RooFit;
 void AsimovFitNOTh23Range() {
 
   TString filefolder = "./default_detres/";
-  TString s_outputfile = "output/csv/Poisson/AsimovFitNOTh23Range.txt";
+  TString s_outputfile = "output/csv/AsimovFitNOTh23Range.txt";
 
   // DetRes input values
   Int_t EBins = 40;
