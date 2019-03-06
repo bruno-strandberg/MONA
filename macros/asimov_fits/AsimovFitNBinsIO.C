@@ -28,6 +28,11 @@
 using namespace std;
 using namespace RooFit;
 
+/* Script to calculate the asimov sensitivity at the PDG central values under the assumption
+ * that Nature is IO. The script uses 5*n PID bins, where the bins are evenly spaced in both channels:
+ * q = (0, 0.2) to q = (0.2, 0.4), etc...
+ */
+
 void AsimovFitNBinsIO() {
 
   const int N_PID_CLASSES = 10;
