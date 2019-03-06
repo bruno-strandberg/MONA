@@ -1,3 +1,7 @@
+#===============================================
+# the below is meant to get rid of binaries
+#===============================================
+
 # Ignore all
 *
 
@@ -11,7 +15,7 @@
 !*Makefile*
 
 #===============================================
-#the above is meant to get rid of binaries
+# below here I ignore some specific cases
 #===============================================
 
 # ignore some directories
@@ -19,6 +23,7 @@ playground/
 *tmp*
 
 # ignore specific file extensions
+junit.xml
 common_software/dic*
 fitter_software/dic*
 tests/roofit_example/dic*
