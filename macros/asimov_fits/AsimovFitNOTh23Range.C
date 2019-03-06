@@ -30,8 +30,9 @@ using namespace RooFit;
 
 void AsimovFitNOTh23Range() {
 
-  TString filefolder = "./default_detres/";
-  TString s_outputfile = "output/csv/Poisson/AsimovFitNOTh23Range.txt";
+  TString filefolder   = "./default_detres/";
+  TString s_outputfile = "output/csv/AsimovFitNOTh23Range.txt";
+  TString s_rootfile   = "output/root/AsimovFitNOTh23Range.root";
 
   // DetRes input values
   Int_t EBins = 40;
@@ -101,6 +102,9 @@ void AsimovFitNOTh23Range() {
   //----------------------------------------------------------
 
   auto meff_file = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+
+  // Open root file to save histograms
+  TFile fout(s_rootfile, "RECREATE");
 
   // Open output stream to save sensitivity values
   ofstream outputfile(s_outputfile);
@@ -201,6 +205,19 @@ void AsimovFitNOTh23Range() {
     std::tuple<TH1*, Double_t, Double_t> n_chi2sh = NMHUtils::Asymmetry(showers_true, showers_fitted, "sensitivity_shower",
                                                         fitEMin, fitEMax, fitctMin, fitctMax);
 
+    // Write the histograms containing the expectation values and sensitivity for tracks and showers
+    TH2D* h_track  = (TH2D*)std::get<0>(n_chi2tr);
+    TH2D* h_shower = (TH2D*)std::get<0>(n_chi2sh);
+    
+    fout.cd();
+    tracks_true->Write(    Form("track_expval_true_%.0f", th23));
+    showers_true->Write(   Form("shower_expval_true_%.0f", th23));
+    tracks_fitted->Write(  Form("track_expval_fitted_%.0f", th23));
+    showers_fitted->Write( Form("shower_expval_fitted_%.0f", th23));
+    h_track->Write(        Form("sensitivity_track_%.0f", th23));
+    h_shower->Write(       Form("sensitivity_shower_%.0f", th23));
+
+    // Get the total values of sensitivities
     Double_t chi2tr = std::get<1>(n_chi2tr);
     Double_t chi2sh = std::get<1>(n_chi2sh);
 
@@ -214,4 +231,5 @@ void AsimovFitNOTh23Range() {
     outputfile << th23 << "," << sinSqTh23_true << "," << chi2tr << "," << chi2sh << "," << endl;
   }
   outputfile.close();
+  fout.Close();
 }

@@ -6,7 +6,7 @@ import sys
 
 import matplotlib.pyplot as plt
 
-filefolder = "./output/csv/Ebin24_Poisson/"
+filefolder = "./output/csv/"
 savefolder = "./output/plots/"
 
 df = pd.read_csv(filefolder + "AsimovFitTh23Range.txt")

@@ -86,6 +86,7 @@ int main(const int argc, const char **argv) {
   int           nfits;
   TString       meff_file;
   int           ncpu;
+  int           seed;
 
   try {
 
@@ -100,6 +101,7 @@ int main(const int argc, const char **argv) {
     zap['M'] = make_field(meff_file, "Effective mass file created by using `EffMass` class") = 
       (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
     zap['N'] = make_field(ncpu, "Number of CPUs when fitting with RooFit") = 1;
+    zap['S'] = make_field(seed, "Seed for the random generator") = 0;
 
     if ( zap.read(argc, argv)!= 0 ) return 1;
   }
@@ -198,7 +200,7 @@ int main(const int argc, const char **argv) {
   // pereform the requested number of fits
   //----------------------------------------------------------
 
-  TRandom3 frand(0);
+  TRandom3 frand(seed);
   RooRandom::randomGenerator()->SetSeed( frand.Uniform(1,1e6) );
   
   for (Int_t fitnr = 0; fitnr < nfits; fitnr++) {
