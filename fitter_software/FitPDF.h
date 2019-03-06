@@ -49,6 +49,10 @@ public:
       \return Pointer to `FitUtil`
    */
   FitUtil*     GetUtil() { return fFitUtil; }
+  /**Get reference to member `fProxies`, which stores the pointers to the variables in `RooFit`
+     \return Reference to member `fProxies`
+   */
+  proxymap_t&    GetProxyMap() { return fProxies; }
   /** Get a 3D histogram with expectation values for this fit model.
       The histogram which is pointed to is created on the heap and it is the user's responsibility to delete the object.
       \param name Name of a range as used in `RooFit`, dummy for now
@@ -76,11 +80,10 @@ private:
 
   enum integrations {I_NUMERIC = 0, I_E_CT_BY}; //!< enumerator for integration types
   
-  FitUtil     *fFitUtil;                     //!< pointer to the fit utility that can be shared between several `FitPDF` instances
-  DetResponse *fResponse;                    //!< pointer to a specific fit response that describes the data to be fitted
-  std::map<TString, RooRealProxy*> fProxies; //!< map of proxies to the RooRealVar's defined in `FitUtil`
-
-  TRandom3 fRand;                            //!< random generator for pseudoexperiments
+  FitUtil     *fFitUtil;    //!< pointer to the fit utility that can be shared between several `FitPDF` instances
+  DetResponse *fResponse;   //!< pointer to a specific fit response that describes the data to be fitted
+  proxymap_t   fProxies;    //!< map of proxies to the RooRealVar's defined in `FitUtil`
+  TRandom3     fRand;       //!< random generator for pseudoexperiments
 
   ClassDef(FitPDF,1)
 };

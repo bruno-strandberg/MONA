@@ -407,6 +407,48 @@ void FitUtil::FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time
 
 //***************************************************************************
 
+Double_t FitUtil::GetCachedFlux(TrueB &tb) {
+  return fhFluxCache[tb.fFlav][tb.fIsNB]->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin);
+}
+
+//***************************************************************************
+
+Double_t FitUtil::GetCachedOsc(UInt_t flav_in, TrueB &tb, proxymap_t& proxymap) {
+
+  if (flav_in > MUON) {
+    throw std::invalid_argument("ERROR! FitUtil::GetCachedOsc() tau-->flavor oscillations are not calculated by FitUtil::ProbCacher(), as the atmospheric flux of tau's is negligible compared to muon and elec flux at ORCA energies");
+  }
+
+  // recalculate the oscillation parameter cache if anything has changed.
+  ProbCacher(proxymap);
+  
+  return fhOscCache[flav_in][tb.fFlav][tb.fIsNB]->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin);
+}
+
+//***************************************************************************
+
+Double_t FitUtil::GetCachedXsec(TrueB &tb) {
+  return fhXsecCache[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent(tb.fE_true_bin);
+}
+
+//***************************************************************************
+
+void FitUtil::ProbCacher(proxymap_t& proxymap) {
+
+  // get the parameter values from the proxies
+  Double_t SinsqTh12 = *( proxymap.at( (TString)fSinsqTh12->GetName() ) );
+  Double_t SinsqTh13 = *( proxymap.at( (TString)fSinsqTh13->GetName() ) );
+  Double_t SinsqTh23 = *( proxymap.at( (TString)fSinsqTh23->GetName() ) );
+  Double_t Dcp       = *( proxymap.at( (TString)fDcp->GetName() ) );
+  Double_t Dm21      = *( proxymap.at( (TString)fDm21->GetName() ) );
+  Double_t Dm31      = *( proxymap.at( (TString)fDm31->GetName() ) );
+
+  ProbCacher(SinsqTh12, SinsqTh13, SinsqTh23, Dcp, Dm21, Dm31);
+    
+}
+
+//***************************************************************************
+
 /**
    Private function that handles the caching of the oscillation probabilities.
 
@@ -575,7 +617,7 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(Int_t ebin_true, Int_t ctbin_tru
     \return         a pair with the un-normalised event density (calculated by dividing the expected number of events in a bin by bin width) and the associated statistical uncertainty
 
 */
-std::pair<Double_t, Double_t> FitUtil::PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap,
+std::pair<Double_t, Double_t> FitUtil::PdfEvaluate(const proxymap_t &parmap,
 						   DetResponse *resp) {
 
   // get the parameter values from the proxies
@@ -615,7 +657,7 @@ std::pair<Double_t, Double_t> FitUtil::PdfEvaluate(const std::map<TString, RooRe
     \return           a 3D histogram in reco variables with exepectation values as bin contents
 
 */
-TH3D* FitUtil::PdfExpectation(const std::map<TString, RooRealProxy*> &parmap,
+TH3D* FitUtil::PdfExpectation(const proxymap_t &parmap,
 			      DetResponse *resp, const char* rangeName) {
 
   // get the parameter values from the proxies

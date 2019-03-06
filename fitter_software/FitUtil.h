@@ -23,6 +23,8 @@
 // standard cpp
 #include <map>
 
+typedef std::map<TString, RooRealProxy*> proxymap_t;
+
 /** This class is used in conjunction with `FitPDF` to fit NMO data with `RooFit`.
 
     The class hosts the fit parameters (e.g. the 6 oscillation parameters) and uses elements of `common_software/` and `OscProb` to provide functions that predict the number of expected events in a true and reco (E, cos-theta, bjorken-y) bin. Additionally, it has functions that are to be called inside `FitPDF` class - together, `FitUtil` and `FitPDF` enable the use of `RooFit` for fitting NMO data. See `fitter_software/README.md` for more info.
@@ -54,9 +56,9 @@ class FitUtil {
 
   //------------------------------------------------------------------
   // public functions that are called in `FitPDF`
-  //------------------------------------------------------------------
-  std::pair<Double_t, Double_t> PdfEvaluate(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp);
-  TH3D* PdfExpectation(const std::map<TString, RooRealProxy*> &parmap, DetResponse *resp, const char* rangeName);
+  //------------------------------------------------------------------  
+  std::pair<Double_t, Double_t> PdfEvaluate(const proxymap_t &parmap, DetResponse *resp);
+  TH3D* PdfExpectation(const proxymap_t &parmap, DetResponse *resp, const char* rangeName);
 
   // setters/getters
 
@@ -78,6 +80,15 @@ class FitUtil {
   void        SetIOlims();
   void        SetIOcentvals();
   void        FreeParLims();
+
+  AtmFlux* GetFluxCalculator() { return fFlux; }
+  NuXsec*  GetXsecCalculator() { return fXsec; }
+  OscProb::PMNS_Fast* GetOscCalculator() { return fProb; }
+  OscProb::PremModel* GetEarthModel() { return fPrem; }
+  
+  Double_t GetCachedFlux(TrueB &tb);
+  Double_t GetCachedOsc(UInt_t flav_in, TrueB &tb, proxymap_t& proxymap);
+  Double_t GetCachedXsec(TrueB &tb);
   
   // this function should be private, but is kept public for comparisons with ROOT
   std::pair<Double_t, Double_t> RecoEvts(DetResponse *resp,
@@ -95,6 +106,7 @@ class FitUtil {
 					 Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
 					 Double_t Dcp, Double_t Dm21, Double_t Dm31);
 
+  void ProbCacher(proxymap_t& proxymap);
   void ProbCacher(Double_t SinsqTh12, Double_t SinsqTh13, Double_t SinsqTh23, 
 		  Double_t Dcp, Double_t Dm21, Double_t Dm31);
   
