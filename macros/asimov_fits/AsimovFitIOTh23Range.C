@@ -36,7 +36,7 @@ using namespace RooFit;
 void AsimovFitIOTh23Range() {
 
   TString filefolder   = "./default_detres/";
-  TString s_outputfile = "output/csv/AsimovFitIOTh23Range.txt";
+  TString s_outputfile = "output/csv/AsimovFitIOTh23Range.csv";
   TString s_rootfile   = "output/root/AsimovFitIOTh23Range.root";
 
   // DetRes input values

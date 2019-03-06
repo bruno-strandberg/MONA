@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 
 filefolder = "./output/csv/CrossCheck/"
 savefolder = "./output/plots/"
-filenameNO = "paramNMHValuesNoSystematicsAllNO.txt"
-filenameIO = "paramNMHValuesNoSystematicsAllIO.txt"
+filenameNO = "paramNMHValuesNoSystematicsAllNO.csv"
+filenameIO = "paramNMHValuesNoSystematicsAllIO.csv"
 
 dfno = pd.read_csv(filefolder + filenameNO)
 dfio = pd.read_csv(filefolder + filenameIO)

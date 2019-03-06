@@ -7,7 +7,7 @@ import sys
 import matplotlib.pyplot as plt
 
 filefolder = "./output/csv/"
-filename = sys.argv[1] if (len(sys.argv) > 1) else "QRange.txt"
+filename = sys.argv[1] if (len(sys.argv) > 1) else "QRange.csv"
 
 df = pd.read_csv(filefolder + filename)
 

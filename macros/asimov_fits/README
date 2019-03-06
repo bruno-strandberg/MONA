@@ -25,11 +25,11 @@ Examples:
  -`AsimovFitNBinsIOTh23Range.C`: This file assumes IO ordering for the expectation values as data and uses NBins in
   the PID variable, which defaults to 10 bins. It also walks over the range for `\Theta_{23}` from 40 to 50.
 
-===== Combining output txt/csv files =====
-The output files from the `Th23Range` files are csv or txt files containing csv data. However this will have to be
+===== Combining output csv files =====
+The output files from the `Th23Range` files are csv or csv files containing csv data. However this will have to be
 combined into one file that is read by the plotting python scripts. This can be done by running the following 
 terminal command: 
-`$ paste -d "" AsimovFitNO.txt AsimovFitIO.txt > AsimovFit.txt`
+`$ paste -d "" AsimovFitNO.csv AsimovFitIO.csv > AsimovFit.csv`
 This vertically merges the csv files into a new csv file. When running the python scripts, they read a csv with pandas
 and use its powerful plotting functionality.
 I realize this manual step is not ideal, this is the first attempt to make such an analysis pipeline.
@@ -42,7 +42,7 @@ To create the sensitivity curve for the "normal" case, of two PID bins with no c
 `$ root AsimovFitNOTh23Range.C+`
 `$ root AsimovFitIOTh23Range.C+`
 `$ cd ./output/csv/`
-`$ paste -d "" AsimovFitNOTh23Range.txt AsimovFitIOTh23Range.txt > AsimovFitTh23Range.txt`
+`$ paste -d "" AsimovFitNOTh23Range.csv AsimovFitIOTh23Range.csv > AsimovFitTh23Range.csv`
 `$ cd $NMH_DIR/macros/asimov_fit`
 `$ python plot_th23_range.py`
 
@@ -80,6 +80,6 @@ run the following code in accordance to the section above:
   `PlotRelativeErrorNEvents*.C`
  -Sensitivity plot for 2 and 3 bins with different q-edge values (0.2, 0.3, 0.4) run AsimovFitXO.C, AsimovFit3BinsXO.C
   with options (fitEMin,fitEMax) = (2,80), (3,50), (3,30) and (3,20) and for the q value change upper limit of the
-  first bin between 0.2, 0.3 and 0.4. Write the output numbers into `./output/csv/QRange.txt` in accordance to the
+  first bin between 0.2, 0.3 and 0.4. Write the output numbers into `./output/csv/QRange.csv` in accordance to the
   way the data is read-in by pandas in plot_qrange.py. Run plot_qrange.py to generate the plot. Apologies for this 
   part.

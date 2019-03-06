@@ -50,7 +50,7 @@ void AsimovFit3BinsIOTh23Range() {
   pid_map.insert(std::make_pair(3, 1.0)); // upper limit 
 
   TString filefolder   = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
-  TString s_outputfile = "output/csv/AsimovFit3BinsIOTh23Range.txt";
+  TString s_outputfile = "output/csv/AsimovFit3BinsIOTh23Range.csv";
   TString s_rootfile   = "output/root/AsimovFit3BinsIOTh23Range.root";
 
   // DetRes input values

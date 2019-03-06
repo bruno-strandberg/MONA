@@ -48,7 +48,7 @@ void AsimovFitNBinsNOTh23Range() {
     pid_map.insert(std::make_pair(i, i*PID_STEP));
   }
   TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
-  TString s_outputfile = "output/csv/AsimovFitNBinsNOTh23Range.txt";
+  TString s_outputfile = "output/csv/AsimovFitNBinsNOTh23Range.csv";
   TString s_rootfile   = "output/root/AsimovFitNBinsNOTh23Range.root";
 
   // DetRes input values
