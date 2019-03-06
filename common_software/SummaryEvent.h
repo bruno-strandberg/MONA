@@ -37,6 +37,11 @@ class SummaryEvent : public TObject {
   SummaryEvent();
   ~SummaryEvent();
 
+  /** Function to set the seed for the random event generation in `SummaryEvent::CreatePseudoData`.
+      \param seed  Generator seed
+   */
+  void SetSeed(UInt_t seed) { SUMMARYUTILS::fRand.SetSeed(seed); }
+  
   //public interface to the data structure
 
   // setters
