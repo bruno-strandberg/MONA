@@ -540,7 +540,8 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap) {
 
 //***************************************************************************
 
-/** Private function that calculates the number of events in a \f$ (E_{\rm true}, cos\theta_{\rm true}, by_{\rm true}) \f$ bin.
+/** Function that calculates the number of events in a \f$ (E_{\rm true}, cos\theta_{\rm true}, by_{\rm true}) \f$ bin.
+
     \param tb          A `TrueB` object (see `DetResponse.h`) that stores the neutrino type and true bin coordinate info.
     \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all observables and parameters, including the oscillation parameters. 
     \return            A pair; first is the number of expected events in the true bin, second is the MC statistical uncertainty

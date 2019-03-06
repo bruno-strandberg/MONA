@@ -43,9 +43,15 @@ typedef std::map<TString, RooRealProxy*> proxymap_t;
 */
 class FitUtil {
 
+  //*********************************************************************************
+  //public members and function of the `FitUtil` class
+  //*********************************************************************************
+  
  public:
 
+  //------------------------------------------------------------------
   // constructors/destructors
+  //------------------------------------------------------------------
 
   /** Default constructor. */
   FitUtil() {};
@@ -61,8 +67,23 @@ class FitUtil {
   std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap);
   TH3D* Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName);
 
+  //------------------------------------------------------------------
+  // other public functions
+  //------------------------------------------------------------------  
+  std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
+  Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, const TrueB &tb);
+  Double_t GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t& proxymap);
+  Double_t GetCachedXsec(const TrueB &tb);
+  void SetNOlims();
+  void SetNOcentvals();
+  void SetIOlims();
+  void SetIOcentvals();
+  void FreeParLims();
+  
+  //------------------------------------------------------------------
   // setters/getters
-
+  //------------------------------------------------------------------
+  
   /** Get the `RooArgSet` with all parameters known to `RooFit`
       \return `RooArgSet` with known parameters.
    */
@@ -90,14 +111,11 @@ class FitUtil {
       \return A pointer to the reco bjorken-y observable
    */
   RooRealVar* GetBYobs() { return fBy_reco; }
-  
+
+  /** Get a pointer to the member histogram with binning configuration
+      \return Pointer to a `TH3` with binning configuration
+   */
   TH3D*       GetBinningHist() { return fHB; }
-  RooRealVar* GetVar(TString varname);
-  void        SetNOlims();
-  void        SetNOcentvals();
-  void        SetIOlims();
-  void        SetIOcentvals();
-  void        FreeParLims();
 
   /** Get the a pointer to `AtmFlux` member of `FitUtil` that is used to fill caches.
       \return pointer to `AtmFlux` instance.
@@ -115,28 +133,17 @@ class FitUtil {
       \return pointer to `OscProb::PremModel` instance.
    */
   OscProb::PremModel* GetEarthModel() { return fPrem; }
+
+  RooRealVar* GetVar(TString varname);
+
+  //*********************************************************************************
+  //protected members and function of the `FitUtil` class, accessible to all inheriting classes
+  //*********************************************************************************
   
-  Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, const TrueB &tb);
-  Double_t GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t& proxymap);
-  Double_t GetCachedXsec(const TrueB &tb);
-    
- private:
+ protected:
 
   //------------------------------------------------------------------
-  // private functions
-  //------------------------------------------------------------------
-
-  std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
-
-  void ProbCacher(const proxymap_t& proxymap);  
-  void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
-  void InitCacheHists(TH3D *h_template);
-  void FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time);
-  std::tuple<Double_t, Double_t, Int_t, Int_t> GetRange(Double_t min, Double_t max, TAxis *axis);
-  enum rangeret { MIN=0, MAX, MINBIN, MAXBIN };           //!< enum for function `GetRange` return
-    
-  //------------------------------------------------------------------
-  // constants for detected neutrino count calculation
+  // protected constants for detected neutrino count calculation
   //------------------------------------------------------------------
 
   const double fMp = 1.672621898e-27;                     //!< proton mass in kg
@@ -152,9 +159,28 @@ class FitUtil {
   enum flavors {ELEC = 0, MUON, TAU};                     //!< enum for flavors
 
   //------------------------------------------------------------------
-  // central values and limits for oscillation parameters, used throughout the class
+  // protected members for detected neutrino count calculation
   //------------------------------------------------------------------
 
+  Double_t            fOpTime;                      //!< operation time in years
+  TH3D               *fHB;                          //!< a template histogram that defines the binning
+  AtmFlux            *fFlux;                        //!< atm flux calculator
+  NuXsec             *fXsec;                        //!< xsec calculator
+  EffMass            *fMeff;                        //!< effective mass calculator
+  OscProb::PMNS_Fast *fProb;                        //!< oscillation probability calculator
+  OscProb::PremModel *fPrem;                        //!< earth model
+
+  //------------------------------------------------------------------
+  // protected members for `RooFit` observable and parameter access
+  //------------------------------------------------------------------
+
+  RooArgSet   fParSet;   //!< set that includes all variables (observables+parameters)
+  RooArgList  fObsList;  //!< list (ordered!) that includes only observables (Energy, cos-theta, bjorken-y)
+
+  //------------------------------------------------------------------
+  // protected internal structure to initialise private osc parameter limits below
+  //------------------------------------------------------------------
+  
   /** internal structure to store parameter central values and limits*/
   struct fpar {
     Double_t cv;   //!< central value
@@ -183,6 +209,26 @@ class FitUtil {
     
   };
   
+  //*********************************************************************************
+  //private members and function of the `FitUtil` class, accessible only inside this class
+  //*********************************************************************************
+  
+ private:
+
+  //------------------------------------------------------------------
+  // private functions
+  //------------------------------------------------------------------
+  void ProbCacher(const proxymap_t& proxymap);  
+  void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
+  void InitCacheHists(TH3D *h_template);
+  void FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time);
+  std::tuple<Double_t, Double_t, Int_t, Int_t> GetRange(Double_t min, Double_t max, TAxis *axis);
+  enum rangeret { MIN=0, MAX, MINBIN, MAXBIN };           //!< enum for function `GetRange` return
+    
+  //------------------------------------------------------------------
+  // central values and limits for oscillation parameters, used throughout the class
+  //------------------------------------------------------------------
+  
   const fpar f_NO_sinsqth12 = fpar(0.297, 0.25, 0.354);    //!< central value and limits for \f$ sin^2\theta_{12} \f$, normal ordering
   const fpar f_IO_sinsqth12 = fpar(0.297, 0.25, 0.354);    //!< central value and limits for \f$ sin^2\theta_{12} \f$, inverse ordering
 
@@ -205,18 +251,6 @@ class FitUtil {
   const fpar f_free_dm21 = fpar(7.37e-5,  5e-5, 1e-4); //!< free limits for \f$ \Delta m_{21}^2 \f$
   const fpar f_free_dm31 = fpar(2.56e-3, -5e-3, 5e-3); //!< free limits for \f$ \Delta m_{31}^2 \f$
     
-  //------------------------------------------------------------------
-  // private members for detected neutrino count calculation
-  //------------------------------------------------------------------
-
-  Double_t            fOpTime;                      //!< operation time in years
-  TH3D               *fHB;                          //!< a template histogram that defines the binning
-  AtmFlux            *fFlux;                        //!< atm flux calculator
-  NuXsec             *fXsec;                        //!< xsec calculator
-  EffMass            *fMeff;                        //!< effective mass calculator
-  OscProb::PMNS_Fast *fProb;                        //!< oscillation probability calculator
-  OscProb::PremModel *fPrem;                        //!< earth model
-
   //------------------------------------------------------------------
   // private members for caching
   //------------------------------------------------------------------
@@ -243,13 +277,14 @@ class FitUtil {
   Int_t fBybin_max;              //!< minimum bjorken-y bin number included
   
   //------------------------------------------------------------------
-  // private members for monitoring performance
+  // private members for monitoring performance, used in `FitUtil::ProbCacher`
   //------------------------------------------------------------------
   Long64_t    fOscCalls;         //!< counts the number of oscillator calls
   TStopwatch *fOscCalcTime;      //!< counts the accumulated time for oscillation calculation
 
   //------------------------------------------------------------------
-  // variables that need to be recognized by the RooFit minimizer
+  // variables that need to be recognized by the RooFit minimizer and define
+  // observables (E, ct, by) and fit parameters (oscillation parameters)
   //------------------------------------------------------------------
 
   RooRealVar *fE_reco;    //!< reconstructed energy observable in GeV
@@ -261,9 +296,6 @@ class FitUtil {
   RooRealVar *fDcp;       //!< \f$ \delta_{CP} \f$ fit parameter in \f$ \pi $\f's, as given by the PDG group (e.g. 1.38)
   RooRealVar *fDm21;      //!< \f$ \Delta m_{21}^2 \f$ fit parameter in eV^2
   RooRealVar *fDm31;      //!< \f$ \Delta m_{31}^2 \f$ fit parameter in eV^2
-
-  RooArgSet   fParSet;   //!< set that includes all variables (observables+parameters)
-  RooArgList  fObsList;  //!< list (ordered!) that includes only observables (Energy, cos-theta, bjorken-y)
 
 };
 
