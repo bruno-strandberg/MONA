@@ -6,12 +6,12 @@ import sys
 
 import matplotlib.pyplot as plt
 
-filefolder = "./"
+filefolder = "./output/csv/"
 filename = sys.argv[1] if (len(sys.argv) > 1) else "QRange.txt"
 
 df = pd.read_csv(filefolder + filename)
 
-y=["chi2_no", "chi2_io", "chi2_no_3.50", "chi2_io_3.50", "chi2_no_3.30", "chi2_io_3.30", 
+y=["chi2_no", "chi2_io", "chi2_no_3.50", "chi2_io_3.50", "chi2_no_3.30", "chi2_io_3.30",
    "chi2_no_3.20","chi2_io_3.20"]
 linestyle=['solid','dashed', 'solid', 'dashed', 'solid', 'dashed', 'solid', 'dashed']
 marker=["o", "o", "o", "o", "o", "o", "o", "o"]
@@ -26,7 +26,7 @@ plt.ylabel(r"Sensitivity / $\sigma$", fontsize=14)
 plt.ylim(2.5,4)
 plt.grid()
 plt.legend(["NO", "IO", "NO energy cut [3,50]", "IO energy cut [3,50]",
-            "NO energy cut [3,30]", "IO energy cut [3,30]", 
+            "NO energy cut [3,30]", "IO energy cut [3,30]",
             "NO energy cut [3,20]", "IO energy cut [3,20]",], loc=2)
 plt.show()
 
