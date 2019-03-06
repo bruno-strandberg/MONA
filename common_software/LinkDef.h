@@ -8,7 +8,6 @@
 //If you run a compiled macro and include before it does not matter
 #pragma link C++ enum AtmFluxOpt;
 #pragma link C++ namespace NMHUtils+;
-#pragma link C++ class GSGParser+;
 #pragma link C++ class SummaryParser+;
 #pragma link C++ class AtmFlux+;
 #pragma link C++ class NuXsec+;

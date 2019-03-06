@@ -188,7 +188,7 @@ void AsimovFitNBinsIO() {
       cout << "NOTICE: Added hist and cat to shower" << endl;
     }
     else {
-      hist_map.insert( {(string)track_vector_true[i]->GetName(),  track_vector_true[i]} );
+      hist_map.insert( {(string)track_vector_true[i]->GetName(), track_vector_true[i]} );
       cats.defineType( track_vector_true[i]->GetName() );
       cout << "NOTICE: Added hist and cat to track" << endl;
     }
@@ -227,6 +227,7 @@ void AsimovFitNBinsIO() {
   if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
   if (fitChi2_1q < fitChi2_2q) result = &result_1q;
   else                         result = &result_2q;
+
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
   cout << "*********Fit result comparison****************************" << endl;

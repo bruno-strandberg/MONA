@@ -170,8 +170,8 @@ void AsimovFitIOTh23Range() {
     RooArgSet *result;
     Double_t fitChi2_1q = fitres_1q->minNll();
     Double_t fitChi2_2q = fitres_2q->minNll();
-    cout << "first q" << TMath::Sqrt( fitChi2_1q ) << endl;
-    cout << "second q" << TMath::Sqrt( fitChi2_2q ) << endl;
+    cout << "first q " << TMath::Sqrt( fitChi2_1q ) << endl;
+    cout << "second q " << TMath::Sqrt( fitChi2_2q ) << endl;
     if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
     if (fitChi2_1q < fitChi2_2q) result = &result_1q;
     else                         result = &result_2q;
