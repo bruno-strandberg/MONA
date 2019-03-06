@@ -70,10 +70,27 @@ class FitUtil {
   /** Get the `RooArgList` with observables (Energy, cos-theta, bjorken-y)
       \return `RooArgList` with observables (Energy, cos-theta, bjorken-y)
    */
+  
   RooArgList  GetObs()         { return fObsList; }
   /** Get the 3D histogram that stores the binning information
       \return `TH3D` with the binning used in the analysis.
    */
+
+  /** Get pointer to the member `RooRealVar` for the reco energy observable
+      \return A pointer to the reco energy observable
+   */
+  RooRealVar* GetEobs()  { return fE_reco; }
+
+  /** Get pointer to the member `RooRealVar` for the reco cos-theta observable
+      \return A pointer to the reco cos-theta observable
+   */
+  RooRealVar* GetCTobs() { return fCt_reco; }
+
+  /** Get pointer to the member `RooRealVar` for the reco bjorken-y observable
+      \return A pointer to the reco bjorken-y observable
+   */
+  RooRealVar* GetBYobs() { return fBy_reco; }
+  
   TH3D*       GetBinningHist() { return fHB; }
   RooRealVar* GetVar(TString varname);
   void        SetNOlims();

@@ -81,11 +81,9 @@ FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse 
 */
 Double_t FitPDF::evaluate() const { 
 
-  // instead of doing fProxies.at( "E_reco" ), getting the name of the variable adds a minimal
-  // protection as implemented in `GetVar`. A better solution is under consideration
-  Double_t E_reco  = *( fProxies.at( fFitUtil->GetVar("E_reco") ->GetName() ) );
-  Double_t Ct_reco = *( fProxies.at( fFitUtil->GetVar("ct_reco")->GetName() ) );
-  Double_t By_reco = *( fProxies.at( fFitUtil->GetVar("by_reco")->GetName() ) );
+  Double_t E_reco  = *( fProxies.at( fFitUtil->GetEobs() ->GetName() ) );
+  Double_t Ct_reco = *( fProxies.at( fFitUtil->GetCTobs()->GetName() ) );
+  Double_t By_reco = *( fProxies.at( fFitUtil->GetBYobs()->GetName() ) );
 
   return fFitUtil->RecoEvts(E_reco, Ct_reco, By_reco, fResponse, fProxies).first;
 
