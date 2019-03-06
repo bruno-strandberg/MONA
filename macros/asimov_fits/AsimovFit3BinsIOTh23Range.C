@@ -42,8 +42,9 @@ void AsimovFit3BinsIOTh23Range() {
   pid_map.insert(std::make_pair(2, 0.6)); // track
   pid_map.insert(std::make_pair(3, 1.0)); // upper limit 
 
-  TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
+  TString filefolder   = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
   TString s_outputfile = "output/csv/AsimovFit3BinsIOTh23Range.txt";
+  TString s_rootfile   = "output/root/AsimovFit3BinsIOTh23Range.root";
 
   // DetRes input values
   Int_t EBins = 40;
@@ -142,6 +143,9 @@ void AsimovFit3BinsIOTh23Range() {
   //----------------------------------------------------------
 
   auto meff_file = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+
+  // Open root file to save histograms
+  TFile fout(s_rootfile, "RECREATE");
 
   // Open output stream to save sensitivity values
   ofstream outputfile(s_outputfile);
@@ -290,6 +294,19 @@ void AsimovFit3BinsIOTh23Range() {
     for (Int_t i = 0; i < N_PID_CLASSES; i++) {
       Double_t chi2_i = std::get<1>(chi2[i]);
 
+      // Write the histograms containing the expectation values and sensitivity for tracks and showers
+      TH2D* h_sensitivity = (TH2D*)std::get<0>(chi2[i]);
+      
+      fout.cd();
+      if (pid_map[i] < PID_CUT) {
+        shower_vector_true[i]->Write( Form("shower_expval_true_%i_%.0f", i, th23) );
+      }
+      else {
+        track_vector_true[i]->Write(  Form("track_expval_true_%i_%.0f", i, th23) );
+      }
+      fitted[i]->Write(     Form("fitted_expval_%i_%.0f", i, th23) );
+      h_sensitivity->Write( Form("sensitivity_%i_%.0f", i, th23) );
+
       cout << "NMHUtils: Chi2 between events NO and events fitted on IO is: " << chi2_i << endl;
       chi2_tot += chi2_i * chi2_i;
     }
@@ -298,4 +315,5 @@ void AsimovFit3BinsIOTh23Range() {
     outputfile << th23 << "," << sinSqTh23_true << "," << std::sqrt( chi2_tot ) << "," << endl;
   }
   outputfile.close();
+  fout.Close();
 }
