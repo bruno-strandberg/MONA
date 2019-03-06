@@ -73,7 +73,7 @@ struct TrueB : public TObject {
       Operator to find a bin in a vector by using std::find.
 
       \param rhs instance of TrueB that this object is compared to
-      \return true if the bins match, false otherwise
+      \return true if the bins and neutrino type match, false otherwise
   */
   bool operator == (const TrueB& rhs) const {
     return ( ( this->fFlav == rhs.fFlav ) && 
@@ -84,6 +84,16 @@ struct TrueB : public TObject {
 	     ( this->fBy_true_bin == rhs.fBy_true_bin ) );
   }
 
+  /** 
+      Not-equal operator
+      \param rhs instance of TrueB that this object is compared to
+      \return true if bins or neutrino type mismatch, false otherwise
+   */
+  bool operator != (const TrueB& rhs) const {
+    return !(*this == rhs);
+  }
+
+  
   /**
      Stream operator for cout.
   */
