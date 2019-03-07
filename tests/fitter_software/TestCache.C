@@ -18,8 +18,6 @@ using namespace std;
 using namespace OscProb;
 
 int main(const int argc, const char **argv) {
-
-  Int_t b = 0.5
   
   Int_t testpoints = 10;
   Int_t result = 0;

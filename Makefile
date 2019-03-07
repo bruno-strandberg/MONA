@@ -5,14 +5,10 @@ include $(NMHDIR)/Makerules
 # all directories in apps/
 #======================================================================================
 
-# default call of `make` builds the libraries, applications and tests
+# default call of `make` builds the libraries and applications
 #---------------------------------------------------------------------
-.PHONY all: tests
-
-tests: apps
-	@for dir in tests/* ; do \
-		$(MAKE) -C $${dir} ; \
-	done
+.PHONY: all
+all : apps
 
 apps: nmhlib fitlib
 	@for dir in apps/* ; do \
@@ -31,6 +27,11 @@ nmhlib:
 
 test: tests
 	python $(NMHDIR)/run_tests.py
+
+tests: all
+	@for dir in tests/* ; do \
+		$(MAKE) -C $${dir} ; \
+	done
 
 # add a phony target to call clean
 #---------------------------------------------------------------------

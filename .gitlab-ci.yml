@@ -9,6 +9,11 @@ build:
         - source /Jpp/setenv.sh /Jpp
         - source setenv.sh
         - make -j4
+    artifacts:
+        paths:
+	   - common_software
+	   - fitter_software
+	   - apps/*
     cache:
         key: $CI_COMMIT_REF_SLUG
         untracked: true
