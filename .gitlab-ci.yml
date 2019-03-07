@@ -22,4 +22,4 @@ test:
       reports:
         junit: "junit.xml"
     dependencies:
-	- build
+        - build
