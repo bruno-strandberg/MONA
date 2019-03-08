@@ -98,7 +98,7 @@ struct TrueB : public TObject {
      Stream operator for cout.
   */
   friend std::ostream &operator << ( std::ostream &output, const TrueB &tb ) { 
-    output << "Flavor, is-cc, is-nb; true e, ct, by bin; weight, weight err, frac reco: "
+    output << "Flavor, is-cc, is-nb; true e, ct, by bin; weight, weight err: "
 	   << tb.fFlav << ' ' << tb.fIsCC << ' ' << tb.fIsNB << ' '
 	   << tb.fE_true_bin << ' ' << tb.fCt_true_bin << ' ' << tb.fBy_true_bin << ' '
 	   << tb.fW << ' ' << tb.fWE;
@@ -185,13 +185,21 @@ class DetResponse : public EventFilter {
   void                WriteToFile(TString filename);
   void                ReadFromFile(TString filename);
   std::tuple<TCanvas*, TCanvas*, TCanvas*> DisplayResponse(Double_t e_reco, Double_t ct_reco, TString outname="");
-  /// Get pointer to the 3D histogram with selected reco events
+  /** Get pointer to the 3D histogram with selected reco events
+      \return Pointer to a `TH3` with all the neutrino events that passed the selection cuts
+   */
   TH3D*               GetHist3D() { return fHResp; }
-  /// Get pointer to the histogram with atmospheric muon counts in 1y
+  /** Get pointer to the histogram with atmospheric muon counts in 1y
+      \return Pointer to a `TH3` with all the atm muon events expected in one year.
+   */
   TH3D*               GetHistAtmMu1y() { return fhAtmMuCount1y; }
-  /// Get pointer to the histogram with noise counts in 1y
+  /** Get pointer to the histogram with noise counts in 1y
+      \return Pointer to to `TH3` with all the noise events expected in one year.
+   */
   TH3D*               GetHistNoise1y() { return fhNoiseCount1y; }
-  /// Get response name
+  /** Get response name
+      \return Name of the response
+   */
   TString             Get_RespName() { return fRespName; }
 
  private:
