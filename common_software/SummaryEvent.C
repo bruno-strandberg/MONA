@@ -120,7 +120,7 @@ void SummaryEvent::FillPseudoData() {
   fTrack_energy    = fMC_energy   + fRand.Gaus(0, trkEres/conv)/100   * fMC_energy;
   fTrack_bjorkeny  = fMC_bjorkeny + fRand.Gaus(0, trkBYres/conv)/100  * fMC_bjorkeny;
 
-  if (fTrack_bjorkeny > 1.) fTrack_bjorkeny = 1;
+  if (fTrack_bjorkeny > 1.) fTrack_bjorkeny = 1 - 1e-5; // to avoid overflow in by
   if (fTrack_bjorkeny < 0.) fTrack_bjorkeny = 0;
 
   fTrack_ql0       = 1.;      //quality level 0 always passed
@@ -142,7 +142,7 @@ void SummaryEvent::FillPseudoData() {
   fShower_energy   = fMC_energy   + fRand.Gaus(0, shwEres/conv)/100   * fMC_energy;
   fShower_bjorkeny = fMC_bjorkeny + fRand.Gaus(0, shwBYres/conv)/100  * fMC_bjorkeny;
 
-  if (fShower_bjorkeny > 1.) fShower_bjorkeny = 1;
+  if (fShower_bjorkeny > 1.) fShower_bjorkeny = 1 - 1e-5; // to avoid overflow in by
   if (fShower_bjorkeny < 0.) fShower_bjorkeny = 0;
 
   fShower_ql0       = 1.;      //quality level 0 always passed
