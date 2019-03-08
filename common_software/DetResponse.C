@@ -200,8 +200,16 @@ void DetResponse::Fill(SummaryEvent *evt) {
     throw std::invalid_argument( "ERROR! DetResponse::Fill() cannot fill an already normalised response!" );
   }
   
-  // determine event type (either neutrinos or other)  
-  UInt_t flav  = fType_to_Supported.at( (UInt_t)TMath::Abs( evt->Get_MC_type() ) );
+  // determine event type (either neutrinos or other). Catch the exception if the particle type is
+  // not in the `fType_to_Supported` map and throw `invalid_argument`.
+  UInt_t flav;
+  try {
+    flav  = fType_to_Supported.at( (UInt_t)TMath::Abs( evt->Get_MC_type() ) );
+  }
+  catch (const std::out_of_range& oor) {
+    throw std::invalid_argument("ERROR! DetResponse::Fill() unknown particle type " +
+				to_string( TMath::Abs( evt->Get_MC_type() ) ) );
+  }
   UInt_t is_cc = evt->Get_MC_is_CC();
   UInt_t is_nb = (UInt_t)(evt->Get_MC_type() < 0 );
 
