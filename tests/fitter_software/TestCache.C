@@ -17,6 +17,7 @@
 using namespace std;
 using namespace OscProb;
 
+/** This application tests the cache functionality in the `FitUtil` class. */
 int main(const int argc, const char **argv) {
   
   Int_t testpoints = 10;
