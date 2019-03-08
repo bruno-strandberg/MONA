@@ -28,7 +28,7 @@ extensions = ["Expected", "Poisson", "ExpectedEbin24", "PoissonEbin24"]
 for folder, fileext in zip(folders, extensions):
   filefolder = "./output/csv/{0}/".format(folder)
   savefolder = "./output/plots/"
-  filename = sys.argv[1] if (len(sys.argv) > 1) else "AsimovFitTh23Range.txt"
+  filename = sys.argv[1] if (len(sys.argv) > 1) else "AsimovFitTh23Range.csv"
 
   df = pd.read_csv(filefolder + filename)
 
@@ -39,7 +39,7 @@ for folder, fileext in zip(folders, extensions):
           title="Asimov sensitivity (3 years)", color=["DarkRed", "DarkBlue"])
   ax1 = plt.gca()
 
-  df_3bins = pd.read_csv(filefolder + "AsimovFit3BinsTh23Range.txt")
+  df_3bins = pd.read_csv(filefolder + "AsimovFit3BinsTh23Range.csv")
   df_3bins.plot(x="th23", y=["n_chi2_io", "n_chi2_no"], style=['--','--'], fontsize=12,
   # There is something wrong with my labeling...
                 title="Asimov sensitivity (3 years)", color=["DarkRed", "DarkBlue"],

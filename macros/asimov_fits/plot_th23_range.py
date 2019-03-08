@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 filefolder = "./output/csv/"
 savefolder = "./output/plots/"
 
-df = pd.read_csv(filefolder + "AsimovFitTh23Range.txt")
+df = pd.read_csv(filefolder + "AsimovFitTh23Range.csv")
 
 try:
   df['n_chi2_no'] = np.sqrt(df['n_chi2tr_no']**2 + df['n_chi2sh_no']**2)

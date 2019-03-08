@@ -28,6 +28,13 @@
 using namespace std;
 using namespace RooFit;
 
+/* Script to calculate the asimov sensitivity at the PDG central values under the assumption
+ * that Nature is IO. The script uses 3 PID bins, where 2 are in the shower channel from:
+ * q = (0, 0.4) to q = (0.4, 0.6).
+ * The script moves `\Theta_{23}` over the range [40, 50] in steps of 1 and saves results in 
+ * csv and root files.
+ */
+
 void AsimovFit3BinsIOTh23Range() {
 
   const int N_PID_CLASSES = 3;
@@ -43,7 +50,7 @@ void AsimovFit3BinsIOTh23Range() {
   pid_map.insert(std::make_pair(3, 1.0)); // upper limit 
 
   TString filefolder   = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
-  TString s_outputfile = "output/csv/AsimovFit3BinsIOTh23Range.txt";
+  TString s_outputfile = "output/csv/AsimovFit3BinsIOTh23Range.csv";
   TString s_rootfile   = "output/root/AsimovFit3BinsIOTh23Range.root";
 
   // DetRes input values

@@ -28,6 +28,10 @@
 using namespace std;
 using namespace RooFit;
 
+/* Script to calculate the asimov sensitivity at the PDG central values under the assumption
+ * that Nature is NO.
+ */
+
 void AsimovFitNO() {
 
   TString filefolder = "./default_detres/";

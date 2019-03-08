@@ -28,10 +28,15 @@
 using namespace std;
 using namespace RooFit;
 
+/* Script to calculate the asimov sensitivity at the PDG central values under the assumption
+ * that Nature is IO. The script moves `\Theta_{23}` over the range [40, 50] in steps of 1
+ * and saves results in csv and root files.
+ */
+
 void AsimovFitIOTh23Range() {
 
   TString filefolder   = "./default_detres/";
-  TString s_outputfile = "output/csv/AsimovFitIOTh23Range.txt";
+  TString s_outputfile = "output/csv/AsimovFitIOTh23Range.csv";
   TString s_rootfile   = "output/root/AsimovFitIOTh23Range.root";
 
   // DetRes input values

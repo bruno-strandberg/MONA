@@ -28,6 +28,13 @@
 using namespace std;
 using namespace RooFit;
 
+/* Script to calculate the asimov sensitivity at the PDG central values under the assumption
+ * that Nature is NO. The script uses 5*n PID bins, where the bins are evenly spaced in both channels:
+ * q = (0, 0.2) to q = (0.2, 0.4), etc...
+ * The script moves `\Theta_{23}` over the range [40, 50] in steps of 1 and saves results in 
+ * csv and root files.
+ */
+
 void AsimovFitNBinsNOTh23Range() {
 
   const int N_PID_CLASSES = 5;
@@ -41,7 +48,7 @@ void AsimovFitNBinsNOTh23Range() {
     pid_map.insert(std::make_pair(i, i*PID_STEP));
   }
   TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
-  TString s_outputfile = "output/csv/AsimovFitNBinsNOTh23Range.txt";
+  TString s_outputfile = "output/csv/AsimovFitNBinsNOTh23Range.csv";
   TString s_rootfile   = "output/root/AsimovFitNBinsNOTh23Range.root";
 
   // DetRes input values
