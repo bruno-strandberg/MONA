@@ -59,18 +59,19 @@ class FitUtil {
   FitUtil(Double_t op_time, TH3 *h_template,
 	  Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax,
 	  TString meff_file);
-  ~FitUtil();
+  virtual ~FitUtil();
 
   //------------------------------------------------------------------
   // public functions that are called in `FitPDF`
   //------------------------------------------------------------------  
-  std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap);
+  virtual std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+					 DetResponse *resp, const proxymap_t &proxymap);
   TH3D* Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName);
 
   //------------------------------------------------------------------
   // other public functions
   //------------------------------------------------------------------  
-  std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
+  virtual std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
   Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, const TrueB &tb);
   Double_t GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t& proxymap);
   Double_t GetCachedXsec(const TrueB &tb);
