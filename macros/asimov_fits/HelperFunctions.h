@@ -90,3 +90,51 @@ void SetIOlimsChi2Fit(FitUtil* fitutil) {
   fitutil->GetVar("SinsqTh23")->setMin(0.);
   fitutil->GetVar("SinsqTh23")->setMax(1.);
 }
+
+
+/** Function to get the folders to save the detector responses and root files
+ */
+TString DetectorResponseFolder(Int_t n) {
+  TString filefolder = Form("./detector_responses/pid_binning_%i/", n);
+  cout << "NOTICE: Saving into folder " << filefolder << endl;
+  return filefolder;
+}
+
+
+/** Function to create a map of the PID bin edges
+ */
+std::map<Int_t, Double_t> SetPIDCase(Int_t n) {
+  std::map<Int_t, Double_t> pid_map;
+
+  switch (n) {
+    case 2:
+      cout << "NOTICE: Set PID case " << n << endl;
+      pid_map.insert(std::make_pair(0, 0.0)); // shower
+      pid_map.insert(std::make_pair(1, 0.6)); // track
+      pid_map.insert(std::make_pair(2, 1.0)); // upper limit
+      break;
+    case 3:
+      cout << "NOTICE: Set PID case " << n << endl;
+      pid_map.insert(std::make_pair(0, 0.0)); // shower
+      pid_map.insert(std::make_pair(1, 0.4)); // middle group: shower
+      pid_map.insert(std::make_pair(2, 0.6)); // track
+      pid_map.insert(std::make_pair(3, 1.0)); // upper limit 
+      break;
+    case 5:
+      cout << "NOTICE: Set PID case " << n << endl;
+      // The for loop also has to create an upper limit, thus +1
+      for (Int_t i = 0; i < n+1; i++) { 
+        pid_map.insert(std::make_pair(i, i / float(n) )); // This is i * PID_STEP
+      }
+      break;
+    case 10:
+      cout << "NOTICE: Set PID case " << n << endl;
+      for (Int_t i = 0; i < n+1; i++) { 
+        pid_map.insert(std::make_pair(i, i / float(n) )); 
+      }
+      break;
+  }
+
+  return pid_map;
+
+}
