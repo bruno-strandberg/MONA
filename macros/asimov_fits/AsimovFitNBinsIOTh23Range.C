@@ -42,12 +42,9 @@ void AsimovFitNBinsIOTh23Range() {
   const Double_t PID_STEP = 1 / float(N_PID_CLASSES);
   const Double_t PID_EDGE = PID_CUT * N_PID_CLASSES;
 
+  std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
 
-  std::map<Int_t, Double_t> pid_map;
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    pid_map.insert(std::make_pair(i, i*PID_STEP));
-  }
-  TString filefolder = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
+  TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
   TString s_outputfile = "output/csv/AsimovFitNBinsIOTh23Range.csv";
   TString s_rootfile   = "output/root/AsimovFitNBinsIOTh23Range.root";
 

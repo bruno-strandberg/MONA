@@ -43,13 +43,9 @@ void AsimovFit3BinsNOTh23Range() {
   const Double_t PID_EDGE = PID_CUT * N_PID_CLASSES;
 
 
-  std::map<Int_t, Double_t> pid_map;
-  pid_map.insert(std::make_pair(0, 0.0)); // shower
-  pid_map.insert(std::make_pair(1, 0.4)); // middle group: shower
-  pid_map.insert(std::make_pair(2, 0.6)); // track
-  pid_map.insert(std::make_pair(3, 1.0)); // upper limit 
+  std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
 
-  TString filefolder   = TString::Format("./pid_detres/pid_binning_%i/", N_PID_CLASSES);
+  TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
   TString s_outputfile = "output/csv/AsimovFit3BinsNOTh23Range.csv";
   TString s_rootfile   = "output/root/AsimovFit3BinsNOTh23Range.root";
 
