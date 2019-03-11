@@ -72,7 +72,7 @@ class FitUtil {
   // other public functions
   //------------------------------------------------------------------  
   virtual std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
-  Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, const TrueB &tb);
+  Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin);
   Double_t GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t& proxymap);
   Double_t GetCachedXsec(const TrueB &tb);
   void SetNOlims();

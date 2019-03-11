@@ -412,13 +412,13 @@ void FitUtil::FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time
     \param tb    A `TrueB` object (see `DetResponse.h`) that stores the true bin coordinate info.
     \return      Cached atmoshperic neutrino flux in specified bin.
 */
-Double_t FitUtil::GetCachedFlux(UInt_t flav, Bool_t isnb, const TrueB &tb) {
+Double_t FitUtil::GetCachedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin) {
 
   if (flav > TAU) {
     throw std::invalid_argument("ERROR! FitUtil::GetCachedFlux() unknown flavor " + to_string(flav));
   }
 
-  return fhFluxCache[flav][(UInt_t)isnb]->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin);
+  return fhFluxCache[flav][(UInt_t)isnb]->GetBinContent(true_ebin, true_ctbin);
 }
 
 //***************************************************************************
@@ -549,8 +549,8 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap) {
 std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_t &proxymap) {
   
   // get the atm nu count
-  Double_t atm_count_e = GetCachedFlux(ELEC, tb.fIsNB, tb);
-  Double_t atm_count_m = GetCachedFlux(MUON, tb.fIsNB, tb);
+  Double_t atm_count_e = GetCachedFlux(ELEC, tb.fIsNB, tb.fE_true_bin, tb.fCt_true_bin);
+  Double_t atm_count_m = GetCachedFlux(MUON, tb.fIsNB, tb.fE_true_bin, tb.fCt_true_bin);
   
   // get the oscillation probabilities
   Double_t prob_elec = GetCachedOsc(ELEC, tb, proxymap);
