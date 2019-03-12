@@ -45,7 +45,7 @@ void AsimovFit3BinsIO() {
   TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
 
   // DetRes input values
-  Int_t EBins = 40;
+  Int_t EBins = 24;
   Int_t EMin = 1;
   Int_t EMax = 100;
   Int_t ctBins = 40;

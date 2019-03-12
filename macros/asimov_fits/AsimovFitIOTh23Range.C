@@ -40,7 +40,7 @@ void AsimovFitIOTh23Range() {
   TString s_rootfile   = "output/root/AsimovFitIOTh23Range.root";
 
   // DetRes input values
-  Int_t EBins = 40;
+  Int_t EBins = 24;
   Int_t EMin = 1;
   Int_t EMax = 100;
   Int_t ctBins = 40;

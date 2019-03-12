@@ -45,7 +45,7 @@ void AsimovFitSeperateTh23Range() {
   TString s_outputfile = "output/csv/AsimovFitSeperateTh23Range.csv";
 
   // DetRes and EvSel input values
-  Int_t EBins = 40;
+  Int_t EBins = 24;
   Int_t EMin = 1;
   Int_t EMax = 100;
   Int_t ctBins = 40;

@@ -11,7 +11,6 @@
 
 #include <iostream>
 using namespace std;
-using namespace RooFit;
 
 /* Script to generate the Q distribution used in sampling when randomizing the Q value of
  * events. This distribution is used to quantify how much of the senstivity is due to lower
