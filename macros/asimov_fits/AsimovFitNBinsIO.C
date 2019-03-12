@@ -29,13 +29,17 @@ using namespace std;
 using namespace RooFit;
 
 /* Script to calculate the asimov sensitivity at the PDG central values under the assumption
- * that Nature is IO. The script uses 5*n PID bins, where the bins are evenly spaced in both channels:
- * q = (0, 0.2) to q = (0.2, 0.4), etc...
+ * that Nature is NO. The script uses any bin number between 3 and 10 PID bins, where the bins 
+ * are evenly spaced the following way in the shower and track channels:
+ * 3 bins : q = (0, 0.4), q = (0.4, 0.6), q = (0.6, 1.0)
+ * 5 bins : q = (0, 0.2) to q = (0.2, 0.4), etc...
+ * 10 bins: q = (0, 0.1) to q = (0.1, 0.2), etc...
+ * 
  */
 
 void AsimovFitNBinsIO() {
 
-  const int N_PID_CLASSES = 10;
+  const int N_PID_CLASSES = 3;
   const Double_t PID_CUT = 0.6;
   const Double_t PID_STEP = 1 / float(N_PID_CLASSES);
   const Double_t PID_EDGE = PID_CUT * N_PID_CLASSES;
@@ -74,22 +78,22 @@ void AsimovFitNBinsIO() {
 
     DetResponse track_response(DetResponse::track, Form("track_response_%.2f", pid_map[i]), 
                                EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
-    track_response.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   , 0.5          , true );
-    track_response.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   , 0.5          , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      ,pid_map[i]    , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , std::less_equal<double>(),pid_map[(i+1)], true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05         , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18         , true );
+    track_response.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   , 0.5         , true );
+    track_response.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   , 0.5         , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      , pid_map[i]  , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , std::less_equal<double>(), pid_map[i+1], true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05        , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18        , true );
     track_response_vector.push_back(track_response);
 
     DetResponse shower_response(DetResponse::shower, Form("shower_response_%.2f", pid_map[i]), 
                                 EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
-    shower_response.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   , 0.5           , true );
-    shower_response.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   , 0.5           , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , pid_map[i]    , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), pid_map[(i+1)], true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05          , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5           , true );
+    shower_response.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   , 0.5         , true );
+    shower_response.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   , 0.5         , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , pid_map[i]  , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), pid_map[i+1], true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05        , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5         , true );
     shower_response_vector.push_back(shower_response);
   }
 
@@ -190,7 +194,7 @@ void AsimovFitNBinsIO() {
   std::map<string, TH1*> hist_map;
   RooCategory cats("categories", "data categories");
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
+    if (pid_map[i] < PID_CUT) {
       hist_map.insert( {(string)shower_vector_true[i]->GetName(), shower_vector_true[i]} );
       cats.defineType( shower_vector_true[i]->GetName() );
       cout << "NOTICE: Added hist and cat to shower" << endl;
@@ -204,7 +208,7 @@ void AsimovFitNBinsIO() {
 
   RooSimultaneous simPdf("simPdf", "simultaneous Pdf for NO", cats);
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
+    if (pid_map[i] < PID_CUT) {
       simPdf.addPdf( pdf_showers_vector[i], shower_vector_true[i]->GetName() );
       cout << "NOTICE: Added simpdf to shower" << endl;
     }
@@ -254,7 +258,7 @@ void AsimovFitNBinsIO() {
 
   std::vector<TH3D*> fitted;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) {
+    if (pid_map[i] < PID_CUT) {
       TH3D *showers_fitted = (TH3D*)pdf_showers_vector[i].GetExpValHist();
       showers_fitted->SetName( Form("showers_fitted_no_%.2f", pid_map[i]) );
       fitted.push_back( showers_fitted );
@@ -268,10 +272,10 @@ void AsimovFitNBinsIO() {
 
   std::vector< std::tuple<TH1*, Double_t, Double_t> > chi2;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (i < PID_EDGE) chi2.push_back( NMHUtils::Asymmetry( shower_vector_true[i], fitted[i], Form("sensitivity_shower_%i", i),
-                                         fitEMin, fitEMax, fitctMin, fitctMax) );
-    else              chi2.push_back( NMHUtils::Asymmetry( track_vector_true[i],  fitted[i], Form("sensitivity_track_%i", i),
-                                         fitEMin, fitEMax, fitctMin, fitctMax) );
+    if (pid_map[i] < PID_CUT) chi2.push_back( NMHUtils::Asymmetry( shower_vector_true[i], fitted[i], Form("sensitivity_shower_%i", i),
+                                                 fitEMin, fitEMax, fitctMin, fitctMax) );
+    else                      chi2.push_back( NMHUtils::Asymmetry( track_vector_true[i],  fitted[i], Form("sensitivity_track_%i", i),
+                                                 fitEMin, fitEMax, fitctMin, fitctMax) );
   }
 
   Double_t chi2_tot = 0;
