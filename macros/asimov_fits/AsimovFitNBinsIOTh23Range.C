@@ -29,8 +29,11 @@ using namespace std;
 using namespace RooFit;
 
 /* Script to calculate the asimov sensitivity at the PDG central values under the assumption
- * that Nature is IO. The script uses 5*n PID bins, where the bins are evenly spaced in both channels:
- * q = (0, 0.2) to q = (0.2, 0.4), etc...
+ * that Nature is NO. The script uses any bin number between 3 and 10 PID bins, where the bins 
+ * are evenly spaced the following way in the shower and track channels:
+ * 3 bins : q = (0, 0.4), q = (0.4, 0.6), q = (0.6, 1.0)
+ * 5 bins : q = (0, 0.2) to q = (0.2, 0.4), etc...
+ * 10 bins: q = (0, 0.1) to q = (0.1, 0.2), etc...
  * The script moves `\Theta_{23}` over the range [40, 50] in steps of 1 and saves results in 
  * csv and root files.
  */
@@ -45,8 +48,8 @@ void AsimovFitNBinsIOTh23Range() {
   std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
 
   TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
-  TString s_outputfile = "output/csv/AsimovFitNBinsIOTh23Range.csv";
-  TString s_rootfile   = "output/root/AsimovFitNBinsIOTh23Range.root";
+  TString s_outputfile = Form("output/csv/AsimovFit%iBinsIOTh23Range.csv",   N_PID_CLASSES);
+  TString s_rootfile   = Form("output/root/AsimovFit%iBinsIOTh23Range.root", N_PID_CLASSES);
 
   // DetRes input values
   Int_t EBins = 24;
@@ -306,10 +309,10 @@ void AsimovFitNBinsIOTh23Range() {
       else {
         track_vector_true[i]->Write(  Form("track_expval_true_%i_%.0f", i, th23) );
       }
-      fitted[i]->Write(     Form("fitted_expval_%i_%.0f", i, h23) );
+      fitted[i]->Write(     Form("fitted_expval_%i_%.0f", i, th23) );
       h_sensitivity->Write( Form("sensitivity_%i_%.0f", i, th23) );
 
-      cout << "NMHUtils: Chi2 between events IO and events fitted on NO is: " << chi2_i << endl;
+      cout << "NMHUtils: Chi2 between events NO and events fitted on IO is: " << chi2_i << endl;
       chi2_tot += chi2_i * chi2_i;
     }
     cout << "Squared sum is : " << std::sqrt( chi2_tot ) << endl;
