@@ -70,11 +70,11 @@ int main(const int argc, const char **argv) {
     // the skew parameters are set to 1, because they do not preserv the integral for e.g. muon-nu only
     //-------------------------------------------------------------------------------------------------------
 
-    ((FitUtil*)futilws)->GetVar("E_tilt") ->setVal( rand.Uniform(-0.9, 0.9) );
-    ((FitUtil*)futilws)->GetVar("ct_tilt")->setVal( rand.Uniform(-0.9, 0.9) );
-    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( 1. );
-    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( 1. );
-    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( 1. );
+    ((FitUtil*)futilws)->GetVar("E_tilt")      ->setVal( rand.Uniform(-0.9, 0.9) );
+    ((FitUtil*)futilws)->GetVar("ct_tilt")     ->setVal( rand.Uniform(-0.9, 0.9) );
+    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( 0. );
+    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( 0. );
+    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( 0. );
 
     UInt_t flav = rand.Integer(3); // select random flavor
     UInt_t isnb = rand.Integer(2); // select random  nu/nub
@@ -107,9 +107,9 @@ int main(const int argc, const char **argv) {
 
     ((FitUtil*)futilws)->GetVar("E_tilt")      ->setVal( 0. );
     ((FitUtil*)futilws)->GetVar("ct_tilt")     ->setVal( 0. );
-    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( rand.Uniform(0.1, 1.9) );
-    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( rand.Uniform(0.1, 1.9) );
-    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( 1. );
+    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( rand.Uniform(-0.9, 0.9) );
+    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( rand.Uniform(-0.9, 0.9) );
+    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( 0. );
 
     Int_t ebin  = 1 + rand.Integer( resp.GetHist3D()->GetXaxis()->GetNbins() );
     Int_t ctbin = 1 + rand.Integer( resp.GetHist3D()->GetYaxis()->GetNbins() );
@@ -143,9 +143,9 @@ int main(const int argc, const char **argv) {
 
     ((FitUtil*)futilws)->GetVar("E_tilt")      ->setVal( 0. );
     ((FitUtil*)futilws)->GetVar("ct_tilt")     ->setVal( 0. );
-    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( 1. );
-    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( 1. );
-    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( rand.Uniform(0.1, 1.9) );
+    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( 0. );
+    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( 0. );
+    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( rand.Uniform(-0.9, 0.9) );
 
     Double_t flux_mu_e = ( futil->GetCachedFlux( MUON, NU, ebin, ctbin ) +
 			   futil->GetCachedFlux( ELEC, NU, ebin, ctbin ) +
@@ -166,9 +166,9 @@ int main(const int argc, const char **argv) {
     //-------------------------------------------------------------------------------------------------------
     ((FitUtil*)futilws)->GetVar("E_tilt")      ->setVal( rand.Uniform(-0.9, 0.9) );
     ((FitUtil*)futilws)->GetVar("ct_tilt")     ->setVal( rand.Uniform(-0.9, 0.9) );
-    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( rand.Uniform(0.1, 1.9) );
-    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( rand.Uniform(0.1, 1.9) );
-    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( rand.Uniform(0.1, 1.9) );
+    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( rand.Uniform(-0.9, 0.9) );
+    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( rand.Uniform(-0.9, 0.9) );
+    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( rand.Uniform(-0.9, 0.9) );
 
     fluxint   = 0.;
     fluxintws = 0.;

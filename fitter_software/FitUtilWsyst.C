@@ -13,9 +13,9 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
   // init the new systematic parameters
   fE_tilt      = new RooRealVar("E_tilt"     ,"E_tilt"      , 0, -1, 1);
   fCt_tilt     = new RooRealVar("ct_tilt"    , "ct_tilt"    , 0, -1, 1);
-  fSkew_mu_amu = new RooRealVar("skew_mu_amu", "skew_mu_amu", 1,  0, 2);
-  fSkew_e_ae   = new RooRealVar("skew_e_ae"  , "skew_e_ae"  , 1,  0, 2);
-  fSkew_mu_e   = new RooRealVar("skew_mu_e"  , "skew_mu_e"  , 1,  0, 2);
+  fSkew_mu_amu = new RooRealVar("skew_mu_amu", "skew_mu_amu", 0, -1, 1);
+  fSkew_e_ae   = new RooRealVar("skew_e_ae"  , "skew_e_ae"  , 0, -1, 1);
+  fSkew_mu_e   = new RooRealVar("skew_mu_e"  , "skew_mu_e"  , 0, -1, 1);
 
   // add the new parameters to `FitUtil::fParSet` to make them known to `FitPDF` and accessible in `FitUtil::proxymap_t`.
   fParSet.add( RooArgSet( *fE_tilt, *fCt_tilt, *fSkew_mu_amu, *fSkew_e_ae, *fSkew_mu_e) );
@@ -128,12 +128,14 @@ Double_t FitUtilWsyst::GetTiltedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, 
 Double_t FitUtilWsyst::GetFluxWsyst(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin,
 				    const proxymap_t& proxymap) {
 
-  // get the skew parameters and tilt parameters
+  // get the skew parameters and tilt parameters; I add 1 to the skew parameters as this allows to write
+  // the skewing logic a bit easier. Example: skew_mu_amu = 0.1 would need mu_1 = atm_count_mu * (1+skew_mu_amu)
+  // but can now be written as mu_1 = atm_count_mu * skew_mu_amu
   Double_t e_tilt       = *( proxymap.at( (TString)fE_tilt->GetName() ) );
   Double_t ct_tilt      = *( proxymap.at( (TString)fCt_tilt->GetName() ) );
-  Double_t skew_mu_amu  = *( proxymap.at( (TString)fSkew_mu_amu->GetName() ) );
-  Double_t skew_e_ae    = *( proxymap.at( (TString)fSkew_e_ae->GetName() ) );
-  Double_t skew_mu_e    = *( proxymap.at( (TString)fSkew_mu_e->GetName() ) );
+  Double_t skew_mu_amu  = *( proxymap.at( (TString)fSkew_mu_amu->GetName() ) ) + 1.;
+  Double_t skew_e_ae    = *( proxymap.at( (TString)fSkew_e_ae->GetName() ) )   + 1.;
+  Double_t skew_mu_e    = *( proxymap.at( (TString)fSkew_mu_e->GetName() ) )   + 1.;
 
   // get the tilted fluxes - overall normalisation is preserved
   Double_t atm_count_e   = GetTiltedFlux(ELEC, false, true_ebin, true_ctbin, e_tilt, ct_tilt);
