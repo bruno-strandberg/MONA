@@ -40,7 +40,6 @@ void AsimovFit3BinsNO() {
   const Double_t PID_STEP = 1 / float(N_PID_CLASSES);
   const Double_t PID_EDGE = PID_CUT * N_PID_CLASSES;
 
-
   std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
 
   TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
@@ -192,12 +191,12 @@ void AsimovFit3BinsNO() {
   RooCategory cats("categories", "data categories");
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
     if (pid_map[i] < PID_CUT) {
-      hist_map.insert( {(string)shower_vector_true[i]->GetName(), shower_vector_true[i] } );
+      hist_map.insert( {(string)shower_vector_true[i]->GetName(), shower_vector_true[i]} );
       cats.defineType( shower_vector_true[i]->GetName() );
       cout << "NOTICE: Added hist and cat to shower" << endl;
     }
     else {
-      hist_map.insert( {(string)track_vector_true[i]->GetName(), track_vector_true[i] } );
+      hist_map.insert( {(string)track_vector_true[i]->GetName(), track_vector_true[i]} );
       cats.defineType( track_vector_true[i]->GetName() );
       cout << "NOTICE: Added hist and cat to track" << endl;
     }
@@ -206,11 +205,11 @@ void AsimovFit3BinsNO() {
   RooSimultaneous simPdf("simPdf", "simultaneous Pdf for IO", cats);
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
     if (pid_map[i] < PID_CUT) {
-      simPdf.addPdf(pdf_showers_vector[i], shower_vector_true[i]->GetName() );
+      simPdf.addPdf( pdf_showers_vector[i], shower_vector_true[i]->GetName() );
       cout << "NOTICE: Added simpdf to shower" << endl;
     }
     else {
-      simPdf.addPdf(pdf_tracks_vector[i],  track_vector_true[i]->GetName() );
+      simPdf.addPdf( pdf_tracks_vector[i],  track_vector_true[i]->GetName() );
       cout << "NOTICE: Added simpdf to track" << endl;
     }
   }
@@ -218,12 +217,12 @@ void AsimovFit3BinsNO() {
   RooDataHist data_hists("data_hists", "track and shower data", fitutil->GetObs(), cats, hist_map);
 
   // Fit in both quadrants to find the real minimum of Th23.
-  fitutil->SetIOcentvals();
+  fitutil->SetNOcentvals();
   fitutil->GetVar("SinsqTh23")->setVal(0.4);
   RooFitResult *fitres_1q = simPdf.chi2FitTo( data_hists, Save(), Range("firstq"), DataError(RooAbsData::Poisson) );
   RooArgSet result_1q ( fitres_1q->floatParsFinal() );
 
-  fitutil->SetIOcentvals();
+  fitutil->SetNOcentvals();
   fitutil->GetVar("SinsqTh23")->setVal(0.6);
   RooFitResult *fitres_2q = simPdf.chi2FitTo( data_hists, Save(), Range("secondq"), DataError(RooAbsData::Poisson) );
   RooArgSet result_2q ( fitres_2q->floatParsFinal() );

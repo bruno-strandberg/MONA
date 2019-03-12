@@ -100,8 +100,8 @@ void AsimovFit3BinsIO() {
   // Start at true and if any one of the files is missing, become false
   Bool_t files_exist = kTRUE; 
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    TString track_file  = Form("track_response_%.2f.root" , pid_map[i] );
-    TString shower_file = Form("shower_response_%.2f.root", pid_map[i] );
+    TString track_file  = Form("track_response_%.2f.root" , pid_map[i]);
+    TString shower_file = Form("shower_response_%.2f.root", pid_map[i]);
     Bool_t track_exists  = NMHUtils::FileExists(filefolder + track_file);
     Bool_t shower_exists = NMHUtils::FileExists(filefolder + shower_file);
     files_exist = ((files_exist and track_exists) and shower_exists);
@@ -191,12 +191,12 @@ void AsimovFit3BinsIO() {
   RooCategory cats("categories", "data categories");
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
     if (pid_map[i] < PID_CUT) {
-      hist_map.insert( {(string)shower_vector_true[i]->GetName(), shower_vector_true[i] } );
+      hist_map.insert( {(string)shower_vector_true[i]->GetName(), shower_vector_true[i]} );
       cats.defineType( shower_vector_true[i]->GetName() );
       cout << "NOTICE: Added hist and cat to shower" << endl;
     }
     else {
-      hist_map.insert( {(string)track_vector_true[i]->GetName(), track_vector_true[i] } );
+      hist_map.insert( {(string)track_vector_true[i]->GetName(), track_vector_true[i]} );
       cats.defineType( track_vector_true[i]->GetName() );
       cout << "NOTICE: Added hist and cat to track" << endl;
     }
@@ -205,11 +205,11 @@ void AsimovFit3BinsIO() {
   RooSimultaneous simPdf("simPdf", "simultaneous Pdf for NO", cats);
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
     if (pid_map[i] < PID_CUT) {
-      simPdf.addPdf(pdf_showers_vector[i], shower_vector_true[i]->GetName() );
+      simPdf.addPdf( pdf_showers_vector[i], shower_vector_true[i]->GetName() );
       cout << "NOTICE: Added simpdf to shower" << endl;
     }
     else {
-      simPdf.addPdf(pdf_tracks_vector[i],  track_vector_true[i]->GetName() );
+      simPdf.addPdf( pdf_tracks_vector[i],  track_vector_true[i]->GetName() );
       cout << "NOTICE: Added simpdf to track" << endl;
     }
   }
