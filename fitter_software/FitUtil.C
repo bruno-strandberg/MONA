@@ -47,7 +47,7 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
   
   InitFitVars(get<MIN>(ENr), get<MAX>(ENr), get<MIN>(CTr), get<MAX>(CTr), get<MIN>(BYr), get<MAX>(BYr));
   InitCacheHists(fHB);
-  FillFluxAndXsecCache(fFlux, fXsec, fOpTime);
+  Fill_Flux_Xsec_Meff_cache(fFlux, fXsec, fMeff, fOpTime);
 
   f_cache_sinsqth12 = 0;
   f_cache_sinsqth13 = 0;
@@ -95,6 +95,8 @@ FitUtil::~FitUtil() {
       // xsec and meff
       for (UInt_t iscc = 0; iscc < fInts; iscc++) {
 	if ( fhXsecCache[f][iscc][isnb] ) delete fhXsecCache[f][iscc][isnb];
+	if ( fhMeffCache[f][iscc][isnb] ) delete fhMeffCache[f][iscc][isnb];
+	if ( fhBYfracCache[f][iscc][isnb] ) delete fhBYfracCache[f][iscc][isnb];
       }
 
     }
@@ -298,8 +300,9 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
   std::map<UInt_t, TString> flav_map = { {0, "elec"}, {1, "muon"}, {2, "tau"} };
 
   // project the 3D template to 1D and 2D templates
-  TH2D *h_template_2D = (TH2D*)h_template->Project3D("yx");
-  TH1D *h_template_1D = (TH1D*)h_template->Project3D("x");
+  TH2D *h_template_EvsCT = (TH2D*)h_template->Project3D("yx");
+  TH2D *h_template_EvsBY = (TH2D*)h_template->Project3D("zx");
+  TH1D *h_template_E     = (TH1D*)h_template->Project3D("x");
 
   // init the oscillation probability cache histograms
   for (UInt_t f_in = 0; f_in < fFlavs; f_in++) {
@@ -308,7 +311,7 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
 
 	TString name = "oscprob_" + flav_map[f_in] + "_to_" + flav_map[f_out] + "_" + pol_map[isnb];
 
-        fhOscCache[f_in][f_out][isnb] = (TH2D*)h_template_2D->Clone();
+        fhOscCache[f_in][f_out][isnb] = (TH2D*)h_template_EvsCT->Clone();
         fhOscCache[f_in][f_out][isnb]->SetDirectory(0);
         fhOscCache[f_in][f_out][isnb]->Reset();
         fhOscCache[f_in][f_out][isnb]->SetNameTitle(name, name);
@@ -323,7 +326,7 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
 
       TString name = "flux_" + flav_map[f] + "_" + pol_map[isnb];
 
-      fhFluxCache[f][isnb] = (TH2D*)h_template_2D->Clone();
+      fhFluxCache[f][isnb] = (TH2D*)h_template_EvsCT->Clone();
       fhFluxCache[f][isnb]->SetDirectory(0);
       fhFluxCache[f][isnb]->Reset();
       fhFluxCache[f][isnb]->SetNameTitle(name, name);
@@ -331,18 +334,30 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
     }
   }
 
-  // init the xsec histograms
+  // init the xsec histograms and meff histograms
   for (UInt_t f = 0; f < fFlavs; f++) {
     for (UInt_t iscc = 0; iscc < fInts; iscc++) {
       for (UInt_t isnb = 0; isnb < fPols; isnb++) {
 
-        TString name = "xsec_" + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
+        TString name_xsec   = "xsec_"   + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
+	TString name_byfrac = "byfrac_" + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
+	TString name_meff   = "meff_"   + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
 
-        fhXsecCache[f][iscc][isnb] = (TH1D*)h_template_1D->Clone();
+        fhXsecCache[f][iscc][isnb] = (TH1D*)h_template_E->Clone();
         fhXsecCache[f][iscc][isnb]->SetDirectory(0);
         fhXsecCache[f][iscc][isnb]->Reset();
-        fhXsecCache[f][iscc][isnb]->SetNameTitle(name, name);
+        fhXsecCache[f][iscc][isnb]->SetNameTitle(name_xsec, name_xsec);
 
+	fhBYfracCache[f][iscc][isnb] = (TH2D*)h_template_EvsBY->Clone();
+	fhBYfracCache[f][iscc][isnb]->SetDirectory(0);
+	fhBYfracCache[f][iscc][isnb]->Reset();
+	fhBYfracCache[f][iscc][isnb]->SetNameTitle(name_byfrac, name_byfrac);
+	
+	fhMeffCache[f][iscc][isnb] = (TH3D*)h_template->Clone();
+	fhMeffCache[f][iscc][isnb]->SetDirectory(0);
+	fhMeffCache[f][iscc][isnb]->Reset();
+	fhMeffCache[f][iscc][isnb]->SetNameTitle(name_meff, name_meff);
+	
       }
     }
   }
@@ -354,9 +369,10 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
 /** A private function to fill the flux and xsec cache hists
     \param flux     Pointer to the `AtmFlux` member instance
     \param xsec     Pointer to the `NuXsec` member instance
+    \param meff     Pointer to the `EffMass` member instance
     \param op_time  Operation time in years.
 */
-void FitUtil::FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time) {
+void FitUtil::Fill_Flux_Xsec_Meff_cache(AtmFlux *flux, NuXsec *xsec, EffMass *meff, Double_t op_time) {
 
   // fill the atm flux cache. Note that (currently) AtmFlux returns 0 for tau flux
   for (UInt_t f = 0; f < fFlavs; f++) {
@@ -383,23 +399,37 @@ void FitUtil::FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time
     }
   }
 
-  // fill xsec cache
+  // fill xsec cache and meff cache
   for (UInt_t f = 0; f < fFlavs; f++) {
     for (UInt_t iscc = 0; iscc < fInts; iscc++) {
       for (UInt_t isnb = 0; isnb < fPols; isnb++) {
 	
-	TH1D* hxsec = fhXsecCache[f][iscc][isnb];
-
+	TH1D* hxsec   = fhXsecCache[f][iscc][isnb];
+	TH3D* hmeff   = fhMeffCache[f][iscc][isnb];
+	TH2D* hbyfrac = fhBYfracCache[f][iscc][isnb];
+	
 	for (Int_t ebin = 1; ebin <= hxsec->GetXaxis()->GetNbins(); ebin++) {
 
 	  Double_t E = hxsec->GetXaxis()->GetBinCenter(ebin);
 	  hxsec->SetBinContent(ebin, xsec->GetXsec(f, iscc, isnb, E) );
 
-	}
+	  for (Int_t bybin = 1; bybin <= hmeff->GetZaxis()->GetNbins(); bybin++) {
+
+	    Double_t by = hmeff->GetZaxis()->GetBinCenter(bybin);
+	    hbyfrac->SetBinContent( ebin, bybin, xsec->GetBYfrac(f, iscc, isnb, E, by) );
+	    
+	    for (Int_t ctbin = 1; ctbin <= hmeff->GetYaxis()->GetNbins(); ctbin++) {
+
+	      Double_t ct = hmeff->GetYaxis()->GetBinCenter(ctbin);
+	      hmeff->SetBinContent( ebin, ctbin, bybin, meff->GetMeff( f, iscc, isnb, E, ct, by ) );
+	      
+	    } // end loop over by
+	  } // end loop over ct
+	} // end loop over energy
 	
-      }
-    }
-  }
+      } // end loop over isnb
+    } // end loop over iscc
+  } // end loop over flavors
 
 }
 
@@ -456,6 +486,28 @@ Double_t FitUtil::GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t
 */
 Double_t FitUtil::GetCachedXsec(const TrueB &tb) {
   return fhXsecCache[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent(tb.fE_true_bin);
+}
+
+//***************************************************************************
+
+/**
+   Function that returns the cached effective mass value for a certain true bin
+   \param tb    A `TrueB` object (see `DetResponse.h`) that stores the neutrino type and true bin coordinate info.
+   \return      Cached effective mass value in a specified bin in Ton
+ */
+Double_t FitUtil::GetCachedMeff(const TrueB &tb) {
+  return fhMeffCache[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent( tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin );
+}
+
+//***************************************************************************
+
+/** 
+    Function that returns the cached fraction of events expected in a certain BY bin at a certain energy.
+   \param tb    A `TrueB` object (see `DetResponse.h`) that stores the neutrino type and true bin coordinate info.
+   \return      Cached bjorken-y fraction
+*/
+Double_t FitUtil::GetCachedBYfrac(const TrueB &tb) {
+  return fhBYfracCache[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent( tb.fE_true_bin, tb.fBy_true_bin );
 }
 
 //***************************************************************************
@@ -562,16 +614,11 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_
   // get the interacted neutrino count in operation time (in units 1/MTon)
   Double_t int_count = osc_count * GetCachedXsec(tb)/fMN * fKg_per_MTon;
   
-  // find true observable values necassary for the effective mass and to split events to bjorken-y bins
-  Double_t e_true  = fHB->GetXaxis()->GetBinCenter( tb.fE_true_bin );
-  Double_t ct_true = fHB->GetYaxis()->GetBinCenter( tb.fCt_true_bin );
-  Double_t by_true = fHB->GetZaxis()->GetBinCenter( tb.fBy_true_bin );
-
   // get the effective mass
-  Double_t meff  = fMeff->GetMeff( tb.fFlav, tb.fIsCC, tb.fIsNB, e_true, ct_true, by_true );
+  Double_t meff = GetCachedMeff(tb);
 
   // calculate the number of detected events (unitless)
-  Double_t det_count = int_count * fXsec->GetBYfrac(tb.fFlav, tb.fIsCC, tb.fIsNB, e_true, by_true) * meff * 1e-6;
+  Double_t det_count = int_count * GetCachedBYfrac(tb) * meff * 1e-6;
 
   // MC stat err, coming from eff mass and BY distribution (0 for now)
   Double_t det_err = 0.;

@@ -75,6 +75,8 @@ class FitUtil {
   Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin);
   Double_t GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t& proxymap);
   Double_t GetCachedXsec(const TrueB &tb);
+  Double_t GetCachedMeff(const TrueB &tb);
+  Double_t GetCachedBYfrac(const TrueB &tb);
   void SetNOlims();
   void SetNOcentvals();
   void SetIOlims();
@@ -134,7 +136,11 @@ class FitUtil {
       \return pointer to `OscProb::PremModel` instance.
    */
   OscProb::PremModel* GetEarthModel() { return fPrem; }
-
+  /** Get the a pointer to `EffMass` member of `FitUtil` that is used to fill caches.
+      \return pointer to `EffMass` instance.
+  */
+  EffMass* GetEffMassCalculator() { return fMeff; }
+  
   RooRealVar* GetVar(TString varname);
 
   //*********************************************************************************
@@ -179,7 +185,7 @@ class FitUtil {
   RooArgList  fObsList;  //!< list (ordered!) that includes only observables (Energy, cos-theta, bjorken-y)
 
   //------------------------------------------------------------------
-  // protected internal structure to initialise private osc parameter limits below
+  // protected internal structure to initialise osc parameter limits below
   //------------------------------------------------------------------
   
   /** internal structure to store parameter central values and limits*/
@@ -210,19 +216,14 @@ class FitUtil {
     
   };
   
-  //*********************************************************************************
-  //private members and function of the `FitUtil` class, accessible only inside this class
-  //*********************************************************************************
-  
- private:
+  //------------------------------------------------------------------
+  // protected functions
+  //------------------------------------------------------------------
 
-  //------------------------------------------------------------------
-  // private functions
-  //------------------------------------------------------------------
   void ProbCacher(const proxymap_t& proxymap);  
   void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
   void InitCacheHists(TH3D *h_template);
-  void FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time);
+  void Fill_Flux_Xsec_Meff_cache(AtmFlux *flux, NuXsec *xsec, EffMass *meff, Double_t op_time);
   std::tuple<Double_t, Double_t, Int_t, Int_t> GetRange(Double_t min, Double_t max, TAxis *axis);
   enum rangeret { MIN=0, MAX, MINBIN, MAXBIN };           //!< enum for function `GetRange` return
     
@@ -253,12 +254,14 @@ class FitUtil {
   const fpar f_free_dm31 = fpar(2.56e-3, -5e-3, 5e-3); //!< free limits for \f$ \Delta m_{31}^2 \f$
     
   //------------------------------------------------------------------
-  // private members for caching
+  // protected members for caching
   //------------------------------------------------------------------
 
   TH2D *fhFluxCache[fFlavs][fPols];         //!< atm flux cache with struct. [flav][is_nub]
   TH2D *fhOscCache [fFlavs][fFlavs][fPols]; //!< osc prob cache with struct. [flav_in][flav_out][isnb]
   TH1D *fhXsecCache[fFlavs][fInts][fPols];  //!< xsec cache with struct. [flav][is_cc][isnb]
+  TH2D *fhBYfracCache[fFlavs][fInts][fPols];//!< bjorken-y fractions cache with struct. [flav][is_cc][isnb]
+  TH3D *fhMeffCache[fFlavs][fInts][fPols];  //!< meff cache with struct. [flav][is_cc][isnb]
 
   Double_t f_cache_sinsqth12;    //!< internally cached theta12 value
   Double_t f_cache_sinsqth13;    //!< internally cached theta13 value
@@ -268,7 +271,7 @@ class FitUtil {
   Double_t f_cache_dm31;         //!< internally cached dm31 value
 
   //------------------------------------------------------------------
-  // private members for determining the integration range and oscillation calculation range
+  // protected members for determining the integration range and oscillation calculation range
   //------------------------------------------------------------------
   Int_t fEbin_min;               //!< minimum energy bin number included
   Int_t fEbin_max;               //!< maximum energy bin number included
@@ -278,7 +281,7 @@ class FitUtil {
   Int_t fBybin_max;              //!< minimum bjorken-y bin number included
   
   //------------------------------------------------------------------
-  // private members for monitoring performance, used in `FitUtil::ProbCacher`
+  // protected members for monitoring performance, used in `FitUtil::ProbCacher`
   //------------------------------------------------------------------
   Long64_t    fOscCalls;         //!< counts the number of oscillator calls
   TStopwatch *fOscCalcTime;      //!< counts the accumulated time for oscillation calculation
