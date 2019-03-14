@@ -641,14 +641,6 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_
 */
 TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName) {
 
-  // get the parameter values from the proxies
-  // Double_t SinsqTh12 = *( proxymap.at( (TString)fSinsqTh12->GetName() ) );
-  // Double_t SinsqTh13 = *( proxymap.at( (TString)fSinsqTh13->GetName() ) );
-  // Double_t SinsqTh23 = *( proxymap.at( (TString)fSinsqTh23->GetName() ) );
-  // Double_t Dcp       = *( proxymap.at( (TString)fDcp->GetName() ) );
-  // Double_t Dm21      = *( proxymap.at( (TString)fDm21->GetName() ) );
-  // Double_t Dm31      = *( proxymap.at( (TString)fDm31->GetName() ) );
-
   // create the histogram with expectation values
   TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
   TString hname = resp->Get_RespName() + "_expct";
@@ -701,7 +693,19 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
     \param resp        Pointer to `DetResponse` instance used with the `FitPDF` class.
     \return            a pair with the un-normalised event density (calculated by dividing the expected number of events in a bin by bin width) and the associated statistical uncertainty */
 std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap) {
-    
+
+  if ( E_reco < fE_reco->getMin() || E_reco > fE_reco->getMax() ) {
+    throw std::invalid_argument("ERROR! FitUtil::RecoEvts energy outside the fit range.");
+  }
+
+  if ( Ct_reco < fCt_reco->getMin() || Ct_reco > fCt_reco->getMax() ) {
+    throw std::invalid_argument("ERROR! FitUtil::RecoEvts cos-theta outside the fit range.");
+  }
+
+  if ( By_reco < fBy_reco->getMin() || By_reco > fBy_reco->getMax() ) {
+    throw std::invalid_argument("ERROR! FitUtil::RecoEvts cos-theta outside the fit range.");
+  }
+  
   auto true_bins = resp->GetBinWeights( E_reco, Ct_reco, By_reco );
 
   Double_t det_count = 0.;
