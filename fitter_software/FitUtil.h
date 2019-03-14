@@ -91,14 +91,16 @@ class FitUtil {
       \return `RooArgSet` with known parameters.
    */
   RooArgSet   GetSet()         { return fParSet;  }
+
+  /** Get the `RooArgSet` with only systematic parameters.
+      \return `RooArgSet` with systematic parameters.
+  */
+  RooArgSet   GetSystSet()     { return fSystSet; }
+  
   /** Get the `RooArgList` with observables (Energy, cos-theta, bjorken-y)
       \return `RooArgList` with observables (Energy, cos-theta, bjorken-y)
-   */
-  
+   */  
   RooArgList  GetObs()         { return fObsList; }
-  /** Get the 3D histogram that stores the binning information
-      \return `TH3D` with the binning used in the analysis.
-   */
 
   /** Get pointer to the member `RooRealVar` for the reco energy observable
       \return A pointer to the reco energy observable
@@ -115,27 +117,31 @@ class FitUtil {
    */
   RooRealVar* GetBYobs() { return fBy_reco; }
 
-  /** Get a pointer to the member histogram with binning configuration
-      \return Pointer to a `TH3` with binning configuration
-   */
+  /** Get the 3D histogram that stores the binning information
+      \return `TH3D` with the binning used in the analysis.
+  */
   TH3D*       GetBinningHist() { return fHB; }
 
   /** Get the a pointer to `AtmFlux` member of `FitUtil` that is used to fill caches.
       \return pointer to `AtmFlux` instance.
    */
   AtmFlux* GetFluxCalculator() { return fFlux; }
+
   /** Get the a pointer to `NuXsec` member of `FitUtil` that is used to fill caches.
       \return pointer to `NuXsec` instance.
    */
   NuXsec*  GetXsecCalculator() { return fXsec; }
+
   /** Get the a pointer to `OscProb::PMNS_Fast` member of `FitUtil` that is used to fill caches.
       \return pointer to `OscProb::PMNS_Fast` instance.
    */
   OscProb::PMNS_Fast* GetOscCalculator() { return fProb; }
+
   /** Get the a pointer to `OscProb::PremModel` member of `FitUtil` that is used to fill caches.
       \return pointer to `OscProb::PremModel` instance.
    */
   OscProb::PremModel* GetEarthModel() { return fPrem; }
+
   /** Get the a pointer to `EffMass` member of `FitUtil` that is used to fill caches.
       \return pointer to `EffMass` instance.
   */
@@ -181,6 +187,7 @@ class FitUtil {
   // protected members for `RooFit` observable and parameter access
   //------------------------------------------------------------------
 
+  RooArgSet   fSystSet;  //!< a set that includes only systematic parameters, populated in inheriting classes
   RooArgSet   fParSet;   //!< set that includes all variables (observables+parameters)
   RooArgList  fObsList;  //!< list (ordered!) that includes only observables (Energy, cos-theta, bjorken-y)
 
