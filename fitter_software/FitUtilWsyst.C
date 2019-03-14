@@ -10,18 +10,46 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
 			   Double_t bymin, Double_t bymax, TString meff_file) :
   FitUtil(op_time, h_template, emin, emax, ctmin, ctmax, bymin, bymax, meff_file) {
 
-  // init the flux systematic parameters
+  //----------------------------------------------------------------------------------
+  // init the systematic parameters and add to `fSystSet` of systematic parameters
+  //----------------------------------------------------------------------------------
+
+  // flux
   fE_tilt      = new RooRealVar("E_tilt"     ,"E_tilt"      , 0, -1, 1);
   fCt_tilt     = new RooRealVar("ct_tilt"    , "ct_tilt"    , 0, -1, 1);
   fSkew_mu_amu = new RooRealVar("skew_mu_amu", "skew_mu_amu", 0, -1, 1);
   fSkew_e_ae   = new RooRealVar("skew_e_ae"  , "skew_e_ae"  , 0, -1, 1);
   fSkew_mu_e   = new RooRealVar("skew_mu_e"  , "skew_mu_e"  , 0, -1, 1);
-
-  // init the detector systematics parameters
+  fSystSet.add( RooArgSet(*fE_tilt, *fCt_tilt, *fSkew_mu_amu, *fSkew_e_ae, *fSkew_mu_e) );
+  
+  // xsec
+  fNC_norm     = new RooRealVar("NC_norm", "NC_norm", 1, 0, 2);
+  fTau_norm    = new RooRealVar("Tau_norm", "Tau_norm", 1, 0, 2);
+  fSystSet.add( RooArgSet(*fNC_norm, *fTau_norm) );
+  
+  // detector
   fE_scale = new RooRealVar("E_scale", "E_scale", 0., -0.3, 0.3);
+  fSystSet.add( *fE_scale );
+  
+  //----------------------------------------------------------------------------------
+  // It is important to add all parameters to `FitUtil::fParSet` to make them known to `FitPDF`
+  // and accessible in `FitUtil::proxymap_t` that is passed to `RecoEvts` and subsequent functions.
+  //----------------------------------------------------------------------------------
+  
+  fParSet.add( fSystSet );
 
+  //----------------------------------------------------------------------------------
+  // init flux shape systematics cache variables
+  //----------------------------------------------------------------------------------
+  Double_t f_cache_e_tilt = 0;
+  Double_t f_cache_ct_tilt = 0;
+  CalcTiltedFluxNorms( f_cache_e_tilt, f_cache_ct_tilt );
+
+  //----------------------------------------------------------------------------------
   // the limits of `fE_reco` are set to bin edges in `FitUtil`. Check that the energy scale cannot
   // take the bin edges outside of the MC range
+  //----------------------------------------------------------------------------------
+  
   Double_t emin_scaled = fE_reco->getMin() * ( 1. + fE_scale->getMin() );
   Double_t emax_scaled = fE_reco->getMax() * ( 1. + fE_scale->getMax() );
 
@@ -32,15 +60,6 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
   if ( emax_scaled >= fHB->GetXaxis()->GetXmax() ) {
     throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() the input minimum energy " + to_string(emax) + " is adjusted to the bin edge " + to_string(fE_reco->getMax()) + ", which can be taken to the value " + to_string(emax_scaled) + " by the maximum of the energy scale parameter " + to_string(fE_scale->getMax()) + ". This is outside of the binning maximum " + to_string(fHB->GetXaxis()->GetXmax()) + ". Choose a lower emax to avoid this problem." );
   }
-
-  // add the new parameters to `FitUtil::fParSet` to make them known to `FitPDF` and
-  // accessible in `FitUtil::proxymap_t` that is passed to `RecoEvts` and subsequent functions.
-  fParSet.add( RooArgSet( *fE_tilt, *fCt_tilt, *fSkew_mu_amu, *fSkew_e_ae, *fSkew_mu_e, *fE_scale) );
-
-  // init flux shape systematics cache variables
-  Double_t f_cache_e_tilt = 0;
-  Double_t f_cache_ct_tilt = 0;
-  CalcTiltedFluxNorms( f_cache_e_tilt, f_cache_ct_tilt );
     
 };
 
@@ -211,8 +230,13 @@ std::pair<Double_t, Double_t> FitUtilWsyst::TrueEvts(const TrueB &tb, const prox
   // get the oscillated nu count in operation time (in units 1/m2)
   Double_t osc_count = ( atm_count_e * prob_elec + atm_count_m * prob_muon );
 
-  // get the interacted neutrino count in operation time (in units 1/MTon)
-  Double_t int_count = osc_count * GetCachedXsec(tb)/fMN * fKg_per_MTon;
+  // calculate xsec normalisation; compound of NC normalisation and tau normalisation
+  Double_t xsec_norm = 1.;
+  if ( !tb.fIsCC )       { xsec_norm *= *( proxymap.at( (TString)fNC_norm ->GetName() ) ); }
+  if ( tb.fFlav == TAU ) { xsec_norm *= *( proxymap.at( (TString)fTau_norm->GetName() ) ); }
+
+  // get the interacted neutrino count in operation time (in units 1/MTon), apply xsec systematic
+  Double_t int_count = osc_count * GetCachedXsec(tb)/fMN * fKg_per_MTon * xsec_norm;
 
   // get the effective mass
   Double_t meff  = GetCachedMeff( tb );
