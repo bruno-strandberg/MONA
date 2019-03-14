@@ -10,15 +10,32 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
 			   Double_t bymin, Double_t bymax, TString meff_file) :
   FitUtil(op_time, h_template, emin, emax, ctmin, ctmax, bymin, bymax, meff_file) {
 
-  // init the new systematic parameters
+  // init the flux systematic parameters
   fE_tilt      = new RooRealVar("E_tilt"     ,"E_tilt"      , 0, -1, 1);
   fCt_tilt     = new RooRealVar("ct_tilt"    , "ct_tilt"    , 0, -1, 1);
   fSkew_mu_amu = new RooRealVar("skew_mu_amu", "skew_mu_amu", 0, -1, 1);
   fSkew_e_ae   = new RooRealVar("skew_e_ae"  , "skew_e_ae"  , 0, -1, 1);
   fSkew_mu_e   = new RooRealVar("skew_mu_e"  , "skew_mu_e"  , 0, -1, 1);
 
-  // add the new parameters to `FitUtil::fParSet` to make them known to `FitPDF` and accessible in `FitUtil::proxymap_t`.
-  fParSet.add( RooArgSet( *fE_tilt, *fCt_tilt, *fSkew_mu_amu, *fSkew_e_ae, *fSkew_mu_e) );
+  // init the detector systematics parameters
+  fE_scale = new RooRealVar("E_scale", "E_scale", 0., -0.3, 0.3);
+
+  // the limits of `fE_reco` are set to bin edges in `FitUtil`. Check that the energy scale cannot
+  // take the bin edges outside of the MC range
+  Double_t emin_scaled = fE_reco->getMin() * ( 1. + fE_scale->getMin() );
+  Double_t emax_scaled = fE_reco->getMax() * ( 1. + fE_scale->getMax() );
+
+  if ( emin_scaled < fHB->GetXaxis()->GetXmin() ) {
+    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() the input minimum energy " + to_string(emin) + " is adjusted to the bin edge " + to_string(fE_reco->getMin()) + ", which can be taken to the value " + to_string(emin_scaled) + " by the minimum of the energy scale parameter " + to_string(fE_scale->getMin()) + ". This is outside of the binning minimum " + to_string(fHB->GetXaxis()->GetXmin()) + ". Choose a higher emin to avoid this problem." );
+  }
+
+  if ( emax_scaled >= fHB->GetXaxis()->GetXmax() ) {
+    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() the input minimum energy " + to_string(emax) + " is adjusted to the bin edge " + to_string(fE_reco->getMax()) + ", which can be taken to the value " + to_string(emax_scaled) + " by the maximum of the energy scale parameter " + to_string(fE_scale->getMax()) + ". This is outside of the binning maximum " + to_string(fHB->GetXaxis()->GetXmax()) + ". Choose a lower emax to avoid this problem." );
+  }
+
+  // add the new parameters to `FitUtil::fParSet` to make them known to `FitPDF` and
+  // accessible in `FitUtil::proxymap_t` that is passed to `RecoEvts` and subsequent functions.
+  fParSet.add( RooArgSet( *fE_tilt, *fCt_tilt, *fSkew_mu_amu, *fSkew_e_ae, *fSkew_mu_e, *fE_scale) );
 
   // init flux shape systematics cache variables
   Double_t f_cache_e_tilt = 0;
@@ -34,7 +51,7 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
     \param costheta true neutrino cos-theta 
     \param e_tilt   energy tilt parameter value
     \param ct_tilt  cos-theta tilt parameter value
-    \return \f$ energy^{e_{tilt}} * (1 + ct_{tilt}*\cos\theta) $\f
+    \return \f$ energy^{e_{tilt}} * (1 + ct_{tilt}*\cos\theta) \f$
 */
 Double_t FitUtilWsyst::FluxTiltCoeff( Double_t energy, Double_t costheta, Double_t e_tilt, Double_t ct_tilt ) {
 
@@ -179,6 +196,7 @@ Double_t FitUtilWsyst::GetFluxWsyst(UInt_t flav, Bool_t isnb, Int_t true_ebin, I
 /** Overload of the virtual function `FitUtil::TrueEvts` to get the expected number of events in a true bin, given the set of parameters as specified in `proxymap`
     \param tb       `TrueB` with the true bin and neutrino type data, see `DetResponse.h`
     \param proxymap Container with all fit parameters known to `RooFit` from `FitPDF`.
+    \return         A pair with a number of detected events in a true bin as first and the MC statistical error as second (0 in this implementation)
 */
 std::pair<Double_t, Double_t> FitUtilWsyst::TrueEvts(const TrueB &tb, const proxymap_t &proxymap) {
 
@@ -196,20 +214,117 @@ std::pair<Double_t, Double_t> FitUtilWsyst::TrueEvts(const TrueB &tb, const prox
   // get the interacted neutrino count in operation time (in units 1/MTon)
   Double_t int_count = osc_count * GetCachedXsec(tb)/fMN * fKg_per_MTon;
 
-  // find true observable values necassary for the effective mass and to split events to bjorken-y bins
-  Double_t e_true  = fHB->GetXaxis()->GetBinCenter( tb.fE_true_bin );
-  Double_t ct_true = fHB->GetYaxis()->GetBinCenter( tb.fCt_true_bin );
-  Double_t by_true = fHB->GetZaxis()->GetBinCenter( tb.fBy_true_bin );
-
   // get the effective mass
-  Double_t meff  = fMeff->GetMeff( tb.fFlav, tb.fIsCC, tb.fIsNB, e_true, ct_true, by_true );
+  Double_t meff  = GetCachedMeff( tb );
 
   // calculate the number of detected events (unitless)
-  Double_t det_count = int_count * fXsec->GetBYfrac(tb.fFlav, tb.fIsCC, tb.fIsNB, e_true, by_true) * meff * 1e-6;
+  Double_t det_count = int_count * GetCachedBYfrac(tb) * meff * 1e-6;
 
   // MC stat err, coming from eff mass and BY distribution (0 for now)
   Double_t det_err = 0.;
 
   return std::make_pair(det_count, det_err);
 
+}
+
+//***************************************************************************************
+  
+/** Overload of the virtual function `FitUtil::RecoEvts` to get the expected number of events in a reco bin, given the set of parameters as specified in `proxymap`
+    \param E_reco   Reco energy
+    \param Ct_reco  Reco cos-theta
+    \param By_reco  Reco bjorken-y
+    \param resp     Pointer to a `DetResponse` instance.
+    \param proxymap Container with all fit parameters known to `RooFit` from `FitPDF`.
+    \return         A pair with the reco event density as first and the MC stat err as second
+*/
+std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap) {
+
+  // get the energy scale
+  Double_t e_scale = *( proxymap.at( (TString)fE_scale->GetName() ) );
+  
+  // scale the bin low and high edges and use these new limits to calculate the fractions that specify
+  //how much of the reco event density should come from which bin
+  Double_t ereco_bin = fHB->GetXaxis()->FindBin( E_reco );
+  Double_t ereco_min = fHB->GetXaxis()->GetBinLowEdge( ereco_bin ) * (1. + e_scale);
+  Double_t ereco_max = fHB->GetXaxis()->GetBinUpEdge ( ereco_bin ) * (1. + e_scale);
+  auto binfracs = GetBinFractions( ereco_min, ereco_max, fHB->GetXaxis());  
+
+  // loop over the bin fractions and calculate the event density from the relative fractions
+  Double_t RE    = 0.;
+  Double_t REerr = 0.;
+  
+  for (auto bf: binfracs) {
+
+    // get the bin center and calculate the number 
+    Double_t ereco = fHB->GetXaxis()->GetBinCenter( bf.first );
+    auto RE_bin = FitUtil::RecoEvts( ereco, Ct_reco, By_reco, resp, proxymap );
+	    
+    RE    += RE_bin.first * bf.second;
+    REerr += TMath::Power(RE_bin.second * bf.second, 2);
+      
+
+    
+  } // end loop over bin fractions
+  
+  // take sqrt of the error and return
+  return std::make_pair( RE, TMath::Sqrt(REerr) );
+   
+}
+
+//***************************************************************************************
+
+/** This function looks up the bin fractions from the axis in the low to high range.
+    
+    The function looks up all the bins on the axis in the range low to high. Bins that are fully enclosed in the range are assigned weight 1. For bins that are partially enclosed (these can only be the first bin and the last bin), the weight is calculated as a fraction of the covered range. For example, the fraction for the low bin is calculated as \f$ ( upEdge(bin_{lo}) - lo) )/binWidth(bin_{lo}) \f$.
+
+    If the low or high value is outside of the axis range, an error is raised.
+    
+    \param lo             low value
+    \param hi             high value
+    \param axis           pointer to `TAxis` where the bins are searched for
+    \return      A vector of pairs, where the first is the bin number and the second is the bin weight.
+*/
+vector< std::pair<Int_t, Double_t> > FitUtilWsyst::GetBinFractions(Double_t lo, Double_t hi, TAxis* axis) {
+
+  if ( hi <= lo ) {
+    throw std::invalid_argument("ERROR! FitUtilWsyst::GetBinFractions() high value is smaller than low value");
+  }
+
+  if ( lo < axis->GetXmin() ) {
+    throw std::invalid_argument("ERROR! FitUtilWsyst::GetBinFractions() low value " + to_string(lo) + " is outside the axis range.");
+  }
+
+  if ( hi >= axis->GetXmax() ) {
+    throw std::invalid_argument("ERROR! FitUtilWsyst::GetBinFractions() high value " + to_string(hi) + " is outside the axis range.");
+  }
+
+  // find the bins corresponding to low and high and calculate the relative
+  // fraction of the events from the corresponding bins
+  //---------------------------------------------------------------------
+  
+  vector< std::pair<Int_t, Double_t> > bins;
+  
+  // find the bins where low value and high value reside
+  Int_t bin_lo = axis->FindBin( lo );
+  Int_t bin_hi = axis->FindBin( hi );
+
+  Double_t binW_lo = ( axis->GetBinUpEdge( bin_lo ) - lo )/axis->GetBinWidth( bin_lo );
+  Double_t binW_hi = ( hi - axis->GetBinLowEdge(bin_hi) )/axis->GetBinWidth( bin_hi );
+
+  // add the bins to the return vector
+  //---------------------------------------------------------------------
+
+  // add the lower bin to the return vector
+  bins.push_back( std::make_pair(bin_lo, binW_lo) );
+
+  // add all the intermediate bins with weight 1; this happens if the range encloses several bins
+  for (Int_t binnr = bin_lo+1; binnr < bin_hi; binnr++) {
+    bins.push_back( std::make_pair(binnr, 1.) );
+  }
+  
+  // add the higher bin to the return vector
+  bins.push_back( std::make_pair(bin_hi, binW_hi) );
+
+  return bins;
+  
 }

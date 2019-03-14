@@ -21,9 +21,11 @@ public:
   /** Constructor. All `RooRealVar` parameters of this class are added to `FitUtil::fParSet` and deleted in that constructor */
   virtual ~FitUtilWsyst() {};
 
+  virtual std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+						 DetResponse *resp, const proxymap_t &proxymap);
   virtual std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
   Double_t GetFluxWsyst(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin, const proxymap_t& proxymap);
-
+  
   //-------------------------------------------------------------
   // protected functions and members
   //-------------------------------------------------------------
@@ -33,14 +35,29 @@ protected:
   Double_t FluxTiltCoeff(Double_t energy, Double_t costheta, Double_t e_tilt, Double_t ct_tilt);  
   void     CalcTiltedFluxNorms(Double_t e_tilt, Double_t ct_tilt);  
   Double_t GetTiltedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin,
-			 Double_t e_tilt, Double_t ct_tilt);  
+			 Double_t e_tilt, Double_t ct_tilt);
+  vector< std::pair<Int_t, Double_t> > GetBinFractions(Double_t lo, Double_t hi, TAxis* axis);
 
   // flux systematics parameters
-  RooRealVar* fE_tilt;        //!< parameter for atm. flux E tilt by multiplying with \f$energy^{E_{tilt}}$\f; 0 means no tilt
-  RooRealVar* fCt_tilt;       //!< parameter for atm. flux ct tilt multiplying with \f$(1+ct_{tilt} * ct)\f$; 0 means no tilt
-  RooRealVar* fSkew_mu_amu;   //!< parameter to skew muon to anti-muon flux, preserves mu+amu norm; 1 means no skew
-  RooRealVar* fSkew_e_ae;     //!< parameter to skew elec to anti-elec flux, preserves e+ae norm; 1 means no skew
-  RooRealVar* fSkew_mu_e;     //!< parameter to skew mu to e flux, preserves mu+amu+e+ae norm; 1 means no skew
+  RooRealVar* fE_tilt;      //!< parameter for atm. flux E tilt by multiplying with \f$energy^{E_{tilt}}\f$; 0 means no tilt
+  RooRealVar* fCt_tilt;     //!< parameter for atm. flux ct tilt multiplying with \f$(1+ct_{tilt} * ct)\f$; 0 means no tilt
+  RooRealVar* fSkew_mu_amu; //!< parameter to skew muon to anti-muon flux, preserves mu+amu norm; 1 means no skew
+  RooRealVar* fSkew_e_ae;   //!< parameter to skew elec to anti-elec flux, preserves e+ae norm; 1 means no skew
+  RooRealVar* fSkew_mu_e;   //!< parameter to skew mu to e flux, preserves mu+amu+e+ae norm; 1 means no skew
+
+  // detector systematics
+  RooRealVar* fE_scale;  //!< energy scale parameter, such that \f$ E_{true} \rightarrow E_{true}(1+E_{scale})\f$
+  
+  // *****************TO-BE-IMPLEMENTED****************************************
+  
+  // xsec systematic parameters
+  RooRealVar* fNC_norm;     //!< parameter for NC normalisation
+  RooRealVar* fTau_norm;    //!< parameter for tau normalisation
+  
+  // overall normalisation for each event class - needs some thought.
+  //vector<RooRealVar*> fOverallNorm;
+
+  //***************************************************************************
   
   // cache for flux tilt
   Double_t f_cache_e_tilt;    //!< internal cache for `fE_tilt` value to reduce calls for normalisation calculation

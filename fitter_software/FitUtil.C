@@ -694,16 +694,16 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
     \return            a pair with the un-normalised event density (calculated by dividing the expected number of events in a bin by bin width) and the associated statistical uncertainty */
 std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap) {
 
-  if ( E_reco < fE_reco->getMin() || E_reco > fE_reco->getMax() ) {
-    throw std::invalid_argument("ERROR! FitUtil::RecoEvts energy outside the fit range.");
+  if ( E_reco < fHB->GetXaxis()->GetXmin() || E_reco >= fHB->GetXaxis()->GetXmax() ) {
+    throw std::invalid_argument("ERROR! FitUtil::RecoEvts energy " + to_string(E_reco) + " outside the binning range.");
   }
 
-  if ( Ct_reco < fCt_reco->getMin() || Ct_reco > fCt_reco->getMax() ) {
-    throw std::invalid_argument("ERROR! FitUtil::RecoEvts cos-theta outside the fit range.");
+  if ( Ct_reco < fHB->GetYaxis()->GetXmin() || Ct_reco >= fHB->GetYaxis()->GetXmax() ) {
+    throw std::invalid_argument("ERROR! FitUtil::RecoEvts cos-theta " + to_string(Ct_reco) + " outside the binninb range.");
   }
 
-  if ( By_reco < fBy_reco->getMin() || By_reco > fBy_reco->getMax() ) {
-    throw std::invalid_argument("ERROR! FitUtil::RecoEvts cos-theta outside the fit range.");
+  if ( By_reco < fHB->GetZaxis()->GetXmin() || By_reco >= fHB->GetZaxis()->GetXmax() ) {
+    throw std::invalid_argument("ERROR! FitUtil::RecoEvts bjorken-y " + to_string(By_reco) + " outside the binning range.");
   }
   
   auto true_bins = resp->GetBinWeights( E_reco, Ct_reco, By_reco );
