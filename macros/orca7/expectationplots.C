@@ -23,8 +23,8 @@ void expectationplots() {
   Double_t ctmax =   1;
   Double_t bymin =   0;
   Double_t bymax =   1;
-  TString dataf  = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root";
-  TString effmf  = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root";
+  TString dataf  = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root";
+  TString effmf  = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root";
 
   Double_t muoncut  = 0.05;
   Double_t noisecut = 0.01;

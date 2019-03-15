@@ -28,8 +28,8 @@ using namespace RooFit;
 */
 void thetafit() {
 
-  TString dataf     = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root";
-  TString effmf     = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root";
+  TString dataf     = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root";
+  TString effmf     = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root";
   Bool_t   redoresp = kFALSE;
 
   system("mkdir -p rootfiles");

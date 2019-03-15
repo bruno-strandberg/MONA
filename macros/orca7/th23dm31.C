@@ -22,8 +22,8 @@ using namespace RooFit;
    This macro creates and fits pseudoexperiments to extract theta-23, dm31. The fit results are written to a ROOT file. The fits are performed simultaneously in three event selections (tracks, showers, middle). For each pseudo-experiment, the output will contain a `RooFitResult` and three histograms of the pseudo-experiment. 
 */
 void th23dm31(TString jobname = "job0", Int_t nexps = 5,
-	      TString dataf  = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root", 
-	      TString effmf  = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root",
+	      TString dataf  = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root", 
+	      TString effmf  = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root",
 	      Bool_t redoresp = kFALSE) {
 
   system("mkdir -p rootfiles");

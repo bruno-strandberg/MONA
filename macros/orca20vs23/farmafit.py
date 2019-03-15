@@ -28,7 +28,7 @@ args = docopt(__doc__)
 # get some necessary environment variables
 jpp  = os.environ['JPP_DIR']
 root = os.environ['ROOTSYS']
-nmh  = os.environ['NMHDIR']
+nmh  = os.environ['MONADIR']
 oscp = os.environ['OSCPROBDIR']
 
 # create temporary directory

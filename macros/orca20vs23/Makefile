@@ -1,5 +1,5 @@
 
-include $(NMHDIR)/Makerules
+include $(MONADIR)/Makerules
 
 CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS) $(JPPCFLAGS)
 LFLAGS = $(ROOTLIBS) $(ROOFITLIBS) $(NMHLIB) $(FITLIB)
