@@ -5,8 +5,8 @@ The past has showed this to be quite the challenge.
 
 To run these notebooks, run the ROOT macros first that generate the output that is 
 needed as input for these notebooks. These can be found in the 
-`$NMHDIR/macros/asimov_fits/cross_check_macros/` directory.
+`$MONADIR/macros/asimov_fits/cross_check_macros/` directory.
 At the time being the two plots `PercentageMC` and `RandomQ` depend on respectively 
 `AsimovFit*_RandomQ.C` macros and the `AsimovFitNO_PercentageOfMC.C` macro.
 The former can be run locally, the latter has to be run on the grid to gather enough
-statistics. See the ``$NMHDIR/macros/asimov_fits/qsub` directory for these scripts.
+statistics. See the ``$MONADIR/macros/asimov_fits/qsub` directory for these scripts.

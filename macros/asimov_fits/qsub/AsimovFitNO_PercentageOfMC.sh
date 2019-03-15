@@ -1,7 +1,7 @@
 #!/bin/bash
 
 inputnr=$1
-directory="$NMHDIR"
+directory="$MONADIR"
 
 echo "input: ${inputnr}"
 
