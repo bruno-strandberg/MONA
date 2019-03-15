@@ -1,0 +1,9 @@
+This folder contains the scripts used to run the percentage plot on the grid engine qsub.
+These scripts will attempt to run the percentage MC calculation script found in 
+`$NMHDIR/macros/asimov_fits/cross_check_macros/`. 
+
+To run scripts on qsub the following standard steps have to be taken:
+ - Define a script to run with some (or no) input parameters.
+ - Generate a number of scripts that take this base script with input, this is typically done 
+   with python.
+ - Submit these generated scripts to the grid with qsub.
