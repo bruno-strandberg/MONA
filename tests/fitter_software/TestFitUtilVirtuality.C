@@ -84,14 +84,14 @@ public:
 
   // overload the virtual method `RecoEvts`
   virtual std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
-						 DetResponse *resp, const proxymap_t &proxymap) {
+						 DetResponse *resp, const proxymap_t &proxymap, Double_t norm) {
 
     auto true_bins = resp->GetBinWeights(E_reco, Ct_reco, By_reco);
 
     Double_t true_evts = 0;
     for (auto tb: true_bins) true_evts += TrueEvts(tb, proxymap).first * tb.fW;
     
-    return std::make_pair(true_evts + gRET_RecoEvts_OLTR,0);
+    return std::make_pair( (true_evts + gRET_RecoEvts_OLTR) * norm,0);
   }
 
 };
@@ -167,8 +167,8 @@ int main(const int argc, const char **argv) {
     return 1;
   }
 
-  if ( futil                ->RecoEvts( e_reco, ct_reco, by_reco, &resp, pdf.GetProxyMap()     ).first !=
-       ((FitUtil*)futil_NOL)->RecoEvts( e_reco, ct_reco, by_reco, &resp, pdf_NOL.GetProxyMap() ).first ) {
+  if ( futil                ->RecoEvts( e_reco, ct_reco, by_reco, &resp, pdf.GetProxyMap()    , 1. ).first !=
+       ((FitUtil*)futil_NOL)->RecoEvts( e_reco, ct_reco, by_reco, &resp, pdf_NOL.GetProxyMap(), 1. ).first ) {
     cout << "NOTICE TestFitUtilVirtuality test failed at futil and futil_NOL reco events calculation" << endl;
     return 1;
   }
@@ -193,7 +193,7 @@ int main(const int argc, const char **argv) {
   Double_t binw = e_w * ct_w * by_w;
   sum_OLT = sum_OLT/binw;
   
-  if ( ((FitUtil*)futil_OLT)->RecoEvts( e_reco, ct_reco, by_reco, &resp, pdf_OLT.GetProxyMap() ).first !=
+  if ( ((FitUtil*)futil_OLT)->RecoEvts( e_reco, ct_reco, by_reco, &resp, pdf_OLT.GetProxyMap(), 1. ).first !=
        sum_OLT ) {
     cout << "NOTICE TestFitUtilVirtuality test failed at FitUtil_OLT reco events calculation" << endl;
     return 1;
@@ -211,7 +211,7 @@ int main(const int argc, const char **argv) {
   for (auto tb: true_bins) sum_OLTR += gRET_TrueEvts_OLTR * tb.fW;
   sum_OLTR += gRET_RecoEvts_OLTR;
   
-  if ( ((FitUtil*)futil_OLTR)->RecoEvts( e_reco, ct_reco, by_reco, &resp, pdf_OLTR.GetProxyMap() ).first !=
+  if ( ((FitUtil*)futil_OLTR)->RecoEvts( e_reco, ct_reco, by_reco, &resp, pdf_OLTR.GetProxyMap(), 1. ).first !=
        sum_OLTR ) {
     cout << "NOTICE TestFitUtilVirtuality test failed at FitUtil_OLTR reco events calculation" << endl;
     return 1;

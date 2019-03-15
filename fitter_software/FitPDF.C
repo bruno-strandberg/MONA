@@ -15,7 +15,8 @@ ClassImp(FitPDF);
     \param other   Other instance of FitPDF
     \param name    Name of the copy
  */
-FitPDF::FitPDF(const FitPDF& other, const char* name) : RooAbsPdf(other, name) { 
+FitPDF::FitPDF(const FitPDF& other, const char* name) : RooAbsPdf(other, name),
+							fNorm( other.fNorm.GetName(), this, other.fNorm ) { 
   
   // get the pointer to the fit utility and the response
   fFitUtil  = other.fFitUtil;
@@ -36,13 +37,15 @@ FitPDF::FitPDF(const FitPDF& other, const char* name) : RooAbsPdf(other, name) {
 
     The class takes a pointer to a pre-initialised `FitUtil` class and a pre-initialised `DetResponse` class as arguments. The latter specifies the event selection the pdf is used to fit, whereas the former is the actual worker class where all the calculations are performed.
 
-    \param name   Name of the pdf
-    \param title  Title of the pdf
-    \param futil  Pointer to the `FitUtil` class
-    \param resp   Pointer to a `DetResponse` instance
+    \param name      Name of the pdf
+    \param title     Title of the pdf
+    \param futil     Pointer to the `FitUtil` class
+    \param resp      Pointer to a `DetResponse` instance
+    \param constNorm The normalisation systematic associated with this pdf is set to constant equal to 1
 
  */
-FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp) : RooAbsPdf(name, title) {
+FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp, Bool_t constNorm) :
+  RooAbsPdf(name, title) {
 
   // set the pointers
   if (futil == NULL ) {
@@ -55,10 +58,18 @@ FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse 
   
   fFitUtil  = futil;
   fResponse = resp;
-
+  
   if ( !NMHUtils::BinsMatch( fFitUtil->GetBinningHist(), fResponse->GetHist3D() ) ) {
     throw std::invalid_argument("ERROR! FitPDF::FitPDF() FitUtil and DetResponse use different binning.");
   }
+
+
+  // add the normalisation constant for this instance; set the normalisation proxy
+  TString normname = (TString)name + "_norm";                          // name for the norm constant
+  futil->AddNormConst( normname, normname, 1., 0., 2., constNorm );    // create a `RooRealVar` in FitUtil
+  RooRealVar *normvar = futil->GetVar( normname );                     // get a pointer to the new variable
+  fNorm = RooRealProxy( normname, normname, this, *normvar);           // set up a proxy
+  
   
   // create a list of the parameters for iteration and create proxies
   RooArgList pars( fFitUtil->GetSet() );
@@ -85,7 +96,7 @@ Double_t FitPDF::evaluate() const {
   Double_t Ct_reco = *( fProxies.at( fFitUtil->GetCTobs()->GetName() ) );
   Double_t By_reco = *( fProxies.at( fFitUtil->GetBYobs()->GetName() ) );
 
-  return fFitUtil->RecoEvts(E_reco, Ct_reco, By_reco, fResponse, fProxies).first;
+  return fFitUtil->RecoEvts(E_reco, Ct_reco, By_reco, fResponse, fProxies, fNorm).first;
 
 } 
 
@@ -121,7 +132,7 @@ Double_t FitPDF::analyticalIntegral(Int_t code, const char* rangeName) const {
   Double_t integral = 0.;
   
   if ( code == I_E_CT_BY ) {
-    auto expct = fFitUtil->Expectation(fResponse, fProxies, rangeName);
+    auto expct = GetExpValHist(rangeName);
     integral = expct->Integral();
     delete expct;
   }
@@ -136,6 +147,8 @@ Double_t FitPDF::analyticalIntegral(Int_t code, const char* rangeName) const {
 //*******************************************************************************
 
 /** Implementation of this function allows the class to be used with TF1/TF2/TF3
+
+    This is here for the test application `tests/fitting/FitPseudoExperiment.C`, which compares the fit results between `ROOT` and `RooFit`.
 
     \param x  Observable array (reconstructed E, cos-theta, bjorken-y)
     \param p  Parameter array (sinsqth12, 13, 23, delta-cp, dm21, dm31)
@@ -160,7 +173,7 @@ double FitPDF::operator()(double *x, double *p) {
   Double_t by_w = hb->GetZaxis()->GetBinWidth( hb->GetZaxis()->FindBin(x[2]) );
   Double_t bw = e_w * ct_w * by_w;
   
-  return fFitUtil->RecoEvts(x[0], x[1], x[2], fResponse, fProxies).first * bw;
+  return fFitUtil->RecoEvts(x[0], x[1], x[2], fResponse, fProxies, 1.).first * bw;
   
 }
 
@@ -175,10 +188,10 @@ double FitPDF::operator()(double *x, double *p) {
     \return               Pointer to a TH3D with pseudoexperiment data. NB! these histograms are created on the stack; it is the responsibility of the user to delete the TH3D hists pointed to by the return value.
 
 */
-TH3D* FitPDF::SimplePseudoExp(TString nametitle, Bool_t IncludeStatErr) {
+TH3D* FitPDF::SimplePseudoExp(TString nametitle, Bool_t IncludeStatErr, const char* rangeName) {
 
   // get the histogram with expectation values
-  TH3D* expectation = fFitUtil->Expectation(fResponse, fProxies, "");
+  TH3D* expectation = GetExpValHist(rangeName);
 
   // create a histogram where the experiment is stored
   TH3D* experiment  = (TH3D*)expectation->Clone(nametitle);
@@ -225,7 +238,7 @@ TH3D* FitPDF::SimplePseudoExp(TString nametitle, Bool_t IncludeStatErr) {
 */
 TH3D* FitPDF::GetExpValErrHist(const char* name) {
 
-  TH3D* expvalhist = FitPDF::GetExpValHist(name);
+  TH3D* expvalhist = GetExpValHist(name);
 
   TH3D* errvalhist = (TH3D*)expvalhist->Clone();
   errvalhist->SetNameTitle( expvalhist->GetName() + TString("_err"), expvalhist->GetTitle() + TString("_err") );
