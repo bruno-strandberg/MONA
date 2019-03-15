@@ -113,7 +113,7 @@ void AsimovFitNBinsIO() {
 
   if (not files_exist) {
 
-    auto summary_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+    auto summary_file = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
     SummaryParser sp(summary_file);
     for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
       if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
@@ -144,7 +144,7 @@ void AsimovFitNBinsIO() {
   // set up the PDFs and static oscillation parameters
   //----------------------------------------------------------
 
-  auto meff_file = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+  auto meff_file = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
   FitUtil *fitutil = new FitUtil(3, track_response_vector[0].GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);
 
   std::vector<TH3D*> track_vector_true;

@@ -76,7 +76,7 @@ void AsimovFitSeperateTh23Range() {
   //-----------------------------------------------------
   // fill the detector response and event selection
   //-----------------------------------------------------
-  auto summary_file = (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+  auto summary_file = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
   SummaryParser sp(summary_file);
 
   TString track_file = "track_response.root";
@@ -106,7 +106,7 @@ void AsimovFitSeperateTh23Range() {
   // set up the PDFs and static oscillation parameters
   //----------------------------------------------------------
 
-  auto meff_file = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+  auto meff_file = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
   FitUtil *fitutil = new FitUtil(3, track_response.GetHist3D(), 2, 80, -1, 0, 0, 1, meff_file);
 
   FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_response);

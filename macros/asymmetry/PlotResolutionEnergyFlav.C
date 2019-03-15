@@ -19,7 +19,7 @@
 using namespace std;
 
 
-void PlotResolutionEnergyFlav(TString summary_file=(TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root") {
+void PlotResolutionEnergyFlav(TString summary_file=(TString)getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root") {
   SummaryParser sp(sum_file);
   
   bool plot = false;

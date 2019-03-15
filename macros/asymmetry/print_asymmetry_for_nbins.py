@@ -4,7 +4,7 @@
 
 import os
 
-basedir = os.environ.get("NMHDIR")
+basedir = os.environ.get("MONADIR")
 basedir = basedir + "/fitter/"
 
 def asym_print(filename):
