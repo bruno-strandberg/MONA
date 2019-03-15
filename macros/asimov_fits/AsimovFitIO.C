@@ -34,7 +34,8 @@ using namespace RooFit;
 
 void AsimovFitIO() {
 
-  TString filefolder = "./default_detres/";
+  TString filefolder = "./detector_responses/pid_binning_2/";
+  TString s_outputfile = "output/csv/AsimovFitIO.csv";
 
   // DetRes input values
   Int_t EBins = 24;
@@ -164,11 +165,12 @@ void AsimovFitIO() {
   RooArgSet *result;
   Double_t fitChi2_1q = fitres_1q->minNll();
   Double_t fitChi2_2q = fitres_2q->minNll();
+  Double_t min_chi2;
   cout << "first q " << TMath::Sqrt( fitChi2_1q ) << endl;
   cout << "second q" << TMath::Sqrt( fitChi2_2q ) << endl;
   if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
-  if (fitChi2_1q < fitChi2_2q) result = &result_1q;
-  else                         result = &result_2q;
+  if (fitChi2_1q < fitChi2_2q) { result = &result_1q; min_chi2 = fitChi2_1q; }
+  else                         { result = &result_2q; min_chi2 = fitChi2_2q; }
 
   cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
@@ -201,5 +203,10 @@ void AsimovFitIO() {
   cout << "NMHUtils: Chi2 between tracks  NO and tracks  fitted on IO is: " << chi2tr << endl;
   cout << "NMHUtils: Chi2 between showers NO and showers fitted on IO is: " << chi2sh << endl;
   cout << "Squared sum is : " << std::sqrt(std::pow(chi2tr, 2) + std::pow(chi2sh, 2)) << endl;
+
+  ofstream outputfile(s_outputfile);
+  outputfile << "Ebins,ctBins,n_chi2tr_no,n_chi2sh_no,fit_chi2" << endl;
+  outputfile << EBins << "," << ctBins << "," << chi2tr << "," << chi2sh << "," << min_chi2 << endl;
+  outputfile.close();
 
 }
