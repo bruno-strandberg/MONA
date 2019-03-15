@@ -45,14 +45,27 @@ public:
       \return Pointer to `DetResponse`
    */
   DetResponse* GetResponse() { return fResponse; }
+
   /** Get pointer to `FitUtil` used with this instance
       \return Pointer to `FitUtil`
    */
   FitUtil*     GetUtil() { return fFitUtil; }
+
   /**Get reference to member `fProxies`, which stores the pointers to the variables in `RooFit`
      \return Reference to member `fProxies`
    */
   proxymap_t&    GetProxyMap() { return fProxies; }
+
+  /** Get the value of the normalisation constant for this `FitPDF` instance
+      \return current value of the normalisation constant
+   */
+  Double_t     GetNorm() { return fNorm; }
+
+  /** Get the name of the normalisation constant fot this `FitPDF` instance
+      \return Name of the normalisation constant parameter.
+   */
+  TString      GetNormName() { return fNorm.GetName(); }
+  
   /** Get a 3D histogram with expectation values for this fit model.
       The histogram which is pointed to is created on the heap and it is the user's responsibility to delete the object.
       \param name Name of a range as used in `RooFit`, dummy for now
@@ -60,6 +73,7 @@ public:
   TH3D*        GetExpValHist(const char* name=0) const {
     return fFitUtil->Expectation(fResponse, fProxies, fNorm, name);
   }
+
   TH3D*        GetExpValErrHist(const char* name=0); 
 
   /** Set the seed of the random generator (`TRandom3`) that is used for generating pseudo-experiments
