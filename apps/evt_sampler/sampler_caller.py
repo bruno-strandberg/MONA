@@ -50,7 +50,7 @@ def main(args):
             cwd  = os.getcwd()
             jpp  = os.environ['JPP_DIR']
             root = os.environ['ROOTSYS']
-            nmh  = os.environ['NMHDIR']
+            nmh  = os.environ['MONADIR']
             oscp = os.environ['OSCPROBDIR']
 
             # create the list of gsg files, flux files and summary files

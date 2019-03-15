@@ -48,7 +48,7 @@ int main(const int argc, const char **argv) {
     JParser<> zap("This example application calculates the asymmetry between normal and inverted mass ordering at specified theta-23 values.");
 
     zap['s'] = make_field(simdata_file, "File with all summary data") =
-      (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
+      (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
     zap['o'] = make_field(outputfile, "File where output histograms are written") = NMHUtils::Getcwd() + "/rootfiles/asymmetry.root";
@@ -58,7 +58,7 @@ int main(const int argc, const char **argv) {
     zap['a'] = make_field(range_th23, "sin^2 theta23 range") = JRange<double>(0.5, 0.5);
     zap['n'] = make_field(nsteps, "Number of steps in sin^2 theta23 range") = 1;
     zap['M'] = make_field(meff_file, "Effective mass file created by using `EffMass` class") = 
-      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+      (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
 
     if ( zap.read(argc, argv) != 0 ) return 1;
   }

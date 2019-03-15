@@ -1,4 +1,4 @@
-include $(NMHDIR)/Makerules
+include $(MONADIR)/Makerules
 
 #======================================================================================
 # master make file that calls make in common_software/ fitter_software/ and for
@@ -26,7 +26,7 @@ nmhlib:
 .PHONY: test
 
 test: tests
-	python $(NMHDIR)/run_tests.py
+	python $(MONADIR)/run_tests.py
 
 tests: all
 	@for dir in tests/* ; do \

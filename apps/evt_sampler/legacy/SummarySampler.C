@@ -62,7 +62,7 @@ map < Int_t, TString > fFlavs  = { {0, "elec" },
  */
 void SummarySampler(TString flux_chain_file, Int_t flavor, Int_t is_cc, Int_t nsamples = 1) {
 
-  gSystem->Load("$NMHDIR/common_software/libnmhsoft.so");
+  gSystem->Load("$MONADIR/common_software/libnmhsoft.so");
   
   if ( !GetDetHists(flux_chain_file, flavor, is_cc) ) {
     cout << "ERROR! SummarySampler() problem opening flux histograms." << endl;
@@ -254,8 +254,8 @@ void ReadSummaryData(Int_t flavor, Int_t is_cc) {
   // events outside the can should not be used, as effective mass ignores them as well
   cout << "DEBUG: Need to ignore events outside the can. The volume size should be written to effmass output and fetched from there." << endl;
 
-  TString fnames    = "$NMHDIR/data/mc_end/data_atmnu/summary_" + fFlavs[flavor] + "-CC*.root";
-  if (is_cc == 0) fnames = "$NMHDIR/data/mc_end/data_atmnu/summary_elec-NC*.root"; 
+  TString fnames    = "$MONADIR/data/mc_end/data_atmnu/summary_" + fFlavs[flavor] + "-CC*.root";
+  if (is_cc == 0) fnames = "$MONADIR/data/mc_end/data_atmnu/summary_elec-NC*.root"; 
   
   // add files to the summary parser
   fSp->fChain->Add(fnames);

@@ -1,10 +1,10 @@
 Cross-section data
 ==================
 
-This directory contains root files with neutrino cross-section data that is used by the class `NMHDIR/common_software/NuXsec`. There are two files
+This directory contains root files with neutrino cross-section data that is used by the class `common_software/NuXsec`. There are two files
 
 * `xsec.root` holds `TGraph`'s with neutrino interaction cross-section data. This file was extracted by Dr. M. Jongen (see below) and is pointed to by the default constructor of `NuXsec`.
-* `by_dists.root` holds neutrino energy vs bjorken-y distributions. This file was created by the scripts in `NMHDIR/bjorkeny-dists`, see `NMHDIR/bjorkeny-dists/README.md` for more info. The default constructor of `NuXsec` points to this file.
+* `by_dists.root` holds neutrino energy vs bjorken-y distributions. This file was created by the scripts in `apps/bjorkeny-dists`, see `apps/bjorkeny-dists/README.md` for more info. The default constructor of `NuXsec` points to this file.
 
 
 Info from Dr. M. Jongen regarding `xsec.root`

@@ -54,7 +54,7 @@ int main(const int argc, const char **argv) {
 
     zap['i'] = make_field(input_dir      , "Directory with EffMhists outputs");
     zap['o'] = make_field(output_dir     , "Directory where combined outputs are written") = "combined_output/";
-    zap['e'] = make_field(output_file    , "Name of the EffMass output file") = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass.root";
+    zap['e'] = make_field(output_file    , "Name of the EffMass output file") = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass.root";
     zap['t'] = make_field(use_datatag    , "Append the datatag to the output_file name. E.g. output/out.root becomes output/out_ORCA115_23x9m_ECAP0418.root (recommended)");
 
     if ( zap.read(argc, argv) != 0 ) return 1;

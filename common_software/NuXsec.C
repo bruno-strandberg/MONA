@@ -18,10 +18,10 @@ NuXsec::NuXsec(UInt_t bybins, TString xsecfile, TString by_dist_file) {
   // get the nmhdir, if default options (xsecfile="", by_dist_file="") 
   // point to default xsecfile and bjorken-y distribution file
   
-  TString nmhdir = getenv("NMHDIR");
+  TString nmhdir = getenv("MONADIR");
 
   if ( nmhdir == "" ) {
-    throw std::invalid_argument( "ERROR! NuXsec::NuXsec() $NMHDIR not set (source setenv.sh), init failed");
+    throw std::invalid_argument( "ERROR! NuXsec::NuXsec() $MONADIR not set (source setenv.sh), init failed");
   }
 
   if ( xsecfile == "" ) {

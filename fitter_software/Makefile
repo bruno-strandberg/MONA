@@ -1,5 +1,5 @@
 
-include $(NMHDIR)/Makerules
+include $(MONADIR)/Makerules
 
 #===============================================================
 # setup cxx and library flags from global variables

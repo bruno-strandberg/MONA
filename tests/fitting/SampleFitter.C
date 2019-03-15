@@ -105,14 +105,14 @@ int main(const int argc, const char **argv) {
     JParser<> zap("This application can be used to fit an event-by-event experiment sample, created with applications in `apps/evt_sampler`. See documentation in the source code for more info.");
 
     zap['s'] = make_field(simdata_file, "File with all summary data") =
-      (string)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
+      (string)getenv("MONADIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
 
     zap['e'] = make_field(expdata_file, "File with experimental data sample");
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
     
     zap['M'] = make_field(meff_file, "Effective mass file created by using `EffMass` class") = 
-      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+      (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
     zap['n'] = make_field(numcpu, "Number of CPUs for fitting") = 1;
 
     if ( zap.read(argc, argv)!= 0 ) return 1;

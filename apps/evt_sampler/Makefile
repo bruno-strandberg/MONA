@@ -1,4 +1,4 @@
-include $(NMHDIR)/Makerules
+include $(MONADIR)/Makerules
 
 CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS) $(JPPCFLAGS) $(AACFLAGS)
 LFLAGS = $(ROOTLIBS) $(NMHLIB) $(AALIB) $(OSCLIB) -L$(JPP_LIB) -ljaanetROOT -lz

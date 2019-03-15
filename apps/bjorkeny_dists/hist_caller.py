@@ -49,7 +49,7 @@ def create_farm_script(syscmd, tmpdir, job_nr):
     scriptf.write( "cd {0}\n".format(cwd) )
     scriptf.write( "source {0}/bin/thisroot.sh\n".format( os.environ['ROOTSYS'] ) )
     scriptf.write( 'export OSCPROBDIR="{}"\n'.format(os.environ['OSCPROBDIR']) )
-    scriptf.write( "source {0}/setenv.sh\n\n".format( os.environ['NMHDIR'] ) )
+    scriptf.write( "source {0}/setenv.sh\n\n".format( os.environ['MONADIR'] ) )
     scriptf.write(syscmd + "\n")
 
     scriptf.close()

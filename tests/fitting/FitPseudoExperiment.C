@@ -93,13 +93,13 @@ int main(const int argc, const char **argv) {
     JParser<> zap("This example application demonstrates the generation of a pseudo-experiment in the track channel and fitting the pseudo-experiment using ROOT and RooFit. See the documentation in the application for further information.");
 
     zap['s'] = make_field(simdata_file, "File with all summary data") =
-      (TString)getenv("NMHDIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
+      (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
 
     zap['r'] = make_field(refill_response, "Flag to request re-filling of the detector responses");
     zap['o'] = make_field(outputfile, "File where output histograms are written") = rfd + "pseudoexpfit.root";
     zap['n'] = make_field(nfits, "Number of fits to be performed") = 1;
     zap['M'] = make_field(meff_file, "Effective mass file created by using `EffMass` class") = 
-      (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+      (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
     zap['N'] = make_field(ncpu, "Number of CPUs when fitting with RooFit") = 1;
     zap['S'] = make_field(seed, "Seed for the random generator") = 0;
 

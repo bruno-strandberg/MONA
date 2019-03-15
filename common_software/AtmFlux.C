@@ -31,10 +31,10 @@ AtmFlux::AtmFlux(UInt_t opt, Bool_t debug) {
   //init the map options vs filenames
   //======================================================
   
-  TString nmhdir = getenv("NMHDIR");
+  TString nmhdir = getenv("MONADIR");
 
   if ( nmhdir == "" ) {
-    throw std::invalid_argument("ERROR! AtmFlux::AtmFlux() $NMHDIR not set (source setenv.sh), init failed.");
+    throw std::invalid_argument("ERROR! AtmFlux::AtmFlux() $MONADIR not set (source setenv.sh), init failed.");
   }
   
   TString datadir = nmhdir + "/data/honda_flux/";

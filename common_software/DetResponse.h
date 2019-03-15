@@ -132,7 +132,7 @@ struct TrueB : public TObject {
    //---------------------------------------------------
    // fill the response
    //---------------------------------------------------
-   SummaryParser sp( getenv("NMHDIR") + "/data/ORCA_MC_summary_all_10Apr2018.root");        // init summary parser
+   SummaryParser sp( getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root");       // init summary parser
    for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {                                 // loop over events and fill
        sp.GetTree()->GetEntry(i);
        SummaryEvent *evt = sp.GetEvt();

@@ -1,4 +1,4 @@
-include $(NMHDIR)/Makerules
+include $(MONADIR)/Makerules
 
 CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS)
 LFLAGS = $(ROOTLIBS) $(NMHLIB)

@@ -7,8 +7,8 @@
 #--------------------------------------------------------------
 NMHSOFT    = nmhsoft
 FITSOFT    = fitsoft
-NMHSOFTDIR = $(NMHDIR)/common_software/
-FITSOFTDIR = $(NMHDIR)/fitter_software/
+NMHSOFTDIR = $(MONADIR)/common_software/
+FITSOFTDIR = $(MONADIR)/fitter_software/
 
 #--------------------------------------------------------------
 # libraries

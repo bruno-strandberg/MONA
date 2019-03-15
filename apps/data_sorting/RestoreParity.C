@@ -29,8 +29,8 @@ namespace RESTOREPARITY {
   /// Global pointer to a summary file parser class.
   SummaryParser *fSp;
   TString tagpar     = "datatag";
-  TString summarydir = (TString)getenv("NMHDIR") + "/data/mcsummary/";
-  TString gseagendir = (TString)getenv("NMHDIR") + "/data/gseagen/";
+  TString summarydir = (TString)getenv("MONADIR") + "/data/mcsummary/";
+  TString gseagendir = (TString)getenv("MONADIR") + "/data/gseagen/";
   TString muondir    = "/data_mupage/";
   TString noisedir   = "/data_noise/";
   TString nudir      = "/data_atmnu/";

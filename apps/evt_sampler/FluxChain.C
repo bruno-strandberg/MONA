@@ -135,7 +135,7 @@ int main(const int argc, const char **argv) {
     zap['o'] = make_field(output_name, "Name of the file where histograms are written") = "flux_chain_out.root";
     zap['n'] = make_field(nsamples, "Number of oscillation samples per filling one bin (recommended > 10). If set to 1 then bin central values are used") = 20;
     zap['I'] = make_field(IH, "Inverted hierarchy (normal hierarchy otherwise)");
-    zap['M'] = make_field(meff_file, "ROOT file with effective mass histograms, created with `apps/effective_mass` applications that use the class `common_software/EffMass`") = (TString)getenv("NMHDIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+    zap['M'] = make_field(meff_file, "ROOT file with effective mass histograms, created with `apps/effective_mass` applications that use the class `common_software/EffMass`") = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
     zap['U'] = make_field(sinsq_th12, "sin^2(theta12) value. By default PDG value is used.") = NOTSET;
     zap['V'] = make_field(sinsq_th23, "sin^2(theta23) value. By default PDG value is used.") = NOTSET;
     zap['W'] = make_field(sinsq_th13, "sin^2(theta13) value. By default PDG value is used.") = NOTSET;
