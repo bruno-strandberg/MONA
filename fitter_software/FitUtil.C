@@ -47,7 +47,7 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
   
   InitFitVars(get<MIN>(ENr), get<MAX>(ENr), get<MIN>(CTr), get<MAX>(CTr), get<MIN>(BYr), get<MAX>(BYr));
   InitCacheHists(fHB);
-  FillFluxAndXsecCache(fFlux, fXsec, fOpTime);
+  Fill_Flux_Xsec_Meff_cache(fFlux, fXsec, fMeff, fOpTime);
 
   f_cache_sinsqth12 = 0;
   f_cache_sinsqth13 = 0;
@@ -95,6 +95,8 @@ FitUtil::~FitUtil() {
       // xsec and meff
       for (UInt_t iscc = 0; iscc < fInts; iscc++) {
 	if ( fhXsecCache[f][iscc][isnb] ) delete fhXsecCache[f][iscc][isnb];
+	if ( fhMeffCache[f][iscc][isnb] ) delete fhMeffCache[f][iscc][isnb];
+	if ( fhBYfracCache[f][iscc][isnb] ) delete fhBYfracCache[f][iscc][isnb];
       }
 
     }
@@ -298,8 +300,9 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
   std::map<UInt_t, TString> flav_map = { {0, "elec"}, {1, "muon"}, {2, "tau"} };
 
   // project the 3D template to 1D and 2D templates
-  TH2D *h_template_2D = (TH2D*)h_template->Project3D("yx");
-  TH1D *h_template_1D = (TH1D*)h_template->Project3D("x");
+  TH2D *h_template_EvsCT = (TH2D*)h_template->Project3D("yx");
+  TH2D *h_template_EvsBY = (TH2D*)h_template->Project3D("zx");
+  TH1D *h_template_E     = (TH1D*)h_template->Project3D("x");
 
   // init the oscillation probability cache histograms
   for (UInt_t f_in = 0; f_in < fFlavs; f_in++) {
@@ -308,7 +311,7 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
 
 	TString name = "oscprob_" + flav_map[f_in] + "_to_" + flav_map[f_out] + "_" + pol_map[isnb];
 
-        fhOscCache[f_in][f_out][isnb] = (TH2D*)h_template_2D->Clone();
+        fhOscCache[f_in][f_out][isnb] = (TH2D*)h_template_EvsCT->Clone();
         fhOscCache[f_in][f_out][isnb]->SetDirectory(0);
         fhOscCache[f_in][f_out][isnb]->Reset();
         fhOscCache[f_in][f_out][isnb]->SetNameTitle(name, name);
@@ -323,7 +326,7 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
 
       TString name = "flux_" + flav_map[f] + "_" + pol_map[isnb];
 
-      fhFluxCache[f][isnb] = (TH2D*)h_template_2D->Clone();
+      fhFluxCache[f][isnb] = (TH2D*)h_template_EvsCT->Clone();
       fhFluxCache[f][isnb]->SetDirectory(0);
       fhFluxCache[f][isnb]->Reset();
       fhFluxCache[f][isnb]->SetNameTitle(name, name);
@@ -331,18 +334,30 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
     }
   }
 
-  // init the xsec histograms
+  // init the xsec histograms and meff histograms
   for (UInt_t f = 0; f < fFlavs; f++) {
     for (UInt_t iscc = 0; iscc < fInts; iscc++) {
       for (UInt_t isnb = 0; isnb < fPols; isnb++) {
 
-        TString name = "xsec_" + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
+        TString name_xsec   = "xsec_"   + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
+	TString name_byfrac = "byfrac_" + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
+	TString name_meff   = "meff_"   + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
 
-        fhXsecCache[f][iscc][isnb] = (TH1D*)h_template_1D->Clone();
+        fhXsecCache[f][iscc][isnb] = (TH1D*)h_template_E->Clone();
         fhXsecCache[f][iscc][isnb]->SetDirectory(0);
         fhXsecCache[f][iscc][isnb]->Reset();
-        fhXsecCache[f][iscc][isnb]->SetNameTitle(name, name);
+        fhXsecCache[f][iscc][isnb]->SetNameTitle(name_xsec, name_xsec);
 
+	fhBYfracCache[f][iscc][isnb] = (TH2D*)h_template_EvsBY->Clone();
+	fhBYfracCache[f][iscc][isnb]->SetDirectory(0);
+	fhBYfracCache[f][iscc][isnb]->Reset();
+	fhBYfracCache[f][iscc][isnb]->SetNameTitle(name_byfrac, name_byfrac);
+	
+	fhMeffCache[f][iscc][isnb] = (TH3D*)h_template->Clone();
+	fhMeffCache[f][iscc][isnb]->SetDirectory(0);
+	fhMeffCache[f][iscc][isnb]->Reset();
+	fhMeffCache[f][iscc][isnb]->SetNameTitle(name_meff, name_meff);
+	
       }
     }
   }
@@ -354,9 +369,10 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
 /** A private function to fill the flux and xsec cache hists
     \param flux     Pointer to the `AtmFlux` member instance
     \param xsec     Pointer to the `NuXsec` member instance
+    \param meff     Pointer to the `EffMass` member instance
     \param op_time  Operation time in years.
 */
-void FitUtil::FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time) {
+void FitUtil::Fill_Flux_Xsec_Meff_cache(AtmFlux *flux, NuXsec *xsec, EffMass *meff, Double_t op_time) {
 
   // fill the atm flux cache. Note that (currently) AtmFlux returns 0 for tau flux
   for (UInt_t f = 0; f < fFlavs; f++) {
@@ -383,23 +399,37 @@ void FitUtil::FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time
     }
   }
 
-  // fill xsec cache
+  // fill xsec cache and meff cache
   for (UInt_t f = 0; f < fFlavs; f++) {
     for (UInt_t iscc = 0; iscc < fInts; iscc++) {
       for (UInt_t isnb = 0; isnb < fPols; isnb++) {
 	
-	TH1D* hxsec = fhXsecCache[f][iscc][isnb];
-
+	TH1D* hxsec   = fhXsecCache[f][iscc][isnb];
+	TH3D* hmeff   = fhMeffCache[f][iscc][isnb];
+	TH2D* hbyfrac = fhBYfracCache[f][iscc][isnb];
+	
 	for (Int_t ebin = 1; ebin <= hxsec->GetXaxis()->GetNbins(); ebin++) {
 
 	  Double_t E = hxsec->GetXaxis()->GetBinCenter(ebin);
 	  hxsec->SetBinContent(ebin, xsec->GetXsec(f, iscc, isnb, E) );
 
-	}
+	  for (Int_t bybin = 1; bybin <= hmeff->GetZaxis()->GetNbins(); bybin++) {
+
+	    Double_t by = hmeff->GetZaxis()->GetBinCenter(bybin);
+	    hbyfrac->SetBinContent( ebin, bybin, xsec->GetBYfrac(f, iscc, isnb, E, by) );
+	    
+	    for (Int_t ctbin = 1; ctbin <= hmeff->GetYaxis()->GetNbins(); ctbin++) {
+
+	      Double_t ct = hmeff->GetYaxis()->GetBinCenter(ctbin);
+	      hmeff->SetBinContent( ebin, ctbin, bybin, meff->GetMeff( f, iscc, isnb, E, ct, by ) );
+	      
+	    } // end loop over by
+	  } // end loop over ct
+	} // end loop over energy
 	
-      }
-    }
-  }
+      } // end loop over isnb
+    } // end loop over iscc
+  } // end loop over flavors
 
 }
 
@@ -412,13 +442,13 @@ void FitUtil::FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time
     \param tb    A `TrueB` object (see `DetResponse.h`) that stores the true bin coordinate info.
     \return      Cached atmoshperic neutrino flux in specified bin.
 */
-Double_t FitUtil::GetCachedFlux(UInt_t flav, Bool_t isnb, const TrueB &tb) {
+Double_t FitUtil::GetCachedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin) {
 
   if (flav > TAU) {
     throw std::invalid_argument("ERROR! FitUtil::GetCachedFlux() unknown flavor " + to_string(flav));
   }
 
-  return fhFluxCache[flav][(UInt_t)isnb]->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin);
+  return fhFluxCache[flav][(UInt_t)isnb]->GetBinContent(true_ebin, true_ctbin);
 }
 
 //***************************************************************************
@@ -461,13 +491,35 @@ Double_t FitUtil::GetCachedXsec(const TrueB &tb) {
 //***************************************************************************
 
 /**
+   Function that returns the cached effective mass value for a certain true bin
+   \param tb    A `TrueB` object (see `DetResponse.h`) that stores the neutrino type and true bin coordinate info.
+   \return      Cached effective mass value in a specified bin in Ton
+ */
+Double_t FitUtil::GetCachedMeff(const TrueB &tb) {
+  return fhMeffCache[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent( tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin );
+}
+
+//***************************************************************************
+
+/** 
+    Function that returns the cached fraction of events expected in a certain BY bin at a certain energy.
+   \param tb    A `TrueB` object (see `DetResponse.h`) that stores the neutrino type and true bin coordinate info.
+   \return      Cached bjorken-y fraction
+*/
+Double_t FitUtil::GetCachedBYfrac(const TrueB &tb) {
+  return fhBYfracCache[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent( tb.fE_true_bin, tb.fBy_true_bin );
+}
+
+//***************************************************************************
+
+/**
    Private function that handles the caching of the oscillation probabilities.
 
    This function re-calculates the oscillation probabilites and stores them in member histograms `fhOscCache` whenever any of the oscillation parameters change. If none of them change, the calculation is not performed. The way the `DetResponse` class is set up and the way fitting works, this enables to save a large amount of time.
 
    NB! The oscillations tau-> (elec, muon, tau) are not calculated to save time; tau flux is assumed 0.
 
-   \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all observables and parameters, including the oscillation parameters. 
+   \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
  */
 void FitUtil::ProbCacher(const proxymap_t &proxymap) {
 
@@ -543,14 +595,14 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap) {
 /** Function that calculates the number of events in a \f$ (E_{\rm true}, cos\theta_{\rm true}, by_{\rm true}) \f$ bin.
 
     \param tb          A `TrueB` object (see `DetResponse.h`) that stores the neutrino type and true bin coordinate info.
-    \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all observables and parameters, including the oscillation parameters. 
+    \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters.
     \return            A pair; first is the number of expected events in the true bin, second is the MC statistical uncertainty
 */
 std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_t &proxymap) {
   
   // get the atm nu count
-  Double_t atm_count_e = GetCachedFlux(ELEC, tb.fIsNB, tb);
-  Double_t atm_count_m = GetCachedFlux(MUON, tb.fIsNB, tb);
+  Double_t atm_count_e = GetCachedFlux(ELEC, tb.fIsNB, tb.fE_true_bin, tb.fCt_true_bin);
+  Double_t atm_count_m = GetCachedFlux(MUON, tb.fIsNB, tb.fE_true_bin, tb.fCt_true_bin);
   
   // get the oscillation probabilities
   Double_t prob_elec = GetCachedOsc(ELEC, tb, proxymap);
@@ -562,16 +614,11 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_
   // get the interacted neutrino count in operation time (in units 1/MTon)
   Double_t int_count = osc_count * GetCachedXsec(tb)/fMN * fKg_per_MTon;
   
-  // find true observable values necassary for the effective mass and to split events to bjorken-y bins
-  Double_t e_true  = fHB->GetXaxis()->GetBinCenter( tb.fE_true_bin );
-  Double_t ct_true = fHB->GetYaxis()->GetBinCenter( tb.fCt_true_bin );
-  Double_t by_true = fHB->GetZaxis()->GetBinCenter( tb.fBy_true_bin );
-
   // get the effective mass
-  Double_t meff  = fMeff->GetMeff( tb.fFlav, tb.fIsCC, tb.fIsNB, e_true, ct_true, by_true );
+  Double_t meff = GetCachedMeff(tb);
 
   // calculate the number of detected events (unitless)
-  Double_t det_count = int_count * fXsec->GetBYfrac(tb.fFlav, tb.fIsCC, tb.fIsNB, e_true, by_true) * meff * 1e-6;
+  Double_t det_count = int_count * GetCachedBYfrac(tb) * meff * 1e-6;
 
   // MC stat err, coming from eff mass and BY distribution (0 for now)
   Double_t det_err = 0.;
@@ -587,20 +634,13 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_
     The argument map is created in `FitPDF` and contains names and corresponding proxies for all parameters in `fParSet`. The detector response is also part of the `FitPDF` class and configures what kind of an event selection the pdf is used to fit.
     
     \param resp       Pointer to `DetResponse` instance used with the `FitPDF` class.
-    \param proxymap   A proxy map with `RooFit` variables from `FitPDF` that contain all observables and parameters, including the oscillation parameters. 
+    \param proxymap   A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
+    \param norm       An overall normalisation parameter
     \param rangeName  Range string as used in `RooFit`, currently dummy.
     \return           a 3D histogram in reco variables with exepectation values as bin contents
 
 */
-TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName) {
-
-  // get the parameter values from the proxies
-  // Double_t SinsqTh12 = *( proxymap.at( (TString)fSinsqTh12->GetName() ) );
-  // Double_t SinsqTh13 = *( proxymap.at( (TString)fSinsqTh13->GetName() ) );
-  // Double_t SinsqTh23 = *( proxymap.at( (TString)fSinsqTh23->GetName() ) );
-  // Double_t Dcp       = *( proxymap.at( (TString)fDcp->GetName() ) );
-  // Double_t Dm21      = *( proxymap.at( (TString)fDm21->GetName() ) );
-  // Double_t Dm31      = *( proxymap.at( (TString)fDm31->GetName() ) );
+TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, Double_t norm, const char* rangeName) {
 
   // create the histogram with expectation values
   TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
@@ -624,7 +664,7 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
 	Double_t by_w = hexp->GetZaxis()->GetBinWidth( bybin );
 	Double_t binw = e_w * ct_w * by_w;
 
-        auto recoevts = RecoEvts(E, ct, by, resp, proxymap);
+        auto recoevts = RecoEvts(E, ct, by, resp, proxymap, norm);
 	
 	hexp->SetBinContent(ebin, ctbin, bybin, recoevts.first*binw  );
 	hexp->SetBinError  (ebin, ctbin, bybin, recoevts.second*binw );
@@ -647,14 +687,29 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
 
     Whereas the fit parameters (e.g. oscillation parameters) are successfully passed through the contents of the parameter `proxymap`, the observables reco energy, cos-theta and bjorken-y need to be passed explicitly. This is necessary, as otherwise the function `FitUtil::Expectation` would need to set the values for `fE_reco`, `fCt_reco` and `fBy_reco` manually in the loop over the bins, and this interferes in some way with `RooFit` internal cache for these variables, such that the fitting procedure gets interrupted and does not lead to convergence.
 
+    Also, an overall normalisation parameter is specific for each `FitPDF` instance, is not part of `proxymap_t` and is thus passed explicitly to the function as argument (see `FitPDF::evaluate`).
+
     \param E_reco      Reco energy
     \param Ct_reco     Reco cos-theta
     \param By_reco     Reco bjorken-y
-    \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contains the fit parameters, including oscillation parameters.
     \param resp        Pointer to `DetResponse` instance used with the `FitPDF` class.
+    \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contains the shared fit parameters, including oscillation parameters.
+    \param norm        An overall normalisation parameter.
     \return            a pair with the un-normalised event density (calculated by dividing the expected number of events in a bin by bin width) and the associated statistical uncertainty */
-std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap) {
-    
+std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap, Double_t norm) {
+
+  if ( E_reco < fHB->GetXaxis()->GetXmin() || E_reco >= fHB->GetXaxis()->GetXmax() ) {
+    throw std::invalid_argument("ERROR! FitUtil::RecoEvts energy " + to_string(E_reco) + " outside the binning range.");
+  }
+
+  if ( Ct_reco < fHB->GetYaxis()->GetXmin() || Ct_reco >= fHB->GetYaxis()->GetXmax() ) {
+    throw std::invalid_argument("ERROR! FitUtil::RecoEvts cos-theta " + to_string(Ct_reco) + " outside the binninb range.");
+  }
+
+  if ( By_reco < fHB->GetZaxis()->GetXmin() || By_reco >= fHB->GetZaxis()->GetXmax() ) {
+    throw std::invalid_argument("ERROR! FitUtil::RecoEvts bjorken-y " + to_string(By_reco) + " outside the binning range.");
+  }
+  
   auto true_bins = resp->GetBinWeights( E_reco, Ct_reco, By_reco );
 
   Double_t det_count = 0.;
@@ -710,26 +765,59 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
   Double_t by_w = fHB->GetZaxis()->GetBinWidth( fHB->GetZaxis()->FindBin( By_reco ) );
   Double_t binw = e_w * ct_w * by_w;
   
-  return std::make_pair(det_count/binw, det_err/binw);
+  return std::make_pair(det_count/binw * norm, det_err/binw * norm);
 
 }
 
 //***************************************************************************
 
-/** Public function to fetch a pointer to a variable in the member `fParSet`.
+/** Public function to fetch a pointer to a variable in the member `fParSet` or `fNormSet`.
 
-    If the variable is not in the parameter set an exception is thrown.
+    This function knows of all the variables known to `RooFit`. If the variable is not found set an exception is thrown.
 
     \param varname   Name of the variable
     \return          Pointer to the variable
  */
 RooRealVar* FitUtil::GetVar(TString varname) {
 
-  RooRealVar * var = (RooRealVar*)fParSet.find(varname);
+  RooRealVar *var1 = (RooRealVar*)fParSet.find(varname);
+  RooRealVar *var2 = (RooRealVar*)fNormSet.find(varname);
 
-  if (var == NULL) {
+  if (var1 == NULL && var2 == NULL) {
     throw std::invalid_argument("ERROR! FitUtil::GetVar() cannot find variable " + (string)varname);
   }
+
+  if (var1 != NULL && var2 != NULL) {
+    throw std::logic_error("ERROR! FitUtil::GetVar() variable " + (string)varname + " is found in both fParSet and fNormSet members.");
+  }
+  
+  RooRealVar *var = ( (var1 != NULL) ? var1 : var2 );
   
   return var;
+}
+
+//***************************************************************************
+
+/** Public function to add a normalisation constant for a specific `FitPDF` instance.
+    
+    Unlike other fit parameters, the overall normalisation parameters are not shared between different event classes, e.g. track normalisation does not affect the shower channel. This function is used in `FitPDF` to automatically add a normalisation constant for each `FitPDF` instance.
+
+    \param name   constant name
+    \param title  constant title
+    \param val    value
+    \param min    minimum
+    \param max    maximum						
+*/
+void FitUtil::AddNormConst(TString name, TString title, Double_t val, Double_t min, Double_t max, Bool_t setConstant) {
+
+  // check whether such a variable exists already, throw error if that is the case
+  RooRealVar *var = (RooRealVar*)fNormSet.find( name );
+  if ( var != NULL ) {
+    throw std::invalid_argument("ERROR! FitUtil::AddNormConst() a normalisation constant with name " + (string)name + " already exists." );
+  }
+  
+  fNorms.push_back( new RooRealVar(name, title, val, min, max) );
+  if ( setConstant ) fNorms.back()->setConstant(kTRUE);
+  fNormSet.add( *fNorms.back() );
+  
 }

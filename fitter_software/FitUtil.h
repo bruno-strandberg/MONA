@@ -34,11 +34,11 @@ typedef std::map<TString, RooRealProxy*> proxymap_t;
 
     The `FitPDF` class that uses `FitUtil` is a modification of a class that was auto-generated with `RooClassFactory::makePdf`. The idea is that `FitPDF` acts merely as a wrapper class to get access to `RooFit` niceties (such as simultaneous fitting), the model calculations and parameters are defined here in `FitUtil` class.
 
-    <B> How to extend? </B> Simply put, the `FitPDF::evaluate` method is called each time during the fitting (`pdf->fitTo`) when the fitter moves to a new \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ bin. `FitPDF::evaluate` calls `PdfEvaluate` of this class, which returns the expected event density in the reco bin. Let's say one now wishes to add another fit parameter that scales the atmospheric flux. To do that, one must: 
+    <B> How to extend? </B> Simply put, the `FitPDF::evaluate` method is called each time during the fitting (`pdf->fitTo`) when the fitter moves to a new \f$ (E_{\rm reco}, cos\theta_{\rm reco}, by_{\rm reco}) \f$ bin. `FitPDF::evaluate` calls the virtual function `RecoEvts` of this class, which returns the expected event density in the reco bin. Expansion/modification of the fit model is meant to be achieved by creating a new class that inherits (protected) from `FitUtil` and overloads (one or both of) the virtual functions `FitUtil::TrueEvts` and `FitUtil::RecoEvts`. For example, let's say one now wishes to add another fit parameter that scales the atmospheric flux. To achieve this, the user should:
 
-    -# create a new `RooRealVar*` member in this class, initialise it <B> and add it to `fParSet` </B>. Basically, one must do exactly what is done for `fDm31`. `FitPDF` class creates a `RooRealProxy` for each parameter in `fParSet`, such that the map given to `FitUtil::PdfEvaluate` contains an entry for each parameter `fParSet`. The nice thing in such a setup is that `FitPDF` does not need to be modified, parameters are added in this class and used in this class.
-    -# extend the argument list of `FitUtil::RecoEvts` by the new parameter, extract the new parameter from the map in `FitUtil::PdfEvaluate` and give it to `FitUtil::RecoEvts`.
-    -# Do something meaningful with the new parameter. In this case, the flux scale needs to be passed inside `FitUtil::RecoEvts` to `FitUtil::TrueEvts`, where the flux scale can multiply `atm_count_e` and `atm_count_m`.
+    -# create a new class that inherits from `FitUtil` the public and protected members.
+    -# create a new `RooRealVar* flux_scale` member in the new class, initialise it <B> and add it to `fParSet` </B>. Basically, one must do exactly what is done for `fDm31` in `FitUtil`. `FitPDF` class creates a `RooRealProxy` for each parameter in `fParSet`, such that the `proxymap_t` map given to `FitUtil::RecoEvts` contains an entry for each parameter in `fParSet`. The nice thing in such a setup is that `FitPDF` does not need to be modified, parameters are added in `FitUtil` and inheriting classes and are used here.
+    -# Do something meaningful with the new parameter. In this case, the virtual function `TrueEvts` has to be overloaded and the atmospheric flux has to be scaled by `flux_scale`. Note that in this example the `RecoEvts` is un-affected and does not need to be overloaded. 
 
 */
 class FitUtil {
@@ -65,21 +65,24 @@ class FitUtil {
   // public functions that are called in `FitPDF`
   //------------------------------------------------------------------  
   virtual std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
-					 DetResponse *resp, const proxymap_t &proxymap);
-  TH3D* Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName);
+						 DetResponse *resp, const proxymap_t &proxymap, Double_t norm);
+  TH3D* Expectation(DetResponse *resp, const proxymap_t &proxymap, Double_t norm, const char* rangeName);
 
   //------------------------------------------------------------------
   // other public functions
   //------------------------------------------------------------------  
   virtual std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
-  Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, const TrueB &tb);
+  Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin);
   Double_t GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t& proxymap);
   Double_t GetCachedXsec(const TrueB &tb);
+  Double_t GetCachedMeff(const TrueB &tb);
+  Double_t GetCachedBYfrac(const TrueB &tb);
   void SetNOlims();
   void SetNOcentvals();
   void SetIOlims();
   void SetIOcentvals();
   void FreeParLims();
+  void AddNormConst(TString name, TString title, Double_t val, Double_t min, Double_t max, Bool_t setConstant);
   
   //------------------------------------------------------------------
   // setters/getters
@@ -89,14 +92,16 @@ class FitUtil {
       \return `RooArgSet` with known parameters.
    */
   RooArgSet   GetSet()         { return fParSet;  }
+
+  /** Get the `RooArgSet` with only overall normalisation parameters.
+      \return `RooArgSet` with only overall normalisation parameters.
+   */
+  RooArgSet   GetNormSet()     { return fNormSet;  }
+  
   /** Get the `RooArgList` with observables (Energy, cos-theta, bjorken-y)
       \return `RooArgList` with observables (Energy, cos-theta, bjorken-y)
-   */
-  
+   */  
   RooArgList  GetObs()         { return fObsList; }
-  /** Get the 3D histogram that stores the binning information
-      \return `TH3D` with the binning used in the analysis.
-   */
 
   /** Get pointer to the member `RooRealVar` for the reco energy observable
       \return A pointer to the reco energy observable
@@ -113,28 +118,36 @@ class FitUtil {
    */
   RooRealVar* GetBYobs() { return fBy_reco; }
 
-  /** Get a pointer to the member histogram with binning configuration
-      \return Pointer to a `TH3` with binning configuration
-   */
+  /** Get the 3D histogram that stores the binning information
+      \return `TH3D` with the binning used in the analysis.
+  */
   TH3D*       GetBinningHist() { return fHB; }
 
   /** Get the a pointer to `AtmFlux` member of `FitUtil` that is used to fill caches.
       \return pointer to `AtmFlux` instance.
    */
   AtmFlux* GetFluxCalculator() { return fFlux; }
+
   /** Get the a pointer to `NuXsec` member of `FitUtil` that is used to fill caches.
       \return pointer to `NuXsec` instance.
    */
   NuXsec*  GetXsecCalculator() { return fXsec; }
+
   /** Get the a pointer to `OscProb::PMNS_Fast` member of `FitUtil` that is used to fill caches.
       \return pointer to `OscProb::PMNS_Fast` instance.
    */
   OscProb::PMNS_Fast* GetOscCalculator() { return fProb; }
+
   /** Get the a pointer to `OscProb::PremModel` member of `FitUtil` that is used to fill caches.
       \return pointer to `OscProb::PremModel` instance.
    */
   OscProb::PremModel* GetEarthModel() { return fPrem; }
 
+  /** Get the a pointer to `EffMass` member of `FitUtil` that is used to fill caches.
+      \return pointer to `EffMass` instance.
+  */
+  EffMass* GetEffMassCalculator() { return fMeff; }
+  
   RooRealVar* GetVar(TString varname);
 
   //*********************************************************************************
@@ -175,11 +188,12 @@ class FitUtil {
   // protected members for `RooFit` observable and parameter access
   //------------------------------------------------------------------
 
-  RooArgSet   fParSet;   //!< set that includes all variables (observables+parameters)
+  RooArgSet   fNormSet;  //!< set of overall normalisation parameters only, one for each `FitPDF` instance.
+  RooArgSet   fParSet;   //!< set that includes all variables (observables+parameters), except `fNormSet` pars
   RooArgList  fObsList;  //!< list (ordered!) that includes only observables (Energy, cos-theta, bjorken-y)
 
   //------------------------------------------------------------------
-  // protected internal structure to initialise private osc parameter limits below
+  // protected internal structure to initialise osc parameter limits below
   //------------------------------------------------------------------
   
   /** internal structure to store parameter central values and limits*/
@@ -210,19 +224,14 @@ class FitUtil {
     
   };
   
-  //*********************************************************************************
-  //private members and function of the `FitUtil` class, accessible only inside this class
-  //*********************************************************************************
-  
- private:
+  //------------------------------------------------------------------
+  // protected functions
+  //------------------------------------------------------------------
 
-  //------------------------------------------------------------------
-  // private functions
-  //------------------------------------------------------------------
   void ProbCacher(const proxymap_t& proxymap);  
   void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
   void InitCacheHists(TH3D *h_template);
-  void FillFluxAndXsecCache(AtmFlux *flux, NuXsec *xsec, Double_t op_time);
+  void Fill_Flux_Xsec_Meff_cache(AtmFlux *flux, NuXsec *xsec, EffMass *meff, Double_t op_time);
   std::tuple<Double_t, Double_t, Int_t, Int_t> GetRange(Double_t min, Double_t max, TAxis *axis);
   enum rangeret { MIN=0, MAX, MINBIN, MAXBIN };           //!< enum for function `GetRange` return
     
@@ -253,12 +262,14 @@ class FitUtil {
   const fpar f_free_dm31 = fpar(2.56e-3, -5e-3, 5e-3); //!< free limits for \f$ \Delta m_{31}^2 \f$
     
   //------------------------------------------------------------------
-  // private members for caching
+  // protected members for caching
   //------------------------------------------------------------------
 
   TH2D *fhFluxCache[fFlavs][fPols];         //!< atm flux cache with struct. [flav][is_nub]
   TH2D *fhOscCache [fFlavs][fFlavs][fPols]; //!< osc prob cache with struct. [flav_in][flav_out][isnb]
   TH1D *fhXsecCache[fFlavs][fInts][fPols];  //!< xsec cache with struct. [flav][is_cc][isnb]
+  TH2D *fhBYfracCache[fFlavs][fInts][fPols];//!< bjorken-y fractions cache with struct. [flav][is_cc][isnb]
+  TH3D *fhMeffCache[fFlavs][fInts][fPols];  //!< meff cache with struct. [flav][is_cc][isnb]
 
   Double_t f_cache_sinsqth12;    //!< internally cached theta12 value
   Double_t f_cache_sinsqth13;    //!< internally cached theta13 value
@@ -268,7 +279,7 @@ class FitUtil {
   Double_t f_cache_dm31;         //!< internally cached dm31 value
 
   //------------------------------------------------------------------
-  // private members for determining the integration range and oscillation calculation range
+  // protected members for determining the integration range and oscillation calculation range
   //------------------------------------------------------------------
   Int_t fEbin_min;               //!< minimum energy bin number included
   Int_t fEbin_max;               //!< maximum energy bin number included
@@ -278,7 +289,7 @@ class FitUtil {
   Int_t fBybin_max;              //!< minimum bjorken-y bin number included
   
   //------------------------------------------------------------------
-  // private members for monitoring performance, used in `FitUtil::ProbCacher`
+  // protected members for monitoring performance, used in `FitUtil::ProbCacher`
   //------------------------------------------------------------------
   Long64_t    fOscCalls;         //!< counts the number of oscillator calls
   TStopwatch *fOscCalcTime;      //!< counts the accumulated time for oscillation calculation
@@ -297,7 +308,10 @@ class FitUtil {
   RooRealVar *fDcp;       //!< \f$ \delta_{CP} \f$ fit parameter in \f$ \pi $\f's, as given by the PDG group (e.g. 1.38)
   RooRealVar *fDm21;      //!< \f$ \Delta m_{21}^2 \f$ fit parameter in eV^2
   RooRealVar *fDm31;      //!< \f$ \Delta m_{31}^2 \f$ fit parameter in eV^2
+  
+  vector<RooRealVar*> fNorms; //!< vector of normalisation constants for each PDF initiated with FitUtil
 
+  
 };
 
 #endif

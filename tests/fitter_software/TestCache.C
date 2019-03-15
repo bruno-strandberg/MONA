@@ -20,15 +20,14 @@ using namespace OscProb;
 /** This application tests the cache functionality in the `FitUtil` class. */
 int main(const int argc, const char **argv) {
   
-  Int_t testpoints = 10;
-  Int_t result = 0;
+  Int_t testpoints = 100;
   
   //-------------------------------------------------------------
   // init the necessary classes
   //-------------------------------------------------------------
   
   // create an empty response
-  DetResponse resp(DetResponse::track, "dummy_trk", 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  DetResponse resp(DetResponse::track, "dummy_trk", 40, 1, 100, 40, -1, 1, 1, 0, 2);
   TH3D *hb = resp.GetHist3D();
   
   // init fitutil with dummy effective mass
@@ -47,6 +46,7 @@ int main(const int argc, const char **argv) {
   PMNS_Fast *osc  = futil.GetOscCalculator();
   PremModel *prem = futil.GetEarthModel();
   NuXsec    *xsec = futil.GetXsecCalculator();
+  EffMass   *meff = futil.GetEffMassCalculator();
 
   //seconds in a tropical year
   double sec_per_y   = 365.2421897 * 24 * 60 * 60; 
@@ -78,6 +78,7 @@ int main(const int argc, const char **argv) {
     //-------------------------------------------------------------
     Double_t E    = hb->GetXaxis()->GetBinCenter( ebin );
     Double_t ct   = hb->GetYaxis()->GetBinCenter( ctbin );
+    Double_t by   = hb->GetZaxis()->GetBinCenter( bybin );
 
     Double_t e_w  = hb->GetXaxis()->GetBinWidth( ebin );
     Double_t ct_w = hb->GetYaxis()->GetBinWidth( ctbin );
@@ -86,7 +87,7 @@ int main(const int argc, const char **argv) {
     // calculate flux difference
     //-------------------------------------------------------------
     Double_t flux_conv = e_w * ct_w * sec_per_y * 3;
-    Double_t flux_diff = futil.GetCachedFlux(flav, isnb, tb) - flux->Flux_dE_dcosz(flav, isnb, E, ct) * flux_conv;
+    Double_t flux_diff = futil.GetCachedFlux(flav, isnb, ebin, ctbin) - flux->Flux_dE_dcosz(flav, isnb, E, ct) * flux_conv;
 
     //-------------------------------------------------------------
     // calcuate osc difference
@@ -129,22 +130,35 @@ int main(const int argc, const char **argv) {
     Double_t xsec_diff = futil.GetCachedXsec(tb)*1e42 - xsec->GetXsec(tb.fFlav, tb.fIsCC, tb.fIsNB, E)*1e42;
 
     //-------------------------------------------------------------
+    // calcuate by fraction difference difference
+    //-------------------------------------------------------------
+
+    Double_t byfrac_diff = futil.GetCachedBYfrac(tb) - xsec->GetBYfrac(tb.fFlav, tb.fIsCC, tb.fIsNB, E, by);
+
+    //-------------------------------------------------------------
+    // calcuate effective mass difference
+    //-------------------------------------------------------------
+
+    Double_t meff_diff = futil.GetCachedMeff(tb) - meff->GetMeff(tb.fFlav, tb.fIsCC, tb.fIsNB, E, ct, by);
+
+    //-------------------------------------------------------------
     // test
     //-------------------------------------------------------------
     
-    if ( flux_diff != 0. || osc_diff != 0. || xsec_diff != 0.) {
+    if ( flux_diff != 0. || osc_diff != 0. || xsec_diff != 0. || byfrac_diff != 0. || meff_diff != 0.) {
       cout << tb << endl;
-      cout << "Flux: " << flux_diff << endl;
-      cout << "Osc : " << osc_diff << endl;
-      cout << "Xsec: " << xsec_diff << endl;
-      result = 1;
+      cout << "Flux   : " << flux_diff << endl;
+      cout << "Osc    : " << osc_diff << endl;
+      cout << "Xsec   : " << xsec_diff << endl;
+      cout << "BY frac: " << byfrac_diff << endl;
+      cout << "Meff   : " << meff_diff << endl;
+      cout << "NOTICE TestCache failed" << endl;
+      return 1;
     }
         
-  }
+  } // end loop over trials
 
-  if (result != 0) cout << "NOTICE TestCache failed" << endl;
-  else cout << "NOTICE TestCache passed" << endl;
-
-  return result;
+  cout << "NOTICE TestCache passed" << endl;
+  return 0;
   
 }
