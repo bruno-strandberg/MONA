@@ -1,10 +1,10 @@
 Main page {#mainpage}
 ===================
 
-What does it do?
+What is `MONA`?
 ================
 
-This software provides some tools for estimating the ORCA sensitivity to neutrino mass ordering and other ORCA analyses. It relies on Monte-Carlo data from ORCA simulation chain (discussed separately in section **ORCA Monte-Carlo chain and data format**). Broadly put, it provides tools to filter experiment data (either simulated or sea-data) and create a detector response to fit the filtered experiment data. Additionally, it provides a few small classes for the calculation of the number of expected atmospheric neutrino interactions at ORCA site.
+`MONA` stands for "Mass Ordering Nikhef Analysis" and is a software package that provides some tools for estimating the ORCA sensitivity to neutrino mass ordering. Other ORCA analyses can also be accommodated. It relies on Monte-Carlo data from ORCA simulation chain (discussed separately in section **ORCA Monte-Carlo chain and data format**). Broadly put, it provides tools to filter experiment data (either simulated or sea-data) and create detector responses to fit the filtered experiment data with `RooFit`.
 
 Directory structure
 ===================
@@ -41,7 +41,7 @@ Setup in lyon and elsewhere
 * Add the following to your shell environment
 ```
 export OSCPROBDIR=/my/path/to/oscprob/
-source /my/path/to/NMH/setenv.sh
+source /my/path/to/MONA/setenv.sh
 ```
 * Build the package by typing `make` in the master directory
 
@@ -87,7 +87,7 @@ This scheme persists until PID. However, in the PID summary file all flavours, i
 
 Analysis format
 ---------------
-The analysis format is defined by the class `NMH/common_software/SummaryEvent.h/C`. The class `NMH/common_software/SummaryParser.h/C` is set to read or write data in the analysis format by using the `SummaryEvent` class. The variables of the analysis format are described in `SummaryEvent` documentation.
+The analysis format is defined by the class `common_software/SummaryEvent.h/C`. The class `common_software/SummaryParser.h/C` is set to read or write data in the analysis format by using the `SummaryEvent` class. The variables of the analysis format are described in `SummaryEvent` documentation.
 
 ### Variables in tree
 * pos and dir refer to vertex position and neutrino direction, respectively, and are provided for MC truth and 2 reco's (track and shower).
