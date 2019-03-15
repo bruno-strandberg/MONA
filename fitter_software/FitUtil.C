@@ -687,6 +687,8 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, Double
 
     Whereas the fit parameters (e.g. oscillation parameters) are successfully passed through the contents of the parameter `proxymap`, the observables reco energy, cos-theta and bjorken-y need to be passed explicitly. This is necessary, as otherwise the function `FitUtil::Expectation` would need to set the values for `fE_reco`, `fCt_reco` and `fBy_reco` manually in the loop over the bins, and this interferes in some way with `RooFit` internal cache for these variables, such that the fitting procedure gets interrupted and does not lead to convergence.
 
+    Also, an overall normalisation parameter is specific for each `FitPDF` instance, is not part of `proxymap_t` and is thus passed explicitly to the function as argument (see `FitPDF::evaluate`).
+
     \param E_reco      Reco energy
     \param Ct_reco     Reco cos-theta
     \param By_reco     Reco bjorken-y

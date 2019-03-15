@@ -5,7 +5,7 @@
 #include "TH3.h"
 #include "RooRealVar.h"
 
-/** This class inherits from `FitUtil` and overwrites the virtual function `TrueEvts` to include systematic effects for the fitting process. All added flux systematic parameters preserve the overall normalisation.*/
+/** This class inherits from `FitUtil` and overwrites the virtual function `TrueEvts` and `RecoEvts` to include systematic effects for the fitting process.*/
 class FitUtilWsyst : protected FitUtil {
 
   //**************************************************************************
@@ -46,18 +46,18 @@ protected:
   // protected new systematic parameters
   //--------------------------------------------------------------------
   
-  RooRealVar* fE_tilt;      //!< parameter for atm. flux E tilt by multiplying with \f$energy^{E_{tilt}}\f$; 0 means no tilt
+  RooRealVar* fE_tilt;      //!< parameter for atm. flux E tilt by multiplying with \f$E^{E_{tilt}}\f$; 0 means no tilt
   RooRealVar* fCt_tilt;     //!< parameter for atm. flux ct tilt multiplying with \f$(1+ct_{tilt} * ct)\f$; 0 means no tilt
-  RooRealVar* fSkew_mu_amu; //!< parameter to skew muon to anti-muon flux, preserves mu+amu norm; 1 means no skew
-  RooRealVar* fSkew_e_ae;   //!< parameter to skew elec to anti-elec flux, preserves e+ae norm; 1 means no skew
-  RooRealVar* fSkew_mu_e;   //!< parameter to skew mu to e flux, preserves mu+amu+e+ae norm; 1 means no skew
+  RooRealVar* fSkew_mu_amu; //!< parameter to skew muon to anti-muon flux, preserves mu+amu norm; 0 means no skew
+  RooRealVar* fSkew_e_ae;   //!< parameter to skew elec to anti-elec flux, preserves e+ae norm; 0 means no skew
+  RooRealVar* fSkew_mu_e;   //!< parameter to skew mu to e flux, preserves mu+amu+e+ae norm; 0 means no skew
 
   // detector systematics
-  RooRealVar* fE_scale;  //!< energy scale parameter, such that \f$ E_{true} \rightarrow E_{true}(1+E_{scale})\f$
+  RooRealVar* fE_scale;  //!< energy scale parameter, such that \f$ E_{true} \rightarrow E_{true}(1+E_{scale})\f$, 0 means no energy scaling
     
   // xsec systematic parameters
-  RooRealVar* fNC_norm;     //!< parameter for NC xsec normalisation
-  RooRealVar* fTau_norm;    //!< parameter for tau xsec normalisation
+  RooRealVar* fNC_norm;     //!< parameter for NC xsec normalisation; 1 means no scaling
+  RooRealVar* fTau_norm;    //!< parameter for tau xsec normalisation; 1 means no scaling
   
   //--------------------------------------------------------------------
   // protected cache members for flux tilt cache

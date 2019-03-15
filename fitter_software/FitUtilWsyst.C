@@ -118,7 +118,7 @@ void FitUtilWsyst::CalcTiltedFluxNorms(Double_t e_tilt, Double_t ct_tilt) {
   
 //***************************************************************************************
 
-/** Function to retrieve the atm. flux of a neutrino type that is modified by the tilt systematics.
+/** Function to retrieve the atm flux of a neutrino type that is modified by the tilt systematics.
     \param flav        neutrino flavor (0 - elec, 1 - muon, 2 - tau)
     \param isnb        flag for is-nubar (0 - nu, 1 - nubar)
     \param true_ebin   true energy bin of the flux
@@ -146,7 +146,7 @@ Double_t FitUtilWsyst::GetTiltedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, 
 
 //***************************************************************************************
 
-/** Function to retrieve the atm. flux of a neutrino type that is modified by tilt systematics and skew systematics.
+/** Function to retrieve the atm flux of a neutrino type that is modified by tilt systematics and skew systematics.
     \param flav        neutrino flavor (0 - elec, 1 - muon, 2 - tau)
     \param isnb        flag for is-nubar (0 - nu, 1 - nubar)
     \param true_ebin   true energy bin of the flux
@@ -205,10 +205,7 @@ Double_t FitUtilWsyst::GetFluxWsyst(UInt_t flav, Bool_t isnb, Int_t true_ebin, I
 
 //***************************************************************************************
   
-/** Overload of the virtual function `FitUtil::TrueEvts` to get the expected number of events in a true bin, given the set of parameters as specified in `proxymap`
-    \param tb       `TrueB` with the true bin and neutrino type data, see `DetResponse.h`
-    \param proxymap Container with all fit parameters known to `RooFit` from `FitPDF`.
-    \return         A pair with a number of detected events in a true bin as first and the MC statistical error as second (0 in this implementation)
+/** Overload of the virtual function `FitUtil::TrueEvts` (see that for parameter definitions) to get the expected number of events in a true bin.
 */
 std::pair<Double_t, Double_t> FitUtilWsyst::TrueEvts(const TrueB &tb, const proxymap_t &proxymap) {
 
@@ -246,13 +243,7 @@ std::pair<Double_t, Double_t> FitUtilWsyst::TrueEvts(const TrueB &tb, const prox
 
 //***************************************************************************************
   
-/** Overload of the virtual function `FitUtil::RecoEvts` to get the expected number of events in a reco bin, given the set of parameters as specified in `proxymap`
-    \param E_reco   Reco energy
-    \param Ct_reco  Reco cos-theta
-    \param By_reco  Reco bjorken-y
-    \param resp     Pointer to a `DetResponse` instance.
-    \param proxymap Container with all fit parameters known to `RooFit` from `FitPDF`.
-    \return         A pair with the reco event density as first and the MC stat err as second
+/** Overload of the virtual function `FitUtil::RecoEvts` (see that for parameter definitions) to get the expected number of events in a reco bin.
 */
 std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap, Double_t norm) {
 
