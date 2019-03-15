@@ -22,7 +22,7 @@ public:
   virtual ~FitUtilWsyst() {};
 
   virtual std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
-						 DetResponse *resp, const proxymap_t &proxymap);
+						 DetResponse *resp, const proxymap_t &proxymap, Double_t norm);
   virtual std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
   Double_t GetFluxWsyst(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin, const proxymap_t& proxymap);
   
@@ -59,9 +59,6 @@ protected:
   RooRealVar* fNC_norm;     //!< parameter for NC xsec normalisation
   RooRealVar* fTau_norm;    //!< parameter for tau xsec normalisation
   
-  // overall normalisation for each event class - needs some thought.
-  //vector<RooRealVar*> fOverallNorm;
-
   //--------------------------------------------------------------------
   // protected cache members for flux tilt cache
   //--------------------------------------------------------------------

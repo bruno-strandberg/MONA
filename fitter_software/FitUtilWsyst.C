@@ -10,9 +10,9 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
 			   Double_t bymin, Double_t bymax, TString meff_file) :
   FitUtil(op_time, h_template, emin, emax, ctmin, ctmax, bymin, bymax, meff_file) {
 
-  //----------------------------------------------------------------------------------
-  // init the systematic parameters and add to `fSystSet` of systematic parameters
-  //----------------------------------------------------------------------------------
+  /*----------------------------------------------------------------------------------
+    Init the systematic parameters. It is important to add all common parameters to `FitUtil::fParSet` to make them known to `FitPDF` and accessible in `FitUtil::proxymap_t` that is passed to `RecoEvts` and subsequent functions.
+  ----------------------------------------------------------------------------------*/
 
   // flux
   fE_tilt      = new RooRealVar("E_tilt"     ,"E_tilt"      , 0, -1, 1);
@@ -20,24 +20,17 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
   fSkew_mu_amu = new RooRealVar("skew_mu_amu", "skew_mu_amu", 0, -1, 1);
   fSkew_e_ae   = new RooRealVar("skew_e_ae"  , "skew_e_ae"  , 0, -1, 1);
   fSkew_mu_e   = new RooRealVar("skew_mu_e"  , "skew_mu_e"  , 0, -1, 1);
-  fSystSet.add( RooArgSet(*fE_tilt, *fCt_tilt, *fSkew_mu_amu, *fSkew_e_ae, *fSkew_mu_e) );
+  fParSet.add( RooArgSet(*fE_tilt, *fCt_tilt, *fSkew_mu_amu, *fSkew_e_ae, *fSkew_mu_e) );
   
   // xsec
   fNC_norm     = new RooRealVar("NC_norm", "NC_norm", 1, 0, 2);
   fTau_norm    = new RooRealVar("Tau_norm", "Tau_norm", 1, 0, 2);
-  fSystSet.add( RooArgSet(*fNC_norm, *fTau_norm) );
+  fParSet.add( RooArgSet(*fNC_norm, *fTau_norm) );
   
   // detector
   fE_scale = new RooRealVar("E_scale", "E_scale", 0., -0.3, 0.3);
-  fSystSet.add( *fE_scale );
+  fParSet.add( *fE_scale );
   
-  //----------------------------------------------------------------------------------
-  // It is important to add all parameters to `FitUtil::fParSet` to make them known to `FitPDF`
-  // and accessible in `FitUtil::proxymap_t` that is passed to `RecoEvts` and subsequent functions.
-  //----------------------------------------------------------------------------------
-  
-  fParSet.add( fSystSet );
-
   //----------------------------------------------------------------------------------
   // init flux shape systematics cache variables
   //----------------------------------------------------------------------------------
@@ -261,7 +254,7 @@ std::pair<Double_t, Double_t> FitUtilWsyst::TrueEvts(const TrueB &tb, const prox
     \param proxymap Container with all fit parameters known to `RooFit` from `FitPDF`.
     \return         A pair with the reco event density as first and the MC stat err as second
 */
-std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap) {
+std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap, Double_t norm) {
 
   // get the energy scale
   Double_t e_scale = *( proxymap.at( (TString)fE_scale->GetName() ) );
@@ -281,7 +274,7 @@ std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t C
 
     // get the bin center and calculate the number 
     Double_t ereco = fHB->GetXaxis()->GetBinCenter( bf.first );
-    auto RE_bin = FitUtil::RecoEvts( ereco, Ct_reco, By_reco, resp, proxymap );
+    auto RE_bin = FitUtil::RecoEvts( ereco, Ct_reco, By_reco, resp, proxymap, norm );
 	    
     RE    += RE_bin.first * bf.second;
     REerr += TMath::Power(RE_bin.second * bf.second, 2);

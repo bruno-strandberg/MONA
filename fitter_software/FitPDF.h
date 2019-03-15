@@ -36,7 +36,7 @@ public:
   
   /** Clone function */
   virtual TObject* clone(const char* newname) const { return new FitPDF(*this,newname); }
-  FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp);
+  FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp, Bool_t constNorm = kTRUE);
   FitPDF(const FitPDF& other, const char* name=0);
 
   // public functions
@@ -57,8 +57,8 @@ public:
       The histogram which is pointed to is created on the heap and it is the user's responsibility to delete the object.
       \param name Name of a range as used in `RooFit`, dummy for now
    */
-  TH3D*        GetExpValHist(const char* name=0) {
-    return fFitUtil->Expectation(fResponse, fProxies, name);
+  TH3D*        GetExpValHist(const char* name=0) const {
+    return fFitUtil->Expectation(fResponse, fProxies, fNorm, name);
   }
   TH3D*        GetExpValErrHist(const char* name=0); 
 
@@ -67,7 +67,7 @@ public:
    */
   void SetSeed(ULong_t seed = 0) { fRand.SetSeed(seed); }
 
-  TH3D*  SimplePseudoExp(TString nametitle="pseudoexp", Bool_t IncludeStatErr=kFALSE);
+  TH3D*  SimplePseudoExp(TString nametitle="pseudoexp", Bool_t IncludeStatErr=kFALSE, const char* rangeName=0);
   double operator() (double *x, double *p);
   Int_t    getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName=0) const ;
   Double_t analyticalIntegral(Int_t code, const char* rangeName=0) const ;
@@ -83,6 +83,7 @@ private:
   FitUtil     *fFitUtil;    //!< pointer to the fit utility that can be shared between several `FitPDF` instances
   DetResponse *fResponse;   //!< pointer to a specific fit response that describes the data to be fitted
   proxymap_t   fProxies;    //!< map of proxies to the RooRealVar's defined in `FitUtil`
+  RooRealProxy fNorm;       //!< norm. for this PDF only (e.g. tracks), does not affect other PDFs (e.g. showers)
   TRandom3     fRand;       //!< random generator for pseudoexperiments
 
   ClassDef(FitPDF,1)

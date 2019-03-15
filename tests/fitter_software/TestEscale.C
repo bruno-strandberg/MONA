@@ -74,8 +74,8 @@ int main(const int argc, const char **argv) {
     
     ((FitUtil*)futilws)->GetVar("E_scale")->setVal( 0. );
 
-    Double_t recoevts   = futil->RecoEvts(ereco, ctreco, byreco, &resp, pdf.GetProxyMap()).first;
-    Double_t recoevts_s = ((FitUtil*)futilws)->RecoEvts(ereco, ctreco, byreco, &resp, pdfws.GetProxyMap()).first;
+    Double_t recoevts   = futil->RecoEvts(ereco, ctreco, byreco, &resp, pdf.GetProxyMap(), 1.).first;
+    Double_t recoevts_s = ((FitUtil*)futilws)->RecoEvts(ereco, ctreco, byreco, &resp, pdfws.GetProxyMap(), 1.).first;
 
     if ( recoevts != recoevts_s ) {
       cout << "NOTICE TestEscale failed, reco events differ when no energy scale applied" << endl;
@@ -106,10 +106,10 @@ int main(const int argc, const char **argv) {
     Double_t binW_lo = ( EX->GetBinUpEdge( ebin_lo ) - elo )/EX->GetBinWidth( ebin_lo );
     Double_t binW_hi = ( ehi - EX->GetBinLowEdge( ebin_hi ) )/EX->GetBinWidth( ebin_hi );
 
-    recoevts = ( futil->RecoEvts( elo, ctreco, byreco, &resp, pdf.GetProxyMap() ).first * binW_lo +
-		 futil->RecoEvts( ehi, ctreco, byreco, &resp, pdf.GetProxyMap() ).first * binW_hi );
+    recoevts = ( futil->RecoEvts( elo, ctreco, byreco, &resp, pdf.GetProxyMap(), 1. ).first * binW_lo +
+		 futil->RecoEvts( ehi, ctreco, byreco, &resp, pdf.GetProxyMap(), 1. ).first * binW_hi );
 
-    recoevts_s = ((FitUtil*)futilws)->RecoEvts( ereco, ctreco, byreco, &resp, pdfws.GetProxyMap() ).first;
+    recoevts_s = ((FitUtil*)futilws)->RecoEvts( ereco, ctreco, byreco, &resp, pdfws.GetProxyMap(), 1. ).first;
 
     if ( recoevts != recoevts_s ) {
       cout << "NOTICE TestEscale failed, cannot reproduce the energy scale calculation." << endl;
