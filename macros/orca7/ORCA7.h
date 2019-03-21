@@ -43,30 +43,32 @@ struct ORCA7 {
     for (auto PB: fPidBins) {
       
       if ( PB.pid_min < 0.7 ) {
-	fResps.push_back( new DetResponse(DetResponse::shower, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax) );
+	fResps.push_back( new DetResponse(DetResponse::shower, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
+					  f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax) );
 	fResps.back()->AddCut( &SummaryEvent::Get_shower_ql0, std::greater<double>(), 0.5, true);
       }
       else {
-	fResps.push_back( new DetResponse(DetResponse::customreco, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax) );
-	fResps.back()->SetObsFuncPtrs( &CustomEnergy, &CustomDir, &CustomPos, &CustomBY );	
+	fResps.push_back( new DetResponse(DetResponse::customreco, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
+					  f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax) );
+	fResps.back()->SetObsFuncPtrs( &CustomEnergy, &CustomDir, &CustomPos, &CustomBY );
 	fResps.back()->AddCut( &SummaryEvent::Get_track_ql0, std::greater<double>(), 0.5, true);
       }
 
-      fResps.back()->AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>()   , PB.noise_cut, true);
-      fResps.back()->AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>()   , PB.muon_cut , true);
-      fResps.back()->AddCut( &SummaryEvent::Get_RDF_track_score , std::greater_equal<double>(), PB.pid_min  , true);
-      fResps.back()->AddCut( &SummaryEvent::Get_RDF_track_score , std::less<double>()         , PB.pid_max  , true);
+      fResps.back()->AddCut(&SummaryEvent::Get_RDF_noise_score, std::less_equal<double>()   , PB.noise_cut, true);
+      fResps.back()->AddCut(&SummaryEvent::Get_RDF_muon_score , std::less_equal<double>()   , PB.muon_cut , true);
+      fResps.back()->AddCut(&SummaryEvent::Get_RDF_track_score, std::greater_equal<double>(), PB.pid_min  , true);
+      fResps.back()->AddCut(&SummaryEvent::Get_RDF_track_score, std::less<double>()         , PB.pid_max  , true);
 
     }
 
     // create an output name for each response
     //-------------------------------------------------------------------------------
 
-    TString out_dir = NMHUtils::Getcwd() + "/rootfiles/";   // directory where responses are stored
+    TString out_dir = NMHUtils::Getcwd() + "/rootfiles/"; // directory where responses are stored
     system("mkdir -p " + out_dir);
 
-    vector< std::pair<TString, DetResponse*> > resp_names;  // vector that stores the outname and the response pairs
-    Bool_t ReadFromFile = ReadResponses;                    // flag to indicate whether responses should be read
+    vector< std::pair<TString, DetResponse*> > resp_names;// vector that stores the outname and the response pairs
+    Bool_t ReadFromFile = ReadResponses;                  // flag to indicate whether responses should be read
 
     for (auto R: fResps) {
       TString outname = out_dir + "resp_" + R->Get_RespName() + ".root";
@@ -83,7 +85,8 @@ struct ORCA7 {
       
       SummaryParser sp(fDataF);
       for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
-	if (i % 100000 == 0) cout << "NOTICE ORCA7::ORCA7() event " << i << " of " << sp.GetTree()->GetEntries() << endl;
+	if (i % 100000 == 0) cout << "NOTICE ORCA7::ORCA7() event " << i << " of " 
+				  << sp.GetTree()->GetEntries() << endl;
 	for (auto R: fResps) R->Fill( sp.GetEvt(i) );
       }
       
@@ -91,7 +94,10 @@ struct ORCA7 {
 
     }
 
-  }
+  } // end of constructor
+
+  //*********************************************************************************************
+  //*********************************************************************************************
 
   TString fDataF  = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root";
   TString fEffmF  = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root";
