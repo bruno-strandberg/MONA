@@ -15,12 +15,12 @@ ClassImp(FitPDF);
     \param other   Other instance of FitPDF
     \param name    Name of the copy
  */
-FitPDF::FitPDF(const FitPDF& other, const char* name) : RooAbsPdf(other, name),
-							fNorm( other.fNorm.GetName(), this, other.fNorm ) { 
+FitPDF::FitPDF(const FitPDF& other, const char* name) : RooAbsPdf(other, name) { 
   
   // get the pointer to the fit utility and the response
   fFitUtil  = other.fFitUtil;
   fResponse = other.fResponse;
+  fRand     = other.fRand;
 
   // re-create the proxy map
   for (auto &p: other.fProxies) {    
@@ -41,10 +41,9 @@ FitPDF::FitPDF(const FitPDF& other, const char* name) : RooAbsPdf(other, name),
     \param title     Title of the pdf
     \param futil     Pointer to the `FitUtil` class
     \param resp      Pointer to a `DetResponse` instance
-    \param constNorm The normalisation systematic associated with this pdf is set to constant equal to 1
 
  */
-FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp, Bool_t constNorm) :
+FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp) :
   RooAbsPdf(name, title) {
 
   // set the pointers
@@ -62,15 +61,7 @@ FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse 
   if ( !NMHUtils::BinsMatch( fFitUtil->GetBinningHist(), fResponse->GetHist3D() ) ) {
     throw std::invalid_argument("ERROR! FitPDF::FitPDF() FitUtil and DetResponse use different binning.");
   }
-
-
-  // add the normalisation constant for this instance; set the normalisation proxy
-  TString normname = (TString)name + "_norm";                          // name for the norm constant
-  futil->AddNormConst( normname, normname, 1., 0., 2., constNorm );    // create a `RooRealVar` in FitUtil
-  RooRealVar *normvar = futil->GetVar( normname );                     // get a pointer to the new variable
-  fNorm = RooRealProxy( normname, normname, this, *normvar);           // set up a proxy
-  
-  
+    
   // create a list of the parameters for iteration and create proxies
   RooArgList pars( fFitUtil->GetSet() );
 
@@ -96,7 +87,7 @@ Double_t FitPDF::evaluate() const {
   Double_t Ct_reco = *( fProxies.at( fFitUtil->GetCTobs()->GetName() ) );
   Double_t By_reco = *( fProxies.at( fFitUtil->GetBYobs()->GetName() ) );
 
-  return fFitUtil->RecoEvts(E_reco, Ct_reco, By_reco, fResponse, fProxies, fNorm).first;
+  return fFitUtil->RecoEvts(E_reco, Ct_reco, By_reco, fResponse, fProxies).first;
 
 } 
 
@@ -173,7 +164,7 @@ double FitPDF::operator()(double *x, double *p) {
   Double_t by_w = hb->GetZaxis()->GetBinWidth( hb->GetZaxis()->FindBin(x[2]) );
   Double_t bw = e_w * ct_w * by_w;
   
-  return fFitUtil->RecoEvts(x[0], x[1], x[2], fResponse, fProxies, 1.).first * bw;
+  return fFitUtil->RecoEvts(x[0], x[1], x[2], fResponse, fProxies).first * bw;
   
 }
 

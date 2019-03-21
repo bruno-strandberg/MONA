@@ -65,8 +65,8 @@ class FitUtil {
   // public functions that are called in `FitPDF`
   //------------------------------------------------------------------  
   virtual std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
-						 DetResponse *resp, const proxymap_t &proxymap, Double_t norm);
-  TH3D* Expectation(DetResponse *resp, const proxymap_t &proxymap, Double_t norm, const char* rangeName);
+						 DetResponse *resp, const proxymap_t &proxymap);
+  TH3D* Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName);
 
   //------------------------------------------------------------------
   // other public functions
@@ -82,7 +82,6 @@ class FitUtil {
   void SetIOlims();
   void SetIOcentvals();
   void FreeParLims();
-  void AddNormConst(TString name, TString title, Double_t val, Double_t min, Double_t max, Bool_t setConstant);
   
   //------------------------------------------------------------------
   // setters/getters
@@ -92,11 +91,6 @@ class FitUtil {
       \return `RooArgSet` with known parameters.
    */
   RooArgSet   GetSet()         { return fParSet;  }
-
-  /** Get the `RooArgSet` with only overall normalisation parameters.
-      \return `RooArgSet` with only overall normalisation parameters.
-   */
-  RooArgSet   GetNormSet()     { return fNormSet;  }
   
   /** Get the `RooArgList` with observables (Energy, cos-theta, bjorken-y)
       \return `RooArgList` with observables (Energy, cos-theta, bjorken-y)
@@ -188,8 +182,7 @@ class FitUtil {
   // protected members for `RooFit` observable and parameter access
   //------------------------------------------------------------------
 
-  RooArgSet   fNormSet;  //!< set of overall normalisation parameters only, one for each `FitPDF` instance.
-  RooArgSet   fParSet;   //!< set that includes all variables (observables+parameters), except `fNormSet` pars
+  RooArgSet   fParSet;   //!< set that includes all variables (observables+parameters)
   RooArgList  fObsList;  //!< list (ordered!) that includes only observables (Energy, cos-theta, bjorken-y)
 
   //------------------------------------------------------------------
@@ -308,10 +301,7 @@ class FitUtil {
   RooRealVar *fDcp;       //!< \f$ \delta_{CP} \f$ fit parameter in \f$ \pi $\f's, as given by the PDG group (e.g. 1.38)
   RooRealVar *fDm21;      //!< \f$ \Delta m_{21}^2 \f$ fit parameter in eV^2
   RooRealVar *fDm31;      //!< \f$ \Delta m_{31}^2 \f$ fit parameter in eV^2
-  
-  vector<RooRealVar*> fNorms; //!< vector of normalisation constants for each PDF initiated with FitUtil
-
-  
+    
 };
 
 #endif
