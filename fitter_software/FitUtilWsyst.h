@@ -6,7 +6,7 @@
 #include "RooRealVar.h"
 
 /** This class inherits from `FitUtil` and overwrites the virtual function `TrueEvts` and `RecoEvts` to include systematic effects for the fitting process.*/
-class FitUtilWsyst : protected FitUtil {
+class FitUtilWsyst : public FitUtil {
 
   //**************************************************************************
   // public functions and members
