@@ -237,7 +237,7 @@ int main(const int argc, const char **argv) {
     V->setConstant(kTRUE);
   }
 
-  // relase the specific parameter, set limits
+  // release the specific parameter, set limits
   cout << "NOTICE LLH_scanner: releasing " << var->GetName() << endl;
   var->setConstant(kFALSE);
   var->setMin( par_range.getLowerLimit() );
@@ -248,7 +248,8 @@ int main(const int argc, const char **argv) {
   //======================================================
   
   TString title = TString("-Log(L) scan in ") + (TString)var->GetName();
-  RooPlot *frame = var->frame( Range( var->getMin(), var->getMax() ), Title(title) );
+  RooPlot frame( *var, var->getMin(), var->getMax(), 100 );
+  frame.SetNameTitle(title, title);
 
   vector<RooDataHist*> rfdata; // pointers for clean-up
   std::map<TString, RooNLLVar*> nlls;
@@ -270,6 +271,7 @@ int main(const int argc, const char **argv) {
 
   }
 
+  // create the combined scan
   RooNLLVar *nll_comb = new RooNLLVar("nll_comb","nll_comb", simPdf, combData, NumCPU(ncpu));
   nlls.insert( std::make_pair("comb", nll_comb) );
 
@@ -287,7 +289,7 @@ int main(const int argc, const char **argv) {
   // plot all LLH curves
   Int_t i = 0;
   for (auto N: nlls) {
-    N.second->plotOn( frame, LineColor(1+i), ShiftToZero(), LineStyle(1+i), Name( N.first ) );
+    N.second->plotOn( &frame, LineColor(1+i), ShiftToZero(), LineStyle(1+i), Name( N.first ) );
     cout << "=====================================================================" << endl;
     cout << "NOTICE LLH_scanner: scan for PID range " << N.first << " done" << endl;
     cout << "=====================================================================" << endl;
@@ -297,13 +299,13 @@ int main(const int argc, const char **argv) {
   // add a legend
   TLegend *leg1 = new TLegend(0.3, 0.6, 0.7, 0.9);
   for (auto N: nlls) {
-     leg1->AddEntry( frame->findObject( N.first ), N.first, "l" );
+     leg1->AddEntry( frame.findObject( N.first ), N.first, "l" );
   }
   leg1->SetLineWidth(0);
   leg1->SetFillStyle(0);
 
   TFile fout(output_name, "RECREATE");
-  frame->Write("LLH_plot");
+  frame.Write("LLH_plot");
   leg1->Write("LLH_legend");
   pars_data->Write("Parameters");
   for (auto E: exphists)     E.second->Write( (TString)E.first );
