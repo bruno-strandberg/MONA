@@ -36,7 +36,7 @@ public:
   
   /** Clone function */
   virtual TObject* clone(const char* newname) const { return new FitPDF(*this,newname); }
-  FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp, Bool_t constNorm = kTRUE);
+  FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp);
   FitPDF(const FitPDF& other, const char* name=0);
 
   // public functions
@@ -55,23 +55,13 @@ public:
      \return Reference to member `fProxies`
    */
   proxymap_t&    GetProxyMap() { return fProxies; }
-
-  /** Get the value of the normalisation constant for this `FitPDF` instance
-      \return current value of the normalisation constant
-   */
-  Double_t     GetNorm() { return fNorm; }
-
-  /** Get the name of the normalisation constant fot this `FitPDF` instance
-      \return Name of the normalisation constant parameter.
-   */
-  TString      GetNormName() { return fNorm.GetName(); }
   
   /** Get a 3D histogram with expectation values for this fit model.
       The histogram which is pointed to is created on the heap and it is the user's responsibility to delete the object.
       \param name Name of a range as used in `RooFit`, dummy for now
    */
   TH3D*        GetExpValHist(const char* name=0) const {
-    return fFitUtil->Expectation(fResponse, fProxies, fNorm, name);
+    return fFitUtil->Expectation(fResponse, fProxies, name);
   }
 
   TH3D*        GetExpValErrHist(const char* name=0); 
@@ -97,7 +87,6 @@ private:
   FitUtil     *fFitUtil;    //!< pointer to the fit utility that can be shared between several `FitPDF` instances
   DetResponse *fResponse;   //!< pointer to a specific fit response that describes the data to be fitted
   proxymap_t   fProxies;    //!< map of proxies to the RooRealVar's defined in `FitUtil`
-  RooRealProxy fNorm;       //!< norm. for this PDF only (e.g. tracks), does not affect other PDFs (e.g. showers)
   TRandom3     fRand;       //!< random generator for pseudoexperiments
 
   ClassDef(FitPDF,1)

@@ -635,12 +635,11 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_
     
     \param resp       Pointer to `DetResponse` instance used with the `FitPDF` class.
     \param proxymap   A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
-    \param norm       An overall normalisation parameter
     \param rangeName  Range string as used in `RooFit`, currently dummy.
     \return           a 3D histogram in reco variables with exepectation values as bin contents
 
 */
-TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, Double_t norm, const char* rangeName) {
+TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName) {
 
   // create the histogram with expectation values
   TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
@@ -664,7 +663,7 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, Double
 	Double_t by_w = hexp->GetZaxis()->GetBinWidth( bybin );
 	Double_t binw = e_w * ct_w * by_w;
 
-        auto recoevts = RecoEvts(E, ct, by, resp, proxymap, norm);
+        auto recoevts = RecoEvts(E, ct, by, resp, proxymap);
 	
 	hexp->SetBinContent(ebin, ctbin, bybin, recoevts.first*binw  );
 	hexp->SetBinError  (ebin, ctbin, bybin, recoevts.second*binw );
@@ -687,16 +686,13 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, Double
 
     Whereas the fit parameters (e.g. oscillation parameters) are successfully passed through the contents of the parameter `proxymap`, the observables reco energy, cos-theta and bjorken-y need to be passed explicitly. This is necessary, as otherwise the function `FitUtil::Expectation` would need to set the values for `fE_reco`, `fCt_reco` and `fBy_reco` manually in the loop over the bins, and this interferes in some way with `RooFit` internal cache for these variables, such that the fitting procedure gets interrupted and does not lead to convergence.
 
-    Also, an overall normalisation parameter is specific for each `FitPDF` instance, is not part of `proxymap_t` and is thus passed explicitly to the function as argument (see `FitPDF::evaluate`).
-
     \param E_reco      Reco energy
     \param Ct_reco     Reco cos-theta
     \param By_reco     Reco bjorken-y
     \param resp        Pointer to `DetResponse` instance used with the `FitPDF` class.
     \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contains the shared fit parameters, including oscillation parameters.
-    \param norm        An overall normalisation parameter.
     \return            a pair with the un-normalised event density (calculated by dividing the expected number of events in a bin by bin width) and the associated statistical uncertainty */
-std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap, Double_t norm) {
+std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap) {
 
   if ( E_reco < fHB->GetXaxis()->GetXmin() || E_reco >= fHB->GetXaxis()->GetXmax() ) {
     throw std::invalid_argument("ERROR! FitUtil::RecoEvts energy " + to_string(E_reco) + " outside the binning range.");
@@ -765,13 +761,13 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
   Double_t by_w = fHB->GetZaxis()->GetBinWidth( fHB->GetZaxis()->FindBin( By_reco ) );
   Double_t binw = e_w * ct_w * by_w;
   
-  return std::make_pair(det_count/binw * norm, det_err/binw * norm);
+  return std::make_pair(det_count/binw, det_err/binw);
 
 }
 
 //***************************************************************************
 
-/** Public function to fetch a pointer to a variable in the member `fParSet` or `fNormSet`.
+/** Public function to fetch a pointer to a variable in the member `fParSet`.
 
     This function knows of all the variables known to `RooFit`. If the variable is not found set an exception is thrown.
 
@@ -780,44 +776,12 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
  */
 RooRealVar* FitUtil::GetVar(TString varname) {
 
-  RooRealVar *var1 = (RooRealVar*)fParSet.find(varname);
-  RooRealVar *var2 = (RooRealVar*)fNormSet.find(varname);
+  RooRealVar *var = (RooRealVar*)fParSet.find(varname);
 
-  if (var1 == NULL && var2 == NULL) {
+  if (var == NULL) {
     throw std::invalid_argument("ERROR! FitUtil::GetVar() cannot find variable " + (string)varname);
   }
-
-  if (var1 != NULL && var2 != NULL) {
-    throw std::logic_error("ERROR! FitUtil::GetVar() variable " + (string)varname + " is found in both fParSet and fNormSet members.");
-  }
-  
-  RooRealVar *var = ( (var1 != NULL) ? var1 : var2 );
-  
-  return var;
-}
-
-//***************************************************************************
-
-/** Public function to add a normalisation constant for a specific `FitPDF` instance.
     
-    Unlike other fit parameters, the overall normalisation parameters are not shared between different event classes, e.g. track normalisation does not affect the shower channel. This function is used in `FitPDF` to automatically add a normalisation constant for each `FitPDF` instance.
+  return var;
 
-    \param name   constant name
-    \param title  constant title
-    \param val    value
-    \param min    minimum
-    \param max    maximum						
-*/
-void FitUtil::AddNormConst(TString name, TString title, Double_t val, Double_t min, Double_t max, Bool_t setConstant) {
-
-  // check whether such a variable exists already, throw error if that is the case
-  RooRealVar *var = (RooRealVar*)fNormSet.find( name );
-  if ( var != NULL ) {
-    throw std::invalid_argument("ERROR! FitUtil::AddNormConst() a normalisation constant with name " + (string)name + " already exists." );
-  }
-  
-  fNorms.push_back( new RooRealVar(name, title, val, min, max) );
-  if ( setConstant ) fNorms.back()->setConstant(kTRUE);
-  fNormSet.add( *fNorms.back() );
-  
 }
