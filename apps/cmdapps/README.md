@@ -1,0 +1,4 @@
+Command-line applications
+==========================
+
+This directory hosts command-line applications whose main purpose is to aid in writing macros/applications. For example, the application `monafitpars` prints out the names of all the parameters in the `fitter_software/` classes, which can/have to be accessed through `FitUtil::GetVar(TString var_name)` method when writing analysis applications/macros. Unlike other application directories, this directory is added to $PATH by the `setenv.sh` script, such that the applications in this directory are avaiable through the terminal in any directory.

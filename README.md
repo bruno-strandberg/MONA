@@ -63,7 +63,7 @@ To distribute expectation values for *selected* events in bjorken-y (in addition
 
 Available applications
 ======================
-As listed in the previous section, generic applications for tasks 1-3 are available in `apps/` directory. Additionally, there in an application `apps/evt_sampler` that provides tools to create data samples from gSeaGen data that are distributed as experiment data after a selected number of years. It outputs `root` files with `TTree`'s with event-by-event data that is distributed as would be expected from sea-data.
+As listed in the previous section, generic applications are available in the `apps/` directory for data preparation for analysis with MONA. There are additional applications in the `apps/` directory, which are typically accompanied with a README file to explain scope and usage.
 
 ORCA Monte-Carlo chain and *analysis format*
 ============================================
@@ -75,7 +75,7 @@ The typical ORCA MC chain consists of the applications and steps as illustrated 
 ```
 gSeaGen->KM3Sim                JGandalf for tracks                                           
                \             /                      \                                       
-		       JTE->         -  Recolns for tracks  -    -> merge, PID training -->summary  
+		       JTE->                                -    -> merge, PID training -->summary  
                /             \                      /                                       
 mupage->KM3                    Dusj reco for showers                                        
 ```

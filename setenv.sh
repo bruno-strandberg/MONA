@@ -54,4 +54,9 @@ if ! echo $CPATH | grep -q $OSCPROBDIR; then
     echo "MONA/setenv.sh::added $OSCPROBDIR to CPATH" 
 fi
 
+if ! echo $PATH | grep -q $MONADIR/apps/cmdapps; then
+    export PATH=${PATH}:$MONADIR/apps/cmdapps
+    echo "MONA/setenv.sh::added $MONADIR/apps/cmdapps to PATH" 
+fi
+
 echo "MONA/setenv.sh::finished" 
