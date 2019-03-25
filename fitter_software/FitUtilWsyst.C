@@ -15,11 +15,11 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
   ----------------------------------------------------------------------------------*/
 
   // flux
-  fE_tilt      = new RooRealVar("E_tilt"     ,"E_tilt"      , 0, -1, 1);
-  fCt_tilt     = new RooRealVar("ct_tilt"    , "ct_tilt"    , 0, -1, 1);
-  fSkew_mu_amu = new RooRealVar("skew_mu_amu", "skew_mu_amu", 0, -1, 1);
-  fSkew_e_ae   = new RooRealVar("skew_e_ae"  , "skew_e_ae"  , 0, -1, 1);
-  fSkew_mu_e   = new RooRealVar("skew_mu_e"  , "skew_mu_e"  , 0, -1, 1);
+  fE_tilt      = new RooRealVar("E_tilt"     ,"E_tilt"      , 0, -0.5, 0.5);
+  fCt_tilt     = new RooRealVar("ct_tilt"    , "ct_tilt"    , 0, -0.5, 0.5);
+  fSkew_mu_amu = new RooRealVar("skew_mu_amu", "skew_mu_amu", 0, -0.5, 0.5);
+  fSkew_e_ae   = new RooRealVar("skew_e_ae"  , "skew_e_ae"  , 0, -0.5, 0.5);
+  fSkew_mu_e   = new RooRealVar("skew_mu_e"  , "skew_mu_e"  , 0, -0.5, 0.5);
   fParSet.add( RooArgSet(*fE_tilt, *fCt_tilt, *fSkew_mu_amu, *fSkew_e_ae, *fSkew_mu_e) );
   
   // xsec
