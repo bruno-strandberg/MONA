@@ -694,17 +694,41 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
     \return            a pair with the un-normalised event density (calculated by dividing the expected number of events in a bin by bin width) and the associated statistical uncertainty */
 std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap) {
 
+  //----------------------------------------------------------------------------------
+  // check that observables are within the range of the detector response
+  //----------------------------------------------------------------------------------
+
+  Bool_t throwException = kFALSE;
+  std::invalid_argument exception("");
+
   if ( E_reco < fHB->GetXaxis()->GetXmin() || E_reco >= fHB->GetXaxis()->GetXmax() ) {
-    throw std::invalid_argument("ERROR! FitUtil::RecoEvts energy " + to_string(E_reco) + " outside the binning range.");
+    throwException = kTRUE;
+    exception = std::invalid_argument("ERROR! FitUtil::RecoEvts energy " + to_string(E_reco) + " outside the binning range.");
   }
 
   if ( Ct_reco < fHB->GetYaxis()->GetXmin() || Ct_reco >= fHB->GetYaxis()->GetXmax() ) {
-    throw std::invalid_argument("ERROR! FitUtil::RecoEvts cos-theta " + to_string(Ct_reco) + " outside the binninb range.");
+    throwException = kTRUE;
+    exception = std::invalid_argument("ERROR! FitUtil::RecoEvts cos-theta " + to_string(Ct_reco) + " outside the binninb range.");
   }
 
   if ( By_reco < fHB->GetZaxis()->GetXmin() || By_reco >= fHB->GetZaxis()->GetXmax() ) {
-    throw std::invalid_argument("ERROR! FitUtil::RecoEvts bjorken-y " + to_string(By_reco) + " outside the binning range.");
+    throwException = kTRUE;
+    exception = std::invalid_argument("ERROR! FitUtil::RecoEvts bjorken-y " + to_string(By_reco) + " outside the binning range.");
   }
+
+  if (throwException) {
+    
+    cout << "=====================================================================================" << endl;
+    cout << "NOTICE FitUtil::RecoEvts() throwing exception, parameter value dump at exception: " << endl;
+    for (auto p: proxymap) { cout << "Parameter: " << p.first << "\t Value: " << (Double_t)(*p.second) << endl; }
+    cout << "=====================================================================================" << endl;
+
+    throw exception;
+  }
+
+  //----------------------------------------------------------------------------------
+  // perform the calculation
+  //----------------------------------------------------------------------------------
   
   auto true_bins = resp->GetBinWeights( E_reco, Ct_reco, By_reco );
 
@@ -725,11 +749,7 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 
       Double_t TE = 0.;
 
-      /* for NC events the response only says how the elec-NC events from the considered true bin contribute
-	 to the reco-bin. However, in the flux chain we have we also have a contribution from muon-NC and tau-NC true bin
-	 to the reco bin, which are assumed to look identical to the detector as elec-NC (this is why we only simulate
-	 elec-NC). Hence for NC events I need to add `TrueEvts` contributions from the three NC flavours
-      */
+      /* for NC events the response only says how the elec-NC events from the considered true bin contribute to the reco-bin. However, in the flux chain we have we also have a contribution from muon-NC and tau-NC true bin to the reco bin, which are assumed to look identical to the detector as elec-NC (this is why we only simulate elec-NC). Hence for NC events I need to add `TrueEvts` contributions from the three NC flavours */
 
       TrueB elecTB( tb );
       TrueB muonTB( tb );

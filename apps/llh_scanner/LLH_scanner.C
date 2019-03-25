@@ -18,6 +18,7 @@
 #include "RooNLLVar.h"
 #include "TFile.h"
 #include "TLegend.h"
+#include "TStopwatch.h"
 
 //jpp headers
 #include "JTools/JRange.hh"
@@ -80,6 +81,8 @@ using namespace RooFit;
 */
 
 int main(const int argc, const char **argv) {
+
+  TStopwatch timer;
 
   //======================================================
   // set some variables for command line parsing
@@ -319,5 +322,7 @@ int main(const int argc, const char **argv) {
   for (auto E: exphists_err) if (E.second) delete E.second;
   for (auto d: rfdata) if (d) delete d;
   for (auto n: nlls) if (n.second) delete n.second;
+  
+  cout << "NOTICE LLH_scanner: total run time [s]: " << (Double_t)timer.RealTime() << endl;
 
 }
