@@ -9,11 +9,14 @@ build:
         - source /Jpp/setenv.sh /Jpp
         - source setenv.sh
         - make -j4
+        - doxygen doxyconf
+        - cp doxygen/html/ public/
     artifacts:
         paths:
            - common_software
            - fitter_software
            - apps/*
+           - public
     cache:
         key: $CI_COMMIT_REF_SLUG
         untracked: true
