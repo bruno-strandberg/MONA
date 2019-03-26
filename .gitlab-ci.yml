@@ -10,7 +10,7 @@ build:
         - source setenv.sh
         - make -j4
         - doxygen doxyconf
-        - cp doxygen/html/ public/
+        - cp -r doxygen/html/ public/
     artifacts:
         paths:
            - common_software
