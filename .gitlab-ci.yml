@@ -18,6 +18,23 @@ build:
         key: $CI_COMMIT_REF_SLUG
         untracked: true
 
+doc:
+    image: docker.km3net.de/base/nmh:dev
+    stage: doc
+    variables:
+        OSCPROBDIR: /OscProb
+    script:
+        - source /opt/root-6.14.06/bin/thisroot.sh
+        - source /Jpp/setenv.sh /Jpp
+        - source setenv.sh
+        - doxygen doxyconf
+        - cp doxygen/html public/
+    artifacts:
+        paths:
+           - public
+    dependencies:
+        - build
+
 test:
     image: docker.km3net.de/base/nmh:dev
     stage: test
