@@ -9,14 +9,11 @@ build:
         - source /Jpp/setenv.sh /Jpp
         - source setenv.sh
         - make -j4
-        - doxygen doxyconf
-        - cp -r doxygen/html/ public/
     artifacts:
         paths:
            - common_software
            - fitter_software
            - apps/*
-           - public
     cache:
         key: $CI_COMMIT_REF_SLUG
         untracked: true
@@ -34,5 +31,22 @@ test:
     artifacts:
       reports:
         junit: "junit.xml"
+    dependencies:
+        - build
+
+pages:
+    image: docker.km3net.de/base/nmh:dev
+    stage: deploy
+    variables:
+        OSCPROBDIR: /OscProb
+    script:
+        - source /opt/root-6.14.06/bin/thisroot.sh
+        - source /Jpp/setenv.sh /Jpp
+        - source setenv.sh
+        - doxygen doxyconf
+        - cp -r doxygen/html/ public/
+    artifacts:
+        paths:
+           - public
     dependencies:
         - build
