@@ -32,7 +32,7 @@ test:
         - make test
     artifacts:
         paths:
-           - public
+           - public/
       reports:
         junit: "junit.xml"
     dependencies:
