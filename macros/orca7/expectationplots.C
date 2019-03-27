@@ -1,5 +1,6 @@
 #include "NMHUtils.h"
 #include "ORCA7.h"
+#include "ORCA7.C"
 
 /* 
    In this script ORCA 7-line events are distributed to three PID classes. This script creates plots that depict the number of detected neutrinos, muons and noise in 1 year with ORCA 7-line detector in energy dimension for each PID class. The relevant numbers are also printed to terminal.
@@ -14,27 +15,17 @@ void expectationplots() {
   ORCA7 o7(kTRUE);
 
   //------------------------------------------------------------
-  // initialise the pdf's
-  //------------------------------------------------------------
-
-  FitUtil futil(o7.f_F_runtime, o7.fResps[0]->GetHist3D(), o7.f_F_emin, o7.f_F_emax, o7.f_F_ctmin, o7.f_F_ctmax, o7.f_F_bymin, o7.f_F_bymax, o7.fEffmF);
-  vector<FitPDF*> pdfs;
-  for (auto R: o7.fResps) {
-    TString name = "pdf_" + R->Get_RespName();
-    pdfs.push_back( new FitPDF(name, name, &futil, R) );
-  }
-
-  //------------------------------------------------------------
   // plot the expected number of neutrinos, muons and noise 
   //------------------------------------------------------------
   gStyle->SetOptStat(0);
 
   TCanvas *c1 = new TCanvas("c1","c1",1);
-  c1->DivideSquare( pdfs.size() );
+  c1->DivideSquare( o7.fPdfs.size() );
   Int_t pad = 1;
 
-  for (auto pdf: pdfs) {
+  for (auto P: o7.fPdfs) {
 
+    auto pdf = P.second;
     TH1D* nus   = (TH1D*)pdf->GetExpValHist()->Project3D("x");
     TH1D* muons = (TH1D*)pdf->GetResponse()->GetHistAtmMu1y()->Project3D("x");
     TH1D* noise = (TH1D*)pdf->GetResponse()->GetHistNoise1y()->Project3D("x");
@@ -67,9 +58,10 @@ void expectationplots() {
   // plot  in 2D
   //------------------------------------------------------------
   TCanvas *c3 = new TCanvas("c3","c3",1);
-  c3->DivideSquare( pdfs.size() );
+  c3->DivideSquare( o7.fPdfs.size() );
   pad = 1;
-  for (auto pdf: pdfs) {
+  for (auto P: o7.fPdfs) {
+    auto pdf = P.second;
     c3->cd(pad);
     pdf->GetExpValHist()->Project3D("yx")->Draw("colz");
     pad++;
@@ -80,10 +72,11 @@ void expectationplots() {
   //------------------------------------------------------------
 
   TCanvas *c2 = new TCanvas("c2","c2",1);
-  c2->DivideSquare( pdfs.size() );
+  c2->DivideSquare( o7.fPdfs.size() );
   pad = 1;
 
-  for (auto pdf: pdfs) {
+  for (auto P: o7.fPdfs) {
+    auto pdf = P.second;
     c2->cd(pad);
     pdf->GetExpValErrHist()->Project3D("yx")->Draw("colz");
     pad++;
