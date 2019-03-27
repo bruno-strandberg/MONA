@@ -114,7 +114,7 @@ Int_t FitPDF::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, con
     Now, in this special case of a <B>binned analysis</B>, the integral boils down to the integral of the number of events in the expectation value histogram. This can be understood as follows. `FitPDF::evaluate()` returns the un-normalized event density within each bin, i.e. \f$ f(x) = binContent/binWidth \f$. `RooFit` needs to integrate this. If it is approximated that \f$ \int f(x)dx \approx \sum f(x=binCenter) * binWidth \f$, the integral becomes \f$ \sum binContent \f$, hence equivalent to the number of events in the expectation value histogram.
     
     \param code      Code returned by `getAnalyticalIntegral` to determine integration technique
-    \param rangeName Name of the fit range (dummy for now)
+    \param rangeName Range string as used in `RooFit`, it will apply the defined rangeName to the E/Ct/By variables. If the range does not  exists, the default ranges are used.
     \return          Integral of the pdf over observables.
 
 */
@@ -223,7 +223,7 @@ TH3D* FitPDF::SimplePseudoExp(TString nametitle, Bool_t IncludeStatErr, const ch
 
     The histogram which is pointed to is created on the heap and it is the user's responsibility to delete the object.
 
-    \param name     Name of a range as used in `RooFit`, dummy for now
+    \param name     Range string as used in `RooFit`, it will apply the defined rangeName to the E/Ct/By variables. If the range does not exists, the default ranges are used.
     \return         Pointer to a TH3D containing the relative errors for GetExpValHist.
 
 */

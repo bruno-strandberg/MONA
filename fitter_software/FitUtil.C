@@ -635,31 +635,23 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_
     
     \param resp       Pointer to `DetResponse` instance used with the `FitPDF` class.
     \param proxymap   A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
-    \param rangeName  Range string as used in `RooFit`, currently dummy.
+    \param rangeName  Range string as used in `RooFit`, it will apply the defined rangeName to the E/Ct/By variables. If the range does not exists, the default ranges are used.
     \return           a 3D histogram in reco variables with exepectation values as bin contents
 
 */
 TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName) {
 
-
-  if (rangeName != 0) cout << "Expectation rangeName in FitUtil::Expectation   " << rangeName << endl;
-
   // TODO: change to fE_reco->GetName()
   // Default behaviour of getMin/getMax if there is no Range present: return the absolute min/max of 
   // the data type. For doubles: +-1E30
-  Double_t E_min  = ((RooRealVar*)fParSet.find("E_reco"))->getMin(rangeName);
-  Double_t E_max  = ((RooRealVar*)fParSet.find("E_reco"))->getMax(rangeName);
+  // RooFit handles ranges on different RooRealVars with the same rangeName properly: they do not collide.
+  // So using the same name for a collection of ranges on different variables is valid.
+  Double_t E_min  = ((RooRealVar*)fParSet.find("E_reco")) ->getMin(rangeName);
+  Double_t E_max  = ((RooRealVar*)fParSet.find("E_reco")) ->getMax(rangeName);
   Double_t ct_min = ((RooRealVar*)fParSet.find("ct_reco"))->getMin(rangeName);
   Double_t ct_max = ((RooRealVar*)fParSet.find("ct_reco"))->getMax(rangeName);
   Double_t by_min = ((RooRealVar*)fParSet.find("by_reco"))->getMin(rangeName);
   Double_t by_max = ((RooRealVar*)fParSet.find("by_reco"))->getMax(rangeName);
-
-  cout << "Emin " << E_min << endl;
-  cout << "Emax " << E_max << endl;
-  cout << "ctmin " << ct_min << endl;
-  cout << "ctmax " << ct_max << endl;
-  cout << "bymin " << by_min << endl;
-  cout << "bymax " << by_max << endl;
 
   // create the histogram with expectation values
   TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
@@ -672,23 +664,16 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
   auto YFitRange = GetRange( ct_min, ct_max, hexp->GetYaxis() );
   auto ZFitRange = GetRange( by_min, by_max, hexp->GetZaxis() );
 
-  cout << "E-Fit  range set to   " << std::get<0>(XFitRange) << "-" << std::get<1>(XFitRange) << endl;
-  cout << "E-Fit  binning set to " << std::get<2>(XFitRange) << "-" << std::get<3>(XFitRange) << endl;
-  cout << "ct-Fit range set to   " << std::get<0>(YFitRange) << "-" << std::get<1>(YFitRange) << endl;
-  cout << "ct-Fit binning set to " << std::get<2>(YFitRange) << "-" << std::get<3>(YFitRange) << endl;
-  cout << "by-Fit range set to   " << std::get<0>(ZFitRange) << "-" << std::get<1>(ZFitRange) << endl;
-  cout << "by-Fit binning set to " << std::get<2>(ZFitRange) << "-" << std::get<3>(ZFitRange) << endl;
-  
+  // Do not overwrite the default fEbin_min, etc. since they are used by all instances that call FitUtil!
+  // Instead define new Ints to use in the for loop downstairs
+  // Take the max to move the minimum value up and the min to move the maximum value down, this 
+  // constrains the range.
   Int_t ebin_min  = max( fEbin_min,  std::get<2>(XFitRange) );
   Int_t ebin_max  = min( fEbin_max,  std::get<3>(XFitRange) );
   Int_t ctbin_min = max( fCtbin_min, std::get<2>(YFitRange) );
   Int_t ctbin_max = min( fCtbin_max, std::get<3>(YFitRange) );
   Int_t bybin_min = max( fBybin_min, std::get<2>(ZFitRange) );
   Int_t bybin_max = min( fBybin_max, std::get<3>(ZFitRange) );
-
-  cout << "loop E  binning set to " << ebin_min  << "-" << ebin_max  << endl;
-  cout << "loop ct binning set to " << ctbin_min << "-" << ctbin_max << endl;
-  cout << "loop by binning set to " << bybin_min << "-" << bybin_max << endl;
 
   // loop over bins and fill the expectation value histogram
   for (Int_t ebin = ebin_min; ebin <= ebin_max; ebin++) {
