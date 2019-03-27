@@ -35,7 +35,7 @@ int main(const int argc, const char **argv) {
 
   Double_t op_time =  3.;
   Double_t emin    =  3.;
-  Double_t emax    =  80.;
+  Double_t emax    =  75.;
   Double_t ctmin   = -1;
   Double_t ctmax   =  0;
   Double_t bymin   =  0;
@@ -46,8 +46,8 @@ int main(const int argc, const char **argv) {
   FitUtil *futil = new FitUtil(op_time, resp.GetHist3D(), emin, emax, ctmin, ctmax, bymin, bymax, EffMass::DUMMYFILE);
   FitUtilWsyst *futilws = new FitUtilWsyst(op_time, resp.GetHist3D(), emin, emax, ctmin, ctmax, bymin, bymax, EffMass::DUMMYFILE);
 
-  FitPDF pdf  ("pdf"   ,"pdf"  , futil            , &resp);
-  FitPDF pdfws("pdfws" ,"pdfws", (FitUtil*)futilws, &resp);
+  FitPDF pdf  ("pdf"   ,"pdf"  , futil  , &resp);
+  FitPDF pdfws("pdfws" ,"pdfws", futilws, &resp);
 
   // start testing
   //-----------------------------------------------------------------------------
@@ -70,11 +70,11 @@ int main(const int argc, const char **argv) {
     // the skew parameters are set to 1, because they do not preserv the integral for e.g. muon-nu only
     //-------------------------------------------------------------------------------------------------------
 
-    ((FitUtil*)futilws)->GetVar("E_tilt")      ->setVal( rand.Uniform(-0.9, 0.9) );
-    ((FitUtil*)futilws)->GetVar("ct_tilt")     ->setVal( rand.Uniform(-0.9, 0.9) );
-    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( 0. );
-    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( 0. );
-    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( 0. );
+    futilws->GetVar("E_tilt")      ->setVal( rand.Uniform(-0.5, 0.5) );
+    futilws->GetVar("ct_tilt")     ->setVal( rand.Uniform(-0.5, 0.5) );
+    futilws->GetVar("skew_mu_amu") ->setVal( 0. );
+    futilws->GetVar("skew_e_ae")   ->setVal( 0. );
+    futilws->GetVar("skew_mu_e")   ->setVal( 0. );
 
     UInt_t flav = rand.Integer(3); // select random flavor
     UInt_t isnb = rand.Integer(2); // select random  nu/nub
@@ -105,11 +105,11 @@ int main(const int argc, const char **argv) {
     // The mu_e skew is 0, because it does not preserve mu-e ratio (obviously)
     //-------------------------------------------------------------------------------------------------------
 
-    ((FitUtil*)futilws)->GetVar("E_tilt")      ->setVal( 0. );
-    ((FitUtil*)futilws)->GetVar("ct_tilt")     ->setVal( 0. );
-    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( rand.Uniform(-0.9, 0.9) );
-    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( rand.Uniform(-0.9, 0.9) );
-    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( 0. );
+    futilws->GetVar("E_tilt")      ->setVal( 0. );
+    futilws->GetVar("ct_tilt")     ->setVal( 0. );
+    futilws->GetVar("skew_mu_amu") ->setVal( rand.Uniform(-0.5, 0.5) );
+    futilws->GetVar("skew_e_ae")   ->setVal( rand.Uniform(-0.5, 0.5) );
+    futilws->GetVar("skew_mu_e")   ->setVal( 0. );
 
     Int_t ebin  = 1 + rand.Integer( resp.GetHist3D()->GetXaxis()->GetNbins() );
     Int_t ctbin = 1 + rand.Integer( resp.GetHist3D()->GetYaxis()->GetNbins() );
@@ -138,14 +138,37 @@ int main(const int argc, const char **argv) {
       return 1;
     }
 
+    // check ratios
+    Double_t R_mu_amu = futil->GetCachedFlux( MUON, NU, ebin, ctbin )/
+      futil->GetCachedFlux( MUON, NUB, ebin, ctbin ) * (1. + futilws->GetVar("skew_mu_amu")->getVal());
+
+    Double_t Rws_mu_amu = futilws->GetFluxWsyst( MUON, NU, ebin, ctbin, pdfws.GetProxyMap() )/
+      futilws->GetFluxWsyst( MUON, NUB, ebin, ctbin, pdfws.GetProxyMap() );
+
+    Double_t R_e_ae = futil->GetCachedFlux( ELEC, NU, ebin, ctbin )/
+      futil->GetCachedFlux( ELEC, NUB, ebin, ctbin ) * (1. + futilws->GetVar("skew_e_ae")->getVal());
+
+    Double_t Rws_e_ae = futilws->GetFluxWsyst( ELEC, NU, ebin, ctbin, pdfws.GetProxyMap() )/
+      futilws->GetFluxWsyst( ELEC, NUB, ebin, ctbin, pdfws.GetProxyMap() );
+
+    if ( TMath::Abs(R_mu_amu - Rws_mu_amu) > 1e-5 ) {
+      cout << "NOTICE TestFitUtilWsystFlux test failed, mu-amu ratio is not modified as expected" << endl;
+      return 1;
+    }
+
+    if ( TMath::Abs(R_e_ae - Rws_e_ae) > 1e-5 ) {
+      cout << "NOTICE TestFitUtilWsystFlux test failed, e-ae ratio is not modified as expected" << endl;
+      return 1;
+    }
+
     // test 3: check that mu_e skew preserves muon + elec count in a random bin
     //-------------------------------------------------------------------------------------------------------
 
-    ((FitUtil*)futilws)->GetVar("E_tilt")      ->setVal( 0. );
-    ((FitUtil*)futilws)->GetVar("ct_tilt")     ->setVal( 0. );
-    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( 0. );
-    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( 0. );
-    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( rand.Uniform(-0.9, 0.9) );
+    futilws->GetVar("E_tilt")      ->setVal( 0. );
+    futilws->GetVar("ct_tilt")     ->setVal( 0. );
+    futilws->GetVar("skew_mu_amu") ->setVal( 0. );
+    futilws->GetVar("skew_e_ae")   ->setVal( 0. );
+    futilws->GetVar("skew_mu_e")   ->setVal( rand.Uniform(-0.5, 0.5) );
 
     Double_t flux_mu_e = ( futil->GetCachedFlux( MUON, NU, ebin, ctbin ) +
 			   futil->GetCachedFlux( ELEC, NU, ebin, ctbin ) +
@@ -164,11 +187,11 @@ int main(const int argc, const char **argv) {
     
     // test 4: check that the flux over all flav nu/nub is always conserved
     //-------------------------------------------------------------------------------------------------------
-    ((FitUtil*)futilws)->GetVar("E_tilt")      ->setVal( rand.Uniform(-0.9, 0.9) );
-    ((FitUtil*)futilws)->GetVar("ct_tilt")     ->setVal( rand.Uniform(-0.9, 0.9) );
-    ((FitUtil*)futilws)->GetVar("skew_mu_amu") ->setVal( rand.Uniform(-0.9, 0.9) );
-    ((FitUtil*)futilws)->GetVar("skew_e_ae")   ->setVal( rand.Uniform(-0.9, 0.9) );
-    ((FitUtil*)futilws)->GetVar("skew_mu_e")   ->setVal( rand.Uniform(-0.9, 0.9) );
+    futilws->GetVar("E_tilt")      ->setVal( rand.Uniform(-0.5, 0.5) );
+    futilws->GetVar("ct_tilt")     ->setVal( rand.Uniform(-0.5, 0.5) );
+    futilws->GetVar("skew_mu_amu") ->setVal( rand.Uniform(-0.5, 0.5) );
+    futilws->GetVar("skew_e_ae")   ->setVal( rand.Uniform(-0.5, 0.5) );
+    futilws->GetVar("skew_mu_e")   ->setVal( rand.Uniform(-0.5, 0.5) );
 
     fluxint   = 0.;
     fluxintws = 0.;

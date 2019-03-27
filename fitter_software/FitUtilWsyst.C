@@ -157,14 +157,12 @@ Double_t FitUtilWsyst::GetTiltedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, 
 Double_t FitUtilWsyst::GetFluxWsyst(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin,
 				    const proxymap_t& proxymap) {
 
-  // get the skew parameters and tilt parameters; I add 1 to the skew parameters as this allows to write
-  // the skewing logic a bit easier. Example: skew_mu_amu = 0.1 would need mu_1 = atm_count_mu * (1+skew_mu_amu)
-  // but can now be written as mu_1 = atm_count_mu * skew_mu_amu
-  Double_t e_tilt       = *( proxymap.at( (TString)fE_tilt->GetName() ) );
+  // get the skew parameters and tilt parameters
+  Double_t e_tilt       = *( proxymap.at( (TString)fE_tilt->GetName() ) ) ;
   Double_t ct_tilt      = *( proxymap.at( (TString)fCt_tilt->GetName() ) );
-  Double_t skew_mu_amu  = *( proxymap.at( (TString)fSkew_mu_amu->GetName() ) ) + 1.;
-  Double_t skew_e_ae    = *( proxymap.at( (TString)fSkew_e_ae->GetName() ) )   + 1.;
-  Double_t skew_mu_e    = *( proxymap.at( (TString)fSkew_mu_e->GetName() ) )   + 1.;
+  Double_t skew_mu_amu  = *( proxymap.at( (TString)fSkew_mu_amu->GetName() ) );
+  Double_t skew_e_ae    = *( proxymap.at( (TString)fSkew_e_ae->GetName() ) )  ;
+  Double_t skew_mu_e    = *( proxymap.at( (TString)fSkew_mu_e->GetName() ) )  ;
 
   // get the tilted fluxes - overall normalisation is preserved
   Double_t atm_count_e   = GetTiltedFlux(ELEC, false, true_ebin, true_ctbin, e_tilt, ct_tilt);
@@ -174,19 +172,22 @@ Double_t FitUtilWsyst::GetFluxWsyst(UInt_t flav, Bool_t isnb, Int_t true_ebin, I
 
   
   // apply nu-antinu skew's that preserves nu+antinu flux
-  Double_t mu_1  = atm_count_mu * skew_mu_amu;
-  Double_t amu_1 = atm_count_amu + (1 - skew_mu_amu) * atm_count_mu;
+  Double_t N_mu_amu = ( atm_count_mu + atm_count_amu )/( atm_count_mu * (1 + skew_mu_amu) + atm_count_amu );
+  Double_t mu_1  = atm_count_mu * (1 + skew_mu_amu) * N_mu_amu;
+  Double_t amu_1 = atm_count_amu * N_mu_amu;
 
-  Double_t e_1  = atm_count_e * skew_e_ae;
-  Double_t ae_1 = atm_count_ae + (1 - skew_e_ae) * atm_count_e;
+  Double_t N_e_ae = ( atm_count_e + atm_count_ae )/( atm_count_e * (1 + skew_e_ae) + atm_count_ae );
+  Double_t e_1  = atm_count_e * (1 + skew_e_ae) * N_e_ae;
+  Double_t ae_1 = atm_count_ae * N_e_ae;
 
   
   // apply muon-elec skew that preserves the over-all flux
-  Double_t mu_2  =  mu_1 * skew_mu_e;
-  Double_t amu_2 = amu_1 * skew_mu_e;
+  Double_t N_mu_e = (mu_1 + amu_1 + e_1 + ae_1)/( (mu_1 + amu_1) * (1 + skew_mu_e) + e_1 + ae_1 );
+  Double_t mu_2  =  mu_1 * (1 + skew_mu_e) * N_mu_e;
+  Double_t amu_2 = amu_1 * (1 + skew_mu_e) * N_mu_e;
 
-  Double_t e_2  =  e_1 +  e_1/(e_1 + ae_1) * (1 - skew_mu_e) * (mu_1 + amu_1);
-  Double_t ae_2 = ae_1 + ae_1/(e_1 + ae_1) * (1 - skew_mu_e) * (mu_1 + amu_1);
+  Double_t e_2  =  e_1 * N_mu_e;
+  Double_t ae_2 = ae_1 * N_mu_e;
 
   // create an array for return
   enum pols { NU = 0, ANU };
@@ -198,6 +199,12 @@ Double_t FitUtilWsyst::GetFluxWsyst(UInt_t flav, Bool_t isnb, Int_t true_ebin, I
   fluxes[ELEC][ANU] = ae_2;
   fluxes[TAU][NU]   = 0.;
   fluxes[TAU][ANU]  = 0.;
+
+  if ( fluxes[flav][isnb] < 0. ) {
+    cout << "NOTICE FitUtilWsyst::GetFluxWsyst() parameter values at error:" << endl;
+    for (auto kv: proxymap) {cout << "Parameter: " << kv.first << "\tValue: " << (Double_t)(*kv.second) << endl;}
+    throw std::logic_error("ERROR! FitUtilWsyst::GetFluxWsyst() has calculated a negative flux, probably an issue with the implementation of systematic effects.");
+  }
 
   return fluxes[flav][isnb];
     
