@@ -58,7 +58,7 @@ public:
   
   /** Get a 3D histogram with expectation values for this fit model.
       The histogram which is pointed to is created on the heap and it is the user's responsibility to delete the object.
-      \param name Name of a range as used in `RooFit`, dummy for now
+      \param name Range string as used in `RooFit`, it will apply the defined rangeName to the E/Ct/By variables. If the range does not exists, the default ranges are used.
    */
   TH3D*        GetExpValHist(const char* name=0) const {
     return fFitUtil->Expectation(fResponse, fProxies, name);
