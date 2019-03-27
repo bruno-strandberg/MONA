@@ -4,6 +4,7 @@
 #include "RooCategory.h"
 #include "RooDataHist.h"
 #include "RooFitResult.h"
+#include "RooMsgService.h"
 #include "RooRandom.h"
 #include "RooRealVar.h"
 #include "RooSimultaneous.h"
@@ -25,15 +26,15 @@ using namespace std;
 using namespace RooFit;
 
 int main(const int argc, const char **argv) {
-
+  
   int failed = 0;
 
-  Int_t N_RANGES = 10;
+  // Turn off INFO:Eval output, it gets crowded!
+  RooMsgService::instance().getStream(1).removeTopic(Eval) ;
 
-  std::vector< std::tuple<Double_t, Double_t> > fitRanges;
-  fitRanges.push_back( std::make_tuple(3, 50) );
-  fitRanges.push_back( std::make_tuple(3, 50) );
-  fitRanges.push_back( std::make_tuple(3, 50) );
+  Int_t N_RANGES = 1E3;
+
+  gRandom->SetSeed(0); 
 
   // Fitter ranges
   Int_t fitEMin  = 2;
@@ -61,76 +62,70 @@ int main(const int argc, const char **argv) {
   SummaryParser sp(summary_file);
   for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
     if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
-    if (i == (Int_t)1e6) break;
     SummaryEvent *evt = sp.GetEvt(i);
     track_response.Fill(evt);
   }
 
-  cout << "NOTICE TestFit response ready" << endl;
+  cout << "NOTICE detector response ready" << endl;
 
   auto meff_file = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
   FitUtil *fitutil = new FitUtil(3, track_response.GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);
+  FitPDF pdf_test("pdf_test", "pdf_test", fitutil, &track_response);
 
-  FitPDF pdf_test( "pdf_test", "pdf_test", fitutil, &track_response );
-  fitutil->GetVar("E_reco")->setRange( "test_range", 4.56, 49.9);
-  fitutil->GetVar("ct_reco")->setRange( "test_range", -0.8, -0.1);
-
-  // Set IO values and make expectation histograms
+  // Set central values and make expectation histograms
   fitutil->SetNOcentvals();
 
-  track_exp_val = (TH3D*)pdf_tracks.GetExpValHist() ;
-  TString track_name = "tracks_expval";
-  track_exp_val->SetName(track_name);
+  TH3D* test_exp_val = (TH3D*)pdf_test.GetExpValHist();
+  TString test_name = "test_expval_norange";
+  test_exp_val->SetName(test_name);
+
+  cout << "NOTICE full histogram generated" << endl;
 
   //----------------------------------------------------------
   // set up data for simultaneous fitting and fit
   //----------------------------------------------------------
 
-//  for (Int_t i = 0; i < N_RANGES; i++) {
-//    fitutil->GetVar("E_reco")->setRange( Form("range_%i", i), std::get<0>(fitRanges[i]), std::get<1>(fitRanges[i]));
-//  }
+  cout << "NOTICE generating ranges and applying to full histogram" << endl;
 
-  Double_t fitrange_test_lower = fitutil->GetVar("E_reco")->getMin("fitRangeE_showers_expval_true_0.00");
-  Double_t fitrange_test_upper = fitutil->GetVar("E_reco")->getMax("fitRangeE_showers_expval_true_0.00");
+  for (Int_t i = 0; i < N_RANGES; i++) {
 
-  cout << "Range test lower " << fitrange_test_lower << endl;
-  cout << "Range test upper " << fitrange_test_upper << endl;
+    Double_t E_lo_range = gRandom->Uniform(fitEMin, fitEMax);
+    Double_t E_hi_range = gRandom->Uniform(E_lo_range, fitEMax);
+    Double_t ct_lo_range = gRandom->Uniform(fitctMin, fitctMax);
+    Double_t ct_hi_range = gRandom->Uniform(ct_lo_range, fitctMax);
 
+    TString rangeName = Form("range_%i", i);
+    fitutil->GetVar("E_reco")->setRange(  rangeName, E_lo_range, E_hi_range);
+    fitutil->GetVar("ct_reco")->setRange( rangeName, ct_lo_range, ct_hi_range);
 
+    TH3D* test_exp_val_range = (TH3D*)pdf_test.GetExpValHist(rangeName) ;
+    test_exp_val_range->SetName("test_expval_" + rangeName);
 
+    Int_t E_bin_min  = test_exp_val->GetXaxis()->FindBin( E_lo_range );
+    Int_t E_bin_max  = test_exp_val->GetXaxis()->FindBin( E_hi_range );
+    Int_t ct_bin_min = test_exp_val->GetYaxis()->FindBin( ct_lo_range );
+    Int_t ct_bin_max = test_exp_val->GetYaxis()->FindBin( ct_hi_range );
 
+    // The Bjorken-y Z-axis contains only 1 bin, so the integral goes from 1 to 1.
+    Double_t integral_full_range = test_exp_val->Integral();
+    Double_t integral_rangeName = test_exp_val_range->Integral();
+    Double_t integral_integralRange = test_exp_val_range->Integral( E_bin_min, E_bin_max, ct_bin_min, ct_bin_max, 1, 1 );
+    //cout << "Integral of histo with no range is:       " << integral_full_range << endl;
+    //cout << "Integral of histo with rangeName is:      " << integral_rangeName << endl;
+    //cout << "Integral of histo with integral range is: " << integral_integralRange << endl;
+ 
+    // If the integral of the full histogram is less than an integral of a histogram with a range, 
+    // there is a problem. If the integral of the hist w/ range through the ExpVal method is 
+    // different from the integral w/ range directly used in Integral, there is a problem.
+    if ((integral_full_range < integral_rangeName) or (integral_rangeName != integral_integralRange)) {
+      failed = 1;
+    }
 
-
-
-  TH3D* testhist_range    = (TH3D*)pdf_test.GetExpValHist("test_range") ;
-  testhist_range->SetName("test_range");
-  TH3D* testhist_no_range = (TH3D*)pdf_test.GetExpValHist() ;
-  testhist_no_range->SetName("test_no_range");
-
-  cout << "Integral of histo with fitRange is:    " << testhist_range->Integral() << endl;
-  cout << "Integral of histo with no fitRange is: " << testhist_no_range->Integral() << endl;
-
-  TH2D* testhist_range_2d    = (TH2D*)testhist_range->Project3D("yx");
-  TH2D* testhist_no_range_2d = (TH2D*)testhist_no_range->Project3D("yx");
-
-  cout << "Integral of 2d with fitRange    " <<  testhist_range_2d->Integral() << endl;
-  cout << "Integral of 2d with no fitRange " <<  testhist_no_range_2d->Integral() << endl;
-
-  TFile fout("test.root", "RECREATE");
-  testhist_range_2d->Write("testhist_range");
-  testhist_no_range_2d->Write("testhist_no_range");
-  fout.Close();
-
-
-
-
-
+  }
   
   //-------------------------------------------------------------
-  // compare fitted and true values
+  // evaluate if the test failed
   //-------------------------------------------------------------
-//  RooArgList fitvals = result->floatParsFinal();
-
 
   if (failed) cout << "NOTICE TestFit failed" << endl;
   else cout << "NOTICE TestFit passed" << endl;
