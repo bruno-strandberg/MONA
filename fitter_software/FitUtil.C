@@ -135,7 +135,7 @@ std::tuple<Double_t, Double_t, Int_t, Int_t> FitUtil::GetRange(Double_t _min, Do
   }
 
   if ( _max < max ) {
-    bin_max = axis->FindBin(_max) - 1;
+    bin_max = axis->FindBin(_max);
     max = axis->GetBinUpEdge( bin_max );
   }
   
@@ -653,6 +653,10 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
   Double_t by_min = ((RooRealVar*)fParSet.find("by_reco"))->getMin(rangeName);
   Double_t by_max = ((RooRealVar*)fParSet.find("by_reco"))->getMax(rangeName);
 
+//  cout << " fParSet uses E-vals " << E_min << " " << E_max << endl;
+//  cout << " fParSet uses ctvals " << ct_min << " " << ct_max << endl;
+//  cout << " fParSet uses byvals " << by_min << " " << by_max << endl;
+
   // create the histogram with expectation values
   TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
   TString hname = resp->Get_RespName() + "_expct";
@@ -674,6 +678,14 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
   Int_t ctbin_max = min( fCtbin_max, std::get<3>(YFitRange) );
   Int_t bybin_min = max( fBybin_min, std::get<2>(ZFitRange) );
   Int_t bybin_max = min( fBybin_max, std::get<3>(ZFitRange) );
+
+//  cout << " rangeName uses E-vals " << std::get<0>(XFitRange) << " " << std::get<1>(XFitRange) << endl;
+//  cout << " rangeName uses ctvals " << std::get<0>(YFitRange) << " " << std::get<1>(YFitRange) << endl;
+//  cout << " rangeName uses byvals " << std::get<0>(ZFitRange) << " " << std::get<1>(ZFitRange) << endl;
+
+//  cout << " rangeName uses E-bins " << ebin_min << " " << ebin_max << endl;
+//  cout << " rangeName uses ctbins " << ctbin_min << " " << ctbin_max << endl;
+//  cout << " rangeName uses bybins " << bybin_min << " " << bybin_max << endl;
 
   // loop over bins and fill the expectation value histogram
   for (Int_t ebin = ebin_min; ebin <= ebin_max; ebin++) {
