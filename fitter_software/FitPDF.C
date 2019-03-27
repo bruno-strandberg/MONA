@@ -87,7 +87,15 @@ Double_t FitPDF::evaluate() const {
   Double_t Ct_reco = *( fProxies.at( fFitUtil->GetCTobs()->GetName() ) );
   Double_t By_reco = *( fProxies.at( fFitUtil->GetBYobs()->GetName() ) );
 
-  return fFitUtil->RecoEvts(E_reco, Ct_reco, By_reco, fResponse, fProxies).first;
+  Double_t reco_evt_density = fFitUtil->RecoEvts(E_reco, Ct_reco, By_reco, fResponse, fProxies).first;
+
+  if ( reco_evt_density < 0. ) {
+    cout << "NOTICE FitPDF::evaluate() parameter values at error:" << endl;
+    for (auto kv: fProxies) {cout << "Parameter: " << kv.first << "\tValue: " << (Double_t)(*kv.second) << endl;}
+    throw std::logic_error("ERROR! FitPDF::evaluate() has received a negative event density from the (overloaded) RecoEvts function. This is not physical and indicates an issue in the (re-)implementation of the virtual functions FitUtil::RecoEvts and FitUtil::TrueEvts.");
+  }
+
+  return reco_evt_density;
 
 } 
 
