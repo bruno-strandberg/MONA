@@ -80,5 +80,5 @@ for par in pars:
 # send all scripts to the farm
 for script in scripts:
 
-    syscmd = "qsub -q generic7 -o {0} -e {0} {1}".format(tmpdir, script)
+    syscmd = "qsub -q short7 -o {0} -e {0} {1}".format(tmpdir, script)
     os.system( syscmd )
