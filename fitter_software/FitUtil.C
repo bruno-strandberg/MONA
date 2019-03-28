@@ -135,7 +135,7 @@ std::tuple<Double_t, Double_t, Int_t, Int_t> FitUtil::GetRange(Double_t _min, Do
   }
 
   if ( _max < max ) {
-    bin_max = axis->FindBin(_max) - 1;
+    bin_max = axis->FindBin(_max); 
     max = axis->GetBinUpEdge( bin_max );
   }
   
@@ -635,11 +635,22 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_
     
     \param resp       Pointer to `DetResponse` instance used with the `FitPDF` class.
     \param proxymap   A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
-    \param rangeName  Range string as used in `RooFit`, currently dummy.
+    \param rangeName  Range string as used in `RooFit`, it will apply the defined rangeName to the E/Ct/By variables. If the range does not exists, the default ranges are used.
     \return           a 3D histogram in reco variables with exepectation values as bin contents
 
 */
 TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName) {
+
+  // Default behaviour of getMin/getMax if there is no Range present: return the absolute min/max of 
+  // the data type. For doubles: +-1E30
+  // RooFit handles ranges on different RooRealVars with the same rangeName properly: they do not collide.
+  // So using the same name for a collection of ranges on different variables is valid.
+  Double_t E_min  = ((RooRealVar*)fParSet.find("E_reco")) ->getMin(rangeName);
+  Double_t E_max  = ((RooRealVar*)fParSet.find("E_reco")) ->getMax(rangeName);
+  Double_t ct_min = ((RooRealVar*)fParSet.find("ct_reco"))->getMin(rangeName);
+  Double_t ct_max = ((RooRealVar*)fParSet.find("ct_reco"))->getMax(rangeName);
+  Double_t by_min = ((RooRealVar*)fParSet.find("by_reco"))->getMin(rangeName);
+  Double_t by_max = ((RooRealVar*)fParSet.find("by_reco"))->getMax(rangeName);
 
   // create the histogram with expectation values
   TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
@@ -648,26 +659,41 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
   hexp->Reset();
   hexp->SetNameTitle(hname, hname);
   
+  auto XFitRange = GetRange( E_min,  E_max,  hexp->GetXaxis() );
+  auto YFitRange = GetRange( ct_min, ct_max, hexp->GetYaxis() );
+  auto ZFitRange = GetRange( by_min, by_max, hexp->GetZaxis() );
+
+  // Do not overwrite the default fEbin_min, etc. since they are used by all instances that call FitUtil!
+  // Instead define new Ints to use in the for loop downstairs
+  // Take the max to move the minimum value up and the min to move the maximum value down, this 
+  // constrains the range.
+  Int_t ebin_min  = max( fEbin_min,  std::get<2>(XFitRange) );
+  Int_t ebin_max  = min( fEbin_max,  std::get<3>(XFitRange) );
+  Int_t ctbin_min = max( fCtbin_min, std::get<2>(YFitRange) );
+  Int_t ctbin_max = min( fCtbin_max, std::get<3>(YFitRange) );
+  Int_t bybin_min = max( fBybin_min, std::get<2>(ZFitRange) );
+  Int_t bybin_max = min( fBybin_max, std::get<3>(ZFitRange) );
+
   // loop over bins and fill the expectation value histogram
-  for (Int_t ebin = fEbin_min; ebin <= fEbin_max; ebin++) {
-    for (Int_t ctbin = fCtbin_min; ctbin <= fCtbin_max; ctbin++) {
-      for (Int_t bybin = fBybin_min; bybin <= fBybin_max; bybin++) {
+  for (Int_t ebin = ebin_min; ebin <= ebin_max; ebin++) {
+    for (Int_t ctbin = ctbin_min; ctbin <= ctbin_max; ctbin++) {
+      for (Int_t bybin = bybin_min; bybin <= bybin_max; bybin++) {
 
         Double_t E  = hexp->GetXaxis()->GetBinCenter( ebin );
         Double_t ct = hexp->GetYaxis()->GetBinCenter( ctbin );
         Double_t by = hexp->GetZaxis()->GetBinCenter( bybin );
 
-	// calculate the bin width, necessary to convert event density to event count
-	Double_t e_w  = hexp->GetXaxis()->GetBinWidth( ebin  );
-	Double_t ct_w = hexp->GetYaxis()->GetBinWidth( ctbin );
-	Double_t by_w = hexp->GetZaxis()->GetBinWidth( bybin );
-	Double_t binw = e_w * ct_w * by_w;
+        // calculate the bin width, necessary to convert event density to event count
+        Double_t e_w  = hexp->GetXaxis()->GetBinWidth( ebin  );
+        Double_t ct_w = hexp->GetYaxis()->GetBinWidth( ctbin );
+        Double_t by_w = hexp->GetZaxis()->GetBinWidth( bybin );
+        Double_t binw = e_w * ct_w * by_w;
 
         auto recoevts = RecoEvts(E, ct, by, resp, proxymap);
-	
-	hexp->SetBinContent(ebin, ctbin, bybin, recoevts.first*binw  );
-	hexp->SetBinError  (ebin, ctbin, bybin, recoevts.second*binw );
-	
+
+        hexp->SetBinContent(ebin, ctbin, bybin, recoevts.first*binw  );
+        hexp->SetBinError  (ebin, ctbin, bybin, recoevts.second*binw );
+
       }
     }
   }
