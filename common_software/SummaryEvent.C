@@ -59,8 +59,9 @@ SummaryEvent::~SummaryEvent() {}
 
     For example, the pseudo-events can be processed through event filters/selections/detector responses.
 
+    \param logE If true, energy sampled from \f$ 10^{{\rmUniform}(0,2)}\f$,otherwise from \f$ {\rm Uniform}(1,100)\f$
 */
-void SummaryEvent::FillPseudoData() {
+void SummaryEvent::FillPseudoData(Bool_t logE) {
 
   //-----------------------------------------------------------------------------
   // some hardcoded limits that may be configured through the parameter list in the future
@@ -102,7 +103,8 @@ void SummaryEvent::FillPseudoData() {
   fMC_pos_x        = fRand.Uniform(posmin, posmax);                 // select within a random cube for position
   fMC_pos_y        = fRand.Uniform(posmin, posmax);
   fMC_pos_z        = fRand.Uniform(posmin, posmax);
-  fMC_energy       = fRand.Uniform(emin,emax);                       // 1-100 GeV
+  if (logE) { fMC_energy = TMath::Power( 10, fRand.Uniform(0,2) ); } // log falloff in range 1-100 GeV
+  else      { fMC_energy = fRand.Uniform(emin,emax); }               // uniform 1-100 GeV
   fMC_bjorkeny     = fRand.Uniform(0,1);                             // bjorken-y range 0 to 1
 
   //-----------------------------------------------------------------------------

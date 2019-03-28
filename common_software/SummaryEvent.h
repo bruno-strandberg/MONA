@@ -155,7 +155,7 @@ class SummaryEvent : public TObject {
   Double_t Get_RDF_noise_score() { return fRDF_noise_score; }
   
   // other functions
-  void FillPseudoData();
+  void FillPseudoData(Bool_t logE=kFALSE);
 
  private:
 
