@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "TFile.h"
+#include "TRandom.h"
 
 using namespace std;
 
@@ -48,6 +49,9 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
   InitFitVars(get<MIN>(ENr), get<MAX>(ENr), get<MIN>(CTr), get<MAX>(CTr), get<MIN>(BYr), get<MAX>(BYr));
   InitCacheHists(fHB);
   Fill_Flux_Xsec_Meff_cache(fFlux, fXsec, fMeff, fOpTime);
+
+  fOscSamplesN        = 1;
+  f_cache_oscsamplesn = 0;
 
   f_cache_sinsqth12 = 0;
   f_cache_sinsqth13 = 0;
@@ -472,7 +476,7 @@ Double_t FitUtil::GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t
   }
 
   // recalculate the oscillation parameter cache if anything has changed.
-  ProbCacher(proxymap);
+  ProbCacher(proxymap, fOscSamplesN);
   
   return fhOscCache[flav_in][tb.fFlav][tb.fIsNB]->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin);
 }
@@ -520,8 +524,13 @@ Double_t FitUtil::GetCachedBYfrac(const TrueB &tb) {
    NB! The oscillations tau-> (elec, muon, tau) are not calculated to save time; tau flux is assumed 0.
 
    \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
+   \param nsamples    Number of samples per bin
  */
-void FitUtil::ProbCacher(const proxymap_t &proxymap) {
+void FitUtil::ProbCacher(const proxymap_t &proxymap, Int_t nsamples) {
+
+  if (nsamples < 1) {
+    throw std::invalid_argument("ERROR! FitUtil::ProbCacher() cannot have below 1 samples per bin.");
+  }
 
   // get the parameter values from the proxies
   Double_t SinsqTh12 = *( proxymap.at( (TString)fSinsqTh12->GetName() ) );
@@ -532,11 +541,13 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap) {
   Double_t Dm31      = *( proxymap.at( (TString)fDm31->GetName() ) );
 
   if (SinsqTh12 != f_cache_sinsqth12 || SinsqTh13 != f_cache_sinsqth13 || SinsqTh23 != f_cache_sinsqth23 || 
-      Dcp != f_cache_dcp || Dm21 != f_cache_dm21 || Dm31 != f_cache_dm31) {
+      Dcp != f_cache_dcp || Dm21 != f_cache_dm21 || Dm31 != f_cache_dm31 || nsamples != f_cache_oscsamplesn) {
 
     fOscCalcTime->Start(kFALSE);
 
     // update the cache variables
+    f_cache_oscsamplesn = nsamples;
+
     f_cache_sinsqth12 = SinsqTh12;
     f_cache_sinsqth13 = SinsqTh13;
     f_cache_sinsqth23 = SinsqTh23;
@@ -557,23 +568,44 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap) {
       for (UInt_t f_out = 0; f_out < fFlavs; f_out++) {
 	for (UInt_t isnb = 0; isnb < fInts; isnb++) {
 
+	  fProb->SetIsNuBar( isnb );
+
 	  Int_t N_ebins  = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetNbins();
 	  Int_t N_ctbins = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetNbins();
 
 	  for (Int_t ebin = 1; ebin <= N_ebins; ebin++) {
 	    for (Int_t ctbin = 1; ctbin <= N_ctbins; ctbin++) {
 
-	      Double_t E  = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinCenter(ebin);
-	      Double_t ct = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinCenter(ctbin);
+	      Double_t prob_ave = 0;
 
-	      // set oscillation path and is-nu-bar flag
-	      fPrem->FillPath( ct );	      
-	      fProb->SetPath ( fPrem->GetNuPath() );
-	      fProb->SetIsNuBar( isnb );
+	      Double_t emin    = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinLowEdge(ebin);
+	      Double_t emax    = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinUpEdge(ebin);
+	      Double_t e_step  = (emax - emin)/(nsamples+1);
 
-	      fhOscCache[f_in][f_out][isnb]->SetBinContent(ebin, ctbin, fProb->Prob(f_in, f_out, E) );
+	      Double_t ctmin   = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinLowEdge(ctbin);
+	      Double_t ctmax   = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinUpEdge(ctbin);
+	      Double_t ct_step = (ctmax - ctmin)/(nsamples+1);
 
-	      fOscCalls++;
+	      // calculate average of N samples inside the bin
+	      for (Int_t n_e = 0; n_e < nsamples; n_e++) {
+
+		Double_t E  = emin + (n_e + 1) * e_step;
+
+		for (Int_t n_ct = 0; n_ct < nsamples; n_ct++) {
+
+		  Double_t ct = ctmin + (n_ct + 1) * ct_step;
+
+		  fPrem->FillPath( ct );	      
+		  fProb->SetPath ( fPrem->GetNuPath() );
+
+		  prob_ave += fProb->Prob(f_in, f_out, E);
+
+		  fOscCalls++;
+		
+		} // end loop over cos-theta samples
+	      } // end loop over energy samples
+
+	      fhOscCache[f_in][f_out][isnb]->SetBinContent(ebin, ctbin, prob_ave/(nsamples*nsamples) );
 
 	    } // end loop over cos-theta bins
 	  } //end loop over energy bins
@@ -667,12 +699,12 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
   // Instead define new Ints to use in the for loop downstairs
   // Take the max to move the minimum value up and the min to move the maximum value down, this 
   // constrains the range.
-  Int_t ebin_min  = max( fEbin_min,  std::get<2>(XFitRange) );
-  Int_t ebin_max  = min( fEbin_max,  std::get<3>(XFitRange) );
-  Int_t ctbin_min = max( fCtbin_min, std::get<2>(YFitRange) );
-  Int_t ctbin_max = min( fCtbin_max, std::get<3>(YFitRange) );
-  Int_t bybin_min = max( fBybin_min, std::get<2>(ZFitRange) );
-  Int_t bybin_max = min( fBybin_max, std::get<3>(ZFitRange) );
+  Int_t ebin_min  = max( fEbin_min,  std::get<MINBIN>(XFitRange) );
+  Int_t ebin_max  = min( fEbin_max,  std::get<MAXBIN>(XFitRange) );
+  Int_t ctbin_min = max( fCtbin_min, std::get<MINBIN>(YFitRange) );
+  Int_t ctbin_max = min( fCtbin_max, std::get<MAXBIN>(YFitRange) );
+  Int_t bybin_min = max( fBybin_min, std::get<MINBIN>(ZFitRange) );
+  Int_t bybin_max = min( fBybin_max, std::get<MAXBIN>(ZFitRange) );
 
   // loop over bins and fill the expectation value histogram
   for (Int_t ebin = ebin_min; ebin <= ebin_max; ebin++) {

@@ -6,6 +6,7 @@
 #include "AtmFlux.h"
 #include "NuXsec.h"
 #include "EffMass.h"
+#include "PMNS_Base.h"
 #include "PMNS_Fast.h"
 #include "PremModel.h"
 
@@ -87,6 +88,19 @@ class FitUtil {
   // setters/getters
   //------------------------------------------------------------------
   
+  /** Function to specify the number of oscillation calculation samples per each (E,ct) bin
+      
+      NB! the number of samples is applied to both energy and cos-theta, i.e. the number of oscillation calculations increases by a factor of nsampels^2. That is because the sampling is applied along both the energy axis and the cos-theta axis.
+
+      \param nsamples Number of samples along the energy axis and the cos-theta axis.
+   */
+  void SetOscSamplesN(Int_t nsamples) {
+    if (nsamples < 1) { 
+      throw std::invalid_argument("ERROR! FitUtil::SetOscSamplesN() input cannot be smaller than 1");
+    }
+    fOscSamplesN = nsamples;
+  }
+
   /** Get the `RooArgSet` with all parameters known to `RooFit`
       \return `RooArgSet` with known parameters.
    */
@@ -130,7 +144,7 @@ class FitUtil {
   /** Get the a pointer to `OscProb::PMNS_Fast` member of `FitUtil` that is used to fill caches.
       \return pointer to `OscProb::PMNS_Fast` instance.
    */
-  OscProb::PMNS_Fast* GetOscCalculator() { return fProb; }
+  OscProb::PMNS_Base* GetOscCalculator() { return fProb; }
 
   /** Get the a pointer to `OscProb::PremModel` member of `FitUtil` that is used to fill caches.
       \return pointer to `OscProb::PremModel` instance.
@@ -175,7 +189,7 @@ class FitUtil {
   AtmFlux            *fFlux;                        //!< atm flux calculator
   NuXsec             *fXsec;                        //!< xsec calculator
   EffMass            *fMeff;                        //!< effective mass calculator
-  OscProb::PMNS_Fast *fProb;                        //!< oscillation probability calculator
+  OscProb::PMNS_Base *fProb;                        //!< oscillation probability calculator
   OscProb::PremModel *fPrem;                        //!< earth model
 
   //------------------------------------------------------------------
@@ -221,7 +235,7 @@ class FitUtil {
   // protected functions
   //------------------------------------------------------------------
 
-  void ProbCacher(const proxymap_t& proxymap);  
+  void ProbCacher(const proxymap_t& proxymap, Int_t nsamples);  
   void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
   void InitCacheHists(TH3D *h_template);
   void Fill_Flux_Xsec_Meff_cache(AtmFlux *flux, NuXsec *xsec, EffMass *meff, Double_t op_time);
@@ -263,6 +277,9 @@ class FitUtil {
   TH1D *fhXsecCache[fFlavs][fInts][fPols];  //!< xsec cache with struct. [flav][is_cc][isnb]
   TH2D *fhBYfracCache[fFlavs][fInts][fPols];//!< bjorken-y fractions cache with struct. [flav][is_cc][isnb]
   TH3D *fhMeffCache[fFlavs][fInts][fPols];  //!< meff cache with struct. [flav][is_cc][isnb]
+
+  Int_t    fOscSamplesN;         //!< determines the number of samples^2 per bin in oscillation prob calculation
+  Int_t    f_cache_oscsamplesn;  //!< internal cache for fOscSamplesN values
 
   Double_t f_cache_sinsqth12;    //!< internally cached theta12 value
   Double_t f_cache_sinsqth13;    //!< internally cached theta13 value
