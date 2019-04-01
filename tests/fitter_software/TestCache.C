@@ -43,7 +43,7 @@ int main(const int argc, const char **argv) {
 
   // get pointers to the flux, osc and xsec calculators for testing
   AtmFlux   *flux = futil.GetFluxCalculator();
-  PMNS_Fast *osc  = futil.GetOscCalculator();
+  PMNS_Fast *osc  = (PMNS_Fast*)futil.GetOscCalculator();
   PremModel *prem = futil.GetEarthModel();
   NuXsec    *xsec = futil.GetXsecCalculator();
   EffMass   *meff = futil.GetEffMassCalculator();
