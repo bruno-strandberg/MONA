@@ -212,5 +212,8 @@ void effmass(Int_t nu_pdg = 14, Bool_t iscc = 1, TString outname = "") {
       std::get<3>(slice)->Write();
     }
   }
-  
+ 
+  // clean-up stuff from running in compiled mode
+  system("rm effmass_C*");
+ 
 }
