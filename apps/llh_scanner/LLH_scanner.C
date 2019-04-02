@@ -77,7 +77,7 @@ using namespace LLHSCAN;
 using namespace RooFit;
 
 /**
-   This routine splits the data to 3 PID bins, creates expectation value data at NO central values and creates a likelihood function with respect to the expectation value data. It scans the likelihood with respect to the expectation value data in the variable specified by the user while keeping other parameters fixed.
+   This routine splits the data to 3 PID bins, creates expectation value data at NO central values and creates a likelihood function with respect to the expectation value data. It scans the likelihood with respect to the expectation value data in the variable specified by the user while keeping other parameters fixed or free.
 */
 
 int main(const int argc, const char **argv) {
@@ -102,6 +102,8 @@ int main(const int argc, const char **argv) {
   JTOOLS::JRange<Double_t> par_range;
   TString  par_name;
   Int_t    ncpu;
+  Bool_t   fixAll;
+  vector<string> fixedPars;
 
   try {
 
@@ -113,11 +115,32 @@ int main(const int argc, const char **argv) {
     zap['r'] = make_field(par_range, "Parameter range for LLH scan") = JTOOLS::JRange<Double_t>(-def_range, def_range);
     zap['p'] = make_field(par_name, "Parameter name that is LLH scanned") = parameters;
     zap['n'] = make_field(ncpu, "Number of CPUs used for LLH calculation") = 1;
+    zap['F'] = make_field(fixAll, "Fix all other parameters except for the scanned parameter");
+    zap['f'] = make_field(fixedPars, "Fix a selection of parameters, e.g. -f dcp -f E_scale") = std::vector<string>{};
 
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
   catch(const exception &error) {
     FATAL(error.what() << endl);
+  }
+
+  // check that fixAll is not set if individual parameters are fixed
+  if ( fixedPars.size() > 0 && fixAll) {
+    throw std::invalid_argument("ERROR LLH_scanner: conflict, request to fix all parameters (-F) and additionally a selection through -f");
+  }
+
+  // check that correct parameter names where given as argument
+  for (auto f: fixedPars) {
+
+    Bool_t parFound = kFALSE;
+    for (auto p: parameters) parFound = parFound || ( (TString)f == p );
+
+    if (!parFound) {
+      cout << "Known parameters: " << endl;
+      for (auto p: parameters) cout << p << endl;
+      throw std::invalid_argument("ERROR! Unknown parameter " + f);
+    }
+
   }
 
   //======================================================
@@ -185,7 +208,7 @@ int main(const int argc, const char **argv) {
 
   // init fitutil and pdf's, create data
   //---------------------
-  FitUtilWsyst fu(3, resps["trk"]->GetHist3D(), 3, 75, -1, 0, 0, 1, meff_file);
+  FitUtilWsyst fu(3, resps["trk"]->GetHist3D(), 3, 65, -1, -1e-3, 0, 1, meff_file);
 
   std::map< TString, FitPDF* > pdfs;
   for (auto &R: resps) {
@@ -236,12 +259,22 @@ int main(const int argc, const char **argv) {
 
   while ( ( V = (RooRealVar*)it->Next() ) ) {
     if ( fu.GetObs().find( V->GetName() ) ) continue; // ignore observables
-    cout << "NOTICE LLH_scanner: fixing " << V->GetName() << endl;
-    V->setConstant(kTRUE);
+
+    // check if this parameter is in the list of parameters to be fixed
+    Bool_t fixThis = kFALSE;
+    for (auto p: fixedPars) fixThis = fixThis || ( ((TString)V->GetName()) == (TString)p );
+
+    if (fixAll || fixThis) {
+      cout << "NOTICE LLH_scanner: fixed parameter " << V->GetName() << endl;
+      V->setConstant(kTRUE);
+    }
+    else {
+      cout << "NOTICE LLH_scanner: free parameter " << V->GetName() << endl;
+    }
   }
 
   // release the specific parameter, set limits
-  cout << "NOTICE LLH_scanner: releasing " << var->GetName() << endl;
+  cout << "NOTICE LLH_scanner: scanned parameter " << var->GetName() << endl;
   var->setConstant(kFALSE);
   var->setMin( par_range.getLowerLimit() );
   var->setMax( par_range.getUpperLimit() );
