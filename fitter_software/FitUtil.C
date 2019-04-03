@@ -48,7 +48,10 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
   
   InitFitVars(get<MIN>(ENr), get<MAX>(ENr), get<MIN>(CTr), get<MAX>(CTr), get<MIN>(BYr), get<MAX>(BYr));
   InitCacheHists(fHB);
-  Fill_Flux_Xsec_Meff_cache(fFlux, fXsec, fMeff, fOpTime);
+
+  fFluxSamplesN = 1;
+  FillFluxCache(fFlux, fOpTime, fFluxSamplesN);
+  FillXsecMeffCache(fXsec, fMeff);
 
   fOscSamplesN        = 1;
   f_cache_oscsamplesn = 0;
@@ -370,13 +373,12 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
 
 //***************************************************************************
 
-/** A private function to fill the flux and xsec cache hists
+/** A private function to fill the flux cache hists
     \param flux     Pointer to the `AtmFlux` member instance
-    \param xsec     Pointer to the `NuXsec` member instance
-    \param meff     Pointer to the `EffMass` member instance
     \param op_time  Operation time in years.
+    \param nsamples Parameter to increase flux calculation accuracy. If 1 bin center is used, otherwise each bin is sub-divided to nsamples along energy and cos-theta, e.g. nsamples=2 means that each bin is calculated as an average of 2^2=4 points.
 */
-void FitUtil::Fill_Flux_Xsec_Meff_cache(AtmFlux *flux, NuXsec *xsec, EffMass *meff, Double_t op_time) {
+void FitUtil::FillFluxCache(AtmFlux *flux, Double_t op_time, UInt_t nsamples) {
 
   // fill the atm flux cache. Note that (currently) AtmFlux returns 0 for tau flux
   for (UInt_t f = 0; f < fFlavs; f++) {
@@ -387,21 +389,47 @@ void FitUtil::Fill_Flux_Xsec_Meff_cache(AtmFlux *flux, NuXsec *xsec, EffMass *me
       for (Int_t ebin = 1; ebin <= hflux->GetXaxis()->GetNbins(); ebin++) {
 	for (Int_t ctbin = 1; ctbin <= hflux->GetYaxis()->GetNbins(); ctbin++) {
 
-	  Double_t E   = hflux->GetXaxis()->GetBinCenter(ebin);
-	  Double_t ew  = hflux->GetXaxis()->GetBinWidth(ebin);
-	  Double_t ct  = hflux->GetYaxis()->GetBinCenter(ctbin);
-	  Double_t ctw = hflux->GetYaxis()->GetBinWidth(ctbin);
+	  // create a subdivision to improve the flux calculation accuracy
+	  Double_t emin  = hflux->GetXaxis()->GetBinLowEdge(ebin);
+	  Double_t emax  = hflux->GetXaxis()->GetBinUpEdge(ebin);
+	  Double_t ctmin = hflux->GetYaxis()->GetBinLowEdge(ctbin);
+	  Double_t ctmax = hflux->GetYaxis()->GetBinUpEdge(ctbin);
+	  TH2D hb("hb", "hb", nsamples, emin, emax, nsamples, ctmin, ctmax);
 
-	  Double_t atm_flux_factor = ew * ctw * fSec_per_y * op_time;
-	  Double_t atmflux = flux->Flux_dE_dcosz(f, isnb, E, ct) * atm_flux_factor;
-	  
-	  hflux->SetBinContent(ebin, ctbin, atmflux);
+	  // loop over the subdivision bins to calculate the average flux
+	  Double_t atmflux = 0.;
+
+	  for (Int_t eb = 1; eb <= hb.GetXaxis()->GetNbins(); eb++) {
+	    for (Int_t cb = 1; cb <= hb.GetYaxis()->GetNbins(); cb++) {
+
+	      Double_t E   = hb.GetXaxis()->GetBinCenter(eb);
+	      Double_t ew  = hb.GetXaxis()->GetBinWidth(eb);
+	      Double_t ct  = hb.GetYaxis()->GetBinCenter(cb);
+	      Double_t ctw = hb.GetYaxis()->GetBinWidth(cb);
+
+	      Double_t atm_flux_factor = ew * ctw * fSec_per_y * op_time;
+	      atmflux += flux->Flux_dE_dcosz(f, isnb, E, ct) * atm_flux_factor;
+	  	      
+	    }
+	  }
+
+	  hflux->SetBinContent( ebin, ctbin, atmflux/(nsamples*nsamples) );
 
 	}
       }
 
     }
   }
+
+}
+
+//***************************************************************************
+
+/** A private function to fill the xsec and eff mass cache hists
+    \param xsec     Pointer to the `NuXsec` member instance
+    \param meff     Pointer to the `EffMass` member instance
+*/
+void FitUtil::FillXsecMeffCache(NuXsec *xsec, EffMass *meff) {
 
   // fill xsec cache and meff cache
   for (UInt_t f = 0; f < fFlavs; f++) {
@@ -526,7 +554,7 @@ Double_t FitUtil::GetCachedBYfrac(const TrueB &tb) {
    \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
    \param nsamples    Number of samples per bin
  */
-void FitUtil::ProbCacher(const proxymap_t &proxymap, Int_t nsamples) {
+void FitUtil::ProbCacher(const proxymap_t &proxymap, UInt_t nsamples) {
 
   if (nsamples < 1) {
     throw std::invalid_argument("ERROR! FitUtil::ProbCacher() cannot have below 1 samples per bin.");
@@ -587,11 +615,11 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap, Int_t nsamples) {
 	      Double_t ct_step = (ctmax - ctmin)/(nsamples+1);
 
 	      // calculate average of N samples inside the bin
-	      for (Int_t n_e = 0; n_e < nsamples; n_e++) {
+	      for (UInt_t n_e = 0; n_e < nsamples; n_e++) {
 
 		Double_t E  = emin + (n_e + 1) * e_step;
 
-		for (Int_t n_ct = 0; n_ct < nsamples; n_ct++) {
+		for (UInt_t n_ct = 0; n_ct < nsamples; n_ct++) {
 
 		  Double_t ct = ctmin + (n_ct + 1) * ct_step;
 

@@ -56,6 +56,9 @@ AtmFlux::AtmFlux(UInt_t opt, Bool_t debug) {
     throw std::invalid_argument("ERROR! AtmFlux::AtmFlux() option " + to_string(opt) + 
 				" not supported, init failed.");
   }
+  else {
+    cout << "NOTICE AtmFlux::AtmFlux() flux model " << fFileMap[opt] << endl;
+  }
 
   //======================================================
   //read in the data
