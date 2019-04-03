@@ -1,4 +1,4 @@
-#include "HelperFunctions.h"
+#include "../HelperFunctions.h"
 
 #include "TSystem.h"
 #include "TROOT.h"

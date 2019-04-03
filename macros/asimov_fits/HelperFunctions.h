@@ -138,3 +138,50 @@ std::map<Int_t, Double_t> SetPIDCase(Int_t n) {
   return pid_map;
 
 }
+
+
+/** Function to create a map of the PID bin edges
+ */
+std::vector< std::tuple<Double_t, Double_t> > GetEnergyRanges(Int_t n) {
+  std::vector< std::tuple<Double_t, Double_t> > range_map;
+
+  switch (n) {
+    case 2:
+      cout << "NOTICE: Energy range case " << n << endl;
+      // The values of all these maps are based on 10% MC Uncertainty as cut-off for NOT using the
+      // events by using visual inspection. So outside these ranges, the MCU on the events is >10%
+      range_map.insert(std::make_tuple(2.0, 80.0)); // shower
+      range_map.insert(std::make_tuple(3.0, 80.0)); // track
+      break;
+    case 3:
+      cout << "NOTICE: Energy range case " << n << endl;
+      range_map.insert(std::make_tuple(2.0, 80.0)); // shower
+      range_map.insert(std::make_tuple(2.0, 30.0)); // middle group: shower
+      range_map.insert(std::make_tuple(3.0, 80.0)); // track
+      break;
+    case 5:
+      cout << "NOTICE: Energy range case " << n << endl;
+      range_map.insert(std::make_tuple(2.0, 80.0)); // shower
+      range_map.insert(std::make_tuple(2.0, 50.0));
+      range_map.insert(std::make_tuple(2.0, 30.0));
+      range_map.insert(std::make_tuple(3.0, 15.0)); // track
+      range_map.insert(std::make_tuple(5.0, 80.0));
+      break;
+    case 10:
+      cout << "NOTICE: Energy range case " << n << endl;
+      range_map.insert(std::make_tuple(7.0, 80.0)); // shower
+      range_map.insert(std::make_tuple(2.5, 70.0));
+      range_map.insert(std::make_tuple(2.5, 50.0));
+      range_map.insert(std::make_tuple(2.0, 30.0));
+      range_map.insert(std::make_tuple(2.0, 20.0));
+      range_map.insert(std::make_tuple(2.0, 15.0));
+      range_map.insert(std::make_tuple(3.0, 15.0)); // track
+      range_map.insert(std::make_tuple(3.5, 15.0));
+      range_map.insert(std::make_tuple(5.0, 15.0));
+      range_map.insert(std::make_tuple(5.0, 80.0));
+      break;
+  }
+
+  return range_map;
+
+}
