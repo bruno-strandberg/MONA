@@ -42,7 +42,7 @@ void AsimovFitNO() {
   TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
 
   std::vector< std::tuple<Double_t, Double_t> > fitRanges = GetEnergyRanges(N_PID_CLASSES);
-  Bool_t isRanged = kFALSE; // Fit in specific ranges given by fitRanges
+  Bool_t isRanged = kTRUE; // Fit in specific ranges given by fitRanges
 
   TString s_outputfile = "output/csv/AsimovFitNO.csv";
 

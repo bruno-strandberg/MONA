@@ -300,8 +300,10 @@ void AsimovFitNOTh23Range() {
 
       // Fit ranges have to be applied to the final asymmetry calculation: outside of these ranges 
       // the relative statistical uncertainty on the monte carly number of events is too large.
-      fitEMin = std::get<0>(fitRanges[i]);
-      fitEMax = std::get<1>(fitRanges[i]);
+      if (isRanged) {
+        fitEMin = std::get<0>(fitRanges[i]);
+        fitEMax = std::get<1>(fitRanges[i]);
+      }
 
       if (pid_map[i] < PID_CUT) chi2.push_back( NMHUtils::Asymmetry( shower_vector_true[i], fitted[i], Form("sensitivity_shower_%i", i),
                                                    fitEMin, fitEMax, fitctMin, fitctMax) );
