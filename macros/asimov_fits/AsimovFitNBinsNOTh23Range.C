@@ -267,7 +267,7 @@ void AsimovFitNBinsNOTh23Range() {
     cout << "first q " << TMath::Sqrt( fitChi2_1q ) << endl;
     cout << "second q" << TMath::Sqrt( fitChi2_2q ) << endl;
     if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
-    if (fitChi2_1q > fitChi2_2q) result = &result_1q;
+    if (fitChi2_1q < fitChi2_2q) result = &result_1q;
     else                         result = &result_2q;
 
     cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
