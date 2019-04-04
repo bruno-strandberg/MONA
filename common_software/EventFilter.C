@@ -152,7 +152,7 @@ void EventFilter::SetObservables(SummaryEvent *evt) {
    TVector3 MyCustomPos(SummaryEvent* evt) {...};
    Double_t MyCustomBY(SummaryEvent* evt) {...};
    ```
-   In each function, the user has access to all of the data members of the `SummaryEvent` class (through the getter's) to make a specific selection which reconstruction variable is to be used in which circumstances. For example, is nothing specific is required for the direction reconstruction, the user can simply define:
+   In each function, the user has access to all of the data members of the `SummaryEvent` class (through the getter's) to make a specific selection which reconstruction variable is to be used in which circumstances. For example, if nothing specific is required for the direction reconstruction, the user can simply define:
    ```
    TVector3 MyCustomDir(SummaryEvent* evt) { return evt->Get_track_dir() };
    ```
@@ -161,8 +161,6 @@ void EventFilter::SetObservables(SummaryEvent *evt) {
    EventFilter f1(EventFilter::customreco);
    f1.SetObsFuncPtrs( &MyCustomEnergy, &MyCustomDir, &MyCustomPos, &MyCustomBY);
    ```
-
-
    \param E   Address of the function that returns the custom energy
    \param ct  Address of the function that returns the custom direction vector
    \param pos Address of the function that returns the custom position vector
@@ -176,5 +174,7 @@ void EventFilter::SetObsFuncPtrs( Double_t (*E)(SummaryEvent*)  , TVector3 (*ct)
   GetCustomDir = ct;
   GetCustomPos = pos;
   GetCustomBy  = by;
+
+  cout << "NOTICE EventFilter::SetObsFuncPtrs() set observable function pointers" << endl;
 
 }
