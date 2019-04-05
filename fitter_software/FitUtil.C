@@ -1,6 +1,6 @@
 #include "FitUtil.h"
 #include <iostream>
-
+#include <typeinfo>
 #include "TFile.h"
 #include "TRandom.h"
 
@@ -544,21 +544,30 @@ Double_t FitUtil::GetCachedBYfrac(const TrueB &tb) {
 
 //***************************************************************************
 
-/**
-   Private function that handles the caching of the oscillation probabilities.
+/** Function that configures the `OscProb` instance of the class for given parameter values.
 
-   This function re-calculates the oscillation probabilites and stores them in member histograms `fhOscCache` whenever any of the oscillation parameters change. If none of them change, the calculation is not performed. The way the `DetResponse` class is set up and the way fitting works, this enables to save a large amount of time.
+    By default, the OscProb calculator `FitUtil::fProb` is initiated to `OscProb::PMNS_Fast`. If a different calculator is required, e.g. `OscProb::PMNS_NSI`, the class inheriting from `FitUtil` should do in the constructor
 
-   NB! The oscillations tau-> (elec, muon, tau) are not calculated to save time; tau flux is assumed 0.
+    ```
+    if (fProb) delete fProb;
+    fProb = new OscProb::PMNS_NSI()
+    ```
 
-   \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
-   \param nsamples    Number of samples per bin
- */
-void FitUtil::ProbCacher(const proxymap_t &proxymap, UInt_t nsamples) {
+    and the class should re-implement this function, such that correct fit parameters are passed to the `FitUtil::fProb` instance.
 
-  if (nsamples < 1) {
-    throw std::invalid_argument("ERROR! FitUtil::ProbCacher() cannot have below 1 samples per bin.");
+    \param proxymap A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
+    \return True - osc parameters have changed, re-calculate the cache; False - osc parameters have not changed, re-calculation not required
+*/
+Bool_t FitUtil::ConfigOscProb(const proxymap_t& proxymap) {
+
+  // check that the type is PMNS_Fast
+  TString type = (TString)typeid( *fProb ).name();
+
+  if ( !type.Contains("PMNS_Fast") ) {
+    throw std::logic_error("ERROR! FitUtil::ConfigOscProb() is called with fProb instance type " + (string)type + ", whereas OscProb::PMNS_Fast is expected. If a class inheriting from FitUtil has initiated fProb with a different type, the virtual function `FitUtil::ConfigOscProb` needs to be over-loaded to account for the new/different parameters.");
   }
+
+  Bool_t reCalc = kFALSE;
 
   // get the parameter values from the proxies
   Double_t SinsqTh12 = *( proxymap.at( (TString)fSinsqTh12->GetName() ) );
@@ -569,12 +578,7 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap, UInt_t nsamples) {
   Double_t Dm31      = *( proxymap.at( (TString)fDm31->GetName() ) );
 
   if (SinsqTh12 != f_cache_sinsqth12 || SinsqTh13 != f_cache_sinsqth13 || SinsqTh23 != f_cache_sinsqth23 || 
-      Dcp != f_cache_dcp || Dm21 != f_cache_dm21 || Dm31 != f_cache_dm31 || nsamples != f_cache_oscsamplesn) {
-
-    fOscCalcTime->Start(kFALSE);
-
-    // update the cache variables
-    f_cache_oscsamplesn = nsamples;
+      Dcp != f_cache_dcp || Dm21 != f_cache_dm21 || Dm31 != f_cache_dm31) {
 
     f_cache_sinsqth12 = SinsqTh12;
     f_cache_sinsqth13 = SinsqTh13;
@@ -591,62 +595,104 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap, UInt_t nsamples) {
     fProb->SetDm(2, f_cache_dm21);
     fProb->SetDm(3, f_cache_dm31);
 
-    // calculate all oscillation probabilities and cache them  - NB! TAU-IN IS NOT CALCULATED!
-    for (UInt_t f_in = 0; f_in < fFlavs-1; f_in++) {
-      for (UInt_t f_out = 0; f_out < fFlavs; f_out++) {
-	for (UInt_t isnb = 0; isnb < fInts; isnb++) {
-
-	  fProb->SetIsNuBar( isnb );
-
-	  Int_t N_ebins  = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetNbins();
-	  Int_t N_ctbins = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetNbins();
-
-	  for (Int_t ebin = 1; ebin <= N_ebins; ebin++) {
-	    for (Int_t ctbin = 1; ctbin <= N_ctbins; ctbin++) {
-
-	      Double_t prob_ave = 0;
-
-	      Double_t emin    = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinLowEdge(ebin);
-	      Double_t emax    = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinUpEdge(ebin);
-	      Double_t e_step  = (emax - emin)/(nsamples+1);
-
-	      Double_t ctmin   = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinLowEdge(ctbin);
-	      Double_t ctmax   = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinUpEdge(ctbin);
-	      Double_t ct_step = (ctmax - ctmin)/(nsamples+1);
-
-	      // calculate average of N samples inside the bin
-	      for (UInt_t n_e = 0; n_e < nsamples; n_e++) {
-
-		Double_t E  = emin + (n_e + 1) * e_step;
-
-		for (UInt_t n_ct = 0; n_ct < nsamples; n_ct++) {
-
-		  Double_t ct = ctmin + (n_ct + 1) * ct_step;
-
-		  fPrem->FillPath( ct );	      
-		  fProb->SetPath ( fPrem->GetNuPath() );
-
-		  prob_ave += fProb->Prob(f_in, f_out, E);
-
-		  fOscCalls++;
-		
-		} // end loop over cos-theta samples
-	      } // end loop over energy samples
-
-	      fhOscCache[f_in][f_out][isnb]->SetBinContent(ebin, ctbin, prob_ave/(nsamples*nsamples) );
-
-	    } // end loop over cos-theta bins
-	  } //end loop over energy bins
-
-	} // end loop over isnb
-      } // end loop over flavor_out
-    } // end loop over flavor_in
-
-    fOscCalcTime->Stop();
+    // set flag that re-calculation should be performed
+    reCalc = kTRUE;
 
   }
-  // osc pars have not changed, return
-  else { return; }
+  else { reCalc = kFALSE; }
+
+  return reCalc;
+
+}
+
+//***************************************************************************
+
+/**
+   Private function that handles the caching of the oscillation probabilities.
+
+   This function re-calculates the oscillation probabilites and stores them in member histograms `fhOscCache` whenever any of the oscillation parameters change. If none of them change, the calculation is not performed. The way the `DetResponse` class is set up and the way fitting works, this enables to save a large amount of time.
+
+   NB! The oscillations tau-> (elec, muon, tau) are not calculated to save time; tau flux is assumed 0.
+
+   \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
+   \param nsamples    Number of samples per bin
+ */
+void FitUtil::ProbCacher(const proxymap_t &proxymap, UInt_t nsamples) {
+
+  if (nsamples < 1) {
+    throw std::invalid_argument("ERROR! FitUtil::ProbCacher() cannot have below 1 samples per bin.");
+  }
+  
+  // call function that configures OscProb and returns flag to indicate re-calculation
+  Bool_t reCalc = ConfigOscProb(proxymap);
+
+  // also recalculate if number of requested samples changes
+  reCalc = reCalc || (nsamples != f_cache_oscsamplesn);
+
+  // osc parameters have not changed, no re-calculation required, return
+  if ( !reCalc ) return;
+
+  //=======================================================================
+  // recalculation of the cache 
+  //=======================================================================
+
+  fOscCalcTime->Start(kFALSE);
+
+  // update the variable for samples; osc. par. cache handled by ConfigOscProb
+  f_cache_oscsamplesn = nsamples;
+
+  // calculate all oscillation probabilities and cache them  - NB! TAU-IN IS NOT CALCULATED!
+  for (UInt_t f_in = 0; f_in < fFlavs-1; f_in++) {
+    for (UInt_t f_out = 0; f_out < fFlavs; f_out++) {
+      for (UInt_t isnb = 0; isnb < fInts; isnb++) {
+
+	fProb->SetIsNuBar( isnb );
+
+	Int_t N_ebins  = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetNbins();
+	Int_t N_ctbins = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetNbins();
+
+	for (Int_t ebin = 1; ebin <= N_ebins; ebin++) {
+	  for (Int_t ctbin = 1; ctbin <= N_ctbins; ctbin++) {
+
+	    Double_t prob_ave = 0;
+
+	    Double_t emin    = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinLowEdge(ebin);
+	    Double_t emax    = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinUpEdge(ebin);
+	    Double_t e_step  = (emax - emin)/(nsamples+1);
+
+	    Double_t ctmin   = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinLowEdge(ctbin);
+	    Double_t ctmax   = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinUpEdge(ctbin);
+	    Double_t ct_step = (ctmax - ctmin)/(nsamples+1);
+
+	    // calculate average of N samples inside the bin
+	    for (UInt_t n_e = 0; n_e < nsamples; n_e++) {
+
+	      Double_t E  = emin + (n_e + 1) * e_step;
+
+	      for (UInt_t n_ct = 0; n_ct < nsamples; n_ct++) {
+
+		Double_t ct = ctmin + (n_ct + 1) * ct_step;
+
+		fPrem->FillPath( ct );	      
+		fProb->SetPath ( fPrem->GetNuPath() );
+
+		prob_ave += fProb->Prob(f_in, f_out, E);
+
+		fOscCalls++;
+		
+	      } // end loop over cos-theta samples
+	    } // end loop over energy samples
+
+	    fhOscCache[f_in][f_out][isnb]->SetBinContent(ebin, ctbin, prob_ave/(nsamples*nsamples) );
+
+	  } // end loop over cos-theta bins
+	} //end loop over energy bins
+
+      } // end loop over isnb
+    } // end loop over flavor_out
+  } // end loop over flavor_in
+
+  fOscCalcTime->Stop();
       
 }
 

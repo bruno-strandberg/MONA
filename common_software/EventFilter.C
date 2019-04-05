@@ -175,6 +175,6 @@ void EventFilter::SetObsFuncPtrs( Double_t (*E)(SummaryEvent*)  , TVector3 (*ct)
   GetCustomPos = pos;
   GetCustomBy  = by;
 
-  cout << "NOTICE EventFilter::SetObsFuncPtrs() set observable function pointers" << endl;
+  std::cout << "NOTICE EventFilter::SetObsFuncPtrs() setting observable function pointers" << std::endl;
 
 }

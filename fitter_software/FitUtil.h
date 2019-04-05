@@ -258,6 +258,7 @@ class FitUtil {
   // protected functions
   //------------------------------------------------------------------
 
+  virtual Bool_t ConfigOscProb(const proxymap_t& proxymap);
   void ProbCacher(const proxymap_t& proxymap, UInt_t nsamples);  
   void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
   void InitCacheHists(TH3D *h_template);
