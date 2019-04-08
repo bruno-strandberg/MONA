@@ -341,7 +341,7 @@ class FitUtil {
   RooRealVar *fSinsqTh12; //!< \f$ sin^2\theta_{12} \f$ fit parameter
   RooRealVar *fSinsqTh13; //!< \f$ sin^2\theta_{13} \f$ fit parameter
   RooRealVar *fSinsqTh23; //!< \f$ sin^2\theta_{23} \f$ fit parameter
-  RooRealVar *fDcp;       //!< \f$ \delta_{CP} \f$ fit parameter in \f$ \pi $\f's, as given by the PDG group (e.g. 1.38)
+  RooRealVar *fDcp;       //!< \f$ \delta_{CP} \f$ fit parameter in \f$ \pi \f$'s, as given by the PDG group (e.g. 1.38)
   RooRealVar *fDm21;      //!< \f$ \Delta m_{21}^2 \f$ fit parameter in eV^2
   RooRealVar *fDm31;      //!< \f$ \Delta m_{31}^2 \f$ fit parameter in eV^2
     

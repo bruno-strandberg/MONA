@@ -184,6 +184,7 @@ double FitPDF::operator()(double *x, double *p) {
 
     \param nametitle      string used as a name and a title for the created TH3D histogram
     \param IncludeStatErr account for the statistical uncertainty of the expectation in smearing
+    \param rangeName      Char array with `RooFit` observable ranges
     \return               Pointer to a TH3D with pseudoexperiment data. NB! these histograms are created on the stack; it is the responsibility of the user to delete the TH3D hists pointed to by the return value.
 
 */

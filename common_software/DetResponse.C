@@ -191,8 +191,7 @@ void DetResponse::CleanResponse() {
 
 /**
    This function fills a `SummaryEvent` to the response structure.
-   
-   \param SummaryEvent    Pointer to a summary event
+   \param evt    Pointer to a `SummaryEvent`
  */
 void DetResponse::Fill(SummaryEvent *evt) {
 
@@ -355,8 +354,8 @@ void DetResponse::Normalise() {
 /**
    Returns a vector of `TrueB`'s (true e, cos-theta, by-bins) that contribute to this e_reco, ct_reco, by_reco bin for neutrino events. 
    
-   \param e_reco    Reconstructed energy
-   \param t_reco    Reconstructed cos-theta
+   \param E_reco    Reconstructed energy
+   \param ct_reco   Reconstructed cos-theta
    \param by_reco   Reconstructed bjorken-y
    \return          vector of `TrueB`'s that contribute to the reco bin.
  */
@@ -391,8 +390,8 @@ std::vector<TrueB>& DetResponse::GetBinWeights(SummaryEvent *evt) {
 /**
    Returns the number of atmospheric muon events in 1 year in the bin specified by the reconstruction variables.
    
-   \param e_reco    Reconstructed energy
-   \param t_reco    Reconstructed cos-theta
+   \param E_reco    Reconstructed energy
+   \param ct_reco   Reconstructed cos-theta
    \param by_reco   Reconstructed bjorken-y
    \return          a pair with the atmospheric muon count in 1 year (first) and the MC statistical error (second)
  */
@@ -411,8 +410,8 @@ std::pair<Double_t, Double_t> DetResponse::GetAtmMuCount1y(Double_t E_reco, Doub
 /**
    Returns the number of noise events in 1 year in the bin specified by the reconstruction variables.
    
-   \param e_reco    Reconstructed energy
-   \param t_reco    Reconstructed cos-theta
+   \param E_reco    Reconstructed energy
+   \param ct_reco   Reconstructed cos-theta
    \param by_reco   Reconstructed bjorken-y
    \return          a pair with noise count in 1 year (first) and the MC statistical error (second)
  */
@@ -577,6 +576,7 @@ void DetResponse::ReadFromFile(TString filename) {
 
    \param e_reco    Reconstructed energy
    \param ct_reco   Reconstructed cos-theta
+   \param outname   If specified, the histograms and canvases are written to output
    \return          A tuple with pointers to three canvases where the visualization is drawn.
  */
 std::tuple<TCanvas*,TCanvas*,TCanvas*> DetResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco, TString outname) {

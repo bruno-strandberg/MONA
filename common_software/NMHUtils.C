@@ -215,12 +215,14 @@ TString NMHUtils::Getcwd() {
    \param xhigh        X-bins with centers above xhigh are excluded
    \param ylow         Y-bins with centers below ylow are excluded
    \param yhigh        Y-bins with centers above yhigh are excluded
+   \param zlow         Z-bins with centers below zlow are excluded
+   \param zhigh        Z-bins with centers above zhigh are excluded
    \param simple_error Bool to use a simplified version of the MC uncertainty: 
    \f$ A_{err}^{bin i} = |A^{bin i}| * N_{h1_{err}}^{bin i} / N_{h1}^{bin i} \f$
    \return             A std::tuple with elements: 
    0) a pointer to a histgram with bin-by-bin asymmetries;
    1) the quantity \f$ \sqrt{\sum_{i} A_i^2} \f$ (combined asymmetry); 
-   2) the quantity \f$ \Delta A$ (error on combined asymmetry);
+   2) the quantity \f$ \Delta A\f$ (error on combined asymmetry);
                       
 */
 
@@ -341,7 +343,7 @@ NMHUtils::Asymmetry(TH1 *h1, TH1* h2, TString nametitle,
  *  Function calculate the value and error propagated on it for N values that are 
  *  summed quadratically.
  *
- *  Sum is defined as \f$ S = \sqrt{ \Sigma_i x_i^2 \f$ for values \f${x_1, ..., x_N} }\f$
+ *  Sum is defined as \f$ S = \sqrt{ \Sigma_i x_i^2 }\f$ for values \f${x_1, ..., x_N}\f$
  *  with errors \f${\Delta x_1, ..., \Delta x_N } \f$.
  *
  * \param value_and_error   Vector of length N with the values to be summed in pairs: <value, error>

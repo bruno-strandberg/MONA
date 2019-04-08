@@ -124,8 +124,8 @@ FitUtil::~FitUtil() {
 
     For example, consider 40 logarithmic energy bins from 1-100 GeV. The user can ask the fit to be performed in the range from 2 - 82 GeV. This function find the bin edges closest to the dialled range. For example, the range 2 - 82 would become something like 2.42 - 79.2. This is necessary to make sure that data import to `RooFit`, fit ranges and the detector response are consistent.
 
-    \param min    Minimum of the range
-    \param max    Maximum of the range
+    \param _min   Minimum of the range
+    \param _max   Maximum of the range
     \param axis   Pointer to an axis that defines the binning
     \return       A std::tuple with the minimum, the maximum, the minimum bin number and the maximum bin number
 */
@@ -158,7 +158,7 @@ std::tuple<Double_t, Double_t, Int_t, Int_t> FitUtil::GetRange(Double_t _min, Do
     \param ctmin  Minimum cos-theta in the fit range
     \param ctmax  Maximum cos-theta in the fit range
     \param bymin  Minimum bjorken-y in the fit range
-    \param bymin  Maximum bjorken-y in the fit range
+    \param bymax  Maximum bjorken-y in the fit range
 */
 void FitUtil::InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, 
 			  Double_t bymin, Double_t bymax) {
@@ -469,9 +469,10 @@ void FitUtil::FillXsecMeffCache(NuXsec *xsec, EffMass *meff) {
 
 /** 
     Function that returns the cached atmospheric flux value for a certain true bin.
-    \param flav  Neutrino flavor, 0 - elec, 1 - muon, 2 - tau
-    \param isnb  Flag for anti-neutrino, 0 - neutrino, 1 - anti-neutrino
-    \param tb    A `TrueB` object (see `DetResponse.h`) that stores the true bin coordinate info.
+    \param flav        Neutrino flavor, 0 - elec, 1 - muon, 2 - tau
+    \param isnb        Flag for anti-neutrino, 0 - neutrino, 1 - anti-neutrino
+    \param true_ebin   True energy bin
+    \param true_ctbin  True cos-theta bin
     \return      Cached atmoshperic neutrino flux in specified bin.
 */
 Double_t FitUtil::GetCachedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin) {
