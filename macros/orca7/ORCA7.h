@@ -12,6 +12,7 @@ using namespace std;
 #include "FitPDF.h"
 
 #include "TVector3.h"
+#include "RooArgSet.h"
 
 //===================================================================================================
 // A namespace that stores some functions and structures necessary in the ORCA7 class
@@ -89,13 +90,14 @@ struct ORCA7 {
   std::map< TString, FitPDF* > fPdfs;
 
   FitUtilWsyst *fFitUtil;
+  RooArgSet fPriors;
 
   // fitutil input parameters
   Double_t f_F_runtime = 1.;
   Double_t f_F_emin    = 3;
-  Double_t f_F_emax    = 75;
+  Double_t f_F_emax    = 60;
   Double_t f_F_ctmin   = -1;
-  Double_t f_F_ctmax   = 0;
+  Double_t f_F_ctmax   = -1e-3;
   Double_t f_F_bymin   = 0;
   Double_t f_F_bymax   = 1;
 
