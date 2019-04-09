@@ -12,7 +12,7 @@ all : apps
 
 apps: nmhlib fitlib
 	@for dir in apps/* ; do \
-		$(MAKE) -C $${dir} ; \
+		$(MAKE) -C $${dir} || exit 1 ; \
 	done
 
 fitlib: nmhlib
@@ -30,7 +30,7 @@ test: tests
 
 tests: all
 	@for dir in tests/* ; do \
-		$(MAKE) -C $${dir} ; \
+		$(MAKE) -C $${dir} || exit 1; \
 	done
 
 # add a phony target to call clean
