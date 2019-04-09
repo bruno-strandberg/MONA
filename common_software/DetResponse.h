@@ -201,10 +201,10 @@ class DetResponse : public AbsResponse {
    */
   TH3D*               GetHistNoise1y() { return fhNoiseCount1y; }
 
-  /** Returns that this implementation is of the response type `BINNED` 
-      \return `AbsResponse::BINNED`
+  /** Returns that this implementation is of the response type `BinnedResponse` 
+      \return `AbsResponse::BinnedResponse`
    */
-  resp                GetResponseType() { return BinnedResponse; }
+  resp                GetResponseType() { return AbsResponse::BinnedResponse; }
   
  private:
 

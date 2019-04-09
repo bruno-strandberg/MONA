@@ -17,6 +17,7 @@
 #pragma link C++ class EventSelection+;
 #pragma link C++ class AbsResponse+;
 #pragma link C++ class DetResponse+;
+#pragma link C++ class EvtResponse+;
 #pragma link C++ class TrueB+;
 #pragma link C++ class EffMass+;
 
