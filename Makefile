@@ -29,7 +29,7 @@ test: tests
 	python $(MONADIR)/run_tests.py
 
 tests: all
-	@for dir in tests/* ; do \
+	@for dir in $(shell ls -d tests/*/) ; do \
 		$(MAKE) -C $${dir} || exit 1; \
 	done
 
