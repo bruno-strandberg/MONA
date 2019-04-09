@@ -150,6 +150,11 @@ std::vector< std::tuple<Double_t, Double_t> > GetEnergyRanges(Int_t n) {
       cout << "NOTICE: Energy range case " << n << endl;
       // The values of all these maps are based on 10% MC Uncertainty as cut-off for NOT using the
       // events by using visual inspection. So outside these ranges, the MCU on the events is >10%
+      //
+      // =================================================
+      //  THESE VALUES HAVE TO BE RECHECKED AS OF 20190403
+      // =================================================
+      //
       range_map.push_back(std::make_tuple(2.0, 80.0)); // shower
       range_map.push_back(std::make_tuple(3.0, 80.0)); // track
       break;
