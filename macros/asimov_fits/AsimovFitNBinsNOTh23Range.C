@@ -40,7 +40,7 @@ using namespace RooFit;
 
 void AsimovFitNBinsNOTh23Range() {
 
-  const int N_PID_CLASSES = 5;
+  const int N_PID_CLASSES = 3;
   const Double_t PID_CUT = 0.6;
 
   std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
@@ -48,7 +48,7 @@ void AsimovFitNBinsNOTh23Range() {
   TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
 
   std::vector< std::tuple<Double_t, Double_t> > fitRanges = GetEnergyRanges(N_PID_CLASSES);
-  Bool_t isRanged = kTRUE; // Fit in specific ranges given by fitRanges
+  Bool_t isRanged = kFALSE; // Fit in specific ranges given by fitRanges
 
   TString s_outputfile = Form("output/csv/AsimovFit%iBinsNOTh23Range.csv",   N_PID_CLASSES);
   TString s_rootfile   = Form("output/root/AsimovFit%iBinsNOTh23Range.root", N_PID_CLASSES);
@@ -156,10 +156,9 @@ void AsimovFitNBinsNOTh23Range() {
 
   // Open output stream to save sensitivity values
   ofstream outputfile(s_outputfile);
-  outputfile << "th23,sinSqTh23,n_chi2_no," << endl;
+  outputfile << "th23,sinSqTh23,s_no,s_err_no,fitchi2" << endl;
 
   for (Int_t i = 0; i < 11; i++) {
-
     FitUtil *fitutil = new FitUtil(3, track_response_vector[0].GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);
 
     std::vector<TH3D*> track_vector_true;
@@ -264,11 +263,12 @@ void AsimovFitNBinsNOTh23Range() {
     RooArgSet *result;
     Double_t fitChi2_1q = fitres_1q->minNll();
     Double_t fitChi2_2q = fitres_2q->minNll();
+    Double_t min_chi2;
     cout << "first q " << TMath::Sqrt( fitChi2_1q ) << endl;
     cout << "second q" << TMath::Sqrt( fitChi2_2q ) << endl;
     if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
-    if (fitChi2_1q < fitChi2_2q) result = &result_1q;
-    else                         result = &result_2q;
+    if (fitChi2_1q < fitChi2_2q) { result = &result_1q; min_chi2 = fitChi2_1q; }
+    else                         { result = &result_2q; min_chi2 = fitChi2_2q; }
 
     cout << "NOTICE Fitter finished fitting, time duration [s]: " << (Double_t)timer.RealTime() << endl;
 
@@ -301,6 +301,7 @@ void AsimovFitNBinsNOTh23Range() {
     }
 
     std::vector< std::tuple<TH1*, Double_t, Double_t> > chi2;
+    std::vector< std::pair<Double_t, Double_t> > sens_w_error;
     for (Int_t i = 0; i < N_PID_CLASSES; i++) {
 
       // Fit ranges have to be applied to the final asymmetry calculation: outside of these ranges 
@@ -314,12 +315,10 @@ void AsimovFitNBinsNOTh23Range() {
                                                    fitEMin, fitEMax, fitctMin, fitctMax) );
       else                      chi2.push_back( NMHUtils::Asymmetry( track_vector_true[i],  fitted[i], Form("sensitivity_track_%i", i),
                                                    fitEMin, fitEMax, fitctMin, fitctMax) );
+      sens_w_error.push_back( std::make_pair(std::get<1>(chi2[i]), std::get<2>(chi2[i])) );
     }
 
-    Double_t chi2_tot = 0;
     for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-      Double_t chi2_i = std::get<1>(chi2[i]);
-
       // Write the histograms containing the expectation values and sensitivity for tracks and showers
       TH2D* h_sensitivity = (TH2D*)std::get<0>(chi2[i]);
       
@@ -333,12 +332,17 @@ void AsimovFitNBinsNOTh23Range() {
       fitted[i]->Write(     Form("fitted_expval_%i_%.0f", i, th23) );
       h_sensitivity->Write( Form("sensitivity_%i_%.0f", i, th23) );
 
-      cout << "NMHUtils: Chi2 between events IO and events fitted on NO is: " << chi2_i << endl;
-      chi2_tot += chi2_i * chi2_i;
+      cout << "NMHUtils: Chi2 between events IO and events fitted on NO is: " << sens_w_error[i].first 
+           << "+-" << sens_w_error[i].second << endl;
     }
-    cout << "Squared sum is : " << std::sqrt( chi2_tot ) << endl;
+    std::tuple<Double_t, Double_t> sensitivity_and_error = NMHUtils::SquaredSumErrorProp(sens_w_error);
+    cout << "Squared sum is : " << std::get<0>(sensitivity_and_error) << "+-" << std::get<1>(sensitivity_and_error) << endl;
 
-    outputfile << th23 << "," << sinSqTh23_true << "," << std::sqrt( chi2_tot ) << "," << endl;
+    //----------------------------------------------------------
+    // save fit results to file
+    //----------------------------------------------------------
+    outputfile << th23 << "," << sinSqTh23_true << "," << std::get<0>(sensitivity_and_error) << "," 
+               << std::get<1>(sensitivity_and_error) << "," << min_chi2 << endl;
   }
   outputfile.close();
   fout.Close();

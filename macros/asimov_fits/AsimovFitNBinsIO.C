@@ -39,7 +39,7 @@ using namespace RooFit;
 
 void AsimovFitNBinsIO() {
 
-  const int N_PID_CLASSES = 3;
+  const int N_PID_CLASSES = 5;
   const Double_t PID_CUT = 0.6;
 
   std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
@@ -47,7 +47,7 @@ void AsimovFitNBinsIO() {
   TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
 
   std::vector< std::tuple<Double_t, Double_t> > fitRanges = GetEnergyRanges(N_PID_CLASSES);
-  Bool_t isRanged = kTRUE; // Fit in specific ranges given by fitRanges
+  Bool_t isRanged = kFALSE; // Fit in specific ranges given by fitRanges
 
   // DetRes input values
   Int_t EBins = 24;
@@ -282,7 +282,7 @@ void AsimovFitNBinsIO() {
     }
   }
 
-  std::vector< std::tuple<TH1*, Double_t, Double_t> > chi2;
+  std::vector< std::pair<Double_t, Double_t> > sens_w_error;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
 
     // Fit ranges have to be applied to the final asymmetry calculation: outside of these ranges 
@@ -292,19 +292,20 @@ void AsimovFitNBinsIO() {
       fitEMax = std::get<1>(fitRanges[i]);
     }
 
-    if (pid_map[i] < PID_CUT) chi2.push_back( NMHUtils::Asymmetry( shower_vector_true[i], fitted[i], Form("sensitivity_shower_%i", i),
+    std::tuple<TH1*, Double_t, Double_t> asym;
+    if (pid_map[i] < PID_CUT) asym = ( NMHUtils::Asymmetry( shower_vector_true[i], fitted[i], Form("sensitivity_shower_%i", i),
                                                  fitEMin, fitEMax, fitctMin, fitctMax) );
-    else                      chi2.push_back( NMHUtils::Asymmetry( track_vector_true[i],  fitted[i], Form("sensitivity_track_%i", i),
+    else                      asym = ( NMHUtils::Asymmetry( track_vector_true[i],  fitted[i], Form("sensitivity_track_%i", i),
                                                  fitEMin, fitEMax, fitctMin, fitctMax) );
+    sens_w_error.push_back( std::make_pair(std::get<1>(asym), std::get<2>(asym)) );
   }
 
-  Double_t chi2_tot = 0;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    Double_t chi2_i = std::get<1>(chi2[i]);
 
-    cout << "NMHUtils: Chi2 between events NO and events fitted on IO is: " << chi2_i << endl;
-    chi2_tot += chi2_i * chi2_i;
+    cout << "NMHUtils: Chi2 between events NO and events fitted on IO is: " << sens_w_error[i].first 
+         << "+-" << sens_w_error[i].second << endl;
   }
-  cout << "Squared sum is : " << std::sqrt( chi2_tot ) << endl;
+  std::tuple<Double_t, Double_t> sensitivity_and_error = NMHUtils::SquaredSumErrorProp(sens_w_error);
+  cout << "Squared sum is : " << std::get<0>(sensitivity_and_error) << "+-" << std::get<1>(sensitivity_and_error) << endl;
 
 }

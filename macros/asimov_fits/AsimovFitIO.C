@@ -42,7 +42,7 @@ void AsimovFitIO() {
   TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
 
   std::vector< std::tuple<Double_t, Double_t> > fitRanges = GetEnergyRanges(N_PID_CLASSES);
-  Bool_t isRanged = kTRUE; // Fit in specific ranges given by fitRanges
+  Bool_t isRanged = kFALSE; // Fit in specific ranges given by fitRanges
 
   TString s_outputfile = "output/csv/AsimovFitIO.csv";
 
@@ -232,12 +232,14 @@ void AsimovFitIO() {
   // Fit in both quadrants to find the real minimum of Th23.
   fitutil->SetIOcentvals();
   fitutil->GetVar("SinsqTh23")->setVal(0.4);
-  RooFitResult *fitres_1q = simPdf.fitTo( data_hists, Save(), Range("fitRangeE"), Range("firstq"), SplitRange(isRanged), DataError(RooAbsData::Poisson) );
+  RooFitResult *fitres_1q = simPdf.fitTo( data_hists, Save(), Range("fitRangeE"), Range("firstq"), 
+                                          SplitRange(isRanged), SplitRange(kFALSE), DataError(RooAbsData::Poisson) );
   RooArgSet result_1q ( fitres_1q->floatParsFinal() );
 
   fitutil->SetIOcentvals();
   fitutil->GetVar("SinsqTh23")->setVal(0.6);
-  RooFitResult *fitres_2q = simPdf.fitTo( data_hists, Save(), Range("fitRangeE"), Range("secondq"), SplitRange(isRanged), DataError(RooAbsData::Poisson) );
+  RooFitResult *fitres_2q = simPdf.fitTo( data_hists, Save(), Range("fitRangeE"), Range("secondq"), 
+                                          SplitRange(isRanged), SplitRange(kFALSE), DataError(RooAbsData::Poisson) );
   RooArgSet result_2q ( fitres_2q->floatParsFinal() );
 
   RooArgSet *result;
@@ -306,9 +308,10 @@ void AsimovFitIO() {
   cout << "Squared sum is : " << std::sqrt( chi2_tot ) << endl;
 
   if (N_PID_CLASSES == 2) {
-    ofstream outputfile(s_outputfile);
-    outputfile << "Ebins,ctBins,n_chi2tr_io,n_chi2sh_io,fit_chi2" << endl;
-    outputfile << EBins << "," << ctBins << "," << std::get<1>(chi2[1]) << "," << std::get<1>(chi2[0]) << "," << min_chi2 << endl;
+    ofstream outputfile(s_outputfile, std::ios_base::app);
+    outputfile << "Ebins,ctBins,n_chi2tr_io,n_chi2sh_io,fit_chi2,SplitRange,dm31,sinSqTh23" << endl;
+    outputfile << EBins << "," << ctBins << "," << std::get<1>(chi2[1]) << "," << std::get<1>(chi2[0]) << "," 
+               << min_chi2 << "," << isRanged << "," << dm31 << "," << sinSqTh23 << endl;
     outputfile.close();
   }
 
