@@ -105,8 +105,8 @@ void AsimovFit::InitResponses(Detector detector) {
     cout << "NOTICE AsimovFit::InitResponses() system() returned non-zero to cmd " << syscmd << endl;
   }
 
-  TString trk_name = dir + fTrkResp->Get_RespName() + ".root";
-  TString shw_name = dir + fShwResp->Get_RespName() + ".root";  
+  TString trk_name = dir + fTrkResp->GetRespName() + ".root";
+  TString shw_name = dir + fShwResp->GetRespName() + ".root";  
 
   if ( !NMHUtils::FileExists(trk_name) || ! NMHUtils::FileExists(shw_name) ) {
 

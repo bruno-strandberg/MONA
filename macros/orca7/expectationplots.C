@@ -49,7 +49,7 @@ void expectationplots() {
     leg->Draw();
     pad++;
 
-    cout << "Neutrinos, muons and noise in 1 y for " << pdf->GetResponse()->Get_RespName() << ": " 
+    cout << "Neutrinos, muons and noise in 1 y for " << pdf->GetResponse()->GetRespName() << ": " 
 	 << nus->Integral() << "\t" << muons->Integral() << "\t" << noise->Integral() << endl;
 
   }

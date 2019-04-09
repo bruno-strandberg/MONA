@@ -67,7 +67,7 @@ void th23dm31(TString jobname = "job0", Int_t nexps = 5,
   // add the same noise suppression cuts to all selections
   vector<DetResponse*> responses = { &track, &shower, &middle };
   for (auto r: responses) {
-    cout << "NOTICE th23dm31() adding noise suppression cuts to " << r->Get_RespName() << endl;
+    cout << "NOTICE th23dm31() adding noise suppression cuts to " << r->GetRespName() << endl;
     r->AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), noisecut, true);
     r->AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(),  muoncut, true);
   }

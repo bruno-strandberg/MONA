@@ -297,7 +297,7 @@ int main(const int argc, const char **argv) {
 
   std::map< TString, FitPDF* > pdfs;
   for (auto &R: resps) {
-    TString pdfname = "pdf_" + R.second->Get_RespName();
+    TString pdfname = "pdf_" + R.second->GetRespName();
     FitPDF *pdf = new FitPDF(pdfname, pdfname, &fu, R.second);
     pdfs.insert( std::make_pair( R.first, pdf ) );
   }

@@ -52,7 +52,7 @@ ORCA7::ORCA7(Bool_t ReadResponses) {
 
   for (auto P: fResps) {
     auto R = P.second;
-    TString outname = out_dir + "resp_" + R->Get_RespName() + ".root";
+    TString outname = out_dir + "resp_" + R->GetRespName() + ".root";
     resp_names.push_back( std::make_pair(outname, R) );
     ReadFromFile = ReadFromFile && NMHUtils::FileExists(outname);
   }
