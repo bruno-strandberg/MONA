@@ -204,7 +204,7 @@ class DetResponse : public AbsResponse {
   /** Returns that this implementation is of the response type `BINNED` 
       \return `AbsResponse::BINNED`
    */
-  resp                GetResponseType() { return BINNED; }
+  resp                GetResponseType() { return BinnedResponse; }
   
  private:
 

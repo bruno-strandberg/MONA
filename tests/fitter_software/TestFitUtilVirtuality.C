@@ -84,9 +84,9 @@ public:
 
   // overload the virtual method `RecoEvts`
   virtual std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
-						 DetResponse *resp, const proxymap_t &proxymap) {
+						 AbsResponse *resp, const proxymap_t &proxymap) {
 
-    auto true_bins = resp->GetBinWeights(E_reco, Ct_reco, By_reco);
+    auto true_bins = ((DetResponse*)resp)->GetBinWeights(E_reco, Ct_reco, By_reco);
 
     Double_t true_evts = 0;
     for (auto tb: true_bins) true_evts += TrueEvts(tb, proxymap).first * tb.fW;

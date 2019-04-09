@@ -766,13 +766,13 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_
 
     The argument map is created in `FitPDF` and contains names and corresponding proxies for all parameters in `fParSet`. The detector response is also part of the `FitPDF` class and configures what kind of an event selection the pdf is used to fit.
     
-    \param resp       Pointer to `DetResponse` instance used with the `FitPDF` class.
+    \param resp       Pointer to `AbsResponse` instance used with the `FitPDF` class.
     \param proxymap   A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
     \param rangeName  Range string as used in `RooFit`, it will apply the defined rangeName to the E/Ct/By variables. If the range does not exists, the default ranges are used.
     \return           a 3D histogram in reco variables with exepectation values as bin contents
 
 */
-TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName) {
+TH3D* FitUtil::Expectation(AbsResponse *resp, const proxymap_t &proxymap, const char* rangeName) {
 
   // Default behaviour of getMin/getMax if there is no Range present: return the absolute min/max of 
   // the data type. For doubles: +-1E30
@@ -786,7 +786,7 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
   Double_t by_max = ((RooRealVar*)fParSet.find("by_reco"))->getMax(rangeName);
 
   // create the histogram with expectation values
-  TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
+  TH3D   *hexp  = (TH3D*)resp->GetHist3DReco()->Clone();
   TString hname = resp->GetRespName() + "_expct";
   hexp->SetDirectory(0);
   hexp->Reset();
@@ -848,10 +848,10 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
     \param E_reco      Reco energy
     \param Ct_reco     Reco cos-theta
     \param By_reco     Reco bjorken-y
-    \param resp        Pointer to `DetResponse` instance used with the `FitPDF` class.
+    \param resp        Pointer to `AbsResponse` instance used with the `FitPDF` class.
     \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contains the shared fit parameters, including oscillation parameters.
     \return            a pair with the un-normalised event density (calculated by dividing the expected number of events in a bin by bin width) and the associated statistical uncertainty */
-std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap) {
+std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, AbsResponse *resp, const proxymap_t &proxymap) {
 
   //----------------------------------------------------------------------------------
   // check that observables are within the range of the detector response
@@ -886,10 +886,18 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
   }
 
   //----------------------------------------------------------------------------------
+  // check for the response type here
+  //----------------------------------------------------------------------------------
+
+  if ( resp->GetResponseType() != AbsResponse::BinnedResponse ) {
+    throw std::invalid_argument("ERROR! FitUtil::RecoEvts currently supports only DetResponse, but type " + (string)typeid(resp).name() + " encountered." );
+  }
+  
+  //----------------------------------------------------------------------------------
   // perform the calculation
   //----------------------------------------------------------------------------------
   
-  auto true_bins = resp->GetBinWeights( E_reco, Ct_reco, By_reco );
+  auto true_bins = ((DetResponse*)resp)->GetBinWeights( E_reco, Ct_reco, By_reco );
 
   Double_t det_count = 0.;
   Double_t det_err   = 0.;

@@ -8,7 +8,7 @@
 #include "RooAbsCategory.h"
 
 #include "FitUtil.h"
-#include "DetResponse.h"
+#include "AbsResponse.h"
 
 #include "TH3.h"
 #include "TRandom3.h"
@@ -36,15 +36,15 @@ public:
   
   /** Clone function */
   virtual TObject* clone(const char* newname) const { return new FitPDF(*this,newname); }
-  FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp);
+  FitPDF(const char *name, const char *title, FitUtil *futil, AbsResponse *resp);
   FitPDF(const FitPDF& other, const char* name=0);
 
   // public functions
 
-  /** Get pointer the `DetResponse` used with this instance
-      \return Pointer to `DetResponse`
+  /** Get pointer the detector response used with this instance
+      \return Pointer to the response
    */
-  DetResponse* GetResponse() { return fResponse; }
+  AbsResponse* GetResponse() { return fResponse; }
 
   /** Get pointer to `FitUtil` used with this instance
       \return Pointer to `FitUtil`
@@ -85,7 +85,7 @@ private:
   enum integrations {I_NUMERIC = 0, I_E_CT_BY}; //!< enumerator for integration types
   
   FitUtil     *fFitUtil;    //!< pointer to the fit utility that can be shared between several `FitPDF` instances
-  DetResponse *fResponse;   //!< pointer to a specific fit response that describes the data to be fitted
+  AbsResponse *fResponse;   //!< pointer to a specific fit response that describes the data to be fitted
   proxymap_t   fProxies;    //!< map of proxies to the RooRealVar's defined in `FitUtil`
   TRandom3     fRand;       //!< random generator for pseudoexperiments
 

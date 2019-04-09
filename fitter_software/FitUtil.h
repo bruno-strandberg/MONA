@@ -2,7 +2,8 @@
 #define FitUtil_h
 
 // NMH and OscProb
-#include "DetResponse.h"
+#include "AbsResponse.h"
+#include "DetResponse.h" // required here for TrueB definition
 #include "AtmFlux.h"
 #include "NuXsec.h"
 #include "EffMass.h"
@@ -71,8 +72,8 @@ class FitUtil {
   // public functions that are called in `FitPDF`
   //------------------------------------------------------------------  
   virtual std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
-						 DetResponse *resp, const proxymap_t &proxymap);
-  TH3D* Expectation(DetResponse *resp, const proxymap_t &proxymap, const char* rangeName);
+						 AbsResponse *resp, const proxymap_t &proxymap);
+  TH3D* Expectation(AbsResponse *resp, const proxymap_t &proxymap, const char* rangeName);
 
   //------------------------------------------------------------------
   // other public functions

@@ -49,7 +49,7 @@ class AbsResponse : public EventFilter {
   //-------------------------------------------------------------------------------------
 
   /// enumerator that defines various response types that are implemented in inheriting classes, which need to return a code from this enumerator by implementing the function `GetResponseType`. For each new response class added to common_software, an element should be added to this enumerator that could be returned by `GetResponseType` in the inheriting class. This is necessary for deciding what to do in `FitUtil::RecoEvts`, as different response types require different calculation implementation.
-  enum resp { BINNED, EVT_BY_EVT };
+  enum resp { BinnedResponse, EvtResponse };
   
   /** Purely virtual method to fill the response that needs to be re-implemented in inheriting classes */
   virtual void Fill(SummaryEvent* evt) = 0;
@@ -66,12 +66,12 @@ class AbsResponse : public EventFilter {
   /** Function that returns a pointer to the TH3 histogram with reco bin settings
       \return Pointer to a TH3 with reco binning setting
    */
-  TH3*    GetHist3DReco() { return fhBinsReco; }
+  TH3D*   GetHist3DReco() { return fhBinsReco; }
   
   /** Function that returns a pointer to the TH3 histogram with true bin settings
       \return Pointer to a TH3 with true binning setting
    */  
-  TH3*    GetHist3DTrue() { return fhBinsTrue; }
+  TH3D*   GetHist3DTrue() { return fhBinsTrue; }
 
   /** function that returns the response name
       \return Response name

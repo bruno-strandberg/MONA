@@ -47,7 +47,7 @@ int main(const int argc, const char **argv) {
   Double_t emin    =  2.;
   Double_t emax    =  75.;
   Double_t ctmin   = -1;
-  Double_t ctmax   =  0;
+  Double_t ctmax   =  -1e-5;
   Double_t bymin   =  0;
   Double_t bymax   =  1;
 

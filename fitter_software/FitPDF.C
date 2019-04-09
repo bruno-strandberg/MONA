@@ -35,15 +35,15 @@ FitPDF::FitPDF(const FitPDF& other, const char* name) : RooAbsPdf(other, name) {
 
 /** Constructor.
 
-    The class takes a pointer to a pre-initialised `FitUtil` class and a pre-initialised `DetResponse` class as arguments. The latter specifies the event selection the pdf is used to fit, whereas the former is the actual worker class where all the calculations are performed.
+    The class takes a pointer to a pre-initialised `FitUtil` class and a pre-initialised response class as arguments. The response class needs to inherit from `AbsResponse`. The response specifies the event selection the pdf is used to fit, whereas the `FitUtil` is the actual worker class where all the calculations are performed.
 
     \param name      Name of the pdf
     \param title     Title of the pdf
     \param futil     Pointer to the `FitUtil` class
-    \param resp      Pointer to a `DetResponse` instance
+    \param resp      Pointer to a response instance
 
  */
-FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse *resp) :
+FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, AbsResponse *resp) :
   RooAbsPdf(name, title) {
 
   // set the pointers
@@ -52,7 +52,7 @@ FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse 
   }
 
   if (resp == NULL) {
-    throw std::invalid_argument("ERROR! FitPDF::FitPDF() null pointer to DetResponse class");
+    throw std::invalid_argument("ERROR! FitPDF::FitPDF() null pointer to response class");
   }
   
   fFitUtil  = futil;
@@ -166,7 +166,7 @@ double FitPDF::operator()(double *x, double *p) {
   fFitUtil->GetVar("Dm31")     ->setVal( p[5] );
 
   // calculate the bin width to conver the event density to number of events
-  TH3D *hb = fResponse->GetHist3D();
+  TH3D *hb = fResponse->GetHist3DReco();
 
   Double_t e_w  = hb->GetXaxis()->GetBinWidth( hb->GetXaxis()->FindBin(x[0]) );
   Double_t ct_w = hb->GetYaxis()->GetBinWidth( hb->GetYaxis()->FindBin(x[1]) );
