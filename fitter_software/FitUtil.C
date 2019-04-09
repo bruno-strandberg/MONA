@@ -1,7 +1,8 @@
 #include "FitUtil.h"
 #include <iostream>
-
+#include <typeinfo>
 #include "TFile.h"
+#include "TRandom.h"
 
 using namespace std;
 
@@ -47,7 +48,13 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
   
   InitFitVars(get<MIN>(ENr), get<MAX>(ENr), get<MIN>(CTr), get<MAX>(CTr), get<MIN>(BYr), get<MAX>(BYr));
   InitCacheHists(fHB);
-  Fill_Flux_Xsec_Meff_cache(fFlux, fXsec, fMeff, fOpTime);
+
+  fFluxSamplesN = 1;
+  FillFluxCache(fFlux, fOpTime, fFluxSamplesN);
+  FillXsecMeffCache(fXsec, fMeff);
+
+  fOscSamplesN        = 1;
+  f_cache_oscsamplesn = 0;
 
   f_cache_sinsqth12 = 0;
   f_cache_sinsqth13 = 0;
@@ -117,8 +124,8 @@ FitUtil::~FitUtil() {
 
     For example, consider 40 logarithmic energy bins from 1-100 GeV. The user can ask the fit to be performed in the range from 2 - 82 GeV. This function find the bin edges closest to the dialled range. For example, the range 2 - 82 would become something like 2.42 - 79.2. This is necessary to make sure that data import to `RooFit`, fit ranges and the detector response are consistent.
 
-    \param min    Minimum of the range
-    \param max    Maximum of the range
+    \param _min   Minimum of the range
+    \param _max   Maximum of the range
     \param axis   Pointer to an axis that defines the binning
     \return       A std::tuple with the minimum, the maximum, the minimum bin number and the maximum bin number
 */
@@ -151,7 +158,7 @@ std::tuple<Double_t, Double_t, Int_t, Int_t> FitUtil::GetRange(Double_t _min, Do
     \param ctmin  Minimum cos-theta in the fit range
     \param ctmax  Maximum cos-theta in the fit range
     \param bymin  Minimum bjorken-y in the fit range
-    \param bymin  Maximum bjorken-y in the fit range
+    \param bymax  Maximum bjorken-y in the fit range
 */
 void FitUtil::InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, 
 			  Double_t bymin, Double_t bymax) {
@@ -366,13 +373,12 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
 
 //***************************************************************************
 
-/** A private function to fill the flux and xsec cache hists
+/** A private function to fill the flux cache hists
     \param flux     Pointer to the `AtmFlux` member instance
-    \param xsec     Pointer to the `NuXsec` member instance
-    \param meff     Pointer to the `EffMass` member instance
     \param op_time  Operation time in years.
+    \param nsamples Parameter to increase flux calculation accuracy. If 1 bin center is used, otherwise each bin is sub-divided to nsamples along energy and cos-theta, e.g. nsamples=2 means that each bin is calculated as an average of 2^2=4 points.
 */
-void FitUtil::Fill_Flux_Xsec_Meff_cache(AtmFlux *flux, NuXsec *xsec, EffMass *meff, Double_t op_time) {
+void FitUtil::FillFluxCache(AtmFlux *flux, Double_t op_time, UInt_t nsamples) {
 
   // fill the atm flux cache. Note that (currently) AtmFlux returns 0 for tau flux
   for (UInt_t f = 0; f < fFlavs; f++) {
@@ -383,21 +389,47 @@ void FitUtil::Fill_Flux_Xsec_Meff_cache(AtmFlux *flux, NuXsec *xsec, EffMass *me
       for (Int_t ebin = 1; ebin <= hflux->GetXaxis()->GetNbins(); ebin++) {
 	for (Int_t ctbin = 1; ctbin <= hflux->GetYaxis()->GetNbins(); ctbin++) {
 
-	  Double_t E   = hflux->GetXaxis()->GetBinCenter(ebin);
-	  Double_t ew  = hflux->GetXaxis()->GetBinWidth(ebin);
-	  Double_t ct  = hflux->GetYaxis()->GetBinCenter(ctbin);
-	  Double_t ctw = hflux->GetYaxis()->GetBinWidth(ctbin);
+	  // create a subdivision to improve the flux calculation accuracy
+	  Double_t emin  = hflux->GetXaxis()->GetBinLowEdge(ebin);
+	  Double_t emax  = hflux->GetXaxis()->GetBinUpEdge(ebin);
+	  Double_t ctmin = hflux->GetYaxis()->GetBinLowEdge(ctbin);
+	  Double_t ctmax = hflux->GetYaxis()->GetBinUpEdge(ctbin);
+	  TH2D hb("hb", "hb", nsamples, emin, emax, nsamples, ctmin, ctmax);
 
-	  Double_t atm_flux_factor = ew * ctw * fSec_per_y * op_time;
-	  Double_t atmflux = flux->Flux_dE_dcosz(f, isnb, E, ct) * atm_flux_factor;
-	  
-	  hflux->SetBinContent(ebin, ctbin, atmflux);
+	  // loop over the subdivision bins to calculate the average flux
+	  Double_t atmflux = 0.;
+
+	  for (Int_t eb = 1; eb <= hb.GetXaxis()->GetNbins(); eb++) {
+	    for (Int_t cb = 1; cb <= hb.GetYaxis()->GetNbins(); cb++) {
+
+	      Double_t E   = hb.GetXaxis()->GetBinCenter(eb);
+	      Double_t ew  = hb.GetXaxis()->GetBinWidth(eb);
+	      Double_t ct  = hb.GetYaxis()->GetBinCenter(cb);
+	      Double_t ctw = hb.GetYaxis()->GetBinWidth(cb);
+
+	      Double_t atm_flux_factor = ew * ctw * fSec_per_y * op_time;
+	      atmflux += flux->Flux_dE_dcosz(f, isnb, E, ct) * atm_flux_factor;
+	  	      
+	    }
+	  }
+
+	  hflux->SetBinContent( ebin, ctbin, atmflux/(nsamples*nsamples) );
 
 	}
       }
 
     }
   }
+
+}
+
+//***************************************************************************
+
+/** A private function to fill the xsec and eff mass cache hists
+    \param xsec     Pointer to the `NuXsec` member instance
+    \param meff     Pointer to the `EffMass` member instance
+*/
+void FitUtil::FillXsecMeffCache(NuXsec *xsec, EffMass *meff) {
 
   // fill xsec cache and meff cache
   for (UInt_t f = 0; f < fFlavs; f++) {
@@ -437,9 +469,10 @@ void FitUtil::Fill_Flux_Xsec_Meff_cache(AtmFlux *flux, NuXsec *xsec, EffMass *me
 
 /** 
     Function that returns the cached atmospheric flux value for a certain true bin.
-    \param flav  Neutrino flavor, 0 - elec, 1 - muon, 2 - tau
-    \param isnb  Flag for anti-neutrino, 0 - neutrino, 1 - anti-neutrino
-    \param tb    A `TrueB` object (see `DetResponse.h`) that stores the true bin coordinate info.
+    \param flav        Neutrino flavor, 0 - elec, 1 - muon, 2 - tau
+    \param isnb        Flag for anti-neutrino, 0 - neutrino, 1 - anti-neutrino
+    \param true_ebin   True energy bin
+    \param true_ctbin  True cos-theta bin
     \return      Cached atmoshperic neutrino flux in specified bin.
 */
 Double_t FitUtil::GetCachedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin) {
@@ -472,7 +505,7 @@ Double_t FitUtil::GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t
   }
 
   // recalculate the oscillation parameter cache if anything has changed.
-  ProbCacher(proxymap);
+  ProbCacher(proxymap, fOscSamplesN);
   
   return fhOscCache[flav_in][tb.fFlav][tb.fIsNB]->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin);
 }
@@ -512,16 +545,30 @@ Double_t FitUtil::GetCachedBYfrac(const TrueB &tb) {
 
 //***************************************************************************
 
-/**
-   Private function that handles the caching of the oscillation probabilities.
+/** Function that configures the `OscProb` instance of the class for given parameter values.
 
-   This function re-calculates the oscillation probabilites and stores them in member histograms `fhOscCache` whenever any of the oscillation parameters change. If none of them change, the calculation is not performed. The way the `DetResponse` class is set up and the way fitting works, this enables to save a large amount of time.
+    By default, the OscProb calculator `FitUtil::fProb` is initiated to `OscProb::PMNS_Fast`. If a different calculator is required, e.g. `OscProb::PMNS_NSI`, the class inheriting from `FitUtil` should do in the constructor
 
-   NB! The oscillations tau-> (elec, muon, tau) are not calculated to save time; tau flux is assumed 0.
+    ```
+    if (fProb) delete fProb;
+    fProb = new OscProb::PMNS_NSI()
+    ```
 
-   \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
- */
-void FitUtil::ProbCacher(const proxymap_t &proxymap) {
+    and the class should re-implement this function, such that correct fit parameters are passed to the `FitUtil::fProb` instance.
+
+    \param proxymap A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
+    \return True - osc parameters have changed, re-calculate the cache; False - osc parameters have not changed, re-calculation not required
+*/
+Bool_t FitUtil::ConfigOscProb(const proxymap_t& proxymap) {
+
+  // check that the type is PMNS_Fast
+  TString type = (TString)typeid( *fProb ).name();
+
+  if ( !type.Contains("PMNS_Fast") ) {
+    throw std::logic_error("ERROR! FitUtil::ConfigOscProb() is called with fProb instance type " + (string)type + ", whereas OscProb::PMNS_Fast is expected. If a class inheriting from FitUtil has initiated fProb with a different type, the virtual function `FitUtil::ConfigOscProb` needs to be over-loaded to account for the new/different parameters.");
+  }
+
+  Bool_t reCalc = kFALSE;
 
   // get the parameter values from the proxies
   Double_t SinsqTh12 = *( proxymap.at( (TString)fSinsqTh12->GetName() ) );
@@ -534,9 +581,6 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap) {
   if (SinsqTh12 != f_cache_sinsqth12 || SinsqTh13 != f_cache_sinsqth13 || SinsqTh23 != f_cache_sinsqth23 || 
       Dcp != f_cache_dcp || Dm21 != f_cache_dm21 || Dm31 != f_cache_dm31) {
 
-    fOscCalcTime->Start(kFALSE);
-
-    // update the cache variables
     f_cache_sinsqth12 = SinsqTh12;
     f_cache_sinsqth13 = SinsqTh13;
     f_cache_sinsqth23 = SinsqTh23;
@@ -552,41 +596,104 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap) {
     fProb->SetDm(2, f_cache_dm21);
     fProb->SetDm(3, f_cache_dm31);
 
-    // calculate all oscillation probabilities and cache them  - NB! TAU-IN IS NOT CALCULATED!
-    for (UInt_t f_in = 0; f_in < fFlavs-1; f_in++) {
-      for (UInt_t f_out = 0; f_out < fFlavs; f_out++) {
-	for (UInt_t isnb = 0; isnb < fInts; isnb++) {
-
-	  Int_t N_ebins  = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetNbins();
-	  Int_t N_ctbins = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetNbins();
-
-	  for (Int_t ebin = 1; ebin <= N_ebins; ebin++) {
-	    for (Int_t ctbin = 1; ctbin <= N_ctbins; ctbin++) {
-
-	      Double_t E  = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinCenter(ebin);
-	      Double_t ct = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinCenter(ctbin);
-
-	      // set oscillation path and is-nu-bar flag
-	      fPrem->FillPath( ct );	      
-	      fProb->SetPath ( fPrem->GetNuPath() );
-	      fProb->SetIsNuBar( isnb );
-
-	      fhOscCache[f_in][f_out][isnb]->SetBinContent(ebin, ctbin, fProb->Prob(f_in, f_out, E) );
-
-	      fOscCalls++;
-
-	    } // end loop over cos-theta bins
-	  } //end loop over energy bins
-
-	} // end loop over isnb
-      } // end loop over flavor_out
-    } // end loop over flavor_in
-
-    fOscCalcTime->Stop();
+    // set flag that re-calculation should be performed
+    reCalc = kTRUE;
 
   }
-  // osc pars have not changed, return
-  else { return; }
+  else { reCalc = kFALSE; }
+
+  return reCalc;
+
+}
+
+//***************************************************************************
+
+/**
+   Private function that handles the caching of the oscillation probabilities.
+
+   This function re-calculates the oscillation probabilites and stores them in member histograms `fhOscCache` whenever any of the oscillation parameters change. If none of them change, the calculation is not performed. The way the `DetResponse` class is set up and the way fitting works, this enables to save a large amount of time.
+
+   NB! The oscillations tau-> (elec, muon, tau) are not calculated to save time; tau flux is assumed 0.
+
+   \param proxymap    A proxy map with `RooFit` variables from `FitPDF` that contain all shared observables and parameters, including the oscillation parameters. 
+   \param nsamples    Number of samples per bin
+ */
+void FitUtil::ProbCacher(const proxymap_t &proxymap, UInt_t nsamples) {
+
+  if (nsamples < 1) {
+    throw std::invalid_argument("ERROR! FitUtil::ProbCacher() cannot have below 1 samples per bin.");
+  }
+  
+  // call function that configures OscProb and returns flag to indicate re-calculation
+  Bool_t reCalc = ConfigOscProb(proxymap);
+
+  // also recalculate if number of requested samples changes
+  reCalc = reCalc || (nsamples != f_cache_oscsamplesn);
+
+  // osc parameters have not changed, no re-calculation required, return
+  if ( !reCalc ) return;
+
+  //=======================================================================
+  // recalculation of the cache 
+  //=======================================================================
+
+  fOscCalcTime->Start(kFALSE);
+
+  // update the variable for samples; osc. par. cache handled by ConfigOscProb
+  f_cache_oscsamplesn = nsamples;
+
+  // calculate all oscillation probabilities and cache them  - NB! TAU-IN IS NOT CALCULATED!
+  for (UInt_t f_in = 0; f_in < fFlavs-1; f_in++) {
+    for (UInt_t f_out = 0; f_out < fFlavs; f_out++) {
+      for (UInt_t isnb = 0; isnb < fInts; isnb++) {
+
+	fProb->SetIsNuBar( isnb );
+
+	Int_t N_ebins  = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetNbins();
+	Int_t N_ctbins = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetNbins();
+
+	for (Int_t ebin = 1; ebin <= N_ebins; ebin++) {
+	  for (Int_t ctbin = 1; ctbin <= N_ctbins; ctbin++) {
+
+	    Double_t prob_ave = 0;
+
+	    Double_t emin    = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinLowEdge(ebin);
+	    Double_t emax    = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinUpEdge(ebin);
+	    Double_t e_step  = (emax - emin)/(nsamples+1);
+
+	    Double_t ctmin   = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinLowEdge(ctbin);
+	    Double_t ctmax   = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinUpEdge(ctbin);
+	    Double_t ct_step = (ctmax - ctmin)/(nsamples+1);
+
+	    // calculate average of N samples inside the bin
+	    for (UInt_t n_e = 0; n_e < nsamples; n_e++) {
+
+	      Double_t E  = emin + (n_e + 1) * e_step;
+
+	      for (UInt_t n_ct = 0; n_ct < nsamples; n_ct++) {
+
+		Double_t ct = ctmin + (n_ct + 1) * ct_step;
+
+		fPrem->FillPath( ct );	      
+		fProb->SetPath ( fPrem->GetNuPath() );
+
+		prob_ave += fProb->Prob(f_in, f_out, E);
+
+		fOscCalls++;
+		
+	      } // end loop over cos-theta samples
+	    } // end loop over energy samples
+
+	    fhOscCache[f_in][f_out][isnb]->SetBinContent(ebin, ctbin, prob_ave/(nsamples*nsamples) );
+
+	  } // end loop over cos-theta bins
+	} //end loop over energy bins
+
+      } // end loop over isnb
+    } // end loop over flavor_out
+  } // end loop over flavor_in
+
+  fOscCalcTime->Stop();
       
 }
 
@@ -667,12 +774,12 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
   // Instead define new Ints to use in the for loop downstairs
   // Take the max to move the minimum value up and the min to move the maximum value down, this 
   // constrains the range.
-  Int_t ebin_min  = max( fEbin_min,  std::get<2>(XFitRange) );
-  Int_t ebin_max  = min( fEbin_max,  std::get<3>(XFitRange) );
-  Int_t ctbin_min = max( fCtbin_min, std::get<2>(YFitRange) );
-  Int_t ctbin_max = min( fCtbin_max, std::get<3>(YFitRange) );
-  Int_t bybin_min = max( fBybin_min, std::get<2>(ZFitRange) );
-  Int_t bybin_max = min( fBybin_max, std::get<3>(ZFitRange) );
+  Int_t ebin_min  = max( fEbin_min,  std::get<MINBIN>(XFitRange) );
+  Int_t ebin_max  = min( fEbin_max,  std::get<MAXBIN>(XFitRange) );
+  Int_t ctbin_min = max( fCtbin_min, std::get<MINBIN>(YFitRange) );
+  Int_t ctbin_max = min( fCtbin_max, std::get<MAXBIN>(YFitRange) );
+  Int_t bybin_min = max( fBybin_min, std::get<MINBIN>(ZFitRange) );
+  Int_t bybin_max = min( fBybin_max, std::get<MAXBIN>(ZFitRange) );
 
   // loop over bins and fill the expectation value histogram
   for (Int_t ebin = ebin_min; ebin <= ebin_max; ebin++) {

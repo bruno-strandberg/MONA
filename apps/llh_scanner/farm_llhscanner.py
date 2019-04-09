@@ -4,12 +4,12 @@
 Script to farm out LLH_scanner application. It creates a LLH scan job for each parameter.
 
 Usage:
-    farm_llhscanner [-D DATA_FILE] [-M EFFMASS_FILE] -i ID_STR
+    farm_llhscanner [-d DATA_FILE] [-m EFFMASS_FILE] -i ID_STR
     farm_llhscanner -h
 
 Option:
-    -D DATA_FILE      MC chain summary data file in MONA format
-    -M EFFMASS_FILE   Effective mass file in MONA format
+    -d DATA_FILE      MC chain summary data file in MONA format
+    -m EFFMASS_FILE   Effective mass file in MONA format
     -i ID_STR         Identifier string used to create job names and job outputs
     -h --help         Show this screen
 
@@ -66,11 +66,11 @@ for par in pars:
 
     cmd = "{0}/./{1} -p {2} -o {3}".format(cwd, app, par, output)
 
-    if ( args['-D'] != None ):
+    if ( args['-d'] != None ):
         fpath = os.path.abspath(args['-D'])
         cmd += " -D {}".format(fpath)
 
-    if ( args['-M'] != None ):
+    if ( args['-m'] != None ):
         fpath = os.path.abspath(args['-M'])
         cmd += " -M {}".format(fpath)
 

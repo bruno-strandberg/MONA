@@ -1,0 +1,272 @@
+#include "ORCA7.h"
+#include "ORCA7.C"
+
+#include "NMHUtils.h"
+#include "FitUtilWsyst.h"
+#include "FitPDF.h"
+
+#include "RooRandom.h"
+#include "RooArgSet.h"
+#include "RooSimultaneous.h"
+#include "RooPlot.h"
+#include "RooCategory.h"
+#include "RooNLLVar.h"
+#include "RooDataHist.h"
+#include "RooMinuit.h"
+#include "RooFitResult.h"
+#include "RooProdPdf.h"
+
+#include "TFile.h"
+#include "TRandom.h"
+#include "TLegend.h"
+#include "TStopwatch.h"
+
+using namespace RooFit;
+
+void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            // fix systematics or not
+		     TString channel        = "sim",                            // trk, shw, mid or sim
+		     TString outname        = "rootfiles/contours_wsyst.root",  // outfile
+		     Int_t   ncpu           = 1,                                // number of computers
+		     Int_t   seed           = 418 ) {                           // seed
+
+  //=====================================================================================
+  // initialisation
+  //=====================================================================================
+
+  TStopwatch timer;
+
+  // init the class with binning info, PID ranges and responses
+  ORCA7 o7( kTRUE );
+  FitUtilWsyst *fu = o7.fFitUtil;
+  auto pdfs = o7.fPdfs;
+
+  //=====================================================================================
+  // data creation
+  //=====================================================================================
+
+  // randomise oscillation parameters within NO 3sigma limits
+  RooRandom::randomGenerator()->SetSeed(seed); // this seed controls the randomisation of osc parameters
+  fu->SetNOlims();
+  fu->GetVar("SinsqTh12")->randomize();
+  fu->GetVar("SinsqTh13")->randomize();
+  fu->GetVar("SinsqTh23")->randomize();
+  fu->GetVar("dcp")->randomize();
+  fu->GetVar("Dm21")->randomize();
+  fu->GetVar("Dm31")->randomize();
+  fu->FreeParLims();
+
+  // if fixed systematics set them to constants, otherwise randomize
+  gRandom->SetSeed(seed);
+
+  if ( fixSystematics ) {
+
+    fu->GetVar("E_tilt")     ->setConstant( kTRUE );
+    fu->GetVar("ct_tilt")    ->setConstant( kTRUE );
+    fu->GetVar("skew_mu_amu")->setConstant( kTRUE );
+    fu->GetVar("skew_e_ae")  ->setConstant( kTRUE );
+    fu->GetVar("skew_mu_e")  ->setConstant( kTRUE );
+    fu->GetVar("NC_norm")    ->setConstant( kTRUE );
+    fu->GetVar("Tau_norm")   ->setConstant( kTRUE );
+    fu->GetVar("E_scale")    ->setConstant( kTRUE );
+
+  }
+  else {
+
+    fu->GetVar("E_tilt")     ->setVal( gRandom->Uniform(-0.2, 0.2) );
+    fu->GetVar("ct_tilt")    ->setVal( gRandom->Uniform(-0.2, 0.2) );
+    fu->GetVar("skew_mu_amu")->setVal( gRandom->Uniform(-0.2, 0.2) );
+    fu->GetVar("skew_e_ae")  ->setVal( gRandom->Uniform(-0.2, 0.2) );
+    fu->GetVar("skew_mu_e")  ->setVal( gRandom->Uniform(-0.2, 0.2) );
+    fu->GetVar("NC_norm")    ->setVal( gRandom->Uniform( 0.8, 1.2) );
+    
+    // debugging
+    //fu->GetVar("Tau_norm")   ->setVal( rand.Uniform( 0.8, 1.2) );
+    //fu->GetVar("E_scale")    ->setVal( rand.Uniform(-0.2, 0.2) );
+
+  }
+
+  // create expectation value data
+  std::map< string, TH1* > exps; // map with response name <--> expectation value histogram
+
+  for (auto P: pdfs) {
+    TString hname = "exp_" + P.first;
+    FitPDF *pdf = P.second;
+    TH3D   *exp = pdf->GetExpValHist();
+    exp->SetNameTitle( hname, hname );
+    exps.insert( std::make_pair( (string)P.first, (TH1*)exp ) );
+  }
+
+  // save the parameter values
+  RooArgSet *pars = (RooArgSet*)fu->GetSet().snapshot(kTRUE);
+  
+  //=====================================================================================
+  // set oscillation parameters back to central values, fix osc pars except for tm23, dm31; set
+  // the systematics back to central values
+  //=====================================================================================
+  fu->SetNOcentvals();
+  fu->GetVar("SinsqTh12")->setConstant(kTRUE);
+  fu->GetVar("SinsqTh13")->setConstant(kTRUE);
+  fu->GetVar("dcp")->setConstant(kTRUE);
+  fu->GetVar("Dm21")->setConstant(kTRUE);
+
+  // if systematics are not fixed set them to starting values for the fit
+  if ( !fixSystematics ) {
+
+    fu->GetVar("E_tilt")     ->setVal( 0. );
+    fu->GetVar("ct_tilt")    ->setVal( 0. );
+    fu->GetVar("skew_mu_amu")->setVal( 0. );
+    fu->GetVar("skew_e_ae")  ->setVal( 0. );
+    fu->GetVar("skew_mu_e")  ->setVal( 0. );
+    fu->GetVar("NC_norm")    ->setVal( 1. );
+    fu->GetVar("Tau_norm")   ->setVal( 1. );
+    fu->GetVar("E_scale")    ->setVal( 0. );
+
+  }
+
+  // debugging
+  fu->GetVar("Tau_norm")->setConstant( kTRUE );
+  fu->GetVar("E_scale") ->setConstant( kTRUE );
+
+  //=====================================================================================
+  // configure simultaneous fitting
+  //=====================================================================================
+
+  RooCategory categ("categ","data categories");
+  for (auto &E: exps) { categ.defineType( (TString)E.first ); }
+
+  RooDataHist comb("comb","combined data", fu->GetObs(), categ, exps);  
+
+  RooSimultaneous simPdf("simPdf","simultaneous pdf", categ);
+  for (auto &P: pdfs) { simPdf.addPdf( *P.second, P.first ); }
+
+  // add constraints
+  RooArgSet components( o7.fPriors );
+  components.add(simPdf);
+
+  RooProdPdf constrainedPdf("constrainedPdf","constrainedPdf", components);
+
+  //=====================================================================================
+  // create likelihood scanners - individual for each PID range and simultaneous
+  //=====================================================================================
+
+  RooPlot* frame = fu->GetVar("SinsqTh23")->frame( Range(0.25, 0.75), Title("-log(L) scan vs sinsqth23") );
+
+  vector< RooDataHist* > rfdata;         // vector to store pointers to RooFit data, for clean-up
+  std::map< TString, RooNLLVar* > nlls;  // map with response name <--> nll variable
+  for (auto &P: pdfs) {
+
+    TH3D   *hin = (TH3D*)exps[ (string)P.first ];
+    FitPDF *pdf = P.second;
+    
+    TString hname = TString("rf_") + (TString)hin->GetName();
+    RooDataHist *rfh = new RooDataHist( hname, hname, fu->GetObs(), Import(*hin) );
+
+    TString nllname = "nll_" + (TString)pdf->GetName();
+    RooNLLVar *nll = new RooNLLVar( nllname, nllname, *pdf, *rfh, NumCPU(ncpu) );
+
+    nlls.insert( std::make_pair( P.first, nll )  );
+    rfdata.push_back( rfh );
+  }
+
+  // create a LLH scanner from simultaneous fitting, add to map
+  //RooNLLVar *nll_sim = new RooNLLVar("nll_sim", "nll_sim", simPdf, comb, NumCPU(ncpu) );
+  RooNLLVar *nll_sim = new RooNLLVar("nll_sim", "nll_sim", simPdf, comb, ExternalConstraints( o7.fPriors ), NumCPU(ncpu) );
+  //RooNLLVar *nll_sim = new RooNLLVar("nll_sim", "nll_sim", constrainedPdf, comb, NumCPU(ncpu) );
+  nlls.insert( std::make_pair("sim", nll_sim) );
+
+  // plot all LLH curves
+  /*
+  Int_t i = 0;
+  for (auto N: nlls) {
+    N.second->plotOn( frame, LineColor(1+i), ShiftToZero(), LineStyle(1+i), Name( N.first ) );
+    cout << "================================================================================" << endl;
+    cout << "NOTICE contours_wsyst finished scanning channel " << N.first << endl;
+    cout << "================================================================================" << endl;
+    i++;
+  }
+  */
+  // add a legend
+  TLegend *leg1 = new TLegend(0.3, 0.6, 0.7, 0.9);
+  for (auto N: nlls) {
+    //leg1->AddEntry( frame->findObject( N.first ), N.first, "l" );
+  }
+  leg1->SetLineWidth(0);
+  leg1->SetFillStyle(0);
+
+  // draw
+  TCanvas *c1 = new TCanvas("c1","c1",1);
+  frame->Draw();
+  leg1->Draw();
+
+  //=====================================================================================
+  // Create contour plots
+  //=====================================================================================
+  if ( nlls.find(channel) == nlls.end() ) {
+    cout << "Supported channels: " << endl;
+    for (auto kv: nlls) cout << kv.first << endl;
+    throw std::invalid_argument("ERROR! contours_wsyst unknown channel " + (string)channel);
+  }
+
+  RooMinuit *min = new RooMinuit( *nlls[channel] );
+  //min->setVerbose(kTRUE);
+
+  // call the minimiser and save the result
+  min->migrad();
+  RooFitResult *result = min->save();
+
+  TIterator *floatit = result->floatParsFinal().createIterator();
+  TIterator *constit = result->constPars().createIterator();
+  RooRealVar *floatpar, *constpar;
+
+  while ( ( floatpar = (RooRealVar*)floatit->Next() ) ) {
+    RooRealVar *init = (RooRealVar*)pars->find( floatpar->GetName() );
+    cout << "NOTICE fitted parameter: " << floatpar->GetName() << ", true and fitted: " 
+	 << init->getVal() << "\t" << floatpar->getVal() << endl;
+  }
+
+  while ( ( constpar = (RooRealVar*)constit->Next() ) ) {
+    cout << "NOTICE fixed parameter: " << constpar->GetName() << endl;
+  }  
+
+  RooPlot* contplot = min->contour( *(fu->GetVar("SinsqTh23")), *(fu->GetVar("Dm31")), 2);
+
+  // clone the graphs from RooPlot for easier draw option manipulation
+  TGraph *g_cont = (TGraph*)contplot->getObject(1)->Clone("g_cont");
+
+  g_cont->SetLineColor(kRed);
+  g_cont->SetMarkerColor(kRed);
+  g_cont->SetLineWidth(2);
+
+  g_cont->GetXaxis()->SetTitle("sin^2#theta_{23}");
+  g_cont->GetYaxis()->SetTitle("#Delta m_{31}^2");
+  g_cont->GetYaxis()->SetRangeUser(0.5*1e-3, 4.5*1e-3);
+
+  TLegend *leg2 = new TLegend(0.6, 0.6, 0.9, 0.9);
+  leg2->AddEntry(g_cont, "2#sigma contour, sim fit", "l");
+  leg2->SetLineWidth(0);
+  leg2->SetFillStyle(0);
+
+  TCanvas *c2 = new TCanvas("c2","c2",1);
+  c2->SetTicks();
+  g_cont->Draw("AL");
+  leg2->Draw();
+
+  //------------------------------------------------------------
+  // write the plots to output for further manipulation
+  //------------------------------------------------------------
+  TFile fout(outname,"RECREATE");
+  g_cont->Write("contour_2sigma");
+  leg2  ->Write("legend_contour_2sigma");
+  frame ->Write("llhscan");
+  leg1  ->Write("legend_llhscan");
+  pars  ->Write("data_parameters");  
+  result->Write("fitresult");
+  for (auto e: exps) e.second->Write((TString)e.first);
+  fout.Close();
+
+  cout << "Total run time: " << (Double_t)timer.RealTime() << endl;
+
+  // remove junk from compilation
+  system("rm contours_wsyst_C*");
+
+}

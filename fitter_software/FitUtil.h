@@ -6,6 +6,7 @@
 #include "AtmFlux.h"
 #include "NuXsec.h"
 #include "EffMass.h"
+#include "PMNS_Base.h"
 #include "PMNS_Fast.h"
 #include "PremModel.h"
 
@@ -86,7 +87,43 @@ class FitUtil {
   //------------------------------------------------------------------
   // setters/getters
   //------------------------------------------------------------------
+
+  /** Function to specify a flux model different from the default
+      \param flux_model  Flux model identifier, e.g. AtmFluxOpt::h_grn_min
+   */
+  void SetFluxModel(UInt_t flux_model) {
+    if (fFlux) delete fFlux;                       // remove existing flux calculator
+    fFlux = new AtmFlux(flux_model);               // init new flux model
+    FillFluxCache(fFlux, fOpTime, fFluxSamplesN);  // re-fill the cache
+  }
   
+  /** Function to specify the number of oscillation calculation samples per each (E,ct) bin
+      
+      NB! the number of samples is applied to both energy and cos-theta, i.e. the number of oscillation calculations increases by a factor of nsampels^2. That is because the sampling is applied along both the energy axis and the cos-theta axis.
+
+      \param nsamples Number of samples along the energy axis and the cos-theta axis.
+   */
+  void SetOscSamplesN(UInt_t nsamples) {
+    if (nsamples < 1) { 
+      throw std::invalid_argument("ERROR! FitUtil::SetOscSamplesN() input cannot be smaller than 1");
+    }
+    fOscSamplesN = nsamples;
+  }
+
+  /** Function to specify the number of flux calculation samples per each (E,ct bin)
+      
+      NB! the number of samples is applied to both energy and cos-theta, i.e. the number of flux calculations increases by a factor of nsampels^2. That is because the sampling is applied along both the energy axis and the cos-theta axis.
+      
+      \param nsamples Number of samples along the energy axis and the cos-theta axis.
+*/
+  void SetFluxSamplesN(UInt_t nsamples) {
+    if (nsamples < 1) { 
+      throw std::invalid_argument("ERROR! FitUtil::SetFluxSamplesN() input cannot be smaller than 1");
+    }
+    fFluxSamplesN = nsamples;
+    FillFluxCache(fFlux, fOpTime, fFluxSamplesN);  // re-fill the cache
+  }
+
   /** Get the `RooArgSet` with all parameters known to `RooFit`
       \return `RooArgSet` with known parameters.
    */
@@ -130,7 +167,7 @@ class FitUtil {
   /** Get the a pointer to `OscProb::PMNS_Fast` member of `FitUtil` that is used to fill caches.
       \return pointer to `OscProb::PMNS_Fast` instance.
    */
-  OscProb::PMNS_Fast* GetOscCalculator() { return fProb; }
+  OscProb::PMNS_Base* GetOscCalculator() { return fProb; }
 
   /** Get the a pointer to `OscProb::PremModel` member of `FitUtil` that is used to fill caches.
       \return pointer to `OscProb::PremModel` instance.
@@ -175,7 +212,7 @@ class FitUtil {
   AtmFlux            *fFlux;                        //!< atm flux calculator
   NuXsec             *fXsec;                        //!< xsec calculator
   EffMass            *fMeff;                        //!< effective mass calculator
-  OscProb::PMNS_Fast *fProb;                        //!< oscillation probability calculator
+  OscProb::PMNS_Base *fProb;                        //!< oscillation probability calculator
   OscProb::PremModel *fPrem;                        //!< earth model
 
   //------------------------------------------------------------------
@@ -221,10 +258,12 @@ class FitUtil {
   // protected functions
   //------------------------------------------------------------------
 
-  void ProbCacher(const proxymap_t& proxymap);  
+  virtual Bool_t ConfigOscProb(const proxymap_t& proxymap);
+  void ProbCacher(const proxymap_t& proxymap, UInt_t nsamples);  
   void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
   void InitCacheHists(TH3D *h_template);
-  void Fill_Flux_Xsec_Meff_cache(AtmFlux *flux, NuXsec *xsec, EffMass *meff, Double_t op_time);
+  void FillFluxCache(AtmFlux *flux, Double_t op_time, UInt_t nsamples);
+  void FillXsecMeffCache(NuXsec *xsec, EffMass *meff);
   std::tuple<Double_t, Double_t, Int_t, Int_t> GetRange(Double_t min, Double_t max, TAxis *axis);
   enum rangeret { MIN=0, MAX, MINBIN, MAXBIN };           //!< enum for function `GetRange` return
     
@@ -264,6 +303,10 @@ class FitUtil {
   TH2D *fhBYfracCache[fFlavs][fInts][fPols];//!< bjorken-y fractions cache with struct. [flav][is_cc][isnb]
   TH3D *fhMeffCache[fFlavs][fInts][fPols];  //!< meff cache with struct. [flav][is_cc][isnb]
 
+  UInt_t   fFluxSamplesN;        //!< determines the number of samples^2 per bin in flux calculation
+  UInt_t   fOscSamplesN;         //!< determines the number of samples^2 per bin in oscillation prob calculation
+  UInt_t   f_cache_oscsamplesn;  //!< internal cache for fOscSamplesN values
+
   Double_t f_cache_sinsqth12;    //!< internally cached theta12 value
   Double_t f_cache_sinsqth13;    //!< internally cached theta13 value
   Double_t f_cache_sinsqth23;    //!< internally cached theta23 value
@@ -298,7 +341,7 @@ class FitUtil {
   RooRealVar *fSinsqTh12; //!< \f$ sin^2\theta_{12} \f$ fit parameter
   RooRealVar *fSinsqTh13; //!< \f$ sin^2\theta_{13} \f$ fit parameter
   RooRealVar *fSinsqTh23; //!< \f$ sin^2\theta_{23} \f$ fit parameter
-  RooRealVar *fDcp;       //!< \f$ \delta_{CP} \f$ fit parameter in \f$ \pi $\f's, as given by the PDG group (e.g. 1.38)
+  RooRealVar *fDcp;       //!< \f$ \delta_{CP} \f$ fit parameter in \f$ \pi \f$'s, as given by the PDG group (e.g. 1.38)
   RooRealVar *fDm21;      //!< \f$ \Delta m_{21}^2 \f$ fit parameter in eV^2
   RooRealVar *fDm31;      //!< \f$ \Delta m_{31}^2 \f$ fit parameter in eV^2
     

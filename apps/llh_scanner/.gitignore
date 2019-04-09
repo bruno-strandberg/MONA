@@ -1,0 +1,6 @@
+#===============================================
+# below here I ignore some specific cases
+#===============================================
+
+#ignore all sub-directories
+*/

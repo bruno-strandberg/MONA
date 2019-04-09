@@ -22,6 +22,9 @@ using namespace std;
     \param ctbins          Number of \f$cos\theta\f$ bins for histogram(s)
     \param ctmin           Minimum \f$cos\theta\f$ for histogram(s)
     \param ctmax           Maximum \f$cos\theta\f$ for histogram(s)
+    \param bybins          Number of bjorken-y bins for histogram(s)
+    \param bymin           Minimum bjorken-y for histogram(s)
+    \param bymax           Maximum bjorken-y for histogram(s)
  */
 EventSelection::EventSelection(reco reco_type, TString selection_name, Bool_t TreeMode,
 			       Int_t ebins, Double_t emin, Double_t emax,

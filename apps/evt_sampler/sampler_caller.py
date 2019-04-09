@@ -3,7 +3,7 @@
 This script can be used to call the GSGSampler app and execute it on the farm.
  
 Usage:
-    sampler_caller -f FLAVOR... -i INTERACTION... -a FLUX_LIST [-n SAMPLES] [--execute] [--gsgdir GSGDIR] [--sumdir SUMDIR]
+    sampler_caller -f FLAVOR... -i INTERACTION... -a FLUX_LIST [-n SAMPLES] [--execute] [--gsgdir GSGDIR] [--sumdir SUMDIR] (--lyon | --nikhef)
     sampler_caller -h                                                                     
 
 Option:
@@ -17,6 +17,8 @@ Option:
                       [default: ../../data/gseagen/ORCA115_23x9m_ECAP0418/data_atmnu/]
     --sumdir SUMDIR   Directory where summary files are sought
                       [default: ../../data/mcsummary/ORCA115_23x9m_ECAP0418/data_atmnu/]
+    --lyon            Farm on lyon
+    --nikhef          Farm on nikhef
     -h --help         Show this screen
 
 """
@@ -83,7 +85,13 @@ def main(args):
             script_file.close()
 
             # request 16gb of virtual memory, max 5 hours
-            farm_cmd = "qsub -P P_km3net -l sps=1 -l vmem=16G -l ct=5:00:00 -o {0} -e {0} {1}".format(cwd+"/tmp", script_name)
+            if args['--lyon']:
+                farm_cmd = "qsub -P P_km3net -l sps=1 -l vmem=16G -l ct=5:00:00 -o {0} -e {0} {1}".format(cwd+"/tmp", script_name)
+            elif args['--nikhef']:
+                farm_cmd = "qsub -q generic7 -o {0} -e {0} {1}".format(cwd+"/tmp", script_name)
+            else:
+                raise Exception("CPU Farm not specified")
+
             if args['--execute']:
                 os.system(farm_cmd)
 

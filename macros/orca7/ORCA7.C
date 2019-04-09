@@ -1,5 +1,10 @@
 #include "ORCA7.h"
 
+#include "RooGaussian.h"
+#include "RooConstVar.h"
+
+using namespace RooFit;
+
 /** Constructor */
 ORCA7::ORCA7(Bool_t ReadResponses) {
 
@@ -81,7 +86,29 @@ ORCA7::ORCA7(Bool_t ReadResponses) {
     fPdfs.insert( std::make_pair(P.first, pdf) );
   }
 
+  // create priors
+  //-------------------------------------------------------------------------------
 
+  // need to add some priors; skew parameter priors ball-parked from Barr
+  // the uncertainty there is <=20%, a prior of 20% hopefully helps to avoid the fitter going
+  // to regions we know are not physical
+  RooGaussian *mu_amu_prior = new RooGaussian("mu_amu_prior", "mu_amu_prior", 
+					      *fFitUtil->GetVar("skew_mu_amu"), RooConst(0.), RooConst(0.2) );
+  RooGaussian *e_ae_prior = new RooGaussian("e_ae_prior"  , "e_ae_prior"  , 
+					    *fFitUtil->GetVar("skew_e_ae")  , RooConst(0.), RooConst(0.2) );
+  RooGaussian *mu_e_prior = new RooGaussian("mu_e_prior"  , "mu_e_prior"  , 
+					    *fFitUtil->GetVar("skew_mu_e")  , RooConst(0.), RooConst(0.2) );
+
+  // energy scale prior is a complete guess; setting 0.15, which means 2sigma is 30%, seems kind-of reasonable
+  RooGaussian *escale_prior = new RooGaussian("escale_prior", "escale_prior", 
+					      *fFitUtil->GetVar("E_scale"), RooConst(0.), RooConst(0.15));
+
+  // nc normalisation taken from Neutrino2018 poster
+  RooGaussian *ncnorm_prior = new RooGaussian("ncnorm_prior", "ncnorm_prior", 
+					      *fFitUtil->GetVar("NC_norm"), RooConst(0.), RooConst(0.1) );
+
+  fPriors.add( RooArgSet(*mu_amu_prior, *e_ae_prior, *mu_e_prior, *escale_prior, *ncnorm_prior) );
+    
 } // end of constructor
 
 //*********************************************************************************************************

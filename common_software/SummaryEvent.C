@@ -59,7 +59,7 @@ SummaryEvent::~SummaryEvent() {}
 
     For example, the pseudo-events can be processed through event filters/selections/detector responses.
 
-    \param logE If true, energy sampled from \f$ 10^{{\rmUniform}(0,2)}\f$,otherwise from \f$ {\rm Uniform}(1,100)\f$
+    \param logE If true, energy sampled from \f$ 10^{{\rm Uniform}(0,2)}\f$,otherwise from \f$ {\rm Uniform}(1,100)\f$
 */
 void SummaryEvent::FillPseudoData(Bool_t logE) {
 

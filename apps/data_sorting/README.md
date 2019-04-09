@@ -50,8 +50,8 @@ Manual creation
 Before the script `createconverter.py` was created, the following steps had to be done manually. Create a new reader by doing, e.g,
 
 ```
-> root new_pid_file.root
-> PID->MakeClass("PIDBeta")
+root new_pid_file.root
+PID->MakeClass("PIDBeta")
 ```
 Then, a new application `BetaToSummary` can be created that uses the class `PIDBeta` to convert the data to analysis format. Practically, this can be achieved easily and quickly by doing
 ```

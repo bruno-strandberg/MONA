@@ -51,7 +51,7 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
   }
 
   if ( emax_scaled >= fHB->GetXaxis()->GetXmax() ) {
-    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() the input minimum energy " + to_string(emax) + " is adjusted to the bin edge " + to_string(fE_reco->getMax()) + ", which can be taken to the value " + to_string(emax_scaled) + " by the maximum of the energy scale parameter " + to_string(fE_scale->getMax()) + ". This is outside of the binning maximum " + to_string(fHB->GetXaxis()->GetXmax()) + ". Choose a lower emax to avoid this problem." );
+    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() the input maximum energy " + to_string(emax) + " is adjusted to the bin edge " + to_string(fE_reco->getMax()) + ", which can be taken to the value " + to_string(emax_scaled) + " by the maximum of the energy scale parameter " + to_string(fE_scale->getMax()) + ". This is outside of the binning maximum " + to_string(fHB->GetXaxis()->GetXmax()) + ". Choose a lower emax to avoid this problem." );
   }
     
 };

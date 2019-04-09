@@ -65,6 +65,7 @@ EffMass::EffMass(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, D
     \param nebins  Number of energy bins to use
     \param nctbins Number of cos-theta bins to use
     \param nbybins Number of bjorken-y bins to use
+    \param rho_sw  Seawater density
 
  */
 EffMass::EffMass(TString fname, Int_t nebins, Int_t nctbins, Int_t nbybins, Double_t rho_sw) {
@@ -217,7 +218,7 @@ void EffMass::WriteToFile(TString fname) {
 
 /** Function to read the 'generated' and 'selected' histograms from the input file.
 
-    \fname Input file name
+    \param fname Input file name
  */
 void EffMass::ReadFromFile(TString fname) {
 
@@ -353,7 +354,6 @@ void EffMass::CreateDummyData() {
     \param nebins   Number of energy bins
     \param nctbins  Number of cos-theta bins
     \param nbybins  Number of bjorken-y bins
-    \param rho_sw   Sea-water density
 
  */
 void EffMass::CreateMeffHists(Int_t nebins, Int_t nctbins, Int_t nbybins) {
