@@ -45,7 +45,7 @@ int main(const int argc, const char** argv) {
   dr.WriteToFile(respname);
   cout << "NOTICE detresponseIO() Wrote to file" << endl;
 
-  DetResponse dr_clone(dr);
+  DetResponse dr_clone("clone",dr);
   DetResponse dr_readin(DetResponse::shower, "shower_readin");
   dr_readin.ReadFromFile(respname);
 

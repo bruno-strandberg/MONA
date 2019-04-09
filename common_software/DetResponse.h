@@ -1,7 +1,7 @@
 #ifndef DetResponse_h
 #define DetResponse_h
 
-#include "EventFilter.h"
+#include "AbsResponse.h"
 #include "SummaryEvent.h"
 
 #include "TCanvas.h"
@@ -167,14 +167,14 @@ struct TrueB : public TObject {
    NB! The binning of the true detected events needs to match the binning used for the `DetResponse`. The detector response should always span the full width of the simulation, i.e., if events are simulated in the range from [1, 100] GeV, [-1, 1] cos theta and [0, 1] bjorken-y, then the detector response needs to cover the full range.
 
  */
-class DetResponse : public EventFilter {
+class DetResponse : public AbsResponse {
 
  public:
   DetResponse(reco reco_type, TString resp_name="",
   	      Int_t ebins  = 40, Double_t emin  =  1., Double_t emax  = 100.,
   	      Int_t ctbins = 40, Double_t ctmin = -1., Double_t ctmax = 1.,
   	      Int_t bybins =  1, Double_t bymin =  0., Double_t bymax = 1.);
-  DetResponse(const DetResponse &detresp);
+  DetResponse(TString name, const DetResponse &detresp);
   ~DetResponse();
 
   std::vector<TrueB>& GetBinWeights(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
@@ -185,49 +185,41 @@ class DetResponse : public EventFilter {
   void                WriteToFile(TString filename);
   void                ReadFromFile(TString filename);
   std::tuple<TCanvas*, TCanvas*, TCanvas*> DisplayResponse(Double_t e_reco, Double_t ct_reco, TString outname="");
+
   /** Get pointer to the 3D histogram with selected reco events
       \return Pointer to a `TH3` with all the neutrino events that passed the selection cuts
    */
   TH3D*               GetHist3D() { return fHResp; }
+
   /** Get pointer to the histogram with atmospheric muon counts in 1y
       \return Pointer to a `TH3` with all the atm muon events expected in one year.
    */
   TH3D*               GetHistAtmMu1y() { return fhAtmMuCount1y; }
+
   /** Get pointer to the histogram with noise counts in 1y
       \return Pointer to to `TH3` with all the noise events expected in one year.
    */
   TH3D*               GetHistNoise1y() { return fhNoiseCount1y; }
-  /** Get response name
-      \return Name of the response
-   */
-  TString             Get_RespName() { return fRespName; }
 
+  /** Returns that this implementation is of the response type `BINNED` 
+      \return `AbsResponse::BINNED`
+   */
+  resp                GetResponseType() { return BINNED; }
+  
  private:
 
-  void InitResponse(Int_t ebins, Int_t ctbins, Int_t bybins);
-  void CleanResponse();
-  void Normalise();
-  void FillNuEvents(UInt_t flav, UInt_t is_cc, UInt_t is_nb, SummaryEvent *evt);
+  TH3D* CloneFromTemplate(TH3D* tmpl, TString name);
+  void  InitResponse(Int_t ebins, Int_t ctbins, Int_t bybins);
+  void  CleanResponse();
+  void  Normalise();
+  void  FillNuEvents(UInt_t flav, UInt_t is_cc, UInt_t is_nb, SummaryEvent *evt);
   
-  TString fRespName;   //!< name to identify the response
   Bool_t  fNormalised; //!< boolean to check that normalisation is called
   
   Int_t fEbins;        //!< number of reco energy bins
   Int_t fCtbins;       //!< number of reco cos-theta bins
   Int_t fBybins;       //!< number of reco bjorken-y bins
 
-  // enumerator with recognised particle types
-  enum supported_particles {ELEC=0, MUON, TAU, ATMMU, NOISE};
-
-  /// map to create histogram names and flavors, for internal use
-  std::map<UInt_t, TString> fFlavs = { {ELEC, "elec"}, {MUON, "muon"}, {TAU, "tau"} };
-  /// map to create histogram names, interaction types, for internal use
-  std::map<UInt_t, TString> fInts  = { {0, "nc"}, {1, "cc"}  };
-  /// map to create histogram names, neutrino/anti-neutrino
-  std::map<UInt_t, TString> fPols  = { {0, "nu"}, {1, "nub"} };
-  /// map from gSeaGen MC_type (Geant4 particle code) to flavor map used internally. Exception if PGG code of the event not in this map
-  std::map<UInt_t, UInt_t>   fType_to_Supported = { {12, ELEC}, {14, MUON}, {16, TAU}, {13, ATMMU}, {0, NOISE} };
-  
   TH3D    *fhSim[3][2][2];      //!< total numbers of simulated events [flavor][nc/cc][nu/nub]
   TH3D    *fhAtmMuCount1y;      //!< atmospheric muon count in 1 year
   TH3D    *fhNoiseCount1y;      //!< noise event count in 1 year

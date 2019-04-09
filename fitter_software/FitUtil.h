@@ -60,6 +60,11 @@ class FitUtil {
   FitUtil(Double_t op_time, TH3 *h_template,
 	  Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax,
 	  TString meff_file);
+
+  FitUtil(Double_t op_time, TH3 *h_temp_T, TH3 *h_temp_R,
+	  Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax,
+	  TString meff_file);
+
   virtual ~FitUtil();
 
   //------------------------------------------------------------------
@@ -149,10 +154,15 @@ class FitUtil {
    */
   RooRealVar* GetBYobs() { return fBy_reco; }
 
-  /** Get the 3D histogram that stores the binning information
-      \return `TH3D` with the binning used in the analysis.
+  /** Get the 3D histogram that stores the binning information in true space
+      \return `TH3D` with the binning in true space used in the analysis.
   */
-  TH3D*       GetBinningHist() { return fHB; }
+  TH3D*       GetBinningHistTrue() { return fHBT; }
+
+  /** Get the 3D histogram that stores the binning information in reco space
+      \return `TH3D` with the binning in reco space used in the analysis.
+  */
+  TH3D*       GetBinningHistReco() { return fHBR; }
 
   /** Get the a pointer to `AtmFlux` member of `FitUtil` that is used to fill caches.
       \return pointer to `AtmFlux` instance.
@@ -208,7 +218,8 @@ class FitUtil {
   //------------------------------------------------------------------
 
   Double_t            fOpTime;                      //!< operation time in years
-  TH3D               *fHB;                          //!< a template histogram that defines the binning
+  TH3D               *fHBT;                         //!< a template histogram that defines the binning in true space
+  TH3D               *fHBR;                         //!< a template histogram that defines the binning in reco space
   AtmFlux            *fFlux;                        //!< atm flux calculator
   NuXsec             *fXsec;                        //!< xsec calculator
   EffMass            *fMeff;                        //!< effective mass calculator

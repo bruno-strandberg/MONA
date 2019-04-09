@@ -13,35 +13,16 @@ using namespace std;
 
 /** Constructor.
 
-    \param reco_type         Type of reco variables used to fill the response, e.g. DetResponse::track; See `EventFilter`
-    \param resp_name         Name of the response
-    \param ebins             Number of energy bins
-    \param emin              Energy minimum, should match the minimum energy of simulated (gSeaGen) events
-    \param emax              Energy maximum, should match the maximum energy of simulated (gSeaGen) events
-    \param ctbins            Number of cos-theta bins
-    \param ctmin             cos-theta minimum, should match the minimum cos-theta of simulated (gSeaGen) events
-    \param ctmax             cos-theta maximum, should match the maximum cos-theta of simulated (gSeaGen) events
-    \param bybins            Number of bjorken-y bins
-    \param bymin             bjorken-y minimum, should match the minimum bjorken-y of simulated (gSeaGen) events
-    \param bymax             bjorken-y maximum, should match the maximum bjorken-y of simulated (gSeaGen) events
+    See `AbsResponse` constructor with matching parameter interface for more info.
     
  */
 DetResponse::DetResponse(reco reco_type, TString resp_name,
 			 Int_t ebins , Double_t emin , Double_t emax  ,
 			 Int_t ctbins, Double_t ctmin, Double_t ctmax ,
-			 Int_t bybins, Double_t bymin, Double_t bymax ) : EventFilter(reco_type) {
+			 Int_t bybins, Double_t bymin, Double_t bymax ) : AbsResponse(reco_type, resp_name, ebins, emin, emax, ctbins, ctmin, ctmax, bybins, bymin, bymax) {
   
-  fRespName   = resp_name;
   fNormalised = false;
-  
-  //----------------------------------------------------------
-  // initialize axes for histograms
-  //----------------------------------------------------------
-  
-  vector<Double_t> e_edges  = NMHUtils::GetLogBins(ebins, emin, emax);  
-  vector<Double_t> ct_edges = NMHUtils::GetBins(ctbins, ctmin, ctmax);
-  vector<Double_t> by_edges = NMHUtils::GetBins(bybins, bymin, bymax);
-  
+    
   //----------------------------------------------------------
   // initialize histograms
   //----------------------------------------------------------
@@ -50,29 +31,15 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
     for (auto &i: fInts) {
       for (auto &p: fPols) {
 	TString hname = "hsim_" + f.second + "_" + i.second + "_" + p.second + "_" + fRespName;
-	fhSim[f.first][i.first][p.first] = new TH3D(hname, hname,
-						    ebins , &e_edges[0],
-						    ctbins, &ct_edges[0],
-						    bybins, &by_edges[0]);
+	fhSim[f.first][i.first][p.first] = CloneFromTemplate( fhBinsTrue, hname );
       }
     }
   }
 
-  fHResp = new TH3D("hresp_" + fRespName, "hresp_" + fRespName,
-		    ebins , &e_edges[0],
-		    ctbins, &ct_edges[0],
-		    bybins, &by_edges[0]);
-
-  fhAtmMuCount1y = new TH3D("hAtmMuCount1y_" + fRespName, "hAtmMuCount1y_" + fRespName,
-			    ebins , &e_edges[0],
-			    ctbins, &ct_edges[0],
-			    bybins, &by_edges[0]);
-
-  fhNoiseCount1y = new TH3D("hNoiseCount1y_" + fRespName, "hNoiseCount1y_" + fRespName,
-			    ebins , &e_edges[0],
-			    ctbins, &ct_edges[0],
-			    bybins, &by_edges[0]);
-
+  fHResp         = CloneFromTemplate(fhBinsReco, "hresp_" + fRespName);
+  fhAtmMuCount1y = CloneFromTemplate(fhBinsReco, "hAtmMuCount1y_" + fRespName);
+  fhNoiseCount1y = CloneFromTemplate(fhBinsReco, "hNoiseCount1y_" + fRespName);
+  
   //----------------------------------------------------------
   // calculate the binning for the fResp structure and init fResp
   // bin [0] is underflow, bin[ axis->GetNbins() ] is the last counting bin (hence dimension length +1),
@@ -90,12 +57,11 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
 
 /**
    Copy constructor.
-
-   Without explicit cloning of the root histograms the destruction causes a seg fault.
+   \param name     name of the copy, should not match the name of the other, this may confuse ROOT histogram naming scheme
+   \param detresp  the copied response instance
  */
-DetResponse::DetResponse(const DetResponse &detresp) : EventFilter(detresp) {
+DetResponse::DetResponse(TString name, const DetResponse &detresp) : AbsResponse(name, detresp) {
 
-  fRespName   = detresp.fRespName;
   fNormalised = detresp.fNormalised;
   fEbins      = detresp.fEbins;
   fCtbins     = detresp.fCtbins;
@@ -104,14 +70,15 @@ DetResponse::DetResponse(const DetResponse &detresp) : EventFilter(detresp) {
   for (auto f: fFlavs) {
     for (auto i: fInts) {
       for (auto p: fPols) {
-	fhSim[f.first][i.first][p.first] = (TH3D*)detresp.fhSim[f.first][i.first][p.first]->Clone();
+	TString hname = "hsim_" + f.second + "_" + i.second + "_" + p.second + "_" + fRespName;
+	fhSim[f.first][i.first][p.first] = (TH3D*)detresp.fhSim[f.first][i.first][p.first]->Clone(hname);
       }
     }
   }
 
-  fHResp = (TH3D*)detresp.fHResp->Clone();
-  fhAtmMuCount1y = (TH3D*)detresp.fhAtmMuCount1y->Clone();
-  fhNoiseCount1y = (TH3D*)detresp.fhNoiseCount1y->Clone();
+  fHResp = (TH3D*)detresp.fHResp->Clone("hresp_" + fRespName);
+  fhAtmMuCount1y = (TH3D*)detresp.fhAtmMuCount1y->Clone("hAtmMuCount1y_" + fRespName);
+  fhNoiseCount1y = (TH3D*)detresp.fhNoiseCount1y->Clone("hNoiseCount1y_" + fRespName);
 
   InitResponse(fEbins, fCtbins, fBybins);
 
@@ -147,6 +114,25 @@ DetResponse::~DetResponse() {
   TIter next(&fHeap);
   TObject *obj = NULL;
   while ( (obj = next() ) ) if (obj) delete obj;
+
+}
+
+//*********************************************************************************
+
+/** 
+    Private function to create a histogram on the stack from template
+    \param tmpl  Template histogram
+    \param name  Name of the created histogram
+    \return      Pointer to the new histogram
+*/
+TH3D* DetResponse::CloneFromTemplate(TH3D* tmpl, TString name) {
+
+  TH3D* ret = (TH3D*)tmpl->Clone(name);
+  ret->SetNameTitle(name, name);
+  ret->Reset();
+  ret->SetDirectory(0);
+
+  return ret;
 
 }
 

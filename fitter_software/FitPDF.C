@@ -58,8 +58,9 @@ FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, DetResponse 
   fFitUtil  = futil;
   fResponse = resp;
   
-  if ( !NMHUtils::BinsMatch( fFitUtil->GetBinningHist(), fResponse->GetHist3D() ) ) {
-    throw std::invalid_argument("ERROR! FitPDF::FitPDF() FitUtil and DetResponse use different binning.");
+  if ( !NMHUtils::BinsMatch( fFitUtil->GetBinningHistReco(), fResponse->GetHist3DReco() ) ||
+       !NMHUtils::BinsMatch( fFitUtil->GetBinningHistTrue(), fResponse->GetHist3DTrue() ) ) {
+    throw std::invalid_argument("ERROR! FitPDF::FitPDF() FitUtil and Response use different binning.");
   }
     
   // create a list of the parameters for iteration and create proxies

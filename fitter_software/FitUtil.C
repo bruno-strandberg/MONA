@@ -8,7 +8,8 @@ using namespace std;
 
 /** Constructor
     \param op_time         Operation time in years
-    \param h_template      A 3D histogram that represents the binning settings
+    \param h_temp_T        A 3D histogram that represents the binning settings in true space
+    \param h_temp_R        A 3D histogram that represents the binning settings in reco space
     \param emin            Minimum energy included in the fit range
     \param emax            Maximum energy included in the fit range
     \param ctmin           Minimum cos-theta included in the fit range
@@ -17,27 +18,34 @@ using namespace std;
     \param bymax           Maximum bjorken-y included in the fit range
     \param meff_file       File with effective mass data (created with `EffMass` class)
 */
-FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
+FitUtil::FitUtil(Double_t op_time, TH3 *h_temp_T, TH3* h_temp_R,
 		 Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax,
 		 TString meff_file) {
 
   fOpTime = op_time;
 
-  fHB = (TH3D*)h_template->Clone("HB");
-  fHB->SetDirectory(0);
-  fHB->Reset();
-  fHB->SetNameTitle("HB", "HB");
+  // histogram with true binning, used for flux->osc->xsec->meff
+  fHBT = (TH3D*)h_temp_T->Clone("HBT");
+  fHBT->SetDirectory(0);
+  fHBT->Reset();
+  fHBT->SetNameTitle("HBT", "HBT");
 
+  // histogram with reco binning
+  fHBR = (TH3D*)h_temp_R->Clone("HBR");
+  fHBR->SetDirectory(0);
+  fHBR->Reset();
+  fHBR->SetNameTitle("HBR", "HBR");
+  
   fFlux = new AtmFlux;
-  fXsec = new NuXsec( fHB->GetZaxis()->GetNbins() );
-  fMeff = new EffMass( meff_file, fHB->GetXaxis()->GetNbins(), fHB->GetYaxis()->GetNbins(), fHB->GetZaxis()->GetNbins() );
+  fXsec = new NuXsec( fHBT->GetZaxis()->GetNbins() );
+  fMeff = new EffMass( meff_file, fHBT->GetXaxis()->GetNbins(), fHBT->GetYaxis()->GetNbins(), fHBT->GetZaxis()->GetNbins() );
   fProb = new OscProb::PMNS_Fast;
   fPrem = new OscProb::PremModel;
 
   // calculate the observable ranges to match exactly bin edges, set ranges for integration
-  auto ENr = GetRange( emin , emax , fHB->GetXaxis() );
-  auto CTr = GetRange( ctmin, ctmax, fHB->GetYaxis() );
-  auto BYr = GetRange( bymin, bymax, fHB->GetZaxis() );
+  auto ENr = GetRange( emin , emax , fHBR->GetXaxis() );
+  auto CTr = GetRange( ctmin, ctmax, fHBR->GetYaxis() );
+  auto BYr = GetRange( bymin, bymax, fHBR->GetZaxis() );
 
   fEbin_min  = get<MINBIN>(ENr);
   fEbin_max  = get<MAXBIN>(ENr);
@@ -47,7 +55,7 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
   fBybin_max = get<MAXBIN>(BYr);
   
   InitFitVars(get<MIN>(ENr), get<MAX>(ENr), get<MIN>(CTr), get<MAX>(CTr), get<MIN>(BYr), get<MAX>(BYr));
-  InitCacheHists(fHB);
+  InitCacheHists(fHBT);
 
   fFluxSamplesN = 1;
   FillFluxCache(fFlux, fOpTime, fFluxSamplesN);
@@ -71,6 +79,23 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
 
 //***************************************************************************
 
+/** Constructor
+    \param op_time         Operation time in years
+    \param h_temp          A 3D histogram that represents the binning settings in both true and reco space
+    \param emin            Minimum energy included in the fit range
+    \param emax            Maximum energy included in the fit range
+    \param ctmin           Minimum cos-theta included in the fit range
+    \param ctmax           Maximum cos-theta included in the fit range
+    \param bymin           Minimum bjorken-y included in the fit range
+    \param bymax           Maximum bjorken-y included in the fit range
+    \param meff_file       File with effective mass data (created with `EffMass` class)
+*/
+FitUtil::FitUtil(Double_t op_time, TH3 *h_temp,
+		 Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax,
+		 TString meff_file) : FitUtil(op_time, h_temp, h_temp, emin, emax, ctmin, ctmax, bymin, bymax, meff_file) {}
+
+//***************************************************************************
+
 /** Destructor */
 FitUtil::~FitUtil() {
 
@@ -80,7 +105,8 @@ FitUtil::~FitUtil() {
 
   if (fOscCalcTime) delete fOscCalcTime;
 
-  if (fHB)   delete fHB;
+  if (fHBT)  delete fHBT;
+  if (fHBR)  delete fHBR;
   if (fFlux) delete fFlux;
   if (fXsec) delete fXsec;
   if (fMeff) delete fMeff;
@@ -761,7 +787,7 @@ TH3D* FitUtil::Expectation(DetResponse *resp, const proxymap_t &proxymap, const 
 
   // create the histogram with expectation values
   TH3D   *hexp  = (TH3D*)resp->GetHist3D()->Clone();
-  TString hname = resp->Get_RespName() + "_expct";
+  TString hname = resp->GetRespName() + "_expct";
   hexp->SetDirectory(0);
   hexp->Reset();
   hexp->SetNameTitle(hname, hname);
@@ -834,17 +860,17 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
   Bool_t throwException = kFALSE;
   std::invalid_argument exception("");
 
-  if ( E_reco < fHB->GetXaxis()->GetXmin() || E_reco >= fHB->GetXaxis()->GetXmax() ) {
+  if ( E_reco < fHBR->GetXaxis()->GetXmin() || E_reco >= fHBR->GetXaxis()->GetXmax() ) {
     throwException = kTRUE;
     exception = std::invalid_argument("ERROR! FitUtil::RecoEvts energy " + to_string(E_reco) + " outside the binning range.");
   }
 
-  if ( Ct_reco < fHB->GetYaxis()->GetXmin() || Ct_reco >= fHB->GetYaxis()->GetXmax() ) {
+  if ( Ct_reco < fHBR->GetYaxis()->GetXmin() || Ct_reco >= fHBR->GetYaxis()->GetXmax() ) {
     throwException = kTRUE;
     exception = std::invalid_argument("ERROR! FitUtil::RecoEvts cos-theta " + to_string(Ct_reco) + " outside the binninb range.");
   }
 
-  if ( By_reco < fHB->GetZaxis()->GetXmin() || By_reco >= fHB->GetZaxis()->GetXmax() ) {
+  if ( By_reco < fHBR->GetZaxis()->GetXmin() || By_reco >= fHBR->GetZaxis()->GetXmax() ) {
     throwException = kTRUE;
     exception = std::invalid_argument("ERROR! FitUtil::RecoEvts bjorken-y " + to_string(By_reco) + " outside the binning range.");
   }
@@ -909,9 +935,9 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
   det_err = TMath::Sqrt(det_err);
 
   // finally, convert the event counts in reco bin to event density
-  Double_t e_w  = fHB->GetXaxis()->GetBinWidth( fHB->GetXaxis()->FindBin( E_reco )  );
-  Double_t ct_w = fHB->GetYaxis()->GetBinWidth( fHB->GetYaxis()->FindBin( Ct_reco ) );
-  Double_t by_w = fHB->GetZaxis()->GetBinWidth( fHB->GetZaxis()->FindBin( By_reco ) );
+  Double_t e_w  = fHBR->GetXaxis()->GetBinWidth( fHBR->GetXaxis()->FindBin( E_reco )  );
+  Double_t ct_w = fHBR->GetYaxis()->GetBinWidth( fHBR->GetYaxis()->FindBin( Ct_reco ) );
+  Double_t by_w = fHBR->GetZaxis()->GetBinWidth( fHBR->GetZaxis()->FindBin( By_reco ) );
   Double_t binw = e_w * ct_w * by_w;
   
   return std::make_pair(det_count/binw, det_err/binw);

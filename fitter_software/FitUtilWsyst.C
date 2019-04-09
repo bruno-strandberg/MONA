@@ -46,12 +46,12 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
   Double_t emin_scaled = fE_reco->getMin() * ( 1. + fE_scale->getMin() );
   Double_t emax_scaled = fE_reco->getMax() * ( 1. + fE_scale->getMax() );
 
-  if ( emin_scaled < fHB->GetXaxis()->GetXmin() ) {
-    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() the input minimum energy " + to_string(emin) + " is adjusted to the bin edge " + to_string(fE_reco->getMin()) + ", which can be taken to the value " + to_string(emin_scaled) + " by the minimum of the energy scale parameter " + to_string(fE_scale->getMin()) + ". This is outside of the binning minimum " + to_string(fHB->GetXaxis()->GetXmin()) + ". Choose a higher emin to avoid this problem." );
+  if ( emin_scaled < fHBR->GetXaxis()->GetXmin() ) {
+    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() the input minimum energy " + to_string(emin) + " is adjusted to the bin edge " + to_string(fE_reco->getMin()) + ", which can be taken to the value " + to_string(emin_scaled) + " by the minimum of the energy scale parameter " + to_string(fE_scale->getMin()) + ". This is outside of the binning minimum " + to_string(fHBR->GetXaxis()->GetXmin()) + ". Choose a higher emin to avoid this problem." );
   }
 
-  if ( emax_scaled >= fHB->GetXaxis()->GetXmax() ) {
-    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() the input maximum energy " + to_string(emax) + " is adjusted to the bin edge " + to_string(fE_reco->getMax()) + ", which can be taken to the value " + to_string(emax_scaled) + " by the maximum of the energy scale parameter " + to_string(fE_scale->getMax()) + ". This is outside of the binning maximum " + to_string(fHB->GetXaxis()->GetXmax()) + ". Choose a lower emax to avoid this problem." );
+  if ( emax_scaled >= fHBR->GetXaxis()->GetXmax() ) {
+    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() the input maximum energy " + to_string(emax) + " is adjusted to the bin edge " + to_string(fE_reco->getMax()) + ", which can be taken to the value " + to_string(emax_scaled) + " by the maximum of the energy scale parameter " + to_string(fE_scale->getMax()) + ". This is outside of the binning maximum " + to_string(fHBR->GetXaxis()->GetXmax()) + ". Choose a lower emax to avoid this problem." );
   }
     
 };
@@ -92,12 +92,12 @@ void FitUtilWsyst::CalcTiltedFluxNorms(Double_t e_tilt, Double_t ct_tilt) {
       Double_t numerator   = 0.;
       Double_t denominator = 0.;
 
-      for (Int_t ebin = 1; ebin <= fHB->GetXaxis()->GetNbins(); ebin++) {
-	for (Int_t ctbin = 1; ctbin <= fHB->GetYaxis()->GetNbins(); ctbin++) {
+      for (Int_t ebin = 1; ebin <= fHBT->GetXaxis()->GetNbins(); ebin++) {
+	for (Int_t ctbin = 1; ctbin <= fHBT->GetYaxis()->GetNbins(); ctbin++) {
 
 	  // get energy and cos-theta at bin center
-	  Double_t E   = fHB->GetXaxis()->GetBinCenter(ebin);
-	  Double_t ct  = fHB->GetYaxis()->GetBinCenter(ctbin);
+	  Double_t E   = fHBT->GetXaxis()->GetBinCenter(ebin);
+	  Double_t ct  = fHBT->GetYaxis()->GetBinCenter(ctbin);
 
 	  // get the cached flux, add to numerator and denominator
 	  Double_t flux = GetCachedFlux( f, isnb, ebin, ctbin );
@@ -136,8 +136,8 @@ Double_t FitUtilWsyst::GetTiltedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, 
     CalcTiltedFluxNorms( f_cache_e_tilt, f_cache_ct_tilt );
   }
 
-  Double_t E  = fHB->GetXaxis()->GetBinCenter( true_ebin );
-  Double_t ct = fHB->GetYaxis()->GetBinCenter( true_ctbin );
+  Double_t E  = fHBT->GetXaxis()->GetBinCenter( true_ebin );
+  Double_t ct = fHBT->GetYaxis()->GetBinCenter( true_ctbin );
     
   return GetCachedFlux(flav, isnb, true_ebin, true_ctbin) * FluxTiltCoeff(E, ct, e_tilt, ct_tilt) * 
     fTiltedFluxNorms[flav][isnb];
@@ -259,10 +259,10 @@ std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t C
   
   // scale the bin low and high edges and use these new limits to calculate the fractions that specify
   //how much of the reco event density should come from which bin
-  Double_t ereco_bin = fHB->GetXaxis()->FindBin( E_reco );
-  Double_t ereco_min = fHB->GetXaxis()->GetBinLowEdge( ereco_bin ) * (1. + e_scale);
-  Double_t ereco_max = fHB->GetXaxis()->GetBinUpEdge ( ereco_bin ) * (1. + e_scale);
-  auto binfracs = GetBinFractions( ereco_min, ereco_max, fHB->GetXaxis());  
+  Double_t ereco_bin = fHBR->GetXaxis()->FindBin( E_reco );
+  Double_t ereco_min = fHBR->GetXaxis()->GetBinLowEdge( ereco_bin ) * (1. + e_scale);
+  Double_t ereco_max = fHBR->GetXaxis()->GetBinUpEdge ( ereco_bin ) * (1. + e_scale);
+  auto binfracs = GetBinFractions( ereco_min, ereco_max, fHBR->GetXaxis());  
 
   // loop over the bin fractions and calculate the event density from the relative fractions
   Double_t RE    = 0.;
@@ -271,7 +271,7 @@ std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t C
   for (auto bf: binfracs) {
 
     // get the bin center and calculate the number 
-    Double_t ereco = fHB->GetXaxis()->GetBinCenter( bf.first );
+    Double_t ereco = fHBR->GetXaxis()->GetBinCenter( bf.first );
     auto RE_bin = FitUtil::RecoEvts( ereco, Ct_reco, By_reco, resp, proxymap );
 	    
     RE    += RE_bin.first * bf.second;

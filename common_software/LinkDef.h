@@ -15,6 +15,7 @@
 #pragma link C++ class SummaryEvent+;
 #pragma link C++ class EventFilter+;
 #pragma link C++ class EventSelection+;
+#pragma link C++ class AbsResponse+;
 #pragma link C++ class DetResponse+;
 #pragma link C++ class TrueB+;
 #pragma link C++ class EffMass+;
