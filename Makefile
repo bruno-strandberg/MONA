@@ -18,8 +18,14 @@ apps: nmhlib fitlib
 fitlib: nmhlib
 	$(MAKE) -C $(FITSOFTDIR)
 
-nmhlib:
+nmhlib: env
 	$(MAKE) -C $(NMHSOFTDIR)
+
+env:
+ifeq ($(MONADIR),"")
+	@echo "Environment variable MONADIR not set, please run 'source setenv.sh'. Exiting."
+	exit 1
+endif
 
 # add a phony target to call the test-suite
 #---------------------------------------------------------------------
