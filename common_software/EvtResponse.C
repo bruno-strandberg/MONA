@@ -4,8 +4,7 @@
 using namespace std;
 
 /** Constructor.
-    For all parameters other than memlim, see `AbsResponse` corresponding constructor.
-    \param memlim RAM limit the response can occupy; if exceeded, throw an error and let user to take action. If the user has access to a machine with e.g. 16gb of memory, this number can be increased.
+    For all parameters other than memlim, see `AbsResponse` corresponding constructor. The additional parameterer memlim is to limit the RAM the response can occupy; if exceeded, throw an error and let user to take action. If the user has access to a machine with e.g. 16gb of memory, this number can be increased.
 */
 EvtResponse::EvtResponse(reco reco_type, TString resp_name,
 			 Int_t t_ebins , Double_t t_emin , Double_t t_emax ,

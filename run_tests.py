@@ -106,8 +106,7 @@ def run_tests(tests_dir):
 
     Parameters
     ----------
-    tests_dir: str
-      The path to the test dir, containing the test scripts (`*.sh`).
+    tests_dir: list of directories where test application should be searched for
 
     Returns
     -------
@@ -117,7 +116,7 @@ def run_tests(tests_dir):
     test_results = {}
 
     for subdir in tests_dir:            
-        component_group = basename(subdir)
+        component_group = subdir
         print("\n{}{}\n{}{}"
               .format(INFO, component_group, len(component_group) * '=', RST))
         executables = os.popen("find {} -maxdepth 1 -perm -111 -type f".format(subdir)).read().split()        
