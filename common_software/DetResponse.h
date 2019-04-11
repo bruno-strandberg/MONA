@@ -120,7 +120,7 @@ struct TrueB : public TObject {
    This class implements a detector response for a selection of events. In some sense it is a counterpart of the `EventSelection` class. Like `EventSelection`, this class inherits from `EventFilter`. `EventFilter` allows the user to define a custom filter of `SummaryEvent`'s through the `EventFilter::AddCut` function. Envisaged usage is such that for each `EventSelection` object, one can define a `DetResponse` counterpart, using the same cuts and reconstruction variables. The `DetResponse` structure helps to map 'detected' events (as defined in `FluxChain.C`) from [E_true][ct_true][by_true] to [E_reco][ct_reco][by_reco].
 
    Example usage:
-   ```
+   \code{.cpp}
    //---------------------------------------------------
    // setup the response
    //---------------------------------------------------
@@ -160,7 +160,7 @@ struct TrueB : public TObject {
    n_reco_err += dr.GetAtmMuCount1y(10, -0.8, 0.2).second;
    n_reco_err = TMath::Sqrt(n_reco_err);   
 
-   ```
+   \endcode
 
    Note that `GetDetectedTrue()` is pseudo-code - this function needs to be implemented in the code that uses the `DetResponse`. It returns the number of 'detected' events (interacted per Mton * effective mass) for a given (flavor, is_cc, is_nubar, true energy, cos-theta and bjorken-y) combination. For example, such info is stored in the output histograms of `FluxChain.C` in directory `detflux`.
 

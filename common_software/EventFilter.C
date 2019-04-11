@@ -93,7 +93,7 @@ Bool_t EventFilter::PassesCuts(SummaryEvent *evt) {
 //***************************************************************************************
 
 /** 
-    Function that copies variables from a ```SummaryEvent``` to member observables, depending on reco type.
+    Function that copies variables from a `SummaryEvent` to member observables, depending on reco type.
 
     \param evt  Pointer to a summary event.
 
