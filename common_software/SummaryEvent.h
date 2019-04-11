@@ -21,7 +21,7 @@ namespace SUMMARYUTILS {
 /**
    Data format for NMH analysis.
 
-   It is obvious that for a code to be maintainable, one requires a certain format for the data. At the time when this code was started, there was no clear agreement on what is the data format that is input to the NMH sensitivity analyses. For this reason this event class was defined, the data from ECAP Random Decision Forest PID is converted to this format by scripts in ```NMH/data_sorting/```.
+   It is obvious that for a code to be maintainable, one requires a certain format for the data. At the time when this code was started, there was no clear agreement on what is the data format that is input to the NMH sensitivity analyses. For this reason this event class was defined, the data from ECAP Random Decision Forest PID is converted to this format by scripts in `NMH/data_sorting/`.
 
    SummaryEvent consists of double's only. The main reason for this is to fascilitate simple data input to RooFit (where NMH fitting is performed), which works with flat trees. Additionally, such a tree can be easilty inspected/accessed without access to the SummaryEvent class. The variables are all private to dis-allow access without the use of the interface (setters/getters). The existing function names and variable names should not be changed, but new ones can be added.
 

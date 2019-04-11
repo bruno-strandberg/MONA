@@ -40,18 +40,18 @@ cutobj(): getter_ptr(0), value(0), comp_ptr(0) {};
    true/false, depending on whether the argument event passed the selection or not.
 
    Example usage:
-   ```
+   \code{.cpp}
    EventFilter f;
    f.AddCut( &SummaryEvent::Get_track_dir_z , std::less<double>()         ,   0, true );
    f.AddCut( &SummaryEvent::Get_track_energy, std::greater_equal<double>(),   5, true );
    f.AddCut( &SummaryEvent::Get_shower_ql1  , std::greater_equal<double>(), 0.5, false );
    f.AddCut( &SummaryEvent::Get_track_ql1   , std::equal_to<double>()     ,   1, false );
-   ```
+   \endcode
    In this case, the function `PassesCuts(SummaryEvent *evt)` will return
-   ```
+   \code{.cpp}
    ( ( evt->GetTrack_dir_z() < 0 ) && ( evt->Get_track_energy() >= 5 ) ) && 
    ( ( evt->Get_shower_ql1() >= 0.5 ) || ( evt->Get_track_ql1() == 0.5 ) )
-   ```
+   \endcode
 
    As evident from the example, the function `AddCut` takes as arguments a pointer to a getter 
    function of the `SummaryEvent` class, a value that the return of the getter function
@@ -61,8 +61,8 @@ cutobj(): getter_ptr(0), value(0), comp_ptr(0) {};
 
    Additionally, the class has variables for observables energy, position, direction and bjorken-y, and
    a variable to determine which reconstruction type (e.g. track, shower, mc_truth) is used to set the
-   observables. The observables are typically used in inheriting classes (```EventSelection``` and 
-   ```DetResponse```) in filling data structures.
+   observables. The observables are typically used in inheriting classes (`EventSelection` and 
+   `DetResponse`) in filling data structures.
 
    There is a slightly more advanced option to use a custom reconstruction type. This is very useful in cases where, say, the user wishes to use shower energy estimate with track direction estimate. Consult the documentation of the function `EventFilter::SetObsFuncPtrs` for details how to achieve this.
 

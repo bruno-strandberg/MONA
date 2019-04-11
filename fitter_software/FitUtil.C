@@ -549,10 +549,10 @@ Double_t FitUtil::GetCachedBYfrac(const TrueB &tb) {
 
     By default, the OscProb calculator `FitUtil::fProb` is initiated to `OscProb::PMNS_Fast`. If a different calculator is required, e.g. `OscProb::PMNS_NSI`, the class inheriting from `FitUtil` should do in the constructor
 
-    ```
+    \code{.cpp}
     if (fProb) delete fProb;
     fProb = new OscProb::PMNS_NSI()
-    ```
+    \endcode
 
     and the class should re-implement this function, such that correct fit parameters are passed to the `FitUtil::fProb` instance.
 
