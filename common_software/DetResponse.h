@@ -202,6 +202,8 @@ class DetResponse : public EventFilter {
    */
   TString             Get_RespName() { return fRespName; }
 
+  TH3D*               GetSimHist(UInt_t flav, Bool_t iscc, Bool_t isnb);
+  
  private:
 
   void InitResponse(Int_t ebins, Int_t ctbins, Int_t bybins);
