@@ -32,11 +32,11 @@ How to use?
 ===========
 
 * The classes can be used readily from the ROOT prompt, e.g:
-```
+~~~
 root
 AtmFlux f
 f.Flux_dE_dcosz(1, 0, 15, -0.8) 
-```
+~~~
 
 * The classes can be used in un-compiled or compiled ROOT macros exactly like any other ROOT class.
 

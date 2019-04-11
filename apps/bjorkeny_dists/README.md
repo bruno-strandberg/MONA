@@ -13,10 +13,10 @@ How to run
 * Practically, running `Create_BY_hists` is better performed on the computing farm at Lyon. The python script `hist_caller.py` helps to do that. For example, run it as `./hist_caller.py -g 'my/dir/*gSeaGen*' --farm`. See also documentation in the script, use -h for more info.
 
 * The output of `Create_BY_hists` needs to be normalised - this task is performed by `Normalised_BY_dists`. It takes as input a list of `Create_BY_hists` outputs and an output name. In practice, `hist_caller.py` creates an output per each farm job. `Create_BY_hists` can be run as
-```
+~~~
 ls output/output_job* > output_list.dat
 ./Normalised_BY_dists -f output_list.dat -o by_dists.root
-```
+~~~
 The file `by_dists.root` is the distribution file that should be copied to `data/cross_sections_gSeaGen_v4r1` with some user-defined name and the `NuXsec` constructor should be updated to point to the new file.
 
 Outputs

@@ -39,14 +39,15 @@ using namespace RooFit;
 
 void AsimovFitNBinsIO() {
 
-  const int N_PID_CLASSES = 3;
+  const int N_PID_CLASSES = 5;
   const Double_t PID_CUT = 0.6;
-  const Double_t PID_STEP = 1 / float(N_PID_CLASSES);
-  const Double_t PID_EDGE = PID_CUT * N_PID_CLASSES;
 
   std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
 
   TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
+
+  std::vector< std::tuple<Double_t, Double_t> > fitRanges = GetEnergyRanges(N_PID_CLASSES);
+  Bool_t isRanged = kFALSE; // Fit in specific ranges given by fitRanges
 
   // DetRes input values
   Int_t EBins = 24;
@@ -125,7 +126,7 @@ void AsimovFitNBinsIO() {
     }
 
     for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-      track_response_vector[i].WriteToFile(  filefolder +  Form("track_response_%.2f.root" , pid_map[i]) );
+      track_response_vector[i].WriteToFile(  filefolder +  Form("track_response_%.2f.root", pid_map[i]) );
       shower_response_vector[i].WriteToFile( filefolder + Form("shower_response_%.2f.root", pid_map[i]) );
     }
     cout << "NOTICE: Finished filling response" << endl;
@@ -192,16 +193,21 @@ void AsimovFitNBinsIO() {
   fitutil->SetIOcentvals();
 
   std::map<string, TH1*> hist_map;
+  std::vector<TString> fitRangeCategories;
   RooCategory cats("categories", "data categories");
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
     if (pid_map[i] < PID_CUT) {
       hist_map.insert( {(string)shower_vector_true[i]->GetName(), shower_vector_true[i]} );
       cats.defineType( shower_vector_true[i]->GetName() );
+      fitRangeCategories.push_back( shower_vector_true[i]->GetName() );
+
       cout << "NOTICE: Added hist and cat to shower" << endl;
     }
     else {
       hist_map.insert( {(string)track_vector_true[i]->GetName(), track_vector_true[i]} );
       cats.defineType( track_vector_true[i]->GetName() );
+      fitRangeCategories.push_back( track_vector_true[i]->GetName() );
+
       cout << "NOTICE: Added hist and cat to track" << endl;
     }
   }
@@ -210,25 +216,31 @@ void AsimovFitNBinsIO() {
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
     if (pid_map[i] < PID_CUT) {
       simPdf.addPdf( pdf_showers_vector[i], shower_vector_true[i]->GetName() );
-      cout << "NOTICE: Added simpdf to shower" << endl;
+      cout << "NOTICE: Added simpdf to shower " << shower_vector_true[i]->GetName() << endl;
     }
     else {
       simPdf.addPdf( pdf_tracks_vector[i],  track_vector_true[i]->GetName() );
-      cout << "NOTICE: Added simpdf to track" << endl;
+      cout << "NOTICE: Added simpdf to track " << track_vector_true[i]->GetName() <<  endl;
     }
   }
 
   RooDataHist data_hists("data_hists", "track and shower data", fitutil->GetObs(), cats, hist_map);
 
+  // create ranges for fitter
+  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
+    fitutil->GetVar("E_reco")->setRange( TString("fitRangeE_") + fitRangeCategories[i],  // ITS NOT THE TSTRING
+                                        std::get<0>(fitRanges[i]), std::get<1>(fitRanges[i]));
+  }
+
   // Fit in both quadrants to find the real minimum of Th23.
   fitutil->SetIOcentvals();
   fitutil->GetVar("SinsqTh23")->setVal(0.4);
-  RooFitResult *fitres_1q = simPdf.chi2FitTo( data_hists, Save(), Range("firstq"), DataError(RooAbsData::Poisson) );
+  RooFitResult *fitres_1q = simPdf.fitTo( data_hists, Save(), Range("fitRangeE"), Range("firstq"), SplitRange(isRanged), DataError(RooAbsData::Poisson) );
   RooArgSet result_1q ( fitres_1q->floatParsFinal() );
 
   fitutil->SetIOcentvals();
   fitutil->GetVar("SinsqTh23")->setVal(0.6);
-  RooFitResult *fitres_2q = simPdf.chi2FitTo( data_hists, Save(), Range("secondq"), DataError(RooAbsData::Poisson) );
+  RooFitResult *fitres_2q = simPdf.fitTo( data_hists, Save(), Range("fitRangeE"), Range("secondq"), SplitRange(isRanged), DataError(RooAbsData::Poisson) );
   RooArgSet result_2q ( fitres_2q->floatParsFinal() );
 
   RooArgSet *result;
@@ -270,21 +282,30 @@ void AsimovFitNBinsIO() {
     }
   }
 
-  std::vector< std::tuple<TH1*, Double_t, Double_t> > chi2;
+  std::vector< std::pair<Double_t, Double_t> > sens_w_error;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    if (pid_map[i] < PID_CUT) chi2.push_back( NMHUtils::Asymmetry( shower_vector_true[i], fitted[i], Form("sensitivity_shower_%i", i),
+
+    // Fit ranges have to be applied to the final asymmetry calculation: outside of these ranges 
+    // the relative statistical uncertainty on the monte carly number of events is too large.
+    if (isRanged) {
+      fitEMin = std::get<0>(fitRanges[i]);
+      fitEMax = std::get<1>(fitRanges[i]);
+    }
+
+    std::tuple<TH1*, Double_t, Double_t> asym;
+    if (pid_map[i] < PID_CUT) asym = ( NMHUtils::Asymmetry( shower_vector_true[i], fitted[i], Form("sensitivity_shower_%i", i),
                                                  fitEMin, fitEMax, fitctMin, fitctMax) );
-    else                      chi2.push_back( NMHUtils::Asymmetry( track_vector_true[i],  fitted[i], Form("sensitivity_track_%i", i),
+    else                      asym = ( NMHUtils::Asymmetry( track_vector_true[i],  fitted[i], Form("sensitivity_track_%i", i),
                                                  fitEMin, fitEMax, fitctMin, fitctMax) );
+    sens_w_error.push_back( std::make_pair(std::get<1>(asym), std::get<2>(asym)) );
   }
 
-  Double_t chi2_tot = 0;
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    Double_t chi2_i = std::get<1>(chi2[i]);
 
-    cout << "NMHUtils: Chi2 between events NO and events fitted on IO is: " << chi2_i << endl;
-    chi2_tot += chi2_i * chi2_i;
+    cout << "NMHUtils: Chi2 between events NO and events fitted on IO is: " << sens_w_error[i].first 
+         << "+-" << sens_w_error[i].second << endl;
   }
-  cout << "Squared sum is : " << std::sqrt( chi2_tot ) << endl;
+  std::tuple<Double_t, Double_t> sensitivity_and_error = NMHUtils::SquaredSumErrorProp(sens_w_error);
+  cout << "Squared sum is : " << std::get<0>(sensitivity_and_error) << "+-" << std::get<1>(sensitivity_and_error) << endl;
 
 }

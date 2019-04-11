@@ -30,7 +30,7 @@ EventFilter::~EventFilter() {}
 //***************************************************************************************
 
 /**
-   Function to add an 'and' cut to this event filter.
+   Function to add an 'and' cut or an 'or' cut to this event filter.
 
    See the class description for example usage.
    
@@ -93,7 +93,7 @@ Bool_t EventFilter::PassesCuts(SummaryEvent *evt) {
 //***************************************************************************************
 
 /** 
-    Function that copies variables from a ```SummaryEvent``` to member observables, depending on reco type.
+    Function that copies variables from a `SummaryEvent` to member observables, depending on reco type.
 
     \param evt  Pointer to a summary event.
 
@@ -146,21 +146,21 @@ void EventFilter::SetObservables(SummaryEvent *evt) {
    Although it may seem complicated, the idea is actually rather simple. For example, consider that one wishes to use the direction of track reco, but the energy of a shower reco. This would be easy to implement without any pointers in the `switch` statement in `EventFilter::SetObservables`. However, typically one requires further logic, i.e. use shower reco energy only if it's quality level is at 1, otherwise use track reco. And then there is another thought that use shower energy estimate in one track score region and track energy estimate in another track score region. What I am trying to illustrate here, is that it will be unsustainable to add another switch element to `EventFilter::SetObservables` for each specific case.
 
    For this reason, an elegant alternative is provided. For such cases as illustrated above, the user can choose `customreco` at initialisation. Then, the user needs to define four functions in his/her application:
-   ```
+   \code{.cpp}
    Double_t MyCustomEnergy(SummaryEvent* evt) {...};
    TVector3 MyCustomDir(SummaryEvent* evt) {...};
    TVector3 MyCustomPos(SummaryEvent* evt) {...};
    Double_t MyCustomBY(SummaryEvent* evt) {...};
-   ```
+   \endcode
    In each function, the user has access to all of the data members of the `SummaryEvent` class (through the getter's) to make a specific selection which reconstruction variable is to be used in which circumstances. For example, if nothing specific is required for the direction reconstruction, the user can simply define:
-   ```
+   \code{.cpp}
    TVector3 MyCustomDir(SummaryEvent* evt) { return evt->Get_track_dir() };
-   ```
+   \endcode
    Having defined the four functions, the user needs to use this function to let the class know what to call. Example usage:
-   ```
+   \code{.cpp}
    EventFilter f1(EventFilter::customreco);
    f1.SetObsFuncPtrs( &MyCustomEnergy, &MyCustomDir, &MyCustomPos, &MyCustomBY);
-   ```
+   \endcode
    \param E   Address of the function that returns the custom energy
    \param ct  Address of the function that returns the custom direction vector
    \param pos Address of the function that returns the custom position vector

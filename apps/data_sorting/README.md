@@ -40,23 +40,23 @@ Typically, the format of the PID output tree from ECAP is not fixed and changes 
 Helper script
 -------------
 The python script `createconverter.py` can be used to create a `TTree` reader class and a skeleton application to convert the ECAP PID to *analysis format*. For example
-```
+~~~
 ./createconverter.py -s some_ecap_pid_file.root -n SomeReader -t PID
-``` 
+~~~ 
 will create files `SomeReader.h/C` and `SomeReaderToSummary.C`. The user has to modify the latter to define exactly how to map variables from the input root file to output file in *analysis format*. Makefile modification is done automatically, so once the user has edited `SomeReaderToSummary.C`, she/he should type `make` and execute `./SomeReaderToSummary -h!` for running guidance.
 
 Manual creation
 ----------------
 Before the script `createconverter.py` was created, the following steps had to be done manually. Create a new reader by doing, e.g,
 
-```
+~~~
 root new_pid_file.root
 PID->MakeClass("PIDBeta")
-```
+~~~
 Then, a new application `BetaToSummary` can be created that uses the class `PIDBeta` to convert the data to analysis format. Practically, this can be achieved easily and quickly by doing
-```
+~~~
 cp AlphaToSummary.C BetaToSummary.C
-```
+~~~
 and modifying the parts concerning the reader, data-mapping and documentation. Note that the new reader class source file `PIDBeta.C` needs to be added to the `COMMON` in the `Makefile`.
 
 The `AlphaToSummary` application is a simple example how to map *ECAP PID* format to *analysis format*. If at some point *ECAP PID* takes a different form (currently I don't know what the ECAP deep learning PID will use), this application exemplifies how to map the data to *analysis format*.
