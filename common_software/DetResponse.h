@@ -177,8 +177,8 @@ class DetResponse : public EventFilter {
   DetResponse(const DetResponse &detresp);
   ~DetResponse();
 
-  std::vector<TrueB>& GetBinWeights(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
-  std::vector<TrueB>& GetBinWeights(SummaryEvent *evt);
+  const std::vector<TrueB>& GetBinWeights(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
+  const std::vector<TrueB>& GetBinWeights(SummaryEvent *evt);
   std::pair<Double_t, Double_t> GetAtmMuCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   std::pair<Double_t, Double_t> GetNoiseCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   void                Fill(SummaryEvent *evt);
@@ -188,21 +188,21 @@ class DetResponse : public EventFilter {
   /** Get pointer to the 3D histogram with selected reco events
       \return Pointer to a `TH3` with all the neutrino events that passed the selection cuts
    */
-  TH3D*               GetHist3D() { return fHResp; }
+  TH3D*               GetHist3D() const { return fHResp; }
   /** Get pointer to the histogram with atmospheric muon counts in 1y
       \return Pointer to a `TH3` with all the atm muon events expected in one year.
    */
-  TH3D*               GetHistAtmMu1y() { return fhAtmMuCount1y; }
+  TH3D*               GetHistAtmMu1y() const { return fhAtmMuCount1y; }
   /** Get pointer to the histogram with noise counts in 1y
       \return Pointer to to `TH3` with all the noise events expected in one year.
    */
-  TH3D*               GetHistNoise1y() { return fhNoiseCount1y; }
+  TH3D*               GetHistNoise1y() const { return fhNoiseCount1y; }
   /** Get response name
       \return Name of the response
    */
-  TString             Get_RespName() { return fRespName; }
+  TString             Get_RespName() const { return fRespName; }
 
-  TH3D*               GetSimHist(UInt_t flav, Bool_t iscc, Bool_t isnb);
+  TH3D*               GetSimHist(UInt_t flav, Bool_t iscc, Bool_t isnb) const;
   
  private:
 
