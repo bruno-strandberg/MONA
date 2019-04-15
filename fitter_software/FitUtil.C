@@ -1160,7 +1160,7 @@ void FitUtil::ClearCache2D(cache2D_t cache, TAxis *xaxis) {
 /** Function to clear a dynamically allocated 3D cache array
     \param cache  Pointer to the dynamically allocated 3D cache array
     \param xaxis  Pointer to a `TAxis` object that was used to initialise the xaxis of the 3D cache array
-    \param xaxis  Pointer to a `TAxis` object that was used to initialise the yaxis of the 3D cache array
+    \param yaxis  Pointer to a `TAxis` object that was used to initialise the yaxis of the 3D cache array
 */
 void FitUtil::ClearCache3D(cache3D_t cache, TAxis *xaxis, TAxis *yaxis) {
 
