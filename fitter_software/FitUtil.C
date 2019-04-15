@@ -942,7 +942,7 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
   Double_t det_count = 0.;
   Double_t det_err   = 0.;
   
-  for (auto &tb: true_bins) {
+  for (const auto &tb: true_bins) {
     
     if (tb.fIsCC) {
       
