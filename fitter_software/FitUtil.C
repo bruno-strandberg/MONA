@@ -55,14 +55,7 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_template,
 
   fOscSamplesN        = 1;
   f_cache_oscsamplesn = 0;
-
-  f_cache_sinsqth12 = 0;
-  f_cache_sinsqth13 = 0;
-  f_cache_sinsqth23 = 0;
-  f_cache_dcp       = 0;
-  f_cache_dm21      = 0;
-  f_cache_dm31      = 0;
-
+  
   fOscCalls    = 0;
   fOscCalcTime = new TStopwatch();
   fOscCalcTime->Stop(); fOscCalcTime->Reset();
@@ -104,6 +97,7 @@ FitUtil::~FitUtil() {
 	if ( fhXsecCache[f][iscc][isnb] ) delete fhXsecCache[f][iscc][isnb];
 	if ( fhMeffCache[f][iscc][isnb] ) delete fhMeffCache[f][iscc][isnb];
 	if ( fhBYfracCache[f][iscc][isnb] ) delete fhBYfracCache[f][iscc][isnb];
+	if ( fhTECache[f][iscc][isnb] ) delete fhTECache[f][iscc][isnb];
       }
 
     }
@@ -341,7 +335,7 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
     }
   }
 
-  // init the xsec histograms and meff histograms
+  // init the xsec histograms, meff histograms and TrueEvts cache histograms
   for (UInt_t f = 0; f < fFlavs; f++) {
     for (UInt_t iscc = 0; iscc < fInts; iscc++) {
       for (UInt_t isnb = 0; isnb < fPols; isnb++) {
@@ -349,6 +343,7 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
         TString name_xsec   = "xsec_"   + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
 	TString name_byfrac = "byfrac_" + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
 	TString name_meff   = "meff_"   + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
+	TString name_TE     = "te_"   + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
 
         fhXsecCache[f][iscc][isnb] = (TH1D*)h_template_E->Clone();
         fhXsecCache[f][iscc][isnb]->SetDirectory(0);
@@ -364,7 +359,12 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
 	fhMeffCache[f][iscc][isnb]->SetDirectory(0);
 	fhMeffCache[f][iscc][isnb]->Reset();
 	fhMeffCache[f][iscc][isnb]->SetNameTitle(name_meff, name_meff);
-	
+
+	fhTECache[f][iscc][isnb] = (TH3D*)h_template->Clone();
+	fhTECache[f][iscc][isnb]->SetDirectory(0);
+	fhTECache[f][iscc][isnb]->Reset();
+	fhTECache[f][iscc][isnb]->SetNameTitle(name_TE, name_TE);
+		
       }
     }
   }
@@ -578,23 +578,32 @@ Bool_t FitUtil::ConfigOscProb(const proxymap_t& proxymap) {
   Double_t Dm21      = *( proxymap.at( (TString)fDm21->GetName() ) );
   Double_t Dm31      = *( proxymap.at( (TString)fDm31->GetName() ) );
 
-  if (SinsqTh12 != f_cache_sinsqth12 || SinsqTh13 != f_cache_sinsqth13 || SinsqTh23 != f_cache_sinsqth23 || 
-      Dcp != f_cache_dcp || Dm21 != f_cache_dm21 || Dm31 != f_cache_dm31) {
+  // get the pointers to the cache variables in the cache map
+  Double_t cache_sinsqth12 = GetCachedVar( (TString)fSinsqTh12->GetName() );
+  Double_t cache_sinsqth13 = GetCachedVar( (TString)fSinsqTh13->GetName() );
+  Double_t cache_sinsqth23 = GetCachedVar( (TString)fSinsqTh23->GetName() );
+  Double_t cache_dcp       = GetCachedVar( (TString)fDcp->GetName() );
+  Double_t cache_dm21      = GetCachedVar( (TString)fDm21->GetName() );
+  Double_t cache_dm31      = GetCachedVar( (TString)fDm31->GetName() );
 
-    f_cache_sinsqth12 = SinsqTh12;
-    f_cache_sinsqth13 = SinsqTh13;
-    f_cache_sinsqth23 = SinsqTh23;
-    f_cache_dcp       = Dcp;
-    f_cache_dm21      = Dm21;
-    f_cache_dm31      = Dm31;
+  if (SinsqTh12 != cache_sinsqth12 || SinsqTh13 != cache_sinsqth13 || SinsqTh23 != cache_sinsqth23 || 
+      Dcp != cache_dcp || Dm21 != cache_dm21 || Dm31 != cache_dm31) {
 
+    // update the cache values
+    fParCache[ (TString)fSinsqTh12->GetName() ] = SinsqTh12;
+    fParCache[ (TString)fSinsqTh13->GetName() ] = SinsqTh13;
+    fParCache[ (TString)fSinsqTh23->GetName() ] = SinsqTh23;
+    fParCache[ (TString)fDcp->GetName() ]  = Dcp;
+    fParCache[ (TString)fDm21->GetName() ] = Dm21;
+    fParCache[ (TString)fDm31->GetName() ] = Dm31;
+    
     // give variables to the oscillator
-    fProb->SetAngle(1, 2, TMath::ASin( TMath::Sqrt( f_cache_sinsqth12 ) ) );
-    fProb->SetAngle(1, 3, TMath::ASin( TMath::Sqrt( f_cache_sinsqth13 ) ) );
-    fProb->SetAngle(2, 3, TMath::ASin( TMath::Sqrt( f_cache_sinsqth23 ) ) );
-    fProb->SetDelta(1, 3, f_cache_dcp * TMath::Pi()  );
-    fProb->SetDm(2, f_cache_dm21);
-    fProb->SetDm(3, f_cache_dm31);
+    fProb->SetAngle(1, 2, TMath::ASin( TMath::Sqrt( SinsqTh12 ) ) );
+    fProb->SetAngle(1, 3, TMath::ASin( TMath::Sqrt( SinsqTh13 ) ) );
+    fProb->SetAngle(2, 3, TMath::ASin( TMath::Sqrt( SinsqTh23 ) ) );
+    fProb->SetDelta(1, 3, Dcp * TMath::Pi()  );
+    fProb->SetDm(2, Dm21);
+    fProb->SetDm(3, Dm31);
 
     // set flag that re-calculation should be performed
     reCalc = kTRUE;
@@ -736,6 +745,63 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_
 
 //***************************************************************************
 
+/** Function to retrieve the cached `TrueEvts` return value.
+    \param tb  A `TrueB` object (see `DetResponse.h`) that stores the neurino type and true bin coordinate infp
+    \return    A pair, first is the number of expected events in true bin, second is MC error
+ */
+std::pair<Double_t, Double_t> FitUtil::GetCachedTE(const TrueB &tb) {
+  
+  //--------------------------------------------------------
+  // find the histogram that stores the data and return
+  //--------------------------------------------------------
+
+  TH3D* hc = fhTECache[tb.fFlav][tb.fIsCC][tb.fIsNB];
+  Double_t cached_det = hc->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin);
+  Double_t cached_err = hc->GetBinError(tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin);
+  
+  return std::make_pair( cached_det, cached_err );
+  
+}
+
+//***************************************************************************
+
+/** Function that re-calculates the cached values of `TrueEvts`.
+
+    This caching saves a lot of time. Firstly, for a single response (e.g. tracks), one true bin contributes to several reco bins. Without this cache, the function `RecoEvts` would call `TrueEvts` tens of times (for each reco bin that the true bin contributed to) when the fitter is looping over reco bins, while the other fit parameters are unchanged. Secondly, the true bin data is also the same for several event selections. This means that once this cache is filled for some parameter values, it is shared between several selections (e.g. tracks and showers) that share the `FitUtil` class exactly for such central caching functionality.
+
+    \param proxymap A structure with all fit parameters known to RooFit.
+*/
+void FitUtil::FillTECache(const proxymap_t& proxymap) {
+
+  // loop over flavors, interaction types and polarisations
+  for (UInt_t f = 0; f < fFlavs; f++) {
+    for (UInt_t i = 0; i < fInts; i++) {
+      for (UInt_t p = 0; p < fPols; p++) {
+
+	TH3D* hc = fhTECache[f][i][p];
+
+	// loop over true bins
+	for (Int_t xbin = 1; xbin <= hc->GetXaxis()->GetNbins(); xbin++) {
+	  for (Int_t ybin = 1; ybin <= hc->GetYaxis()->GetNbins(); ybin++) {
+	    for (Int_t zbin = 1; zbin <= hc->GetZaxis()->GetNbins(); zbin++) {
+
+	      TrueB _tb(f, i, p, xbin, ybin, zbin);
+	      auto TE = TrueEvts(_tb, proxymap);
+	      hc->SetBinContent( xbin, ybin, zbin, TE.first );
+	      hc->SetBinError( xbin, ybin, zbin, TE.second );
+		
+	    }
+	  }
+	}
+	  
+      }
+    }
+  }
+  
+}
+
+//***************************************************************************
+
 /** This function is called inside `FitPDF::analyticalIntegral` and `FitPDF::GetExpValHist` and fills a histogram with expectation values in reco bins.
 
     The argument map is created in `FitPDF` and contains names and corresponding proxies for all parameters in `fParSet`. The detector response is also part of the `FitPDF` class and configures what kind of an event selection the pdf is used to fit.
@@ -860,6 +926,14 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
   }
 
   //----------------------------------------------------------------------------------
+  // if any of the fit parameters has changed re-calculate the TrueEvts cache
+  //----------------------------------------------------------------------------------
+  if ( CheckVarCache(proxymap) ) {
+    FillTECache(proxymap);
+    UpdateVarCache(proxymap); // this function makes sure that the cache values of all variables is updated
+  }
+  
+  //----------------------------------------------------------------------------------
   // perform the calculation
   //----------------------------------------------------------------------------------
   
@@ -872,7 +946,7 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
     
     if (tb.fIsCC) {
       
-      Double_t TE = TrueEvts(tb, proxymap).first;
+      Double_t TE = GetCachedTE(tb).first;
 
       det_count += tb.fW * TE;
       det_err   += TMath::Power(tb.fWE * TE, 2);
@@ -891,9 +965,9 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
       muonTB.fFlav = MUON;
       tauTB.fFlav  = TAU;
       
-      TE += TrueEvts(elecTB, proxymap).first;
-      TE += TrueEvts(muonTB, proxymap).first;
-      TE += TrueEvts(tauTB , proxymap).first;
+      TE += GetCachedTE(elecTB).first;
+      TE += GetCachedTE(muonTB).first;
+      TE += GetCachedTE(tauTB).first;
       
       det_count += tb.fW * TE;
       det_err   += TMath::Power(tb.fWE * TE, 2);
@@ -937,4 +1011,90 @@ RooRealVar* FitUtil::GetVar(TString varname) {
     
   return var;
 
+}
+
+//***************************************************************************
+ 
+/** Function to fetch the cached value of a variable, which is stored in `FitUtil::fParCache`.
+
+    If no cache for the variable exists, the cache is created for the input variable name with value 0.
+
+    \param varname Name of the variable
+    \return        const reference to the cached variable
+*/
+const Double_t& FitUtil::GetCachedVar(TString varname) {
+
+   // search for the element in the map
+   auto it = fParCache.find( varname );
+
+   // if element is not in the map create an entry for it in the cache
+   // otherwise return the pointer to the cached variable
+  
+   if ( it == fParCache.end() ) {
+
+     cout << "NOTICE FitUtil::GetCachedVar() started caching variable " << varname << endl;
+     fParCache.insert( std::make_pair( varname, 0. ) );
+     return fParCache[ varname ];
+    
+   }
+   else {
+    
+     return it->second;
+
+   }
+  
+ }
+ 
+//***************************************************************************
+
+/** Function that checks whether any of the parameters in the input proxymap has changed with respect to the values stored in the cache `FitUtil::fParCache`.
+    \param proxymap  structure with all fit parameters known to `RooFit`.
+    \return          true if one or more parameter(s) in the cache is/are different than in the proxymap.
+*/
+Bool_t FitUtil::CheckVarCache(const proxymap_t& proxymap) {
+
+  // loop over all parameters in the proxymap (all parameters known to RooFit)
+  for (auto p: proxymap) {
+
+    // ignore observables (E, ct, by), we don't wish to cash these
+    if ( fObsList.find( p.first ) != NULL ) { continue; }
+
+    Double_t cache = GetCachedVar( p.first );  // value from the cache
+    Double_t  val  = (Double_t)(*p.second);    // current value of the parameter
+    
+    if ( val != cache ) return kTRUE;          // when any parameter mismatches the cache return true
+    
+  }
+
+  return kFALSE;
+  
+}
+
+//***************************************************************************
+
+/** Function to update all of the cached parameter values in `FitUtil::fParCache`.
+
+    If `FitUtil::fParCache` does not contain an entry for one/some of the parameters in proxymap, the cache is created. As an exception, observables (E,ct,by) are not cached.
+
+    \param proxymap structure with all fit parameters known to `RooFit`.
+ */
+void FitUtil::UpdateVarCache(const proxymap_t& proxymap) {
+
+  // loop over all parameters in the proxymap (all parameters known to RooFit)
+  for (auto p: proxymap) {
+
+    // ignore observables (E, ct, by), we don't wish to cash these
+    if ( fObsList.find( p.first ) != NULL ) { continue; }
+
+    Double_t val = (Double_t)(*p.second);    // current value of the parameter
+
+    // find the parameter in the par cache map and update it's value. If the parameter is not (yet)
+    // in the map insert it. 
+    auto it = fParCache.find( p.first );
+    if ( it == fParCache.end() ) { fParCache.insert( std::make_pair( p.first, val ) ); }
+    else                         { it->second = val;                                   }
+
+    
+  }
+    
 }
