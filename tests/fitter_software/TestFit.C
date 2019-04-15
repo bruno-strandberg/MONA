@@ -1,6 +1,7 @@
 
 // ROOT headers
 #include "TIterator.h"
+#include "TStopwatch.h"
 
 // RooFit
 #include "RooArgSet.h"
@@ -91,13 +92,17 @@ int main(const int argc, const char **argv) {
   // import data to RooFit and fit
   RooDataHist rfdatah("rfdata","rfdata", futil.GetObs(), Import(*datah) );
 
+  TStopwatch timer;
+  
   futil.GetVar("SinsqTh23")->setVal(0.4);
   RooFitResult *result1 = pdf.fitTo( rfdatah, Save(kTRUE), Range("firstq") );
   futil.SetNOcentvals();
   futil.GetVar("SinsqTh23")->setVal(0.6);
   RooFitResult *result2 = pdf.fitTo( rfdatah, Save(kTRUE), Range("secondq") );
-
+  
   RooFitResult *result = ( result1->minNll() < result2->minNll() ) ? result1 : result2 ;
+
+  cout << "NOTICE TestFit fitting time [s]: " << (Double_t)timer.RealTime() << endl;
   
   //-------------------------------------------------------------
   // compare fitted and true values
