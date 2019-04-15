@@ -31,12 +31,8 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
   fE_scale = new RooRealVar("E_scale", "E_scale", 0., -0.3, 0.3);
   fParSet.add( *fE_scale );
   
-  //----------------------------------------------------------------------------------
   // init flux shape systematics cache variables
-  //----------------------------------------------------------------------------------
-  Double_t f_cache_e_tilt = 0;
-  Double_t f_cache_ct_tilt = 0;
-  CalcTiltedFluxNorms( f_cache_e_tilt, f_cache_ct_tilt );
+  CalcTiltedFluxNorms( 0., 0. );
 
   //----------------------------------------------------------------------------------
   // the limits of `fE_reco` are set to bin edges in `FitUtil`. Check that the energy scale cannot
@@ -130,10 +126,14 @@ void FitUtilWsyst::CalcTiltedFluxNorms(Double_t e_tilt, Double_t ct_tilt) {
 Double_t FitUtilWsyst::GetTiltedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin,
 				     Double_t e_tilt, Double_t ct_tilt) {
 
-  if (e_tilt != f_cache_e_tilt || ct_tilt != f_cache_ct_tilt ) {
-    f_cache_e_tilt  = e_tilt;
-    f_cache_ct_tilt = ct_tilt;
-    CalcTiltedFluxNorms( f_cache_e_tilt, f_cache_ct_tilt );
+  // get cached parameter values
+  Double_t cache_e_tilt  = GetCachedVar( (TString)fE_tilt->GetName() );
+  Double_t cache_ct_tilt = GetCachedVar( (TString)fCt_tilt->GetName() );
+  
+  if (e_tilt != cache_e_tilt || ct_tilt != cache_ct_tilt ) {
+    fParCache[ (TString)fE_tilt->GetName() ]  = e_tilt;
+    fParCache[ (TString)fCt_tilt->GetName() ] = ct_tilt;
+    CalcTiltedFluxNorms( e_tilt, ct_tilt );
   }
 
   Double_t E  = fHB->GetXaxis()->GetBinCenter( true_ebin );
@@ -276,9 +276,7 @@ std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t C
 	    
     RE    += RE_bin.first * bf.second;
     REerr += TMath::Power(RE_bin.second * bf.second, 2);
-      
-
-    
+          
   } // end loop over bin fractions
   
   // take sqrt of the error and return

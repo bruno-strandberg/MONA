@@ -62,8 +62,6 @@ protected:
   //--------------------------------------------------------------------
   // protected cache members for flux tilt cache
   //--------------------------------------------------------------------
-  Double_t f_cache_e_tilt;    //!< internal cache for `fE_tilt` value to reduce calls for normalisation calculation
-  Double_t f_cache_ct_tilt;   //!< internal cache for `fCt_tilt` value to reduce calls for normalisation calculation
   Double_t fTiltedFluxNorms[fFlavs][fPols]; //!< cache for normalisation of atm. flux shape systematics (energy, ct tilt)
    
 };

@@ -35,7 +35,7 @@ int main(const int argc, const char **argv) {
 
   Double_t op_time =  3.;
   Double_t emin    =  3.;
-  Double_t emax    =  75.;
+  Double_t emax    =  70.;
   Double_t ctmin   = -1;
   Double_t ctmax   =  0;
   Double_t bymin   =  0;
