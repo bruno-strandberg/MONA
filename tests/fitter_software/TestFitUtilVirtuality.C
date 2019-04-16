@@ -23,7 +23,7 @@ static const double gRET_RecoEvts_OLTR = gRand.Uniform(0,1e3);
 //******************************************************************************************
 
 // class that inherits from FitUtil and does not override any functions
-class FitUtil_NOL : protected FitUtil {
+class FitUtil_NOL : public FitUtil {
 
 public: 
 
@@ -41,7 +41,7 @@ public:
 //******************************************************************************************
 
 // create a class that inherits from `FitUtil` and overloads `TrueEvts`
-class FitUtil_OLT : protected FitUtil {
+class FitUtil_OLT : public FitUtil {
 
 public:
   
@@ -64,7 +64,7 @@ public:
 //******************************************************************************************
 
 // create a class that inherits from `FitUtil` and overloads `TrueEvts` and `RecoEvts`
-class FitUtil_OLTR : protected FitUtil {
+class FitUtil_OLTR : public FitUtil {
 
 public:
   

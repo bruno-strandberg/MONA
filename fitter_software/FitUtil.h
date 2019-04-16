@@ -88,12 +88,6 @@ class FitUtil {
   // other public functions
   //------------------------------------------------------------------  
   virtual std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
-  std::pair<Double_t, Double_t> GetCachedTE(const TrueB &tb);
-  Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin);
-  Double_t GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t& proxymap);
-  Double_t GetCachedXsec(const TrueB &tb);
-  Double_t GetCachedMeff(const TrueB &tb);
-  Double_t GetCachedBYfrac(const TrueB &tb);
   void SetNOlims();
   void SetNOcentvals();
   void SetIOlims();
@@ -280,6 +274,13 @@ class FitUtil {
   // protected functions
   //------------------------------------------------------------------
 
+  std::pair<Double_t, Double_t> GetCachedTE(const TrueB &tb);
+  Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin);
+  Double_t GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t& proxymap);
+  Double_t GetCachedXsec(const TrueB &tb);
+  Double_t GetCachedMeff(const TrueB &tb);
+  Double_t GetCachedBYfrac(const TrueB &tb);
+  
   const Double_t& GetCachedVar(TString varname);
   Bool_t          CheckVarCache(const proxymap_t& proxymap);
   void            UpdateVarCache(const proxymap_t& proxymap);
