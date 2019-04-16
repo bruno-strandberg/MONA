@@ -1,6 +1,7 @@
 
 // ROOT headers
 #include "TIterator.h"
+#include "TStopwatch.h"
 
 // RooFit
 #include "RooArgSet.h"
@@ -119,6 +120,8 @@ int main(const int argc, const char **argv) {
   // create ranges for theta-23
   futil.GetVar("SinsqTh23")->setRange("firstq" , 0. , 0.5);
   futil.GetVar("SinsqTh23")->setRange("secondq", 0.5, 1);
+
+  TStopwatch timer;
   
   futil.GetVar("SinsqTh23")->setVal(0.4);
   RooFitResult *result1 = simPdf.fitTo( combData, Save(kTRUE), Range("firstq") );
@@ -127,7 +130,8 @@ int main(const int argc, const char **argv) {
   RooFitResult *result2 = simPdf.fitTo( combData, Save(kTRUE), Range("secondq") );
 
   RooFitResult *result = ( result1->minNll() < result2->minNll() ) ? result1 : result2 ;
-  
+
+  cout << "NOTICE TestSimFit fitting time [s]: " << (Double_t)timer.RealTime() << endl;
   //-------------------------------------------------------------
   // compare fitted and true values
   //-------------------------------------------------------------
@@ -159,8 +163,8 @@ int main(const int argc, const char **argv) {
     failed = 1;
   }
   
-  if (failed) cout << "NOTICE TestFit failed" << endl;
-  else cout << "NOTICE TestFit passed" << endl;
+  if (failed) cout << "NOTICE TestSimFit failed" << endl;
+  else cout << "NOTICE TestSimFit passed" << endl;
 
   return failed;
   

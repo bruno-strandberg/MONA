@@ -24,7 +24,7 @@ AALIB         = -L$(AADIR) -laa
 # cflags
 #--------------------------------------------------------------
 ROOTCFLAGS    = $(shell root-config --cflags)
-CXXFLAGS      = -g -Wall -std=c++11 -fPIC
+CXXFLAGS      = -g -Wall -std=c++11 -fPIC -O2
 JPPCFLAGS     = -I$(JPP_DIR)/software
 AACFLAGS      = -I$(AADIR) -I$(AADIR)/evt
 

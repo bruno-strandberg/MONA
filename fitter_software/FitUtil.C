@@ -63,14 +63,7 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_temp_T, TH3* h_temp_R,
 
   fOscSamplesN        = 1;
   f_cache_oscsamplesn = 0;
-
-  f_cache_sinsqth12 = 0;
-  f_cache_sinsqth13 = 0;
-  f_cache_sinsqth23 = 0;
-  f_cache_dcp       = 0;
-  f_cache_dm21      = 0;
-  f_cache_dm31      = 0;
-
+  
   fOscCalls    = 0;
   fOscCalcTime = new TStopwatch();
   fOscCalcTime->Stop(); fOscCalcTime->Reset();
@@ -105,13 +98,8 @@ FitUtil::~FitUtil() {
 
   if (fOscCalcTime) delete fOscCalcTime;
 
-  if (fHBT)  delete fHBT;
-  if (fHBR)  delete fHBR;
-  if (fFlux) delete fFlux;
-  if (fXsec) delete fXsec;
-  if (fMeff) delete fMeff;
-  if (fProb) delete fProb;
-  if (fPrem) delete fPrem;
+  TAxis* eaxis  = fHBT->GetXaxis();
+  TAxis* ctaxis = fHBT->GetYaxis();
 
   // remove cache hists
   for (UInt_t f = 0; f < fFlavs; f++) {
@@ -119,22 +107,34 @@ FitUtil::~FitUtil() {
 
       // osc
       for (UInt_t fout = 0; fout < fFlavs; fout++) {
-	if ( fhOscCache[f][fout][isnb] ) delete fhOscCache[f][fout][isnb];
+	if ( fOscCache[f][fout][isnb] ) ClearCache2D( fOscCache[f][fout][isnb], eaxis );
       }
 
       // flux
-      if ( fhFluxCache[f][isnb] ) delete fhFluxCache[f][isnb];
+      if ( fFluxCache[f][isnb] ) ClearCache2D(fFluxCache[f][isnb], eaxis );
 
       // xsec and meff
       for (UInt_t iscc = 0; iscc < fInts; iscc++) {
-	if ( fhXsecCache[f][iscc][isnb] ) delete fhXsecCache[f][iscc][isnb];
-	if ( fhMeffCache[f][iscc][isnb] ) delete fhMeffCache[f][iscc][isnb];
-	if ( fhBYfracCache[f][iscc][isnb] ) delete fhBYfracCache[f][iscc][isnb];
+	
+	if ( fXsecCache[f][iscc][isnb] ) ClearCache1D( fXsecCache[f][iscc][isnb] );
+	if ( fBYfracCache[f][iscc][isnb] ) ClearCache2D( fBYfracCache[f][iscc][isnb], eaxis );
+	if ( fMeffCache[f][iscc][isnb] ) ClearCache3D( fMeffCache[f][iscc][isnb], eaxis, ctaxis );
+	if ( fTECache[f][iscc][isnb] ) ClearCache3D( fTECache[f][iscc][isnb], eaxis, ctaxis );
+	
       }
 
     }
   }
 
+  // remove binning hist and calculators
+  if (fHBT)  delete fHBT;
+  if (fHBR)  delete fHBR;
+  if (fFlux) delete fFlux;
+  if (fXsec) delete fXsec;
+  if (fMeff) delete fMeff;
+  if (fProb) delete fProb;
+  if (fPrem) delete fPrem;
+  
   // remove the RooFit variables
   RooArgList l( fParSet );
   for (Int_t i = 0; i < l.getSize(); i++) {
@@ -327,28 +327,15 @@ void FitUtil::FreeParLims() {
  */
 void FitUtil::InitCacheHists(TH3D *h_template) {
 
-  // maps to create histogram names
-  std::map<UInt_t, TString> pol_map  = { {0, "nu"}, {1, "nub"} }; 
-  std::map<UInt_t, TString> iscc_map = { {0, "NC"}, {1, "CC"} }; 
-  std::map<UInt_t, TString> flav_map = { {0, "elec"}, {1, "muon"}, {2, "tau"} };
-
-  // project the 3D template to 1D and 2D templates
-  TH2D *h_template_EvsCT = (TH2D*)h_template->Project3D("yx");
-  TH2D *h_template_EvsBY = (TH2D*)h_template->Project3D("zx");
-  TH1D *h_template_E     = (TH1D*)h_template->Project3D("x");
+  TAxis* eaxis  = h_template->GetXaxis();
+  TAxis* ctaxis = h_template->GetYaxis();
+  TAxis* byaxis = h_template->GetZaxis();
 
   // init the oscillation probability cache histograms
   for (UInt_t f_in = 0; f_in < fFlavs; f_in++) {
     for (UInt_t f_out = 0; f_out < fFlavs; f_out++) {
       for (UInt_t isnb = 0; isnb < fPols; isnb++) {
-
-	TString name = "oscprob_" + flav_map[f_in] + "_to_" + flav_map[f_out] + "_" + pol_map[isnb];
-
-        fhOscCache[f_in][f_out][isnb] = (TH2D*)h_template_EvsCT->Clone();
-        fhOscCache[f_in][f_out][isnb]->SetDirectory(0);
-        fhOscCache[f_in][f_out][isnb]->Reset();
-        fhOscCache[f_in][f_out][isnb]->SetNameTitle(name, name);
-
+	fOscCache[f_in][f_out][isnb] = InitCache2D( eaxis, ctaxis );
       }
     }
   }
@@ -356,40 +343,19 @@ void FitUtil::InitCacheHists(TH3D *h_template) {
   // init the flux histograms
   for (UInt_t f = 0; f < fFlavs; f++) {
     for (UInt_t isnb = 0; isnb < fPols; isnb++) {
-
-      TString name = "flux_" + flav_map[f] + "_" + pol_map[isnb];
-
-      fhFluxCache[f][isnb] = (TH2D*)h_template_EvsCT->Clone();
-      fhFluxCache[f][isnb]->SetDirectory(0);
-      fhFluxCache[f][isnb]->Reset();
-      fhFluxCache[f][isnb]->SetNameTitle(name, name);
-
+      fFluxCache[f][isnb] = InitCache2D( eaxis, ctaxis );
     }
   }
-
-  // init the xsec histograms and meff histograms
-  for (UInt_t f = 0; f < fFlavs; f++) {
+  
+  // init the xsec histograms, meff histograms and TrueEvts cache histograms
+  for (UInt_t f = 0; f < fFlavs; f++) {    
     for (UInt_t iscc = 0; iscc < fInts; iscc++) {
       for (UInt_t isnb = 0; isnb < fPols; isnb++) {
 
-        TString name_xsec   = "xsec_"   + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
-	TString name_byfrac = "byfrac_" + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
-	TString name_meff   = "meff_"   + flav_map[f] + "_" + iscc_map[iscc] + "_" + pol_map[isnb];
-
-        fhXsecCache[f][iscc][isnb] = (TH1D*)h_template_E->Clone();
-        fhXsecCache[f][iscc][isnb]->SetDirectory(0);
-        fhXsecCache[f][iscc][isnb]->Reset();
-        fhXsecCache[f][iscc][isnb]->SetNameTitle(name_xsec, name_xsec);
-
-	fhBYfracCache[f][iscc][isnb] = (TH2D*)h_template_EvsBY->Clone();
-	fhBYfracCache[f][iscc][isnb]->SetDirectory(0);
-	fhBYfracCache[f][iscc][isnb]->Reset();
-	fhBYfracCache[f][iscc][isnb]->SetNameTitle(name_byfrac, name_byfrac);
-	
-	fhMeffCache[f][iscc][isnb] = (TH3D*)h_template->Clone();
-	fhMeffCache[f][iscc][isnb]->SetDirectory(0);
-	fhMeffCache[f][iscc][isnb]->Reset();
-	fhMeffCache[f][iscc][isnb]->SetNameTitle(name_meff, name_meff);
+	fXsecCache[f][iscc][isnb] = InitCache1D( eaxis );
+	fBYfracCache[f][iscc][isnb] = InitCache2D( eaxis, byaxis );
+	fMeffCache[f][iscc][isnb] = InitCache3D( eaxis, ctaxis, byaxis );
+	fTECache[f][iscc][isnb] = InitCache3D( eaxis, ctaxis, byaxis );
 	
       }
     }
@@ -410,7 +376,7 @@ void FitUtil::FillFluxCache(AtmFlux *flux, Double_t op_time, UInt_t nsamples) {
   for (UInt_t f = 0; f < fFlavs; f++) {
     for (UInt_t isnb = 0; isnb < fPols; isnb++) {
 
-      TH2D* hflux = fhFluxCache[f][isnb];
+      TH3D* hflux = fHBT; // get the true bin space template histogram
 
       for (Int_t ebin = 1; ebin <= hflux->GetXaxis()->GetNbins(); ebin++) {
 	for (Int_t ctbin = 1; ctbin <= hflux->GetYaxis()->GetNbins(); ctbin++) {
@@ -439,7 +405,7 @@ void FitUtil::FillFluxCache(AtmFlux *flux, Double_t op_time, UInt_t nsamples) {
 	    }
 	  }
 
-	  hflux->SetBinContent( ebin, ctbin, atmflux/(nsamples*nsamples) );
+	  fFluxCache[f][isnb][ebin][ctbin] = std::make_pair( atmflux/(nsamples*nsamples), 0. );
 
 	}
       }
@@ -462,24 +428,22 @@ void FitUtil::FillXsecMeffCache(NuXsec *xsec, EffMass *meff) {
     for (UInt_t iscc = 0; iscc < fInts; iscc++) {
       for (UInt_t isnb = 0; isnb < fPols; isnb++) {
 	
-	TH1D* hxsec   = fhXsecCache[f][iscc][isnb];
-	TH3D* hmeff   = fhMeffCache[f][iscc][isnb];
-	TH2D* hbyfrac = fhBYfracCache[f][iscc][isnb];
+	TH3D* hb = fHBT;
 	
-	for (Int_t ebin = 1; ebin <= hxsec->GetXaxis()->GetNbins(); ebin++) {
+	for (Int_t ebin = 1; ebin <= hb->GetXaxis()->GetNbins(); ebin++) {
 
-	  Double_t E = hxsec->GetXaxis()->GetBinCenter(ebin);
-	  hxsec->SetBinContent(ebin, xsec->GetXsec(f, iscc, isnb, E) );
+	  Double_t E = hb->GetXaxis()->GetBinCenter(ebin);
+	  fXsecCache[f][iscc][isnb][ebin] = std::make_pair( xsec->GetXsec(f, iscc, isnb, E), 0. );
 
-	  for (Int_t bybin = 1; bybin <= hmeff->GetZaxis()->GetNbins(); bybin++) {
+	  for (Int_t bybin = 1; bybin <= hb->GetZaxis()->GetNbins(); bybin++) {
 
-	    Double_t by = hmeff->GetZaxis()->GetBinCenter(bybin);
-	    hbyfrac->SetBinContent( ebin, bybin, xsec->GetBYfrac(f, iscc, isnb, E, by) );
+	    Double_t by = hb->GetZaxis()->GetBinCenter(bybin);
+	    fBYfracCache[f][iscc][isnb][ebin][bybin] = std::make_pair( xsec->GetBYfrac(f, iscc, isnb, E, by), 0. );
 	    
-	    for (Int_t ctbin = 1; ctbin <= hmeff->GetYaxis()->GetNbins(); ctbin++) {
+	    for (Int_t ctbin = 1; ctbin <= hb->GetYaxis()->GetNbins(); ctbin++) {
 
-	      Double_t ct = hmeff->GetYaxis()->GetBinCenter(ctbin);
-	      hmeff->SetBinContent( ebin, ctbin, bybin, meff->GetMeff( f, iscc, isnb, E, ct, by ) );
+	      Double_t ct = hb->GetYaxis()->GetBinCenter(ctbin);
+	      fMeffCache[f][iscc][isnb][ebin][ctbin][bybin] = std::make_pair( meff->GetMeff( f, iscc, isnb, E, ct, by ), 0.);
 	      
 	    } // end loop over by
 	  } // end loop over ct
@@ -507,7 +471,7 @@ Double_t FitUtil::GetCachedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t
     throw std::invalid_argument("ERROR! FitUtil::GetCachedFlux() unknown flavor " + to_string(flav));
   }
 
-  return fhFluxCache[flav][(UInt_t)isnb]->GetBinContent(true_ebin, true_ctbin);
+  return fFluxCache[flav][(UInt_t)isnb][true_ebin][true_ctbin].first;
 }
 
 //***************************************************************************
@@ -533,7 +497,7 @@ Double_t FitUtil::GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t
   // recalculate the oscillation parameter cache if anything has changed.
   ProbCacher(proxymap, fOscSamplesN);
   
-  return fhOscCache[flav_in][tb.fFlav][tb.fIsNB]->GetBinContent(tb.fE_true_bin, tb.fCt_true_bin);
+  return fOscCache[flav_in][tb.fFlav][tb.fIsNB][tb.fE_true_bin][tb.fCt_true_bin].first;
 }
 
 //***************************************************************************
@@ -544,7 +508,7 @@ Double_t FitUtil::GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t
     \return      Cached cross-section value in a specified bin.
 */
 Double_t FitUtil::GetCachedXsec(const TrueB &tb) {
-  return fhXsecCache[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent(tb.fE_true_bin);
+  return fXsecCache[tb.fFlav][tb.fIsCC][tb.fIsNB][tb.fE_true_bin].first;
 }
 
 //***************************************************************************
@@ -555,7 +519,7 @@ Double_t FitUtil::GetCachedXsec(const TrueB &tb) {
    \return      Cached effective mass value in a specified bin in Ton
  */
 Double_t FitUtil::GetCachedMeff(const TrueB &tb) {
-  return fhMeffCache[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent( tb.fE_true_bin, tb.fCt_true_bin, tb.fBy_true_bin );
+  return fMeffCache[tb.fFlav][tb.fIsCC][tb.fIsNB][tb.fE_true_bin][tb.fCt_true_bin][tb.fBy_true_bin].first;
 }
 
 //***************************************************************************
@@ -566,7 +530,7 @@ Double_t FitUtil::GetCachedMeff(const TrueB &tb) {
    \return      Cached bjorken-y fraction
 */
 Double_t FitUtil::GetCachedBYfrac(const TrueB &tb) {
-  return fhBYfracCache[tb.fFlav][tb.fIsCC][tb.fIsNB]->GetBinContent( tb.fE_true_bin, tb.fBy_true_bin );
+  return fBYfracCache[tb.fFlav][tb.fIsCC][tb.fIsNB][tb.fE_true_bin][tb.fBy_true_bin].first;
 }
 
 //***************************************************************************
@@ -604,23 +568,32 @@ Bool_t FitUtil::ConfigOscProb(const proxymap_t& proxymap) {
   Double_t Dm21      = *( proxymap.at( (TString)fDm21->GetName() ) );
   Double_t Dm31      = *( proxymap.at( (TString)fDm31->GetName() ) );
 
-  if (SinsqTh12 != f_cache_sinsqth12 || SinsqTh13 != f_cache_sinsqth13 || SinsqTh23 != f_cache_sinsqth23 || 
-      Dcp != f_cache_dcp || Dm21 != f_cache_dm21 || Dm31 != f_cache_dm31) {
+  // get the pointers to the cache variables in the cache map
+  Double_t cache_sinsqth12 = GetCachedVar( (TString)fSinsqTh12->GetName() );
+  Double_t cache_sinsqth13 = GetCachedVar( (TString)fSinsqTh13->GetName() );
+  Double_t cache_sinsqth23 = GetCachedVar( (TString)fSinsqTh23->GetName() );
+  Double_t cache_dcp       = GetCachedVar( (TString)fDcp->GetName() );
+  Double_t cache_dm21      = GetCachedVar( (TString)fDm21->GetName() );
+  Double_t cache_dm31      = GetCachedVar( (TString)fDm31->GetName() );
 
-    f_cache_sinsqth12 = SinsqTh12;
-    f_cache_sinsqth13 = SinsqTh13;
-    f_cache_sinsqth23 = SinsqTh23;
-    f_cache_dcp       = Dcp;
-    f_cache_dm21      = Dm21;
-    f_cache_dm31      = Dm31;
+  if (SinsqTh12 != cache_sinsqth12 || SinsqTh13 != cache_sinsqth13 || SinsqTh23 != cache_sinsqth23 || 
+      Dcp != cache_dcp || Dm21 != cache_dm21 || Dm31 != cache_dm31) {
 
+    // update the cache values
+    fParCache[ (TString)fSinsqTh12->GetName() ] = SinsqTh12;
+    fParCache[ (TString)fSinsqTh13->GetName() ] = SinsqTh13;
+    fParCache[ (TString)fSinsqTh23->GetName() ] = SinsqTh23;
+    fParCache[ (TString)fDcp->GetName() ]  = Dcp;
+    fParCache[ (TString)fDm21->GetName() ] = Dm21;
+    fParCache[ (TString)fDm31->GetName() ] = Dm31;
+    
     // give variables to the oscillator
-    fProb->SetAngle(1, 2, TMath::ASin( TMath::Sqrt( f_cache_sinsqth12 ) ) );
-    fProb->SetAngle(1, 3, TMath::ASin( TMath::Sqrt( f_cache_sinsqth13 ) ) );
-    fProb->SetAngle(2, 3, TMath::ASin( TMath::Sqrt( f_cache_sinsqth23 ) ) );
-    fProb->SetDelta(1, 3, f_cache_dcp * TMath::Pi()  );
-    fProb->SetDm(2, f_cache_dm21);
-    fProb->SetDm(3, f_cache_dm31);
+    fProb->SetAngle(1, 2, TMath::ASin( TMath::Sqrt( SinsqTh12 ) ) );
+    fProb->SetAngle(1, 3, TMath::ASin( TMath::Sqrt( SinsqTh13 ) ) );
+    fProb->SetAngle(2, 3, TMath::ASin( TMath::Sqrt( SinsqTh23 ) ) );
+    fProb->SetDelta(1, 3, Dcp * TMath::Pi()  );
+    fProb->SetDm(2, Dm21);
+    fProb->SetDm(3, Dm31);
 
     // set flag that re-calculation should be performed
     reCalc = kTRUE;
@@ -637,7 +610,7 @@ Bool_t FitUtil::ConfigOscProb(const proxymap_t& proxymap) {
 /**
    Private function that handles the caching of the oscillation probabilities.
 
-   This function re-calculates the oscillation probabilites and stores them in member histograms `fhOscCache` whenever any of the oscillation parameters change. If none of them change, the calculation is not performed. The way the `DetResponse` class is set up and the way fitting works, this enables to save a large amount of time.
+   This function re-calculates the oscillation probabilites and stores them in member histograms `fOscCache` whenever any of the oscillation parameters change. If none of them change, the calculation is not performed. The way the `DetResponse` class is set up and the way fitting works, this enables to save a large amount of time.
 
    NB! The oscillations tau-> (elec, muon, tau) are not calculated to save time; tau flux is assumed 0.
 
@@ -675,20 +648,20 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap, UInt_t nsamples) {
 
 	fProb->SetIsNuBar( isnb );
 
-	Int_t N_ebins  = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetNbins();
-	Int_t N_ctbins = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetNbins();
+	Int_t N_ebins  = fHBT->GetXaxis()->GetNbins();
+	Int_t N_ctbins = fHBT->GetYaxis()->GetNbins();
 
 	for (Int_t ebin = 1; ebin <= N_ebins; ebin++) {
 	  for (Int_t ctbin = 1; ctbin <= N_ctbins; ctbin++) {
 
 	    Double_t prob_ave = 0;
 
-	    Double_t emin    = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinLowEdge(ebin);
-	    Double_t emax    = fhOscCache[f_in][f_out][isnb]->GetXaxis()->GetBinUpEdge(ebin);
+	    Double_t emin    = fHBT->GetXaxis()->GetBinLowEdge(ebin);
+	    Double_t emax    = fHBT->GetXaxis()->GetBinUpEdge(ebin);
 	    Double_t e_step  = (emax - emin)/(nsamples+1);
 
-	    Double_t ctmin   = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinLowEdge(ctbin);
-	    Double_t ctmax   = fhOscCache[f_in][f_out][isnb]->GetYaxis()->GetBinUpEdge(ctbin);
+	    Double_t ctmin   = fHBT->GetYaxis()->GetBinLowEdge(ctbin);
+	    Double_t ctmax   = fHBT->GetYaxis()->GetBinUpEdge(ctbin);
 	    Double_t ct_step = (ctmax - ctmin)/(nsamples+1);
 
 	    // calculate average of N samples inside the bin
@@ -710,7 +683,7 @@ void FitUtil::ProbCacher(const proxymap_t &proxymap, UInt_t nsamples) {
 	      } // end loop over cos-theta samples
 	    } // end loop over energy samples
 
-	    fhOscCache[f_in][f_out][isnb]->SetBinContent(ebin, ctbin, prob_ave/(nsamples*nsamples) );
+	    fOscCache[f_in][f_out][isnb][ebin][ctbin] = std::make_pair( prob_ave/(nsamples*nsamples), 0. );
 
 	  } // end loop over cos-theta bins
 	} //end loop over energy bins
@@ -758,6 +731,53 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_
 
   return std::make_pair(det_count, det_err);
 
+}
+
+//***************************************************************************
+
+/** Function to retrieve the cached `TrueEvts` return value.
+    \param tb  A `TrueB` object (see `DetResponse.h`) that stores the neurino type and true bin coordinate infp
+    \return    A pair, first is the number of expected events in true bin, second is MC error
+ */
+std::pair<Double_t, Double_t> FitUtil::GetCachedTE(const TrueB &tb) {
+  
+  return fTECache[tb.fFlav][tb.fIsCC][tb.fIsNB][tb.fE_true_bin][tb.fCt_true_bin][tb.fBy_true_bin];
+  
+}
+
+//***************************************************************************
+
+/** Function that re-calculates the cached values of `TrueEvts`.
+
+    This caching saves a lot of time. Firstly, for a single response (e.g. tracks), one true bin contributes to several reco bins. Without this cache, the function `RecoEvts` would call `TrueEvts` tens of times (for each reco bin that the true bin contributed to) when the fitter is looping over reco bins, while the other fit parameters are unchanged. Secondly, the true bin data is also the same for several event selections. This means that once this cache is filled for some parameter values, it is shared between several selections (e.g. tracks and showers) that share the `FitUtil` class exactly for such central caching functionality.
+
+    \param proxymap A structure with all fit parameters known to RooFit.
+*/
+void FitUtil::FillTECache(const proxymap_t& proxymap) {
+
+  // loop over flavors, interaction types and polarisations
+  for (UInt_t f = 0; f < fFlavs; f++) {
+    for (UInt_t i = 0; i < fInts; i++) {
+      for (UInt_t p = 0; p < fPols; p++) {
+
+	TH3D* hc = fHBT;
+
+	// loop over true bins
+	for (Int_t xbin = 1; xbin <= hc->GetXaxis()->GetNbins(); xbin++) {
+	  for (Int_t ybin = 1; ybin <= hc->GetYaxis()->GetNbins(); ybin++) {
+	    for (Int_t zbin = 1; zbin <= hc->GetZaxis()->GetNbins(); zbin++) {
+
+	      TrueB _tb(f, i, p, xbin, ybin, zbin);
+	      fTECache[f][i][p][xbin][ybin][zbin] = TrueEvts(_tb, proxymap);
+	      
+	    }
+	  }
+	}
+	  
+      }
+    }
+  }
+  
 }
 
 //***************************************************************************
@@ -892,6 +912,15 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
   if ( resp->GetResponseType() != AbsResponse::BinnedResponse ) {
     throw std::invalid_argument("ERROR! FitUtil::RecoEvts currently supports only DetResponse, but type " + (string)typeid(resp).name() + " encountered." );
   }
+
+  //----------------------------------------------------------------------------------
+  // if any of the fit parameters has changed re-calculate the TrueEvts cache
+  //----------------------------------------------------------------------------------
+
+  if ( CheckVarCache(proxymap) ) {
+    FillTECache(proxymap);
+    UpdateVarCache(proxymap); // this function makes sure that the cache values of all variables is updated
+  }
   
   //----------------------------------------------------------------------------------
   // perform the calculation
@@ -902,11 +931,11 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
   Double_t det_count = 0.;
   Double_t det_err   = 0.;
   
-  for (auto &tb: true_bins) {
+  for (const auto &tb: true_bins) {
     
     if (tb.fIsCC) {
       
-      Double_t TE = TrueEvts(tb, proxymap).first;
+      Double_t TE = GetCachedTE(tb).first;
 
       det_count += tb.fW * TE;
       det_err   += TMath::Power(tb.fWE * TE, 2);
@@ -925,9 +954,9 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
       muonTB.fFlav = MUON;
       tauTB.fFlav  = TAU;
       
-      TE += TrueEvts(elecTB, proxymap).first;
-      TE += TrueEvts(muonTB, proxymap).first;
-      TE += TrueEvts(tauTB , proxymap).first;
+      TE += GetCachedTE(elecTB).first;
+      TE += GetCachedTE(muonTB).first;
+      TE += GetCachedTE(tauTB).first;
       
       det_count += tb.fW * TE;
       det_err   += TMath::Power(tb.fWE * TE, 2);
@@ -971,4 +1000,215 @@ RooRealVar* FitUtil::GetVar(TString varname) {
     
   return var;
 
+}
+
+//***************************************************************************
+ 
+/** Function to fetch the cached value of a variable, which is stored in `FitUtil::fParCache`.
+
+    If no cache for the variable exists, the cache is created for the input variable name with value 0.
+
+    \param varname Name of the variable
+    \return        const reference to the cached variable
+*/
+const Double_t& FitUtil::GetCachedVar(TString varname) {
+
+   // search for the element in the map
+   auto it = fParCache.find( varname );
+
+   // if element is not in the map create an entry for it in the cache
+   // otherwise return the pointer to the cached variable
+  
+   if ( it == fParCache.end() ) {
+
+     cout << "NOTICE FitUtil::GetCachedVar() started caching variable " << varname << endl;
+     fParCache.insert( std::make_pair( varname, 0. ) );
+     return fParCache[ varname ];
+    
+   }
+   else {
+    
+     return it->second;
+
+   }
+  
+ }
+ 
+//***************************************************************************
+
+/** Function that checks whether any of the parameters in the input proxymap has changed with respect to the values stored in the cache `FitUtil::fParCache`.
+    \param proxymap  structure with all fit parameters known to `RooFit`.
+    \return          true if one or more parameter(s) in the cache is/are different than in the proxymap.
+*/
+Bool_t FitUtil::CheckVarCache(const proxymap_t& proxymap) {
+
+  // loop over all parameters in the proxymap (all parameters known to RooFit)
+  for (auto p: proxymap) {
+
+    // ignore observables (E, ct, by), we don't wish to cash these
+    if ( fObsList.find( p.first ) != NULL ) { continue; }
+
+    Double_t cache = GetCachedVar( p.first );  // value from the cache
+    Double_t  val  = (Double_t)(*p.second);    // current value of the parameter
+    
+    if ( val != cache ) return kTRUE;          // when any parameter mismatches the cache return true
+    
+  }
+
+  return kFALSE;
+  
+}
+
+//***************************************************************************
+
+/** Function to update all of the cached parameter values in `FitUtil::fParCache`.
+
+    If `FitUtil::fParCache` does not contain an entry for one/some of the parameters in proxymap, the cache is created. As an exception, observables (E,ct,by) are not cached.
+
+    \param proxymap structure with all fit parameters known to `RooFit`.
+ */
+void FitUtil::UpdateVarCache(const proxymap_t& proxymap) {
+
+  // loop over all parameters in the proxymap (all parameters known to RooFit)
+  for (auto p: proxymap) {
+
+    // ignore observables (E, ct, by), we don't wish to cash these
+    if ( fObsList.find( p.first ) != NULL ) { continue; }
+
+    Double_t val = (Double_t)(*p.second);    // current value of the parameter
+
+    // find the parameter in the par cache map and update it's value. If the parameter is not (yet)
+    // in the map insert it. 
+    auto it = fParCache.find( p.first );
+    if ( it == fParCache.end() ) { fParCache.insert( std::make_pair( p.first, val ) ); }
+    else                         { it->second = val;                                   }
+
+    
+  }
+    
+}
+
+//***************************************************************************
+
+/** Function to initialise a 1D cache structure.
+    
+    The indexing of the cache bins is such that it matches the indices of the input axis bins, i.e. bin[0] is undeflow and bin[1] is the first counting bin. 
+
+    \param  axis Pointer to a `TAxis` object from which the cache array dimesions are calculated
+    \return Pointer to a 1D array of pairs where values can be cached, first is meant for value, second is meant for error
+*/
+cache1D_t FitUtil::InitCache1D(TAxis *axis) {
+
+  // bin[0] is underflow, bin[axis->GetNbins+1] is overflow, hence +2
+  Int_t nbins = axis->GetNbins() + 2;
+  
+  cache1D_t cache = new std::pair<Double_t, Double_t> [ nbins ];
+
+  for (Int_t bin = 0; bin < nbins; bin++) {
+    cache[bin].first  = 0.;
+    cache[bin].second = 0.;
+  }
+
+  return cache;
+  
+}
+
+//***************************************************************************
+
+/** Function to initialise a 2D cache structure.
+    
+    The indexing of the cache bins is such that it matches the indices of the input axis bins, i.e. bin[0] is undeflow and bin[1] is the first counting bin. 
+
+    \param  xaxis Pointer to a `TAxis` object from which the cache array dimesions are calculated
+    \param  yaxis Pointer to a `TAxis` object from which the cache array dimesions are calculated
+    \return Pointer to a 2D array of pairs where values can be cached, first is meant for value, second is meant for error
+*/
+cache2D_t FitUtil::InitCache2D(TAxis *xaxis, TAxis *yaxis) {
+
+  // bin[0] is underflow, bin[axis->GetNbins+1] is overflow, hence +2
+  Int_t nxbins = xaxis->GetNbins() + 2;
+  
+  cache2D_t cache = new std::pair<Double_t, Double_t>* [ nxbins ];
+
+  for (Int_t xbin = 0; xbin < nxbins; xbin++) {
+    cache[xbin] = InitCache1D( yaxis );
+  }
+
+  return cache;
+  
+}
+
+//***************************************************************************
+
+/** Function to initialise a 3D cache structure.
+    
+    The indexing of the cache bins is such that it matches the indices of the input axis bins, i.e. bin[0] is undeflow and bin[1] is the first counting bin. 
+
+    \param  xaxis Pointer to a `TAxis` object from which the cache array dimesions are calculated
+    \param  yaxis Pointer to a `TAxis` object from which the cache array dimesions are calculated
+    \param  zaxis Pointer to a `TAxis` object from which the cache array dimesions are calculated
+    \return Pointer to a 3D array of pairs where values can be cached, first is meant for value, second is meant for error
+*/
+cache3D_t FitUtil::InitCache3D(TAxis *xaxis, TAxis *yaxis, TAxis *zaxis) {
+
+  // bin[0] is underflow, bin[axis->GetNbins+1] is overflow, hence +2
+  Int_t nxbins = xaxis->GetNbins() + 2;
+  
+  cache3D_t cache = new std::pair<Double_t, Double_t>** [ nxbins ];
+      
+  for (Int_t xbin = 0; xbin < nxbins; xbin++) { 
+    cache[xbin] = InitCache2D( yaxis, zaxis );
+  }
+
+  return cache;
+}
+
+//***************************************************************************
+
+/** Function to clear a dynamically allocated 1D cache array
+    \param cache  Pointer to the dynamically allocated 1D cache array
+*/
+void FitUtil::ClearCache1D(cache1D_t cache) {
+  
+  delete [] cache;
+  
+}
+
+//***************************************************************************
+
+/** Function to clear a dynamically allocated 2D cache array
+    \param cache  Pointer to the dynamically allocated 2D cache array
+    \param xaxis  Pointer to a `TAxis` object that was used to initialise the xaxis of the 2D cache array
+*/
+void FitUtil::ClearCache2D(cache2D_t cache, TAxis *xaxis) {
+
+  Int_t nxbins = xaxis->GetNbins() + 2;
+  
+  for (Int_t xbin = 0; xbin < nxbins; xbin++) {
+    delete [] cache[xbin];
+  }
+  delete [] cache;
+  
+}
+
+//***************************************************************************
+
+/** Function to clear a dynamically allocated 3D cache array
+    \param cache  Pointer to the dynamically allocated 3D cache array
+    \param xaxis  Pointer to a `TAxis` object that was used to initialise the xaxis of the 3D cache array
+    \param yaxis  Pointer to a `TAxis` object that was used to initialise the yaxis of the 3D cache array
+*/
+void FitUtil::ClearCache3D(cache3D_t cache, TAxis *xaxis, TAxis *yaxis) {
+
+  Int_t nxbins = xaxis->GetNbins() + 2;
+  Int_t nybins = yaxis->GetNbins() + 2;
+  
+  for (Int_t xbin = 0; xbin < nxbins; xbin++) {
+    for (Int_t ybin = 0; ybin < nybins; ybin++) {
+      delete[] cache[xbin][ybin];
+    }
+    delete[] cache[xbin];
+  }
+  delete [] cache;
+	
 }

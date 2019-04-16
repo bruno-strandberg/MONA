@@ -28,6 +28,15 @@
 /// type definition for passing arguments between RooFit wrapper class `FitPDF` and worker-functions in `FitUtil`.
 typedef std::map<TString, RooRealProxy*> proxymap_t;
 
+/// type definition for a 3-dim array of pairs
+typedef std::pair<Double_t, Double_t>*** cache3D_t;
+
+/// type definition for a 2-dim array of pairs
+typedef std::pair<Double_t, Double_t>**  cache2D_t;
+
+/// type definition for a 1-dim array of pairs
+typedef std::pair<Double_t, Double_t>*   cache1D_t;
+
 /** This class is used in conjunction with `FitPDF` to fit NMO data with `RooFit`.
 
     The class hosts the fit parameters (e.g. the 6 oscillation parameters) and uses elements of `common_software/` and `OscProb` to provide functions that predict the number of expected events in a true and reco (E, cos-theta, bjorken-y) bin. Additionally, it has functions that are to be called inside `FitPDF` class - together, `FitUtil` and `FitPDF` enable the use of `RooFit` for fitting NMO data. See `fitter_software/README.md` for more info.
@@ -79,6 +88,7 @@ class FitUtil {
   // other public functions
   //------------------------------------------------------------------  
   virtual std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
+  std::pair<Double_t, Double_t> GetCachedTE(const TrueB &tb);
   Double_t GetCachedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin);
   Double_t GetCachedOsc(UInt_t flav_in, const TrueB &tb, const proxymap_t& proxymap);
   Double_t GetCachedXsec(const TrueB &tb);
@@ -270,12 +280,27 @@ class FitUtil {
   // protected functions
   //------------------------------------------------------------------
 
+  const Double_t& GetCachedVar(TString varname);
+  Bool_t          CheckVarCache(const proxymap_t& proxymap);
+  void            UpdateVarCache(const proxymap_t& proxymap);
+
+  void FillTECache(const proxymap_t& proxymap);
+  
   virtual Bool_t ConfigOscProb(const proxymap_t& proxymap);
-  void ProbCacher(const proxymap_t& proxymap, UInt_t nsamples);  
+  void           ProbCacher(const proxymap_t& proxymap, UInt_t nsamples);  
+
+  cache1D_t InitCache1D(TAxis* xaxis);
+  cache2D_t InitCache2D(TAxis* xaxis, TAxis* yaxis);
+  cache3D_t InitCache3D(TAxis* xaxis, TAxis* yaxis, TAxis* zaxis);
+  void      ClearCache1D(cache1D_t cache);
+  void      ClearCache2D(cache2D_t cache, TAxis* xaxis);
+  void      ClearCache3D(cache3D_t cache, TAxis* xaxis, TAxis* yaxis);
+
   void InitFitVars(Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax, Double_t bymin, Double_t bymax);
   void InitCacheHists(TH3D *h_template);
   void FillFluxCache(AtmFlux *flux, Double_t op_time, UInt_t nsamples);
   void FillXsecMeffCache(NuXsec *xsec, EffMass *meff);
+
   std::tuple<Double_t, Double_t, Int_t, Int_t> GetRange(Double_t min, Double_t max, TAxis *axis);
   enum rangeret { MIN=0, MAX, MINBIN, MAXBIN };           //!< enum for function `GetRange` return
     
@@ -309,22 +334,16 @@ class FitUtil {
   // protected members for caching
   //------------------------------------------------------------------
 
-  TH2D *fhFluxCache[fFlavs][fPols];         //!< atm flux cache with struct. [flav][is_nub]
-  TH2D *fhOscCache [fFlavs][fFlavs][fPols]; //!< osc prob cache with struct. [flav_in][flav_out][isnb]
-  TH1D *fhXsecCache[fFlavs][fInts][fPols];  //!< xsec cache with struct. [flav][is_cc][isnb]
-  TH2D *fhBYfracCache[fFlavs][fInts][fPols];//!< bjorken-y fractions cache with struct. [flav][is_cc][isnb]
-  TH3D *fhMeffCache[fFlavs][fInts][fPols];  //!< meff cache with struct. [flav][is_cc][isnb]
-
+  cache2D_t fFluxCache[fFlavs][fPols];          //!< atm flux cache with struct. [flav][is_nub][ebin][ctbin]
+  cache2D_t fOscCache [fFlavs][fFlavs][fPols];  //!< osc prob cache with struct. [flav_in][flav_out][isnb][ebin][ctbin]
+  cache1D_t fXsecCache[fFlavs][fInts][fPols];   //!< xsec cache with struct. [flav][is_cc][isnb][ebin]
+  cache2D_t fBYfracCache[fFlavs][fInts][fPols]; //!< bjorken-y fractions cache with struct. [flav][is_cc][isnb][ebin][bybin]
+  cache3D_t fMeffCache[fFlavs][fInts][fPols];   //!< meff cache with struct. [flav][is_cc][isnb][ebin][ctbin][bybin]
+  cache3D_t fTECache[fFlavs][fInts][fPols];     //!< true evts cache with structure [flav][is_cc][is_nb][ebin][ctbin][bybin]
+  
   UInt_t   fFluxSamplesN;        //!< determines the number of samples^2 per bin in flux calculation
   UInt_t   fOscSamplesN;         //!< determines the number of samples^2 per bin in oscillation prob calculation
   UInt_t   f_cache_oscsamplesn;  //!< internal cache for fOscSamplesN values
-
-  Double_t f_cache_sinsqth12;    //!< internally cached theta12 value
-  Double_t f_cache_sinsqth13;    //!< internally cached theta13 value
-  Double_t f_cache_sinsqth23;    //!< internally cached theta23 value
-  Double_t f_cache_dcp ;         //!< internally cached delta-cp value
-  Double_t f_cache_dm21;         //!< internally cached dm21 value
-  Double_t f_cache_dm31;         //!< internally cached dm31 value
 
   //------------------------------------------------------------------
   // protected members for determining the integration range and oscillation calculation range
@@ -347,6 +366,8 @@ class FitUtil {
   // observables (E, ct, by) and fit parameters (oscillation parameters)
   //------------------------------------------------------------------
 
+  std::map<TString, Double_t> fParCache; //!< Parameter cache for all fit parameters to speed up calculation
+  
   RooRealVar *fE_reco;    //!< reconstructed energy observable in GeV
   RooRealVar *fCt_reco;   //!< reconstructed cos-theta observable
   RooRealVar *fBy_reco;   //!< reconstructed bjorken-y observable

@@ -345,7 +345,7 @@ void DetResponse::Normalise() {
    \param by_reco   Reconstructed bjorken-y
    \return          vector of `TrueB`'s that contribute to the reco bin.
  */
-std::vector<TrueB>& DetResponse::GetBinWeights(Double_t E_reco, Double_t ct_reco, Double_t by_reco) {
+const std::vector<TrueB>& DetResponse::GetBinWeights(Double_t E_reco, Double_t ct_reco, Double_t by_reco) {
 
   if (!fNormalised) Normalise();
   
@@ -364,7 +364,7 @@ std::vector<TrueB>& DetResponse::GetBinWeights(Double_t E_reco, Double_t ct_reco
    \param evt       Pointer to a summary event
    \return          vector of `TrueB`'s that contribute to the reco bin of this event.
  */
-std::vector<TrueB>& DetResponse::GetBinWeights(SummaryEvent *evt) {
+const std::vector<TrueB>& DetResponse::GetBinWeights(SummaryEvent *evt) {
 
   SetObservables(evt);
   return GetBinWeights( fEnergy, -fDir.z(), fBy );
@@ -704,4 +704,22 @@ std::tuple<TCanvas*,TCanvas*,TCanvas*> DetResponse::DisplayResponse(Double_t e_r
   }
   
   return std::make_tuple(c1,c2,c3);
+}
+
+//*********************************************************************************
+
+/** Function to get the histogram that counts the number of simulated events.
+
+    \param flav   Neutrino flavor (0 - elec, 1 - muon, 2 - tau)
+    \param iscc   True for CC events, False for NC events
+    \param isnb   True for nubar, False for nu
+    \return       Pointer to a `TH3D` that counts the simulated events for the specified neutrino type
+*/
+TH3D* DetResponse::GetSimHist(UInt_t flav, Bool_t iscc, Bool_t isnb) const {
+
+  if (flav > TAU) {
+    throw std::invalid_argument("ERROR! DetResponse::GetSimHist() unknown flavor " + to_string(flav));
+  }
+
+  return fhSim[flav][(UInt_t)iscc][(UInt_t)isnb];
 }
