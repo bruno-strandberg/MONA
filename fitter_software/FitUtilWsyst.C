@@ -252,7 +252,7 @@ std::pair<Double_t, Double_t> FitUtilWsyst::TrueEvts(const TrueB &tb, const prox
   
 /** Overload of the virtual function `FitUtil::RecoEvts` (see that for parameter definitions) to get the expected number of events in a reco bin.
 */
-std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, DetResponse *resp, const proxymap_t &proxymap) {
+std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, AbsResponse *resp, const proxymap_t &proxymap) {
 
   // get the energy scale
   Double_t e_scale = *( proxymap.at( (TString)fE_scale->GetName() ) );
