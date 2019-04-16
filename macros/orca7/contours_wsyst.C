@@ -139,12 +139,6 @@ void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            
   RooSimultaneous simPdf("simPdf","simultaneous pdf", categ);
   for (auto &P: pdfs) { simPdf.addPdf( *P.second, P.first ); }
 
-  // add constraints
-  RooArgSet components( o7.fPriors );
-  components.add(simPdf);
-
-  RooProdPdf constrainedPdf("constrainedPdf","constrainedPdf", components);
-
   //=====================================================================================
   // create likelihood scanners - individual for each PID range and simultaneous
   //=====================================================================================
@@ -152,7 +146,7 @@ void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            
   RooPlot* frame = fu->GetVar("SinsqTh23")->frame( Range(0.25, 0.75), Title("-log(L) scan vs sinsqth23") );
 
   vector< RooDataHist* > rfdata;         // vector to store pointers to RooFit data, for clean-up
-  std::map< TString, RooNLLVar* > nlls;  // map with response name <--> nll variable
+  std::map< TString, RooAbsReal* > nlls; // map with response name <--> nll variable
   for (auto &P: pdfs) {
 
     TH3D   *hin = (TH3D*)exps[ (string)P.first ];
@@ -161,21 +155,18 @@ void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            
     TString hname = TString("rf_") + (TString)hin->GetName();
     RooDataHist *rfh = new RooDataHist( hname, hname, fu->GetObs(), Import(*hin) );
 
-    TString nllname = "nll_" + (TString)pdf->GetName();
-    RooNLLVar *nll = new RooNLLVar( nllname, nllname, *pdf, *rfh, NumCPU(ncpu) );
+    RooAbsReal *nll = pdf->createNLL( *rfh, ExternalConstraints( o7.fPriors ), NumCPU(ncpu) );
 
     nlls.insert( std::make_pair( P.first, nll )  );
     rfdata.push_back( rfh );
   }
 
   // create a LLH scanner from simultaneous fitting, add to map
-  //RooNLLVar *nll_sim = new RooNLLVar("nll_sim", "nll_sim", simPdf, comb, NumCPU(ncpu) );
-  RooNLLVar *nll_sim = new RooNLLVar("nll_sim", "nll_sim", simPdf, comb, ExternalConstraints( o7.fPriors ), NumCPU(ncpu) );
-  //RooNLLVar *nll_sim = new RooNLLVar("nll_sim", "nll_sim", constrainedPdf, comb, NumCPU(ncpu) );
+  RooAbsReal *nll_sim = simPdf.createNLL( comb, ExternalConstraints( o7.fPriors ), NumCPU(ncpu) );
   nlls.insert( std::make_pair("sim", nll_sim) );
 
   // plot all LLH curves
-  /*
+
   Int_t i = 0;
   for (auto N: nlls) {
     N.second->plotOn( frame, LineColor(1+i), ShiftToZero(), LineStyle(1+i), Name( N.first ) );
@@ -184,11 +175,11 @@ void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            
     cout << "================================================================================" << endl;
     i++;
   }
-  */
+
   // add a legend
   TLegend *leg1 = new TLegend(0.3, 0.6, 0.7, 0.9);
   for (auto N: nlls) {
-    //leg1->AddEntry( frame->findObject( N.first ), N.first, "l" );
+    leg1->AddEntry( frame->findObject( N.first ), N.first, "l" );
   }
   leg1->SetLineWidth(0);
   leg1->SetFillStyle(0);
