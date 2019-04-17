@@ -12,7 +12,7 @@
 #include "RooCategory.h"
 #include "RooNLLVar.h"
 #include "RooDataHist.h"
-#include "RooMinuit.h"
+#include "RooMinimizer.h"
 #include "RooFitResult.h"
 #include "RooProdPdf.h"
 
@@ -20,6 +20,7 @@
 #include "TRandom.h"
 #include "TLegend.h"
 #include "TStopwatch.h"
+#include "Math/QuantFunc.h"
 
 using namespace RooFit;
 
@@ -27,7 +28,7 @@ void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            
 		     TString channel        = "sim",                            // trk, shw, mid or sim
 		     TString outname        = "rootfiles/contours_wsyst.root",  // outfile
 		     Int_t   ncpu           = 1,                                // number of computers
-		     Int_t   seed           = 418 ) {                           // seed
+		     Int_t   seed           = 416 ) {                           // seed
 
   //=====================================================================================
   // initialisation
@@ -47,12 +48,13 @@ void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            
   // randomise oscillation parameters within NO 3sigma limits
   RooRandom::randomGenerator()->SetSeed(seed); // this seed controls the randomisation of osc parameters
   fu->SetNOlims();
-  fu->GetVar("SinsqTh12")->randomize();
-  fu->GetVar("SinsqTh13")->randomize();
-  fu->GetVar("SinsqTh23")->randomize();
-  fu->GetVar("dcp")->randomize();
-  fu->GetVar("Dm21")->randomize();
-  fu->GetVar("Dm31")->randomize();
+  fu->SetNOcentvals();
+  // fu->GetVar("SinsqTh12")->randomize();
+  // fu->GetVar("SinsqTh13")->randomize();
+  // fu->GetVar("SinsqTh23")->randomize();
+  // fu->GetVar("dcp")->randomize();
+  // fu->GetVar("Dm21")->randomize();
+  // fu->GetVar("Dm31")->randomize();
   fu->FreeParLims();
 
   // if fixed systematics set them to constants, otherwise randomize
@@ -72,12 +74,12 @@ void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            
   }
   else {
 
-    fu->GetVar("E_tilt")     ->setVal( gRandom->Uniform(-0.2, 0.2) );
-    fu->GetVar("ct_tilt")    ->setVal( gRandom->Uniform(-0.2, 0.2) );
-    fu->GetVar("skew_mu_amu")->setVal( gRandom->Uniform(-0.2, 0.2) );
-    fu->GetVar("skew_e_ae")  ->setVal( gRandom->Uniform(-0.2, 0.2) );
-    fu->GetVar("skew_mu_e")  ->setVal( gRandom->Uniform(-0.2, 0.2) );
-    fu->GetVar("NC_norm")    ->setVal( gRandom->Uniform( 0.8, 1.2) );
+    // fu->GetVar("E_tilt")     ->setVal( gRandom->Uniform(-0.2, 0.2) );
+    // fu->GetVar("ct_tilt")    ->setVal( gRandom->Uniform(-0.2, 0.2) );
+    // fu->GetVar("skew_mu_amu")->setVal( gRandom->Uniform(-0.2, 0.2) );
+    // fu->GetVar("skew_e_ae")  ->setVal( gRandom->Uniform(-0.2, 0.2) );
+    // fu->GetVar("skew_mu_e")  ->setVal( gRandom->Uniform(-0.2, 0.2) );
+    // fu->GetVar("NC_norm")    ->setVal( gRandom->Uniform( 0.8, 1.2) );
     
     // debugging
     //fu->GetVar("Tau_norm")   ->setVal( rand.Uniform( 0.8, 1.2) );
@@ -165,8 +167,50 @@ void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            
   RooAbsReal *nll_sim = simPdf.createNLL( comb, ExternalConstraints( o7.fPriors ), NumCPU(ncpu) );
   nlls.insert( std::make_pair("sim", nll_sim) );
 
-  // plot all LLH curves
+  //=====================================================================================
+  // Minimize and create contour plot
+  //=====================================================================================
 
+  if ( nlls.find(channel) == nlls.end() ) {
+    cout << "Supported channels: " << endl;
+    for (auto kv: nlls) cout << kv.first << endl;
+    throw std::invalid_argument("ERROR! contours_wsyst unknown channel " + (string)channel);
+  }
+
+  RooMinimizer *min = new RooMinimizer( *nlls[channel] );
+
+  // call the minimiser and save the result
+  min->hesse();
+  min->migrad();
+  RooFitResult *result = min->save();
+
+  TIterator *floatit = result->floatParsFinal().createIterator();
+  TIterator *constit = result->constPars().createIterator();
+  RooRealVar *floatpar, *constpar;
+
+  while ( ( floatpar = (RooRealVar*)floatit->Next() ) ) {
+    RooRealVar *init = (RooRealVar*)pars->find( floatpar->GetName() );
+    cout << "NOTICE fitted parameter: " << floatpar->GetName() << ", true and fitted: " 
+	 << init->getVal() << "\t" << floatpar->getVal() << endl;
+  }
+
+  while ( ( constpar = (RooRealVar*)constit->Next() ) ) {
+    cout << "NOTICE fixed parameter: " << constpar->GetName() << endl;
+  }  
+
+  Double_t cl90 = TMath::Sqrt( ROOT::Math::chisquared_quantile(0.9,2) );
+
+  RooPlot* contplot = min->contour( *(fu->GetVar("SinsqTh23")), *(fu->GetVar("Dm31")), 0, cl90);
+
+  //=====================================================================================
+  // set float parameters to the best-fit value and draw LLH scans
+  //=====================================================================================
+
+  while ( ( floatpar = (RooRealVar*)floatit->Next() ) ) {
+    fu->GetVar( floatpar->GetName() )->setVal( floatpar->getVal() );
+  }  
+  
+  // plot all LLH curves
   Int_t i = 0;
   for (auto N: nlls) {
     N.second->plotOn( frame, LineColor(1+i), ShiftToZero(), LineStyle(1+i), Name( N.first ) );
@@ -188,38 +232,6 @@ void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            
   TCanvas *c1 = new TCanvas("c1","c1",1);
   frame->Draw();
   leg1->Draw();
-
-  //=====================================================================================
-  // Create contour plots
-  //=====================================================================================
-  if ( nlls.find(channel) == nlls.end() ) {
-    cout << "Supported channels: " << endl;
-    for (auto kv: nlls) cout << kv.first << endl;
-    throw std::invalid_argument("ERROR! contours_wsyst unknown channel " + (string)channel);
-  }
-
-  RooMinuit *min = new RooMinuit( *nlls[channel] );
-  //min->setVerbose(kTRUE);
-
-  // call the minimiser and save the result
-  min->migrad();
-  RooFitResult *result = min->save();
-
-  TIterator *floatit = result->floatParsFinal().createIterator();
-  TIterator *constit = result->constPars().createIterator();
-  RooRealVar *floatpar, *constpar;
-
-  while ( ( floatpar = (RooRealVar*)floatit->Next() ) ) {
-    RooRealVar *init = (RooRealVar*)pars->find( floatpar->GetName() );
-    cout << "NOTICE fitted parameter: " << floatpar->GetName() << ", true and fitted: " 
-	 << init->getVal() << "\t" << floatpar->getVal() << endl;
-  }
-
-  while ( ( constpar = (RooRealVar*)constit->Next() ) ) {
-    cout << "NOTICE fixed parameter: " << constpar->GetName() << endl;
-  }  
-
-  RooPlot* contplot = min->contour( *(fu->GetVar("SinsqTh23")), *(fu->GetVar("Dm31")), 2);
 
   // clone the graphs from RooPlot for easier draw option manipulation
   TGraph *g_cont = (TGraph*)contplot->getObject(1)->Clone("g_cont");
