@@ -50,7 +50,7 @@ namespace LLHSCAN {
       muon_cut  = _muon_cut;
       noise_cut = _noise_cut;
       reco      = _reco;
-      name = _name;
+      name      = _name;
     }
 
   };
@@ -128,6 +128,7 @@ int main(const int argc, const char **argv) {
   Int_t    npoints;
   TString  par_name;
   Int_t    ncpu;
+  Double_t run_time;
   vector<double> pid_cuts;
   vector<double> muon_cuts;
   vector<double> noise_cuts;
@@ -145,7 +146,8 @@ int main(const int argc, const char **argv) {
 
     zap['p'] = make_field(par_name, "Parameter name that is LLH scanned") = parameters;
     zap['r'] = make_field(par_range, "Parameter range for LLH scan") = JTOOLS::JRange<Double_t>(-def_range, def_range);
-    zap['n'] = make_field(npoints, "Number of points in the range the LLH is evaluated") = 100;
+    zap['n'] = make_field(npoints, "Number of points in the range the LLH is evaluated") = 30;
+    zap['t'] = make_field(run_time, "Operation time of the detector in years") = 3;
 
     zap['P'] = make_field(pid_cuts, "PID cut locations, e.g. -P 0.+0.6+1.0 for 2 bins [0, 0.6), [0.6, 1]. By default three bins are used.") = std::vector<double>{};
     zap['M'] = make_field(muon_cuts, "Cuts for atm. muon suppression for each PID bin, by default 0.03 for default PID bins") = std::vector<double>{};
@@ -293,7 +295,7 @@ int main(const int argc, const char **argv) {
 
   // init fitutil and pdf's, create data
   //---------------------
-  FitUtilWsyst fu(3, resps.begin()->second->GetHist3D(), 3, 65, -1, -1e-3, 0, 1, meff_file);
+  FitUtilWsyst fu(run_time, resps.begin()->second->GetHist3D(), 3, 65, -1, -1e-3, 0, 1, meff_file);
 
   std::map< TString, FitPDF* > pdfs;
   for (auto &R: resps) {
