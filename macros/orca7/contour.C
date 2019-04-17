@@ -1,5 +1,4 @@
 #include "ORCA7.h"
-#include "ORCA7.C"
 
 #include "NMHUtils.h"
 #include "FitUtilWsyst.h"
@@ -22,13 +21,40 @@
 #include "TStopwatch.h"
 #include "Math/QuantFunc.h"
 
+#include "Jeep/JParser.hh"
+#include "Jeep/JMessage.hh"
+
 using namespace RooFit;
 
-void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            // fix systematics or not
-		     TString channel        = "sim",                            // trk, shw, mid or sim
-		     TString outname        = "rootfiles/contours_wsyst.root",  // outfile
-		     Int_t   ncpu           = 1,                                // number of computers
-		     Int_t   seed           = 416 ) {                           // seed
+int main(const int argc, const char** argv) {
+
+  Bool_t   InvertedOrdering;
+  Double_t sinsqth23;
+  Bool_t   IncludeSystematics;
+  Bool_t   IncludePriors;
+  Bool_t   RandomisePars;
+  Int_t    seed;
+  Int_t    ncpu;
+  string   outfile;
+  
+  try {
+
+    JParser<> zap("This application creates contour plots for ORCA7");
+
+    zap['i'] = make_field(InvertedOrdering, "Inverted NMO");
+    zap['t'] = make_field(sinsqth23, "SinsqTh23 value at which the 'data' is created") = 0.58;
+    zap['s'] = make_field(IncludeSystematics, "Include systematic parameters");
+    zap['p'] = make_field(IncludePriors, "Include priors for systematics");
+    zap['r'] = make_field(RandomisePars, "Randomise all parameters when 'data' is created");
+    zap['S'] = make_field(seed, "Seed for parameter randomisation") = 416;
+    zap['N'] = make_field(ncpu, "Number of CPUs for minimisation") = 1;
+    zap['o'] = make_field(outfile, "Output file") = "contour.root";
+
+    if ( zap.read(argc, argv) != 0 ) return 1;
+  }
+  catch(const exception &error) {
+    FATAL(error.what() << endl);
+  }
 
   //=====================================================================================
   // initialisation
@@ -42,50 +68,51 @@ void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            
   auto pdfs = o7.fPdfs;
 
   //=====================================================================================
-  // data creation
+  // parameter randomisation
   //=====================================================================================
 
-  // randomise oscillation parameters within NO 3sigma limits
-  RooRandom::randomGenerator()->SetSeed(seed); // this seed controls the randomisation of osc parameters
-  fu->SetNOlims();
-  fu->SetNOcentvals();
-  // fu->GetVar("SinsqTh12")->randomize();
-  // fu->GetVar("SinsqTh13")->randomize();
-  // fu->GetVar("SinsqTh23")->randomize();
-  // fu->GetVar("dcp")->randomize();
-  // fu->GetVar("Dm21")->randomize();
-  // fu->GetVar("Dm31")->randomize();
-  fu->FreeParLims();
+  vector<TString> oscpars = {"SinsqTh12", "SinsqTh13", "SinsqTh23", "dcp", "Dm21", "Dm31"};
 
-  // if fixed systematics set them to constants, otherwise randomize
-  gRandom->SetSeed(seed);
+  if (RandomisePars) {
 
-  if ( fixSystematics ) {
+    // set to NuFit 4.0 values and limits
+    if (InvertedOrdering) o7.Set_NuFit_4p0_IO(fu);
+    else o7.Set_NuFit_4p0_NO(fu);
 
-    fu->GetVar("E_tilt")     ->setConstant( kTRUE );
-    fu->GetVar("ct_tilt")    ->setConstant( kTRUE );
-    fu->GetVar("skew_mu_amu")->setConstant( kTRUE );
-    fu->GetVar("skew_e_ae")  ->setConstant( kTRUE );
-    fu->GetVar("skew_mu_e")  ->setConstant( kTRUE );
-    fu->GetVar("NC_norm")    ->setConstant( kTRUE );
-    fu->GetVar("Tau_norm")   ->setConstant( kTRUE );
-    fu->GetVar("E_scale")    ->setConstant( kTRUE );
+    RooArgSet pars = fu->GetSet();
+    RooArgSet obs  = fu->GetObs();
+    TRandom  *rand = RooRandom::randomGenerator();
+    rand->SetSeed(seed);
 
-  }
-  else {
+    TIterator *it = pars.createIterator();
+    RooRealVar* var;
+    while ( ( var = (RooRealVar*)it->Next() ) ) {
+      
+      if ( obs.find(var->GetName()) != NULL ) continue; // ignore observables
 
-    // fu->GetVar("E_tilt")     ->setVal( gRandom->Uniform(-0.2, 0.2) );
-    // fu->GetVar("ct_tilt")    ->setVal( gRandom->Uniform(-0.2, 0.2) );
-    // fu->GetVar("skew_mu_amu")->setVal( gRandom->Uniform(-0.2, 0.2) );
-    // fu->GetVar("skew_e_ae")  ->setVal( gRandom->Uniform(-0.2, 0.2) );
-    // fu->GetVar("skew_mu_e")  ->setVal( gRandom->Uniform(-0.2, 0.2) );
-    // fu->GetVar("NC_norm")    ->setVal( gRandom->Uniform( 0.8, 1.2) );
-    
-    // debugging
-    //fu->GetVar("Tau_norm")   ->setVal( rand.Uniform( 0.8, 1.2) );
-    //fu->GetVar("E_scale")    ->setVal( rand.Uniform(-0.2, 0.2) );
+      Bool_t isOscPar = kFALSE;
+      for (auto o: oscpars) isOscPar = isOscPar || ( o == (TString)var->GetName() );
+
+      if ( isOscPar ) {
+	Double_t mean  = var->getVal();
+	Double_t sigma = ( var->getMax() - var->getMin() )/3 ;
+	var->setVal( rand->Gaus( mean, sigma ) );
+      }
+      else {
+
+	Double_t mean  = var->getVal();
+	Double_t sigma = 0.2;
+	var->setVal( rand->Gaus(mean, sigma) );
+
+      }
+
+    }
 
   }
+
+  //=====================================================================================
+  // parameter randomisation
+  //=====================================================================================
 
   // create expectation value data
   std::map< string, TH1* > exps; // map with response name <--> expectation value histogram
@@ -271,5 +298,11 @@ void contours_wsyst( Bool_t  fixSystematics = kTRUE,                            
 
   // remove junk from compilation
   system("rm contours_wsyst_C*");
+
+}
+
+int main() {
+
+  contours_wsyst();
 
 }

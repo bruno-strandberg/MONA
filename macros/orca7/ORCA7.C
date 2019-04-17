@@ -4,6 +4,20 @@
 #include "RooConstVar.h"
 
 using namespace RooFit;
+using namespace O7;
+
+// functions to  be able to use the shower energy and track direction for high-purity tracks
+//---------------------------------------------------------------------------------------
+Double_t O7::CustomEnergy(SummaryEvent* evt) {
+
+  if ( evt->Get_shower_ql0() > 0.5 ) { return evt->Get_shower_energy(); }
+  else                               { return evt->Get_track_energy();  }
+
+}
+
+TVector3 O7::CustomDir(SummaryEvent *evt) { return evt->Get_track_dir();      }
+TVector3 O7::CustomPos(SummaryEvent *evt) { return evt->Get_track_pos();      }
+Double_t O7::CustomBY (SummaryEvent *evt) { return evt->Get_track_bjorkeny(); }
 
 /** Constructor */
 ORCA7::ORCA7(Bool_t ReadResponses) {
@@ -120,3 +134,67 @@ ORCA7::~ORCA7() {
   for (auto P: fPdfs) if (P.second) delete P.second;
 
 }
+
+//*********************************************************************************************************
+
+void ORCA7::Set_NuFit_4p0_NO(FitUtil* F) {
+
+  F->FreeParLims();
+
+  F->GetVar("SinsqTh12")->setVal( 0.310   );
+  F->GetVar("SinsqTh12")->setMin( 0.275   );
+  F->GetVar("SinsqTh12")->setMax( 0.350   );
+
+  F->GetVar("SinsqTh13")->setVal( 0.02240 );
+  F->GetVar("SinsqTh13")->setMin( 0.02044 );
+  F->GetVar("SinsqTh13")->setMax( 0.02437 );
+
+  F->GetVar("SinsqTh23")->setVal( 0.582   );
+  F->GetVar("SinsqTh23")->setMin( 0.428   );
+  F->GetVar("SinsqTh23")->setMax( 0.624   );
+
+  F->GetVar("dcp")      ->setVal( 217. * TMath::DegToRad() / TMath::Pi() );
+  F->GetVar("dcp")      ->setMin( 135. * TMath::DegToRad() / TMath::Pi() );
+  F->GetVar("dcp")      ->setMax( 366. * TMath::DegToRad() / TMath::Pi() );
+
+  F->GetVar("Dm21")     ->setVal( 7.39*1e-5  );
+  F->GetVar("Dm21")     ->setMin( 6.79*1e-5  );
+  F->GetVar("Dm21")     ->setMax( 8.01*1e-5  );
+
+  F->GetVar("Dm31")     ->setVal( 2.525*1e-3 );
+  F->GetVar("Dm31")     ->setMin( 2.431*1e-3 );
+  F->GetVar("Dm31")     ->setMax( 2.622*1e-3 );
+
+};
+
+//*********************************************************************************************************
+
+void ORCA7::Set_NuFit_4p0_IO(FitUtil* F) {
+
+  F->FreeParLims();
+
+  F->GetVar("SinsqTh12")->setVal( 0.310   );
+  F->GetVar("SinsqTh12")->setMin( 0.275   );
+  F->GetVar("SinsqTh12")->setMax( 0.350   );
+
+  F->GetVar("SinsqTh13")->setVal( 0.02263 );
+  F->GetVar("SinsqTh13")->setMin( 0.02067 );
+  F->GetVar("SinsqTh13")->setMax( 0.02461 );
+
+  F->GetVar("SinsqTh23")->setVal( 0.582   );
+  F->GetVar("SinsqTh23")->setMin( 0.433   );
+  F->GetVar("SinsqTh23")->setMax( 0.623   );
+
+  F->GetVar("dcp")      ->setVal( 280. * TMath::DegToRad() / TMath::Pi() );
+  F->GetVar("dcp")      ->setMin( 196. * TMath::DegToRad() / TMath::Pi() );
+  F->GetVar("dcp")      ->setMax( 351. * TMath::DegToRad() / TMath::Pi() );
+
+  F->GetVar("Dm21")     ->setVal( 7.39*1e-5 );
+  F->GetVar("Dm21")     ->setMin( 6.79*1e-5  );
+  F->GetVar("Dm21")     ->setMax( 8.01*1e-5  );
+
+  F->GetVar("Dm31")     ->setVal( -2.512*1e-3 + 7.39*1e-5 );
+  F->GetVar("Dm31")     ->setMin( -2.606*1e-3 + 7.39*1e-5 );
+  F->GetVar("Dm31")     ->setMax( -2.413*1e-3 + 7.39*1e-5 );
+
+};

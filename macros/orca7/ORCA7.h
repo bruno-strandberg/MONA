@@ -19,18 +19,10 @@ using namespace std;
 //===================================================================================================
 namespace O7 {
 
-  // functions to  be able to use the shower energy and track direction for high-purity tracks
-  //---------------------------------------------------------------------------------------
-  Double_t CustomEnergy(SummaryEvent* evt) {
-
-    if ( evt->Get_shower_ql0() > 0.5 ) { return evt->Get_shower_energy(); }
-    else                               { return evt->Get_track_energy();  }
-
-  }
-
-  TVector3 CustomDir(SummaryEvent *evt) { return evt->Get_track_dir();      }
-  TVector3 CustomPos(SummaryEvent *evt) { return evt->Get_track_pos();      }
-  Double_t CustomBY (SummaryEvent *evt) { return evt->Get_track_bjorkeny(); }
+  Double_t CustomEnergy(SummaryEvent* evt);  
+  TVector3 CustomDir(SummaryEvent *evt);
+  TVector3 CustomPos(SummaryEvent *evt);
+  Double_t CustomBY (SummaryEvent *evt);
 
   // structure to store PID bin configurations
   //---------------------------------------------------------------------------------------
@@ -55,8 +47,6 @@ namespace O7 {
 
 };
 
-using namespace O7;
-
 //===================================================================================================
 /** Class for ORCA 7-line analysis with some variables/members that are used throughout several macros*/
 //===================================================================================================
@@ -65,6 +55,9 @@ struct ORCA7 {
   /** Constructor */
   ORCA7(Bool_t ReadResponses);
   ~ORCA7();
+
+  void Set_NuFit_4p0_NO(FitUtil* F);
+  void Set_NuFit_4p0_IO(FitUtil* F);
 
   //*********************************************************************************************
   //*********************************************************************************************
@@ -85,7 +78,7 @@ struct ORCA7 {
   Double_t f_R_bymin = 0.0;
   Double_t f_R_bymax = 1.0;
 
-  vector< PidBinConf > fPidBins;
+  vector< O7::PidBinConf > fPidBins;
   std::map< TString, DetResponse*> fResps;
   std::map< TString, FitPDF* > fPdfs;
 
