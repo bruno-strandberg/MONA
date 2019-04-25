@@ -7,5 +7,7 @@ for job in range(0,100):
                   -o $MONADIR/macros/asimov_fits/output/qsub/percentages_{0}.log\
                   -e $MONADIR/macros/asimov_fits/output/qsub/percentages_{0}.err\
                   $MONADIR/macros/asimov_fits/qsub/job_{0}.sh".format(job)
- #   print(qsub_submit)
-    os.system(qsub_submit)
+
+    files = os.listdir(os.environ["MONADIR"]+"/macros/asimov_fits/output/csv/CrossCheck/percentages/")
+    if not any("{}.csv".format(job) in file for file in files):
+        os.system(qsub_submit)
