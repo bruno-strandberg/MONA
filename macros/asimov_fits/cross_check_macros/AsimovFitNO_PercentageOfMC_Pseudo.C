@@ -41,7 +41,7 @@ void AsimovFitNO_PercentageOfMC_Pseudo(Int_t jobnumber=0) {
   gRandom->SetSeed(0);
 
   TString s_outputfile = (TString)getenv("MONADIR") +
-      Form("/macros/asimov_fits/output/csv/CrossCheck/percentages/AsimovFitNO_PercentageOfMC_Pseudo_MCTruth_FitReal_Seed1031_%i.csv", jobnumber);
+      Form("/macros/asimov_fits/output/csv/CrossCheck/percentages/AsimovFitNO_PercentageOfMC_Pseudo_chi2saved_%i.csv", jobnumber);
 
   // DetRes input values
   Int_t EBins = 20;
@@ -64,7 +64,7 @@ void AsimovFitNO_PercentageOfMC_Pseudo(Int_t jobnumber=0) {
   std::vector<Double_t> PERCENTAGES = NMHUtils::GetLogBins(16, 1, 100);
 
   ofstream outputfile(s_outputfile, std::ios_base::app);
-  outputfile << "percentage,Ebins,ctBins,n_chi2tr_no,n_chi2sh_no,fit_chi2" << endl;
+  outputfile << "percentage,Ebins,ctBins,n_chi2tr_no,n_chi2sh_no,tr_chi2,sh_chi2,fit_chi2" << endl;
 
   for (auto p: PERCENTAGES) { 
     Double_t percentage = p / 100.; // Actually a fraction...
@@ -74,27 +74,15 @@ void AsimovFitNO_PercentageOfMC_Pseudo(Int_t jobnumber=0) {
     //----------------------------------------------------------
     DetResponse track_response(DetResponse::track, "track_response", EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
     track_response.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   ,  0.5, true );
-    track_response.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   ,  0.5, true );
     track_response.AddCut( &SummaryEvent::Get_RDF_track_score , std::greater<double>()   ,  0.6, true );
     track_response.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05, true );
     track_response.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );
   
     DetResponse shower_response(DetResponse::shower, "shower_response", EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
     shower_response.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   ,  0.5, true );
-    shower_response.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   ,  0.5, true );
     shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(),  0.6, true );
     shower_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05, true );
     shower_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(),  0.5, true );
-
-    DetResponse track_truth(DetResponse::mc_truth, "track_truth", EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
-    track_truth.AddCut( &SummaryEvent::Get_RDF_track_score , std::greater<double>()   ,  0.6, true );
-    track_truth.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05, true );
-    track_truth.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18, true );
-  
-    DetResponse shower_truth(DetResponse::mc_truth, "shower_truth", EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
-    shower_truth.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(),  0.6, true );
-    shower_truth.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05, true );
-    shower_truth.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(),  0.5, true );
   
     //-----------------------------------------------------
     // fill the detector response and event selection
@@ -107,7 +95,6 @@ void AsimovFitNO_PercentageOfMC_Pseudo(Int_t jobnumber=0) {
   
     Int_t seed = gRandom->Uniform(1E5, 2E5);
     SummaryEvent evt;
-    evt.SetSeed(1031);
     cout << "NOTICE: Seed set to " << seed << endl;
   
     for (Int_t i = 0; i < 1e8; i++) {
@@ -121,8 +108,6 @@ void AsimovFitNO_PercentageOfMC_Pseudo(Int_t jobnumber=0) {
   
       track_response.Fill(&evt);
       shower_response.Fill(&evt);
-      track_truth.Fill(&evt);
-      shower_truth.Fill(&evt);
     }
   
     cout << "NOTICE: Finished filling response" << endl;
@@ -137,14 +122,11 @@ void AsimovFitNO_PercentageOfMC_Pseudo(Int_t jobnumber=0) {
     FitPDF pdf_tracks("pdf_tracks", "pdf_tracks"   , fitutil, &track_response);
     FitPDF pdf_showers("pdf_showers", "pdf_showers", fitutil, &shower_response);
 
-    FitPDF pdf_tracks_truth("pdf_tracks_truth", "pdf_tracks_truth"   , fitutil, &track_truth);
-    FitPDF pdf_showers_truth("pdf_showers_truth", "pdf_showers_truth", fitutil, &shower_truth);
-  
     // Set values to IO
     fitutil->SetIOcentvals();
   
-    TH3D* tracks_true   = (TH3D*)pdf_tracks_truth.GetExpValHist();
-    TH3D* showers_true  = (TH3D*)pdf_showers_truth.GetExpValHist();
+    TH3D* tracks_true   = (TH3D*)pdf_tracks.GetExpValHist();
+    TH3D* showers_true  = (TH3D*)pdf_showers.GetExpValHist();
     tracks_true->SetName("tracks_expval_true");
     showers_true->SetName("showers_expval_true");
   
@@ -176,8 +158,8 @@ void AsimovFitNO_PercentageOfMC_Pseudo(Int_t jobnumber=0) {
     cats.defineType( showers_true->GetName() );
   
     RooSimultaneous simPdf("simPdf", "simultaneous Pdf for IO", cats);
-    simPdf.addPdf(pdf_tracks_truth,  tracks_true->GetName() );
-    simPdf.addPdf(pdf_showers_truth, showers_true->GetName() );
+    simPdf.addPdf(pdf_tracks,  tracks_true->GetName() );
+    simPdf.addPdf(pdf_showers, showers_true->GetName() );
   
     RooDataHist data_hists("data_hists", "track and shower data", fitutil->GetObs(), cats, hist_map);
   
@@ -196,8 +178,8 @@ void AsimovFitNO_PercentageOfMC_Pseudo(Int_t jobnumber=0) {
     Double_t fitChi2_1q = fitres_1q->minNll();
     Double_t fitChi2_2q = fitres_2q->minNll();
     Double_t min_chi2;
-    cout << "first q " << TMath::Sqrt( fitChi2_1q ) << endl;
-    cout << "second q" << TMath::Sqrt( fitChi2_2q ) << endl;
+    cout << "first q " << fitChi2_1q << endl;
+    cout << "second q" << fitChi2_2q << endl;
     if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
     if (fitChi2_1q < fitChi2_2q) { result = &result_1q; min_chi2 = fitChi2_1q; }
     else                         { result = &result_2q; min_chi2 = fitChi2_2q; }
@@ -227,14 +209,22 @@ void AsimovFitNO_PercentageOfMC_Pseudo(Int_t jobnumber=0) {
     std::tuple<TH1*, Double_t, Double_t> n_chi2sh = NMHUtils::Asymmetry(showers_true, showers_fitted, "sensitivity_shower",
                                                        fitEMin, fitEMax, fitctMin, fitctMax);
   
+    Double_t histo_chi2tr = HistoChi2Calc(tracks_fitted, tracks_true, fitEMin, fitEMax, fitctMin, fitctMax);
+    Double_t histo_chi2sh = HistoChi2Calc(showers_fitted, showers_true, fitEMin, fitEMax, fitctMin, fitctMax);
+
     Double_t chi2tr = std::get<1>(n_chi2tr);
     Double_t chi2sh = std::get<1>(n_chi2sh);
   
+    RooChi2Var chi2("chi2", "chi2", simPdf, data_hists);
+    cout << "RooChi2Var " << chi2 << endl;
+
+
     cout << "NMHUtils: Chi2 between tracks  IO and tracks  fitted on NO is: " << chi2tr << endl;
     cout << "NMHUtils: Chi2 between showers IO and showers fitted on NO is: " << chi2sh << endl;
     cout << "Squared sum is : " << std::sqrt(std::pow(chi2tr, 2) + std::pow(chi2sh, 2)) << endl;
   
-    outputfile << percentage << "," << EBins << "," << ctBins << "," << chi2tr << "," << chi2sh << "," << min_chi2 << endl;
+    outputfile << percentage << "," << EBins << "," << ctBins << "," << chi2tr << "," << chi2sh << "," 
+               << histo_chi2tr << "," << histo_chi2sh << "," << min_chi2 << endl;
   }
   outputfile.close();
 }
