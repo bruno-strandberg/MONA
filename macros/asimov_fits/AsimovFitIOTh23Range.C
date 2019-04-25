@@ -68,32 +68,32 @@ void AsimovFitIOTh23Range() {
   //----------------------------------------------------------
   // detector response for tracks and showers
   //----------------------------------------------------------
-  std::vector<DetResponse> track_response_vector;
-  std::vector<DetResponse> shower_response_vector;
+  std::vector<DetResponse*> track_response_vector;
+  std::vector<DetResponse*> shower_response_vector;
 
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
     std::function<bool(double, double)> comparison_operator;
     if (i == 0) { comparison_operator = std::greater_equal<double>(); // The first bin needs to include the lower limit.
     } else { comparison_operator = std::greater<double>(); }
 
-    DetResponse track_response(DetResponse::track, Form("track_response_%.2f", pid_map[i]), 
+    DetResponse* track_response = new DetResponse(DetResponse::track, Form("track_response_%.2f", pid_map[i]), 
                                EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
-    track_response.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   , 0.5         , true );
-    track_response.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   , 0.5         , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      , pid_map[i]  , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , std::less_equal<double>(), pid_map[i+1], true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05        , true );
-    track_response.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18        , true );
+    track_response->AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   , 0.5         , true );
+    track_response->AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   , 0.5         , true );
+    track_response->AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      , pid_map[i]  , true );
+    track_response->AddCut( &SummaryEvent::Get_RDF_track_score , std::less_equal<double>(), pid_map[i+1], true );
+    track_response->AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05        , true );
+    track_response->AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18        , true );
     track_response_vector.push_back(track_response);
 
-    DetResponse shower_response(DetResponse::shower, Form("shower_response_%.2f", pid_map[i]), 
+    DetResponse* shower_response = new DetResponse(DetResponse::shower, Form("shower_response_%.2f", pid_map[i]), 
                                 EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
-    shower_response.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   , 0.5         , true );
-    shower_response.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   , 0.5         , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , pid_map[i]  , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), pid_map[i+1], true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05        , true );
-    shower_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5         , true );
+    shower_response->AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   , 0.5         , true );
+    shower_response->AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   , 0.5         , true );
+    shower_response->AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , pid_map[i]  , true );
+    shower_response->AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), pid_map[i+1], true );
+    shower_response->AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05        , true );
+    shower_response->AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5         , true );
     shower_response_vector.push_back(shower_response);
   }
 
@@ -119,22 +119,22 @@ void AsimovFitIOTh23Range() {
       if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
       SummaryEvent *evt = sp.GetEvt(i);
       for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-        track_response_vector[i].Fill(evt);
-        shower_response_vector[i].Fill(evt);
+        track_response_vector[i]->Fill(evt);
+        shower_response_vector[i]->Fill(evt);
       }
     }
 
     for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-      track_response_vector[i].WriteToFile(  filefolder +  Form("track_response_%.2f.root", pid_map[i]) );
-      shower_response_vector[i].WriteToFile( filefolder + Form("shower_response_%.2f.root", pid_map[i]) );
+      track_response_vector[i]->WriteToFile(  filefolder +  Form("track_response_%.2f.root", pid_map[i]) );
+      shower_response_vector[i]->WriteToFile( filefolder + Form("shower_response_%.2f.root", pid_map[i]) );
     }
     cout << "NOTICE: Finished filling response" << endl;
   }
   else {
     cout << "NOTICE: Reading responses from disk" << endl;
     for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-      track_response_vector[i].ReadFromFile(  filefolder + Form("track_response_%.2f.root" , pid_map[i]) );
-      shower_response_vector[i].ReadFromFile( filefolder + Form("shower_response_%.2f.root", pid_map[i]) );
+      track_response_vector[i]->ReadFromFile(  filefolder + Form("track_response_%.2f.root" , pid_map[i]) );
+      shower_response_vector[i]->ReadFromFile( filefolder + Form("shower_response_%.2f.root", pid_map[i]) );
     }
   }
 
@@ -154,7 +154,7 @@ void AsimovFitIOTh23Range() {
   outputfile << "th23,sinSqTh23,s_tr_io,s_sh_io,s_tr_err_io,s_sh_err_io,fitchi2" << endl;
 
   for (Int_t i = 0; i < 11; i++) {
-    FitUtil *fitutil = new FitUtil(3, track_response_vector[0].GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);
+    FitUtil *fitutil = new FitUtil(3, track_response_vector[0]->GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);
 
     std::vector<TH3D*> track_vector_true;
     std::vector<TH3D*> shower_vector_true;
@@ -166,8 +166,8 @@ void AsimovFitIOTh23Range() {
     Double_t sinSqTh23_true = TMath::Power(TMath::Sin(th23 * TMath::Pi()/180.), 2);
  
     for (int i = 0; i < N_PID_CLASSES; i++) {
-      FitPDF pdf_tracks(  Form("pdf_tracks_%.2f", pid_map[i]),  "pdf_tracks",  fitutil, &track_response_vector[i]);
-      FitPDF pdf_showers( Form("pdf_showers_%.2f", pid_map[i]), "pdf_showers", fitutil, &shower_response_vector[i]);
+      FitPDF pdf_tracks(  Form("pdf_tracks_%.2f", pid_map[i]),  "pdf_tracks",  fitutil, track_response_vector[i]);
+      FitPDF pdf_showers( Form("pdf_showers_%.2f", pid_map[i]), "pdf_showers", fitutil, shower_response_vector[i]);
       pdf_tracks_vector.push_back( pdf_tracks );
       pdf_showers_vector.push_back( pdf_showers );
 
