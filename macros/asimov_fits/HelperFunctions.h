@@ -160,6 +160,14 @@ std::map<Int_t, Double_t> SetPIDCase(Int_t n) {
       pid_map.insert(std::make_pair(2, 0.6)); // track
       pid_map.insert(std::make_pair(3, 1.0)); // upper limit 
       break;
+    case 4:
+      cout << "NOTICE: Set PID case " << n << endl;
+      pid_map.insert(std::make_pair(0, 0.0)); // shower
+      pid_map.insert(std::make_pair(1, 0.4)); // middle group: shower
+      pid_map.insert(std::make_pair(2, 0.6)); // middle group: track
+      pid_map.insert(std::make_pair(3, 0.8)); // track
+      pid_map.insert(std::make_pair(4, 1.0)); // upper limit 
+      break;
     case 5:
       cout << "NOTICE: Set PID case " << n << endl;
       // The for loop also has to create an upper limit, thus +1
@@ -203,6 +211,13 @@ std::vector< std::tuple<Double_t, Double_t> > GetEnergyRanges(Int_t n) {
       range_map.push_back(std::make_tuple(2.0, 80.0)); // shower
       range_map.push_back(std::make_tuple(2.0, 30.0)); // middle group: shower
       range_map.push_back(std::make_tuple(3.0, 80.0)); // track
+      break;
+    case 4:
+      cout << "NOTICE: Energy range case " << n << endl;
+      range_map.push_back(std::make_tuple(2.0, 80.0)); // shower
+      range_map.push_back(std::make_tuple(2.0, 30.0)); // middle group: shower
+      range_map.push_back(std::make_tuple(3.0, 15.0)); // middle group: track (kind of)
+      range_map.push_back(std::make_tuple(5.0, 80.0)); // track
       break;
     case 5:
       cout << "NOTICE: Energy range case " << n << endl;
