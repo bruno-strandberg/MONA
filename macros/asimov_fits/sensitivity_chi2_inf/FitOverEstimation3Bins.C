@@ -9,12 +9,12 @@
 
 void FitOverEstimation3Bins() {
 
-  TString MONADIR = (TString)getenv("MONADIR");
+  TString MONADIR = (TString)getenv("MONADIR") + "/macros/asimov_fits/";
   // Create TFile with the csv data and a slice of TTree with the data needed for the fit
   TFile file_out("FitOverEstimation.root", "RECREATE");
   TTree tree_out("data_tree", "Data for unbinned fit");
 
-  tree_out.ReadFile(MONADIR + "./output/csv/CrossCheck/percentages/AsimovFit3BinsNO_PercentageOfMC/AsimovFit3BinsNO_PercentageOfMC_0-99.csv", 
+  tree_out.ReadFile(MONADIR + "/output/csv/SensChi2Inf/AsimovFit3BinsNO_PercentageOfMC/AsimovFit3BinsNO_PercentageOfMC_0-99.csv", 
                     "percentage/D:Ebins/I:ctBins/I:sens_0/D:sens_1/D:sens_2/D:fit_chi2/D", ',');
 
   tree_out.Write();
@@ -26,7 +26,7 @@ void FitOverEstimation3Bins() {
 //  file_in.Close(); // Close the file so that RooFit can make plots on screen. (bug?)
 
   TTree* tree_in = new TTree("data_tree", "Data for unbinned fit");
-  tree_in->ReadFile(MONADIR + "./output/csv/CrossCheck/percentages/AsimovFit3BinsNO_PercentageOfMC/AsimovFit3BinsNO_PercentageOfMC_0-99.csv", 
+  tree_in->ReadFile(MONADIR + "/output/csv/SensChi2Inf/AsimovFit3BinsNO_PercentageOfMC/AsimovFit3BinsNO_PercentageOfMC_0-99.csv", 
                     "percentage/D:Ebins/I:ctBins/I:sens_0/D:sens_1/D:sens_2/D:fit_chi2/D", ',');
 
   Double_t inverted_percentage;

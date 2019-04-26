@@ -7,15 +7,15 @@
 #include "TRandom.h"
 
 
-void FitOverEstimation2Bins() {
+void FitOverEstimation4Bins() {
 
   TString MONADIR = (TString)getenv("MONADIR") + "/macros/asimov_fits/";
   // Create TFile with the csv data and a slice of TTree with the data needed for the fit
   TFile file_out("FitOverEstimation.root", "RECREATE");
   TTree tree_out("data_tree", "Data for unbinned fit");
 
-  tree_out.ReadFile(MONADIR + "/output/csv/SensChi2Inf/AsimovFitNO_PercentageOfMC/AsimovFitNO_PercentageOfMC_0-99.csv", 
-                    "percentage/D:Ebins/I:ctBins/I:n_chi2tr_no/D:n_chi2sh_no/D:fit_chi2/D", ',');
+  tree_out.ReadFile(MONADIR + "/output/csv/SensChi2Inf/AsimovFit4BinsNO_PercentageOfMC/AsimovFit4BinsNO_PercentageOfMC_0-99.csv", 
+                    "percentage/D:Ebins/I:ctBins/I:sens_0/D:sens_1/D:sens_2/D:sens_3/D:fit_chi2/D", ',');
 
   tree_out.Write();
   file_out.Close();
@@ -26,19 +26,19 @@ void FitOverEstimation2Bins() {
 //  file_in.Close(); // Close the file so that RooFit can make plots on screen. (bug?)
 
   TTree* tree_in = new TTree("data_tree", "Data for unbinned fit");
-  tree_in->ReadFile(MONADIR + "/output/csv/SensChi2Inf/AsimovFitNO_PercentageOfMC/AsimovFitNO_PercentageOfMC_0-99.csv", 
-                     "percentage/D:Ebins/I:ctBins/I:n_chi2tr_no/D:n_chi2sh_no/D:fit_chi2/D", ',');
+  tree_in->ReadFile(MONADIR + "/output/csv/SensChi2Inf/AsimovFit4BinsNO_PercentageOfMC/AsimovFit4BinsNO_PercentageOfMC_0-99.csv", 
+                    "percentage/D:Ebins/I:ctBins/I:sens_0/D:sens_1/D:sens_2/D:sens_3/D:fit_chi2/D", ',');
 
-  Double_t inverted_percentage;
-  Double_t percentage;
-  tree_in->SetBranchAddress("percentage", &percentage);
-  TBranch* new_branch = tree_in->Branch("inverted_percentage", &inverted_percentage, "inverted_percentage/D");
-  Int_t nentries = tree_in->GetEntries(); // read the number of entries in tree
-  for (Int_t i = 0; i < nentries; i++) {
-    tree_in->GetEntry(i);
-    inverted_percentage = 1 / percentage;
-    new_branch->Fill();
-  }
+//  Double_t inverted_percentage;
+//  Double_t percentage;
+//  tree_in->SetBranchAddress("percentage", &percentage);
+//  TBranch* new_branch = tree_in->Branch("inverted_percentage", &inverted_percentage, "inverted_percentage/D");
+//  Int_t nentries = tree_in->GetEntries(); // read the number of entries in tree
+//  for (Int_t i = 0; i < nentries; i++) {
+//    tree_in->GetEntry(i);
+//    inverted_percentage = 1 / percentage;
+//    new_branch->Fill();
+//  }
 
 //  TCanvas* c1 = new TCanvas("c1","c1");
 //  Int_t n = tree_in->Draw("inverted_percentage:fit_chi2", "", "goff"); 
