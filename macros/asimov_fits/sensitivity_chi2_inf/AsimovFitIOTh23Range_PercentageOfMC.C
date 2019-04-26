@@ -34,7 +34,7 @@ using namespace RooFit;
  * moves over the range [40, 50] in steps of 1 and saves results in a csv file.
  */
 
-void AsimovFitIOTh23Range_PercentageOfMC() {
+void AsimovFitIOTh23Range_PercentageOfMC(Int_t jobnumber=0) {
 
   const int N_PID_CLASSES = 2;
   const Double_t PID_CUT = 0.6;
@@ -44,7 +44,7 @@ void AsimovFitIOTh23Range_PercentageOfMC() {
   TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
 
   TString MONADIR = (TString)getenv("MONADIR") + "/macros/asimov_fits/";
-  TString s_outputfile = MONADIR + "output/csv/SensChi2Inf/AsimovFitIOTh23Range_PercentageOfMC.csv";
+  TString s_outputfile = MONADIR + Form("output/csv/SensChi2Inf/AsimovFitIOTh23Range_PercentageOfMC/AsimovFitIOTh23Range_PercentageOfMC_%i.csv", jobnumber);
 
   // DetRes input values
   Int_t EBins = 20;
@@ -69,7 +69,7 @@ void AsimovFitIOTh23Range_PercentageOfMC() {
   // Open output stream to save sensitivity values
   ofstream outputfile(s_outputfile, std::ios_base::app);
   outputfile << "percentage,Ebins,ctBins,th23,sinSqTh23," ;
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) outputfile << Form("sens_%i,", i);
+  for (Int_t i = 0; i < N_PID_CLASSES; i++) outputfile << Form("sens_%i,", i) << Form("sens_err_%i,", i);
   outputfile << "fit_chi2" << endl;
 
   for (auto p: PERCENTAGES) { 
