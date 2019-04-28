@@ -283,10 +283,6 @@ void AsimovFitIOTh23Range_PercentageOfMC(Int_t jobnumber=0) {
         sens_w_error.push_back( std::make_pair(std::get<1>(chi2[i]), std::get<2>(chi2[i])) );
       }
 
-      // Write the histograms containing the expectation values and sensitivity for tracks and showers
-      TH2D* h_track  = (TH2D*)std::get<0>(chi2[1]);
-      TH2D* h_shower = (TH2D*)std::get<0>(chi2[0]);
-      
       for (Int_t i = 0; i < N_PID_CLASSES; i++) {
 
         cout << "NMHUtils: Chi2 between events IO and events fitted on NO is: " << sens_w_error[i].first 
