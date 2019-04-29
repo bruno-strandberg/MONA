@@ -29,9 +29,32 @@ class DetResponseCreator {
     fShwRespVector = std::get<0>(drWCuts);
 
     fDetRespFilesExist = ResponseFilesExist();
-      
   };
+
+  DetResponseCreator(Int_t n_pid_cats, TString path_to_file, 
+          Int_t ebins,  Double_t emin,  Double_t emax, 
+          Int_t ctbins, Double_t ctmin, Double_t ctmax, 
+          Int_t bybins, Double_t bymin, Double_t bymax) {
+
+    // Set default values for PID boundaries at given category.
+    fNPidCategories = n_pid_cats;
+    fPidMap = SetPIDCase(fNPidCategories);
+    fDetResFilePath = SetFilePath(path_to_file);
+
+    // Overwrite the default binnings of the ResponseCreator
+    std::tuple< std::vector<DetResponse*>, std::vector<DetResponse*> > drWCuts = ResponseCreator(ebins, emin, emax,
+            ctbins, ctmin, ctmax, bybins, bymin, bymax);
+    fTrkRespVector = std::get<1>(drWCuts);
+    fShwRespVector = std::get<0>(drWCuts);
+
+    fDetRespFilesExist = ResponseFilesExist();
+  };
+
   ~DetResponseCreator() {
+    for (Int_t i = 0; i < fNPidCategories; i++) {
+      delete fTrkRespVector[i];
+      delete fShwRespVector[i];
+    }
   };
 
 
@@ -52,7 +75,6 @@ class DetResponseCreator {
 
     if (not files_exist) {
       SumParserFillResponseVectors(sumparser);
-
       WriteDetResFiles();
     }
     else {
@@ -123,20 +145,25 @@ class DetResponseCreator {
     cout << "NOTICE: Finished filling response through SummaryParser" << endl;
   }
 
-  void WriteDetResFiles() {
+  void WriteDetResFiles(TString path_to_file = "") {
     cout << "NOTICE: Writing responses to disk" << endl;
 
+    if (path_to_file == "") { path_to_file = fDetResFilePath; }
+
     for (Int_t i = 0; i < fNPidCategories; i++) {
-      fTrkRespVector[i]->WriteToFile( fDetResFilePath + Form("track_response_%.2f.root",  fPidMap[i]) );
-      fShwRespVector[i]->WriteToFile( fDetResFilePath + Form("shower_response_%.2f.root", fPidMap[i]) );
+      fTrkRespVector[i]->WriteToFile( path_to_file + Form("track_response_%.2f.root",  fPidMap[i]) );
+      fShwRespVector[i]->WriteToFile( path_to_file + Form("shower_response_%.2f.root", fPidMap[i]) );
     }
   }
 
-  void ReadDetResFiles() {
+  void ReadDetResFiles(TString path_to_file = "") {
     cout << "NOTICE: Reading responses from disk" << endl;
+    
+    if (path_to_file == "") { path_to_file = fDetResFilePath; }
+
     for (Int_t i = 0; i < fNPidCategories; i++) {
-      fTrkRespVector[i]->ReadFromFile( fDetResFilePath + Form("track_response_%.2f.root" , fPidMap[i]) );
-      fShwRespVector[i]->ReadFromFile( fDetResFilePath + Form("shower_response_%.2f.root", fPidMap[i]) );
+      fTrkRespVector[i]->ReadFromFile( path_to_file + Form("track_response_%.2f.root" , fPidMap[i]) );
+      fShwRespVector[i]->ReadFromFile( path_to_file + Form("shower_response_%.2f.root", fPidMap[i]) );
     }
     cout << "NOTICE: Finished filling response through reading from disk" << endl;
   }
@@ -148,12 +175,12 @@ class DetResponseCreator {
     return filepath;
   }  
 
-  TString fDetResFilePath;
-  Int_t fNPidCategories;
-  std::map<Int_t, Double_t> fPidMap; // Map of the PID boundaries in Q-space, track-like quality space.
-  std::vector<DetResponse*> fTrkRespVector; // Vector containing pointers to the the track responses
-  std::vector<DetResponse*> fShwRespVector; // Vector containing pointers to the the shower responses
-  Bool_t fDetRespFilesExist = kFALSE; 
+  TString fDetResFilePath;                  // File path where the DR root files are stored.
+  Int_t fNPidCategories;                    // Number of PID categories.
+  std::map<Int_t, Double_t> fPidMap;        // Map of the PID boundaries in Q-space, track-like quality space.
+  std::vector<DetResponse*> fTrkRespVector; // Vector containing pointers to the the track responses.
+  std::vector<DetResponse*> fShwRespVector; // Vector containing pointers to the the shower responses.
+  Bool_t fDetRespFilesExist = kFALSE;       // Bool for the existence of the input/output DR root files.
 
 };
 
