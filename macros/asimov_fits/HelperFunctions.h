@@ -4,8 +4,6 @@
 #include "FitUtil.h"
 
 
-//****************************************************************************
-
 /**
  *  Function calculate the chi2-value between two TH1. 
  *  
@@ -14,7 +12,7 @@
  * \param h2           Histogram
  * \return             Chi2 value between two histograms.
  */
-Double_t HistoChi2Test(TH3D* h1, TH3D* h2,
+Double_t HistoChi2Test(TH1* h1, TH1* h2,
                        Double_t xlow = -1e10, Double_t xhigh = 1e10,
                        Double_t ylow = -1e10, Double_t yhigh = 1e10) {
 
@@ -26,9 +24,11 @@ Double_t HistoChi2Test(TH3D* h1, TH3D* h2,
 
   for (Int_t xb = 1; xb <= h1->GetXaxis()->GetNbins(); xb++) {
     for (Int_t yb = 1; yb <= h1->GetYaxis()->GetNbins(); yb++) {
-      for (Int_t zb = 1; zb <= h1->GetYaxis()->GetNbins(); zb++) {
+      for (Int_t zb = 1; zb <= h1->GetZaxis()->GetNbins(); zb++) {
         Double_t val1 = h1->GetBinContent(xb, yb, zb);
         Double_t val2 = h2->GetBinContent(xb, yb, zb);
+        Double_t err1 = h1->GetBinError(xb, yb, zb);
+        Double_t err2 = h2->GetBinError(xb, yb, zb);
         
         if (val1 == 0) {
           chi = 0;
@@ -48,6 +48,46 @@ Double_t HistoChi2Test(TH3D* h1, TH3D* h2,
 
   return TMath::Sqrt(chi2);
 }
+
+
+Double_t HistoChi2Calc(TH1* h1, TH1* h2,
+                       Double_t xlow = -1e10, Double_t xhigh = 1e10,
+                       Double_t ylow = -1e10, Double_t yhigh = 1e10,
+                       Double_t zlow = -1e10, Double_t zhigh = 1e10) {
+
+  if (h1->GetDimension() != h2->GetDimension()) {
+    throw std::invalid_argument( "ERROR! input histograms dimensions mismatch.");
+  }
+
+  Double_t chi  = 0;
+  Double_t chi2 = 0;
+
+  TH1* _h1 = (TH1*)h1->Clone("h1clone");
+  TH1* _h2 = (TH1*)h2->Clone("h2clone");
+  _h1->SetDirectory(0);
+  _h2->SetDirectory(0);
+
+  for (Int_t xb = 1; xb <= h1->GetXaxis()->GetNbins(); xb++) {
+    for (Int_t yb = 1; yb <= h1->GetYaxis()->GetNbins(); yb++) {
+      for (Int_t zb = 1; zb <= h1->GetZaxis()->GetNbins(); zb++) {
+        Double_t xbincenter = _h1->GetXaxis()->GetBinCenter(xb);
+        Double_t ybincenter = _h1->GetYaxis()->GetBinCenter(yb);
+        Double_t zbincenter = _h1->GetZaxis()->GetBinCenter(zb);
+        if ((xbincenter < xlow) or (ybincenter < ylow)  or
+            (xbincenter > xhigh) or (ybincenter > yhigh)) {
+
+          _h1->SetBinContent(xb, yb, zb, 0);
+          _h1->SetBinError(xb, yb, zb, 0);
+          _h2->SetBinContent(xb, yb, zb, 0);
+          _h2->SetBinError(xb, yb, zb, 0);
+        }
+      }
+    }
+  }
+
+  return _h1->Chi2Test(_h2, "WW CHI2");
+}
+
 
 // set up a pointer to a function to call resetting the parameters to central values
 void ResetToCentral(FitUtil& fitutil) {
@@ -120,6 +160,14 @@ std::map<Int_t, Double_t> SetPIDCase(Int_t n) {
       pid_map.insert(std::make_pair(2, 0.6)); // track
       pid_map.insert(std::make_pair(3, 1.0)); // upper limit 
       break;
+    case 4:
+      cout << "NOTICE: Set PID case " << n << endl;
+      pid_map.insert(std::make_pair(0, 0.0)); // shower
+      pid_map.insert(std::make_pair(1, 0.4)); // middle group: shower
+      pid_map.insert(std::make_pair(2, 0.6)); // middle group: track
+      pid_map.insert(std::make_pair(3, 0.8)); // track
+      pid_map.insert(std::make_pair(4, 1.0)); // upper limit 
+      break;
     case 5:
       cout << "NOTICE: Set PID case " << n << endl;
       // The for loop also has to create an upper limit, thus +1
@@ -164,6 +212,13 @@ std::vector< std::tuple<Double_t, Double_t> > GetEnergyRanges(Int_t n) {
       range_map.push_back(std::make_tuple(2.0, 30.0)); // middle group: shower
       range_map.push_back(std::make_tuple(3.0, 80.0)); // track
       break;
+    case 4:
+      cout << "NOTICE: Energy range case " << n << endl;
+      range_map.push_back(std::make_tuple(2.0, 80.0)); // shower
+      range_map.push_back(std::make_tuple(2.0, 30.0)); // middle group: shower
+      range_map.push_back(std::make_tuple(3.0, 15.0)); // middle group: track (kind of)
+      range_map.push_back(std::make_tuple(5.0, 80.0)); // track
+      break;
     case 5:
       cout << "NOTICE: Energy range case " << n << endl;
       range_map.push_back(std::make_tuple(2.0, 80.0)); // shower
@@ -189,4 +244,47 @@ std::vector< std::tuple<Double_t, Double_t> > GetEnergyRanges(Int_t n) {
 
   return range_map;
 
+}
+
+
+/**
+ *  Function calculate the `difference` between two TH1. 
+ *  
+ *
+ * \param h1           Histogram
+ * \param h2           Histogram
+ * \return             Histogram containing difference between two histograms. Difference is 
+ *                     defined as h1 - h2 / sigma_h1
+ */
+TH3D* HistoDifference(TH1* h1, TH1* h2) {
+
+  TH3D* ret = (TH3D*)h1->Clone("diff_histo");
+  ret->Reset();
+  ret->SetDirectory(0);
+
+  if (h1->GetDimension() != h2->GetDimension()) {
+    throw std::invalid_argument( "ERROR! input histograms dimensions mismatch.");
+  }
+
+  for (Int_t xb = 1; xb <= h1->GetXaxis()->GetNbins(); xb++) {
+    for (Int_t yb = 1; yb <= h1->GetYaxis()->GetNbins(); yb++) {
+      for (Int_t zb = 1; zb <= h1->GetZaxis()->GetNbins(); zb++) {
+        Double_t binval;
+        Double_t val1 = h1->GetBinContent(xb, yb, zb);
+        Double_t val2 = h2->GetBinContent(xb, yb, zb);
+        Double_t sig1 = h1->GetBinError(xb, yb, zb);
+        
+        if (sig1 == 0) {
+          binval = 0;
+        } else {
+          binval = (val1 - val2) / sig1 ;
+        }
+
+        ret->SetBinContent(xb, yb, zb, binval);
+
+      }
+    }
+  }
+
+  return ret;
 }

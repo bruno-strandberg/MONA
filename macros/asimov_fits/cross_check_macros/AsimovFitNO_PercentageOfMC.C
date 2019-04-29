@@ -92,10 +92,6 @@ void AsimovFitNO_PercentageOfMC(Int_t jobnumber=0) {
     auto summary_file = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
     SummaryParser sp(summary_file);
   
-    TString track_file = "track_response.root";
-    TString shower_file = "shower_response.root";
-  
-  
     for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
       if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
       SummaryEvent *evt = sp.GetEvt(i);
@@ -177,8 +173,8 @@ void AsimovFitNO_PercentageOfMC(Int_t jobnumber=0) {
     Double_t fitChi2_1q = fitres_1q->minNll();
     Double_t fitChi2_2q = fitres_2q->minNll();
     Double_t min_chi2;
-    cout << "first q " << TMath::Sqrt( fitChi2_1q ) << endl;
-    cout << "second q" << TMath::Sqrt( fitChi2_2q ) << endl;
+    cout << "first q " << fitChi2_1q << endl;
+    cout << "second q" << fitChi2_2q << endl;
     if (fitChi2_1q == fitChi2_2q) cout << "NOTICE: Minimizer found same minimum for both quadrants." << endl;
     if (fitChi2_1q < fitChi2_2q) { result = &result_1q; min_chi2 = fitChi2_1q; }
     else                         { result = &result_2q; min_chi2 = fitChi2_2q; }

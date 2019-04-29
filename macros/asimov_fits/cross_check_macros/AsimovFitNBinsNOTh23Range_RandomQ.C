@@ -1,4 +1,4 @@
-#include "HelperFunctions.h"
+#include "../HelperFunctions.h"
 
 #include "TSystem.h"
 #include "TROOT.h"
@@ -36,22 +36,25 @@ using namespace RooFit;
  * 10 bins: q = (0, 0.1) to q = (0.1, 0.2), etc...
  * The script moves `\Theta_{23}` over the range [40, 50] in steps of 1 and saves results in 
  * csv and root files.
+ * Also the q value of the events is randomized: removing any signal that was in the data. This
+ * is done to calculate how much is due to statistics lowering and due to signal in the evts.
  */
 
-void AsimovFitNBinsNOTh23Range() {
+void AsimovFitNBinsNOTh23Range_RandomQ() {
 
-  const int N_PID_CLASSES = 3;
+  const int N_PID_CLASSES = 10;
   const Double_t PID_CUT = 0.6;
+  Bool_t use_random_q = kTRUE;
 
   std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
 
-  TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
+  TString filefolder = DetectorResponseFolder(N_PID_CLASSES) + "cross_check_random_q/";
 
   std::vector< std::tuple<Double_t, Double_t> > fitRanges = GetEnergyRanges(N_PID_CLASSES);
   Bool_t isRanged = kFALSE; // Fit in specific ranges given by fitRanges
 
-  TString s_outputfile = Form("output/csv/AsimovFit%iBinsNOTh23Range.csv",   N_PID_CLASSES);
-  TString s_rootfile   = Form("output/root/AsimovFit%iBinsNOTh23Range.root", N_PID_CLASSES);
+  TString s_outputfile = Form("../output/csv/CrossCheck/random_q/AsimovFit%iBinsNOTh23Range_Dist.csv",   N_PID_CLASSES);
+  TString s_rootfile   = Form("../output/root/CrossCheck/random_q/AsimovFit%iBinsNOTh23Range_Dist.root", N_PID_CLASSES);
 
   // DetRes input values
   Int_t EBins = 24;
@@ -73,32 +76,32 @@ void AsimovFitNBinsNOTh23Range() {
   //----------------------------------------------------------
   // detector response for tracks and showers
   //----------------------------------------------------------
-  std::vector<DetResponse*> track_response_vector;
-  std::vector<DetResponse*> shower_response_vector;
+  std::vector<DetResponse> track_response_vector;
+  std::vector<DetResponse> shower_response_vector;
 
   for (Int_t i = 0; i < N_PID_CLASSES; i++) {
     std::function<bool(double, double)> comparison_operator;
     if (i == 0) { comparison_operator = std::greater_equal<double>(); // The first bin needs to include the lower limit.
     } else { comparison_operator = std::greater<double>(); }
 
-    DetResponse* track_response = new DetResponse(DetResponse::track, Form("track_response_%.2f", pid_map[i]), 
+    DetResponse track_response(DetResponse::track, Form("track_response_%.2f", pid_map[i]), 
                                EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
-    track_response->AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   , 0.5         , true );
-    track_response->AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   , 0.5         , true );
-    track_response->AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      , pid_map[i]  , true );
-    track_response->AddCut( &SummaryEvent::Get_RDF_track_score , std::less_equal<double>(), pid_map[i+1], true );
-    track_response->AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05        , true );
-    track_response->AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18        , true );
+    track_response.AddCut( &SummaryEvent::Get_track_ql0       , std::greater<double>()   , 0.5         , true );
+    track_response.AddCut( &SummaryEvent::Get_track_ql1       , std::greater<double>()   , 0.5         , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , comparison_operator      , pid_map[i]  , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_track_score , std::less_equal<double>(), pid_map[i+1], true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_muon_score  , std::less_equal<double>(), 0.05        , true );
+    track_response.AddCut( &SummaryEvent::Get_RDF_noise_score , std::less_equal<double>(), 0.18        , true );
     track_response_vector.push_back(track_response);
 
-    DetResponse* shower_response = new DetResponse(DetResponse::shower, Form("shower_response_%.2f", pid_map[i]), 
+    DetResponse shower_response(DetResponse::shower, Form("shower_response_%.2f", pid_map[i]), 
                                 EBins, EMin, EMax, ctBins, ctMin, ctMax, byBins, byMin, byMax);
-    shower_response->AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   , 0.5         , true );
-    shower_response->AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   , 0.5         , true );
-    shower_response->AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , pid_map[i]  , true );
-    shower_response->AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), pid_map[i+1], true );
-    shower_response->AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05        , true );
-    shower_response->AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5         , true );
+    shower_response.AddCut( &SummaryEvent::Get_shower_ql0     , std::greater<double>()   , 0.5         , true );
+    shower_response.AddCut( &SummaryEvent::Get_shower_ql1     , std::greater<double>()   , 0.5         , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, comparison_operator      , pid_map[i]  , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), pid_map[i+1], true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_muon_score , std::less_equal<double>(), 0.05        , true );
+    shower_response.AddCut( &SummaryEvent::Get_RDF_noise_score, std::less_equal<double>(), 0.5         , true );
     shower_response_vector.push_back(shower_response);
   }
 
@@ -106,43 +109,42 @@ void AsimovFitNBinsNOTh23Range() {
   // fill the detector response and event selection
   //-----------------------------------------------------
 
-  // Start at true and if any one of the files is missing, become false
-  Bool_t files_exist = kTRUE; 
-  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-    TString track_file  = Form("track_response_%.2f.root" , pid_map[i]);
-    TString shower_file = Form("shower_response_%.2f.root", pid_map[i]);
-    Bool_t track_exists  = NMHUtils::FileExists(filefolder + track_file);
-    Bool_t shower_exists = NMHUtils::FileExists(filefolder + shower_file);
-    files_exist = ((files_exist and track_exists) and shower_exists);
-  }
+  TFile* f_q_dist = TFile::Open("../detector_responses/pid_quality_distribution.root", "READ");
+  TH1D* q_dist = (TH1D*)f_q_dist->Get("h_quality");
 
-  if (not files_exist) {
+  auto summary_file = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+  SummaryParser sp(summary_file);
+  for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
+    if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
+    SummaryEvent *evt = sp.GetEvt(i);
 
-    auto summary_file = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
-    SummaryParser sp(summary_file);
-    for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
-      if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
-      SummaryEvent *evt = sp.GetEvt(i);
-      for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-        track_response_vector[i]->Fill(evt);
-        shower_response_vector[i]->Fill(evt);
+    // Randomize the q value of the event.
+    if (use_random_q) {
+      // Get the track score and throw a random from the dist.
+      // If the event is a track (shower) and the random falls
+      // in the area of shower (track), reroll until it doesnt.
+      Double_t track_score = evt->Get_RDF_track_score();
+      Double_t ran = q_dist->GetRandom();
+      if (track_score <= 0.6) {
+        while (ran > 0.6) ran = q_dist->GetRandom();
       }
+      else {
+        while (ran <= 0.6) ran = q_dist->GetRandom();
+      }
+
+      evt->Set_RDF_track_score(ran);
     }
 
     for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-      track_response_vector[i]->WriteToFile(  filefolder +  Form("track_response_%.2f.root", pid_map[i]) );
-      shower_response_vector[i]->WriteToFile( filefolder + Form("shower_response_%.2f.root", pid_map[i]) );
-    }
-    cout << "NOTICE: Finished filling response" << endl;
-  }
-  else {
-    cout << "NOTICE: Reading responses from disk" << endl;
-    for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-      track_response_vector[i]->ReadFromFile(  filefolder + Form("track_response_%.2f.root" , pid_map[i]) );
-      shower_response_vector[i]->ReadFromFile( filefolder + Form("shower_response_%.2f.root", pid_map[i]) );
+      track_response_vector[i].Fill(evt);
+      shower_response_vector[i].Fill(evt);
     }
   }
-  
+
+  for (Int_t i = 0; i < N_PID_CLASSES; i++) {
+    track_response_vector[i].WriteToFile(  filefolder +  Form("track_response_%.2f.root", pid_map[i]) );
+    shower_response_vector[i].WriteToFile( filefolder + Form("shower_response_%.2f.root", pid_map[i]) );
+  }
   cout << "NOTICE: Finished filling response" << endl;
 
   //----------------------------------------------------------
@@ -159,7 +161,7 @@ void AsimovFitNBinsNOTh23Range() {
   outputfile << "th23,sinSqTh23,s_no,s_err_no,fitchi2" << endl;
 
   for (Int_t i = 0; i < 11; i++) {
-    FitUtil *fitutil = new FitUtil(3, track_response_vector[0]->GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);
+    FitUtil *fitutil = new FitUtil(3, track_response_vector[0].GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);
 
     std::vector<TH3D*> track_vector_true;
     std::vector<TH3D*> shower_vector_true;
@@ -171,8 +173,8 @@ void AsimovFitNBinsNOTh23Range() {
     Double_t sinSqTh23_true = TMath::Power(TMath::Sin(th23 * TMath::Pi()/180.), 2);
 
     for (int i = 0; i < N_PID_CLASSES; i++) {
-      FitPDF pdf_tracks(  Form("pdf_tracks_%.2f", pid_map[i]),  "pdf_tracks",  fitutil, track_response_vector[i]);
-      FitPDF pdf_showers( Form("pdf_showers_%.2f", pid_map[i]), "pdf_showers", fitutil, shower_response_vector[i]);
+      FitPDF pdf_tracks(  Form("pdf_tracks_%.2f", pid_map[i]),  "pdf_tracks",  fitutil, &track_response_vector[i]);
+      FitPDF pdf_showers( Form("pdf_showers_%.2f", pid_map[i]), "pdf_showers", fitutil, &shower_response_vector[i]);
       pdf_tracks_vector.push_back( pdf_tracks );
       pdf_showers_vector.push_back( pdf_showers );
 
