@@ -59,7 +59,8 @@ ORCA7::ORCA7(Bool_t ReadResponses) {
   //-------------------------------------------------------------------------------
 
   TString out_dir = NMHUtils::Getcwd() + "/rootfiles/"; // directory where responses are stored
-  system("mkdir -p " + out_dir);
+  Int_t sysret = system("mkdir -p " + out_dir);
+  if ( sysret != 0 ) cout << "WARNING! ORCA7::ORCA7 system returned " << sysret << endl;
 
   vector< std::pair<TString, DetResponse*> > resp_names;// vector that stores the outname and the response pairs
   Bool_t ReadFromFile = ReadResponses;                  // flag to indicate whether responses should be read
@@ -119,7 +120,7 @@ ORCA7::ORCA7(Bool_t ReadResponses) {
 
   // nc normalisation taken from Neutrino2018 poster
   RooGaussian *ncnorm_prior = new RooGaussian("ncnorm_prior", "ncnorm_prior", 
-					      *fFitUtil->GetVar("NC_norm"), RooConst(0.), RooConst(0.1) );
+					      *fFitUtil->GetVar("NC_norm"), RooConst(1.), RooConst(0.1) );
 
   fPriors.add( RooArgSet(*mu_amu_prior, *e_ae_prior, *mu_e_prior, *escale_prior, *ncnorm_prior) );
     
