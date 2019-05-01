@@ -16,7 +16,7 @@ void CreateRootFilesForPlot() {
 
   std::vector<Int_t> pid_cats = {2,3,4,5,10};
 
-  TFile* f = TFile::Open("./data_chi2_extraplotation.root", "RECREATE");
+  TFile* f = TFile::Open("./data_chi2_th23_extraplotation.root", "RECREATE");
   TFile* f_read = TFile::Open("./data_chi2_th23.root", "READ");
   for (auto pid: pid_cats) {
 
