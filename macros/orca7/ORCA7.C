@@ -58,7 +58,8 @@ ORCA7::ORCA7(Bool_t ReadResponses) {
   // create an output name for each response
   //-------------------------------------------------------------------------------
 
-  TString out_dir = NMHUtils::Getcwd() + "/rootfiles/"; // directory where responses are stored
+  // directory where responses are stored
+  TString out_dir = (TString)getenv("MONADIR") + "/macros/orca7/rootfiles/";
   Int_t sysret = system("mkdir -p " + out_dir);
   if ( sysret != 0 ) cout << "WARNING! ORCA7::ORCA7 system returned " << sysret << endl;
 

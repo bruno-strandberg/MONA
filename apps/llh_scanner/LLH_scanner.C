@@ -127,12 +127,14 @@ int main(const int argc, const char **argv) {
   JTOOLS::JRange<Double_t> par_range;
   Int_t    npoints;
   TString  par_name;
+  Double_t par_value;
   Int_t    ncpu;
   Double_t run_time;
   vector<double> pid_cuts;
   vector<double> muon_cuts;
   vector<double> noise_cuts;
   vector<string> reco;
+  Bool_t IO;
 
   try {
 
@@ -145,6 +147,7 @@ int main(const int argc, const char **argv) {
     zap['d'] = make_field(data_file, "Summary data file in MONA format") = pseudo_data;
 
     zap['p'] = make_field(par_name, "Parameter name that is LLH scanned") = parameters;
+    zap['x'] = make_field(par_value, "Parameter value for creation of the data against which the scan is performed") = def_range;
     zap['r'] = make_field(par_range, "Parameter range for LLH scan") = JTOOLS::JRange<Double_t>(-def_range, def_range);
     zap['n'] = make_field(npoints, "Number of points in the range the LLH is evaluated") = 30;
     zap['t'] = make_field(run_time, "Operation time of the detector in years") = 3;
@@ -153,6 +156,7 @@ int main(const int argc, const char **argv) {
     zap['M'] = make_field(muon_cuts, "Cuts for atm. muon suppression for each PID bin, by default 0.03 for default PID bins") = std::vector<double>{};
     zap['N'] = make_field(noise_cuts, "Cuts for muon suppression for each PID bin, by default 0.03 for default PID bins.") = std::vector<double>{};
     zap['R'] = make_field(reco, "Reco type (mc, shw, trk or comb) for each PID bin, 'comb' means track direction and shower energy. By default shw shw comb for default PID bins.") = std::vector<string>{};
+    zap['i'] = make_field(IO, "Inverted ordering");
 
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
@@ -304,6 +308,19 @@ int main(const int argc, const char **argv) {
     pdfs.insert( std::make_pair( R.first, pdf ) );
   }
 
+  // create NO or IO data
+  if (IO) {
+    fu.FreeParLims();
+    fu.SetIOcentvals();
+  }
+  else {
+    fu.FreeParLims();
+    fu.SetNOcentvals();
+  }
+
+  if ( par_value != def_range ) fu.GetVar(par_name)->setVal(par_value);
+  cout << "NOTICE LLH_scanner: data created at scanner parameter " << par_name << " value " << par_value << endl;
+
   RooArgSet *pars_data = (RooArgSet*)fu.GetSet().snapshot(kTRUE);
 
   std::map< string, TH1* > exphists;
@@ -332,9 +349,11 @@ int main(const int argc, const char **argv) {
   //======================================================
   // manipulate the scanned parameter
   //======================================================
-  fu.SetNOlims();
 
-  // if limits not specified on command-line, use the limits as defined in the fit utility
+  if (IO) fu.SetIOlims();
+  else fu.SetNOlims();
+
+  // if limits not specified on command-line, use the limits as defined in the fit utility for IO or NO
   RooRealVar *var = fu.GetVar(par_name);
   if ( par_range.getLowerLimit() == -def_range ) par_range.setLowerLimit( var->getMin() );
   if ( par_range.getUpperLimit() ==  def_range ) par_range.setUpperLimit( var->getMax() );
