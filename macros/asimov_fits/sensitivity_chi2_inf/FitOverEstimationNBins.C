@@ -22,10 +22,12 @@ void FitOverEstimationNBins(Int_t nbins=2) {
  // g->SetMaximum(120);
   g->Draw("ap"); 
 
-  TF1 *f_tr = new TF1("f_tr", "[0] + ([1] / x)^[2]", 1e-3, 10);
-  f_tr->SetParameters(1, 1, 1); // Initial values of the params.
+  TF1 *f_tr = new TF1("f_tr", "[0] + ([1] / x)", 1e-3, 10);
+  f_tr->SetParameters(1, 1); // Initial values of the params.
   g->Fit(f_tr);
-  //g->FitPanel();
+  g->SetTitle("Fit: p0 + (p1 / x)");
+  g->GetXaxis()->SetTitle("Fraction of total #MC events");
+  g->GetYaxis()->SetTitle("#Delta #chi^{2}");
   f_tr = g->GetFunction("f_tr");
   g->SetMarkerStyle(6);
   gStyle->SetOptFit(kTRUE);

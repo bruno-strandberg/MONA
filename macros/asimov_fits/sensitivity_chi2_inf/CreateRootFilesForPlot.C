@@ -50,10 +50,12 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle) {
 
   Int_t th23;
   Double_t fit_chi2;
+  Double_t sqrt_fit_chi2;
 
   TTree* t_fit_chi2 = new TTree("fit_tree_" + tree_nametitle, "Chi2_inf values from fit " + tree_nametitle);
   TBranch* b_th23     = t_fit_chi2->Branch("th23", &th23, "th23/I");
   TBranch* b_fit_chi2 = t_fit_chi2->Branch("fit_chi2", &fit_chi2, "fit_chi2/D");
+  TBranch* b_sqrt_fit_chi2 = t_fit_chi2->Branch("sqrt_fit_chi2", &sqrt_fit_chi2, "sqrt_fit_chi2/D");
 
   for (Int_t i = th23_min; i <= th23_max; i++) {
     Int_t n = input_ttree->Draw("percentage:fit_chi2", Form("th23==%i", i), "goff"); 
@@ -63,6 +65,7 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle) {
     f_tr->SetParameters(1, 1); // Initial values of the params.
     TFitResultPtr result = g->Fit(f_tr, "S"); // Q = quiet, S = result in pointer
     fit_chi2 = result->Value(0);
+    sqrt_fit_chi2 = TMath::Sqrt(fit_chi2);
     th23 = i;
 
     gStyle->SetOptFit(kTRUE);
