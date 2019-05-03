@@ -6,6 +6,8 @@
 using namespace RooFit;
 using namespace O7;
 
+//*********************************************************************************************************
+
 // functions to  be able to use the shower energy and track direction for high-purity tracks
 //---------------------------------------------------------------------------------------
 Double_t O7::CustomEnergy(SummaryEvent* evt) {
@@ -19,18 +21,43 @@ TVector3 O7::CustomDir(SummaryEvent *evt) { return evt->Get_track_dir();      }
 TVector3 O7::CustomPos(SummaryEvent *evt) { return evt->Get_track_pos();      }
 Double_t O7::CustomBY (SummaryEvent *evt) { return evt->Get_track_bjorkeny(); }
 
+//*********************************************************************************************************
+
 /** Constructor */
 ORCA7::ORCA7(Bool_t ReadResponses) {
 
   // set the PID bins
-  //-------------------------------------------------------------------------------
   fPidBins.push_back( PidBinConf(0.0, 0.3, 0.05, 0.0, "shw") );
   fPidBins.push_back( PidBinConf(0.3, 0.7, 0.01, 0.0, "mid") );
   fPidBins.push_back( PidBinConf(0.7, 1.0+1e-5, 0.05, 0.1, "trk") );
 
+  CreateResponses( fPidBins, ReadResponses );
+
+  // create fitutil and pdfs
+  fFitUtil = new FitUtilWsyst(f_F_runtime, fResps["trk"]->GetHist3D(), f_F_emin, f_F_emax, 
+			      f_F_ctmin, f_F_ctmax, f_F_bymin, f_F_bymax, fEffmF);
+  
+  for (auto P: fResps) {
+    TString pdfname = "pdf_" + P.first;
+    FitPDF* pdf = new FitPDF(pdfname, pdfname, fFitUtil, P.second);
+    fPdfs.insert( std::make_pair(P.first, pdf) );
+  }
+
+  CreatePriors( fFitUtil );
+  PrepareParameters( fFitUtil );
+
+} // end of constructor
+
+//*********************************************************************************************************
+
+/** Inline function to construct the responses in the constructor*/
+void ORCA7::CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadResponses) {
+
+  //=========================================================
   // create a response for each PID bin
-  //-------------------------------------------------------------------------------
-  for (auto PB: fPidBins) {
+  //=========================================================
+
+  for (auto PB: pid_bins) {
 
     DetResponse *R = NULL;
       
@@ -55,8 +82,9 @@ ORCA7::ORCA7(Bool_t ReadResponses) {
 
   }
 
+  //=========================================================
   // create an output name for each response
-  //-------------------------------------------------------------------------------
+  //=========================================================
 
   // directory where responses are stored
   TString out_dir = (TString)getenv("MONADIR") + "/macros/orca7/rootfiles/";
@@ -73,8 +101,10 @@ ORCA7::ORCA7(Bool_t ReadResponses) {
     ReadFromFile = ReadFromFile && NMHUtils::FileExists(outname);
   }
 
+  //=========================================================
   // read the responses from file or fill from summary data
-  //-------------------------------------------------------------------------------
+  //=========================================================
+
   if ( ReadFromFile ) {
     for (auto p: resp_names) p.second->ReadFromFile( p.first );
   }
@@ -91,44 +121,75 @@ ORCA7::ORCA7(Bool_t ReadResponses) {
 
   }
 
-  // create fitutil and pdfs
-  //-------------------------------------------------------------------------------
-  fFitUtil = new FitUtilWsyst(f_F_runtime, fResps["trk"]->GetHist3D(), f_F_emin, f_F_emax, 
-			      f_F_ctmin, f_F_ctmax, f_F_bymin, f_F_bymax, fEffmF);
-  
-  for (auto P: fResps) {
-    TString pdfname = "pdf_" + P.first;
-    FitPDF* pdf = new FitPDF(pdfname, pdfname, fFitUtil, P.second);
-    fPdfs.insert( std::make_pair(P.first, pdf) );
-  }
+}
 
+//*********************************************************************************************************
+
+/** Inline function to construct the priors in the constructor */
+void ORCA7::CreatePriors(FitUtil *F) {
+
+  //=========================================================
   // create priors
-  //-------------------------------------------------------------------------------
+  //=========================================================
 
   // need to add some priors; skew parameter priors ball-parked from Barr
   // the uncertainty there is <=20%, a prior of 20% hopefully helps to avoid the fitter going
   // to regions we know are not physical
   RooGaussian *mu_amu_prior = new RooGaussian("mu_amu_prior", "mu_amu_prior", 
-					      *fFitUtil->GetVar("skew_mu_amu"), RooConst(0.), RooConst(0.2) );
+					      *F->GetVar("skew_mu_amu"), RooConst(0.), RooConst(0.2) );
   RooGaussian *e_ae_prior = new RooGaussian("e_ae_prior"  , "e_ae_prior"  , 
-					    *fFitUtil->GetVar("skew_e_ae")  , RooConst(0.), RooConst(0.2) );
+					    *F->GetVar("skew_e_ae")  , RooConst(0.), RooConst(0.2) );
   RooGaussian *mu_e_prior = new RooGaussian("mu_e_prior"  , "mu_e_prior"  , 
-					    *fFitUtil->GetVar("skew_mu_e")  , RooConst(0.), RooConst(0.2) );
+					    *F->GetVar("skew_mu_e")  , RooConst(0.), RooConst(0.2) );
 
   // energy scale prior is a complete guess; setting 0.15, which means 2sigma is 30%, seems kind-of reasonable
   RooGaussian *escale_prior = new RooGaussian("escale_prior", "escale_prior", 
-					      *fFitUtil->GetVar("E_scale"), RooConst(0.), RooConst(0.15));
+					      *F->GetVar("E_scale"), RooConst(0.), RooConst(0.15));
 
   // nc normalisation taken from Neutrino2018 poster
   RooGaussian *ncnorm_prior = new RooGaussian("ncnorm_prior", "ncnorm_prior", 
-					      *fFitUtil->GetVar("NC_norm"), RooConst(1.), RooConst(0.1) );
+					      *F->GetVar("NC_norm"), RooConst(1.), RooConst(0.1) );
 
   fPriors.add( RooArgSet(*mu_amu_prior, *e_ae_prior, *mu_e_prior, *escale_prior, *ncnorm_prior) );
-    
-} // end of constructor
+
+}
 
 //*********************************************************************************************************
 
+/** Inline function to populate member vectors that differentiate between oscillation and systematic parameters */
+void ORCA7::PrepareParameters(FitUtil *F) {
+
+  // vector with pointers to oscillation parameters
+
+  fOscPars = { F->GetVar("SinsqTh12"), F->GetVar("SinsqTh13"), F->GetVar("SinsqTh23"),
+	       F->GetVar("dcp"), F->GetVar("Dm21"), F->GetVar("Dm31") };
+
+  // populate the vector with pointers to systematic parameters
+
+  RooArgSet parset = F->GetSet();
+  TIterator *it = parset.createIterator();
+  RooRealVar* var;
+
+  while ( ( var = (RooRealVar*)it->Next() ) ) {
+
+    if ( F->GetObs().find(var->GetName()) != NULL ) continue; // ignore observables
+
+    if ( std::find( fOscPars.begin(), fOscPars.end(), var ) == fOscPars.end() ) {
+      fSystPars.push_back( var );
+    }
+
+  }
+  
+  // save the systematics default values
+  for (auto sv: fSystPars) {
+    fSystDefault.insert( std::make_pair( sv, sv->getVal() ) );
+  }
+
+}
+
+//*********************************************************************************************************
+
+/** Destructor */
 ORCA7::~ORCA7() {
 
   delete fFitUtil;
@@ -139,7 +200,10 @@ ORCA7::~ORCA7() {
 
 //*********************************************************************************************************
 
-void ORCA7::Set_NuFit_4p0_NO(FitUtil* F) {
+/** Set oscillation parameters to normal ordering and systematic parameters to default values*/
+void ORCA7::Set_NuFit_4p0_NO() {
+
+  FitUtil* F = fFitUtil;
 
   F->FreeParLims();
 
@@ -167,11 +231,18 @@ void ORCA7::Set_NuFit_4p0_NO(FitUtil* F) {
   F->GetVar("Dm31")     ->setMin( 2.431*1e-3 );
   F->GetVar("Dm31")     ->setMax( 2.622*1e-3 );
 
+  for (auto kv: fSystDefault) {
+    F->GetVar( kv.first->GetName() )->setVal( kv.second );
+  }
+
 };
 
 //*********************************************************************************************************
 
-void ORCA7::Set_NuFit_4p0_IO(FitUtil* F) {
+/** Set oscillation parameters to inverted ordering and systematic parameters to default values*/
+void ORCA7::Set_NuFit_4p0_IO() {
+
+  FitUtil* F = fFitUtil;
 
   F->FreeParLims();
 
@@ -199,4 +270,44 @@ void ORCA7::Set_NuFit_4p0_IO(FitUtil* F) {
   F->GetVar("Dm31")     ->setMin( -2.606*1e-3 + 7.39*1e-5 );
   F->GetVar("Dm31")     ->setMax( -2.413*1e-3 + 7.39*1e-5 );
 
-};
+  for (auto kv: fSystDefault) {
+    F->GetVar( kv.first->GetName() )->setVal( kv.second );
+  }
+
+}
+
+//*********************************************************************************************************
+
+void ORCA7::RandomisePars(Bool_t InvertedOrdering, Bool_t RandomiseSyst, Int_t seed) {
+
+  TRandom rand(seed);
+
+  //=======================================================
+  // randomisation of oscillation parameters
+  //=======================================================
+
+  // set to NuFit 4.0 values and limits
+  if (InvertedOrdering) Set_NuFit_4p0_IO();
+  else Set_NuFit_4p0_NO();
+
+  for (auto var: fOscPars) {
+    cout << "NOTICE ORCA7::RandomisePars() randomising parameter " << var->GetName() << endl;
+    Double_t mean  = var->getVal();
+    Double_t sigma = ( var->getMax() - var->getMin() )/3 ;
+    var->setVal( rand.Gaus( mean, sigma ) );
+  }
+
+  //=======================================================
+  // randomisation of systematics
+  //=======================================================
+
+  if (!RandomiseSyst) return;
+
+  for (auto var: fSystPars) {
+    cout << "NOTICE ORCA7::RandomisePars() randomising parameter " << var->GetName() << endl;
+    Double_t mean  = var->getVal();
+    Double_t sigma = 0.15;
+    var->setVal( rand.Gaus(mean, sigma) );
+  }
+
+}

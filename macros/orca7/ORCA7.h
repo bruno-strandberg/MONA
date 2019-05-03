@@ -13,6 +13,7 @@ using namespace std;
 
 #include "TVector3.h"
 #include "RooArgSet.h"
+#include "RooRealVar.h"
 
 //===================================================================================================
 // A namespace that stores some functions and structures necessary in the ORCA7 class
@@ -56,8 +57,10 @@ struct ORCA7 {
   ORCA7(Bool_t ReadResponses);
   ~ORCA7();
 
-  void Set_NuFit_4p0_NO(FitUtil* F);
-  void Set_NuFit_4p0_IO(FitUtil* F);
+  // functions for parameter manipulation
+  void Set_NuFit_4p0_NO();
+  void Set_NuFit_4p0_IO();
+  void RandomisePars(Bool_t InvertedOrdering, Bool_t RandomiseSyst, Int_t seed);
 
   //*********************************************************************************************
   //*********************************************************************************************
@@ -93,6 +96,16 @@ struct ORCA7 {
   Double_t f_F_ctmax   = -1e-3;
   Double_t f_F_bymin   = 0;
   Double_t f_F_bymax   = 1;
+
+  std::vector<RooRealVar*> fOscPars;
+  std::vector<RooRealVar*> fSystPars;
+  std::map<RooRealVar*, Double_t> fSystDefault;
+
+  // inline functions
+  void CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadResponses);
+  void CreatePriors(FitUtil *F);
+  void PrepareParameters(FitUtil *F);
+
 
 };
 

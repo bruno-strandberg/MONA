@@ -13,7 +13,7 @@ SHARED = ORCA7
 
 SHEAD   = $(SHARED:=.h)
 SSOURCE = $(SHARED:=.C)
-DICT    = SharedDic.cxx
+DICT    = SharedDic
 LDEF    = LinkDef.h
 
 # sources of applications
@@ -26,11 +26,13 @@ PROGRAMS  = $(PSOURCES:.C=)
 
 all: $(PROGRAMS)
 
-$(PROGRAMS): % : %.C $(SSOURCE) $(DICT)
+# note that I get rid of the annoying dictionary file automatically; this is only required for compilation 
+# to programs and can be removed, because no shared library object that requires the dict is created.
+$(PROGRAMS): % : %.C $(SSOURCE) $(DICT).cxx
 	@echo "  Building $@ with pre-requisities $^..."
-	@g++ -O3 -o $@ $^ $(LFLAGS) $(CFLAGS)
+	@g++ -O3 -o $@ $^ $(LFLAGS) $(CFLAGS) && rm $(DICT)*
 
-$(DICT): $(SHEAD) $(LDEF)
+$(DICT).cxx: $(SHEAD) $(LDEF)
 	@echo "  Making dictionary $@..."
 	@rootcling -f $@ $^
 
@@ -42,8 +44,6 @@ $(DICT): $(SHEAD) $(LDEF)
 clean:
 	@echo "  Cleaning..."
 	@rm -f $(PROGRAMS)
-	@rm -f $(DICT)
-	@rm -f *rdict.pcm
 
 .PHONY: print
 
