@@ -18,11 +18,13 @@ class TrueEvt {
    */
   TrueEvt(SummaryEvent *evt) {
 
-    // currently not implemented, setting everything to zero
-    fNuType = 0;
-    fE_true = 0;
-    fCt_true = 0;
-    fBy_true = 0;
+    fNuType = (Short_t) evt->Get_MC_type();
+    fE_true = (Float_t) evt->Get_MC_energy();
+    fCt_true= (Float_t) -evt->Get_MC_dir_z();
+    fBy_true = (Float_t) evt->Get_MC_bjorkeny();
+    fIsCC = (UInt_t) evt->Get_MC_is_CC();
+    f_W1y = (Float_t) evt->Get_MC_w1y();
+    fIchan = 0; //it might be useful for the future cross section systematics, for now not found in PID summary files
     
   }
 
@@ -31,12 +33,18 @@ class TrueEvt {
 
   // plus interface functions to "unpack" data from private members to double's
   
- private:
+ //private:
 
+  UInt_t fIsCC;
+  Short_t fIchan;   //!< variable that hold the info about the interaction channel (dis, res, qe)
   Short_t fNuType;  //!< variable that holds all the info to determine flavor, iscc, isnb
   Float_t fE_true;  //!< variable that stores energy
-  Short_t fCt_true; //!< variable that stores cos-theta with 4-digit resolution
-  Short_t fBy_true; //!< variable that stores bjorken-y with 4-digit resolution
+  //Short_t fCt_true; //!< variable that stores cos-theta with 4-digit resolution
+  Float_t fCt_true;
+  //Short_t fBy_true; //!< variable that stores bjorken-y with 4-digit resolution
+  Float_t fBy_true;
+
+  Float_t f_W1y;    //!< weight 1 year, for testing, to be deleted in the final version
 
   // plus other members necessary for weight calculation...
   
@@ -73,6 +81,8 @@ class EvtResponse : public AbsResponse {
   Int_t fEbins;                   //!< number of reco energy bins in `fResp`
   Int_t fCtbins;                  //!< number of reco cos-theta bins in `fResp`
   Int_t fBybins;                  //!< number of reco bjorken-y bins in `fResp`
+  TH3D    *fhAtmMuCount1y;      //!< atmospheric muon count in 1 year
+  TH3D    *fhNoiseCount1y;      //!< noise event count in 1 year
   std::vector<TrueEvt> ***fResp;  //!< Response structure in 3D in [Ereco][CTreco][BYreco] = vector<TrueEvt> {contributing true events in reco bin}
   
 };

@@ -79,30 +79,55 @@ void EvtResponse::Fill(SummaryEvent *evt) {
 				to_string( TMath::Abs( evt->Get_MC_type() ) ) );
   }
 
+  UInt_t flav;
+  try {
+    flav  = fType_to_Supported.at( (UInt_t)TMath::Abs( evt->Get_MC_type() ) );
+  }
+  catch (const std::out_of_range& oor) {
+    throw std::invalid_argument("ERROR! DetResponse::Fill() unknown particle type " +
+				to_string( TMath::Abs( evt->Get_MC_type() ) ) );
+  }
+
   /*********************************************************************************
    Any logic here to do something different with atm muons and noise? 
   **********************************************************************************/
+
+  // set the reconstruction observables
+  SetObservables(evt); //implemented in EventFilter.C
+
+  if	  ( flav == ELEC || flav == MUON || flav == TAU){
+	  if ( !PassesCuts(evt) ) return;
+
+	  //---------------------------------------------------------------------------------------
+	  // set reco observables, locate the reco bin this event belongs to and add to response
+	  //---------------------------------------------------------------------------------------
+
+	  SetObservables(evt); //implemented in EventFilter.C
+
+	  Int_t  e_reco_bin = fhBinsReco->GetXaxis()->FindBin(  fEnergy   );
+	  Int_t ct_reco_bin = fhBinsReco->GetYaxis()->FindBin( -fDir.z()  );
+	  Int_t by_reco_bin = fhBinsReco->GetZaxis()->FindBin(  fBy       );
+
+	  fResp[e_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueEvt(evt) );
+  }
+
+  else if ( flav == ATMMU ) fhAtmMuCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
+  else if ( flav == NOISE ) fhNoiseCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
+  else {
+      throw std::invalid_argument( "ERROR! DetResponse::Fill() unknown particle with flavor " + to_string(flav) );
+  }
+
+
   //---------------------------------------------------------------------------------------
   // if the event does not pass the cuts return
   //---------------------------------------------------------------------------------------
 
-  if ( !PassesCuts(evt) ) return;
 
-  //---------------------------------------------------------------------------------------
-  // set reco observables, locate the reco bin this event belongs to and add to response
-  //---------------------------------------------------------------------------------------
-
-  SetObservables(evt); //implemented in EventFilter.C
-
-  Int_t  e_reco_bin = fhBinsReco->GetXaxis()->FindBin(  fEnergy   );
-  Int_t ct_reco_bin = fhBinsReco->GetYaxis()->FindBin( -fDir.z()  );
-  Int_t by_reco_bin = fhBinsReco->GetZaxis()->FindBin(  fBy       );
-
-  fResp[e_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueEvt(evt) );
 
   /*********************************************************************************
    Add test here to check the RAM usage once TrueEvt class is finalised
   **********************************************************************************/
+  
 
 }
 
