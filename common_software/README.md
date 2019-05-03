@@ -63,4 +63,4 @@ Sometime in the (far?) future we will agree that all data (sea data and monte-ca
 Known bugs
 ----------
 
-- When importing `NMHUtils.h` into a ROOT macro to call a function, CLING will give an error not finding the proper function. Why this happens is unclear, however it can be fixed by also importing another `common_software` header, like `EventFilter.h`.
+- When importing `NMHUtils.h` into a ROOT macro that will be subsequenty compiled, CLING will give an error that it cannot find the function from `NMHUtils` that the user is trying to access. The problem does not occur in compiled applications nor in un-compiled ROOT macros. Why this happens is unclear, but it seems to be related to the way `NMHUtils` namespace is treated in `LinkDef.h`, resulting in ROOT not triggering the loading of `libnmhsoft.so`. The problem can be circumvented in compiled macros by importing another `common_software` header, like `EventFilter.h`, which triggers the loading of `libnmhsoft.so`.

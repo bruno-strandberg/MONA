@@ -19,6 +19,8 @@
 #include "TFile.h"
 #include "TLegend.h"
 #include "TStopwatch.h"
+#include "RooConstVar.h"
+#include "RooGaussian.h"
 
 //jpp headers
 #include "JTools/JRange.hh"
@@ -127,13 +129,16 @@ int main(const int argc, const char **argv) {
   JTOOLS::JRange<Double_t> par_range;
   Int_t    npoints;
   TString  par_name;
-  Double_t par_value;
+  vector<string> par_names;
+  vector<Double_t> par_values;
   Int_t    ncpu;
   Double_t run_time;
   vector<double> pid_cuts;
   vector<double> muon_cuts;
   vector<double> noise_cuts;
   vector<string> reco;
+  vector<string> fixed_pars;
+  Bool_t profileLLH;
   Bool_t IO;
 
   try {
@@ -146,18 +151,23 @@ int main(const int argc, const char **argv) {
     zap['m'] = make_field(meff_file, "ROOT file with effective mass histograms, created with `apps/effective_mass` applications that use the class `common_software/EffMass`") = EffMass::DUMMYFILE;
     zap['d'] = make_field(data_file, "Summary data file in MONA format") = pseudo_data;
 
-    zap['p'] = make_field(par_name, "Parameter name that is LLH scanned") = parameters;
-    zap['x'] = make_field(par_value, "Parameter value for creation of the data against which the scan is performed") = def_range;
-    zap['r'] = make_field(par_range, "Parameter range for LLH scan") = JTOOLS::JRange<Double_t>(-def_range, def_range);
-    zap['n'] = make_field(npoints, "Number of points in the range the LLH is evaluated") = 30;
+    zap['n'] = make_field(npoints, "Number of points in the range the LLH is evaluated. If profile LLH is performed, this becomes equivalent to the number of fits") = 30;
+    zap['i'] = make_field(IO, "Inverted ordering");
     zap['t'] = make_field(run_time, "Operation time of the detector in years") = 3;
+    zap['p'] = make_field(par_name, "Parameter name that is LLH scanned") = parameters;
+    zap['r'] = make_field(par_range, "Parameter range for LLH scan") = JTOOLS::JRange<Double_t>(-def_range, def_range);
+    
+    zap['x'] = make_field(par_names, "Ordered names of the parameters for which values are provided trough argument '-y'") = std::vector<string> {};
+    zap['y'] = make_field(par_values, "Ordered parameter values for parameter names specified through argument '-x'") = std::vector<Double_t> {};
 
     zap['P'] = make_field(pid_cuts, "PID cut locations, e.g. -P 0.+0.6+1.0 for 2 bins [0, 0.6), [0.6, 1]. By default three bins are used.") = std::vector<double>{};
     zap['M'] = make_field(muon_cuts, "Cuts for atm. muon suppression for each PID bin, by default 0.03 for default PID bins") = std::vector<double>{};
     zap['N'] = make_field(noise_cuts, "Cuts for muon suppression for each PID bin, by default 0.03 for default PID bins.") = std::vector<double>{};
     zap['R'] = make_field(reco, "Reco type (mc, shw, trk or comb) for each PID bin, 'comb' means track direction and shower energy. By default shw shw comb for default PID bins.") = std::vector<string>{};
-    zap['i'] = make_field(IO, "Inverted ordering");
 
+    zap['w'] = make_field(profileLLH, "In addition to LLH scans, create a profile LLH scan. This will take more time, as at each point in the plot a fit is performed");
+    zap['z'] = make_field(fixed_pars, "Names of the parameters to be fixed - this only affects profile LLH scans") = std::vector<string> {};
+    
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
   catch(const exception &error) {
@@ -169,6 +179,24 @@ int main(const int argc, const char **argv) {
   if ( muon_cuts.size()  == 0 ) muon_cuts  = _muon_cuts; 
   if ( noise_cuts.size() == 0 ) noise_cuts = _noise_cuts; 
 
+  if ( par_names.size() != par_values.size() ) {
+    throw std::invalid_argument("ERROR! LLH_scanner: specified nr of parameter names " + to_string( par_names.size() ) + " does not equal the specified nr of parameter values " + to_string( par_values.size() ) );
+  }
+
+  for (auto p: par_names) {
+    TString pname = p;
+    if ( std::find( parameters.begin(), parameters.end(), pname ) == parameters.end() ) {
+      throw std::invalid_argument("ERROR! LLH_scanner: trying to specify (-x) a value for an unkown parameter " + p);
+    }
+  }
+
+  for (auto p: fixed_pars) {
+    TString pname = p;
+    if ( std::find( parameters.begin(), parameters.end(), pname ) == parameters.end() ) {
+      throw std::invalid_argument("ERROR! LLH_scanner: trying to fix (-z) an unkown parameter " + p);
+    }
+  }
+  
   if ( reco.size() == 0) reco = _reco;
   else {
 
@@ -308,19 +336,47 @@ int main(const int argc, const char **argv) {
     pdfs.insert( std::make_pair( R.first, pdf ) );
   }
 
-  // create NO or IO data
+  Double_t scan_min, scan_max;  // extract the scanner parameter minimum and maximum
+
   if (IO) {
     fu.FreeParLims();
     fu.SetIOcentvals();
+    fu.SetIOlims();
+    scan_min = fu.GetVar(par_name)->getMin();
+    scan_max = fu.GetVar(par_name)->getMax();
   }
   else {
     fu.FreeParLims();
     fu.SetNOcentvals();
+    fu.SetNOlims();
+    scan_min = fu.GetVar(par_name)->getMin();
+    scan_max = fu.GetVar(par_name)->getMax();
   }
 
-  if ( par_value != def_range ) fu.GetVar(par_name)->setVal(par_value);
-  cout << "NOTICE LLH_scanner: data created at scanner parameter " << par_name << " value " << par_value << endl;
+  fu.FreeParLims(); // free the limits
+  
+  // perform parameter modifications requested through the command line
+  for (UInt_t i = 0; i < par_names.size(); i++) {
+    fu.GetVar( par_names[i] )->setVal( par_values[i] );
+  }
 
+  // fix the requested parameters
+  cout << "=====================================================================" << endl;
+  for (auto fp: fixed_pars) {
+    fu.GetVar( fp )->setConstant(kTRUE);
+    cout << "NOTICE LLH_scanner: fixed parameter " << fp << " to value " << fu.GetVar(fp)->getVal() << endl;
+  }
+
+  // notify
+  cout << "=====================================================================" << endl;
+  RooArgSet set = fu.GetSet();
+  TIterator *it = set.createIterator();
+  RooRealVar *V;
+  while ( ( V = (RooRealVar*)it->Next() ) ) {
+    cout << "NOTICE LLH_scanner: data created at parameter " << V->GetName() << " value " << V->getVal() << endl;
+  }
+  cout << "=====================================================================" << endl;
+  
   RooArgSet *pars_data = (RooArgSet*)fu.GetSet().snapshot(kTRUE);
 
   std::map< string, TH1* > exphists;
@@ -344,19 +400,14 @@ int main(const int argc, const char **argv) {
     simPdf.addPdf( *P.second, P.first );
   }
 
-  cout << "NOTICE LLH_scanner: pdf's ready" << endl;
-
   //======================================================
   // manipulate the scanned parameter
   //======================================================
 
-  if (IO) fu.SetIOlims();
-  else fu.SetNOlims();
-
   // if limits not specified on command-line, use the limits as defined in the fit utility for IO or NO
   RooRealVar *var = fu.GetVar(par_name);
-  if ( par_range.getLowerLimit() == -def_range ) par_range.setLowerLimit( var->getMin() );
-  if ( par_range.getUpperLimit() ==  def_range ) par_range.setUpperLimit( var->getMax() );
+  if ( par_range.getLowerLimit() == -def_range ) par_range.setLowerLimit( scan_min );
+  if ( par_range.getUpperLimit() ==  def_range ) par_range.setUpperLimit( scan_max );
 
   // set the parameter limits
   var->setMin( par_range.getLowerLimit() );
@@ -423,6 +474,33 @@ int main(const int argc, const char **argv) {
   leg1->SetLineWidth(0);
   leg1->SetFillStyle(0);
 
+  //======================================================
+  // if requested, perform profile LLH scan
+  //======================================================
+  
+  if (profileLLH) {
+
+    // add some priors for the systematics
+    RooGaussian p_mu_amu("mu_amu_prior", "mu_amu_prior", *fu.GetVar("skew_mu_amu"), RooConst(0.), RooConst(0.2) );
+    RooGaussian p_e_ae  ("e_ae_prior"  , "e_ae_prior"  , *fu.GetVar("skew_e_ae")  , RooConst(0.), RooConst(0.2) );
+    RooGaussian p_mu_e  ("mu_e_prior"  , "mu_e_prior"  , *fu.GetVar("skew_mu_e")  , RooConst(0.), RooConst(0.2) );
+    RooGaussian pescale ("escale_prior", "escale_prior", *fu.GetVar("E_scale")    , RooConst(0.), RooConst(0.15));
+    RooGaussian pncnorm ("ncnorm_prior", "ncnorm_prior", *fu.GetVar("NC_norm")    , RooConst(1.), RooConst(0.1) );
+
+    RooArgSet priors ( p_mu_amu, p_e_ae, p_mu_e, pescale, pncnorm );
+
+    // create a new LLH function that includes the priors
+    RooNLLVar *nll_comb_wp = new RooNLLVar("nll_comb_wp","nll_comb_wp", simPdf, combData, ExternalConstraints(priors), NumCPU(ncpu) );
+    
+    cout << "=====================================================================" << endl;
+    cout << "NOTICE LLH_scanner: started profile likelihood calculation" << endl;
+    cout << "=====================================================================" << endl;
+    RooAbsReal *profile = nll_comb_wp->createProfile( *var );
+    profile->plotOn( &frame, LineColor(i+1), LineStyle(i+1), ShiftToZero(), Name("profileLLH") );
+    leg1->AddEntry( frame.findObject( "profileLLH" ), "profileLLH", "l" );
+     
+  }
+  
   TFile fout(output_name, "RECREATE");
   frame.Write("LLH_plot");
   leg1->Write("LLH_legend");
