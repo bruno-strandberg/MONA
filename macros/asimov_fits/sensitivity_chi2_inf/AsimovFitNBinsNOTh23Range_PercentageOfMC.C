@@ -116,22 +116,22 @@ void AsimovFitNBinsNOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
     // fill the detector response and event selection
     //-----------------------------------------------------
 
-      auto summary_file = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
-      SummaryParser sp(summary_file);
-      for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
-        if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
-        SummaryEvent *evt = sp.GetEvt(i);
+    auto summary_file = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+    SummaryParser sp(summary_file);
+    for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
+      if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
+      SummaryEvent *evt = sp.GetEvt(i);
 
-        // Throw random uniform, if its l.t. a certain percentage, discard the event.
-        Double_t random = gRandom->Uniform(0, 1);
-      
-        if (random > percentage) continue;
+      // Throw random uniform, if its l.t. a certain percentage, discard the event.
+      Double_t random = gRandom->Uniform(0, 1);
+    
+      if (random > percentage) continue;
 
-        for (Int_t i = 0; i < N_PID_CLASSES; i++) {
-          track_response_vector[i]->Fill(evt);
-          shower_response_vector[i]->Fill(evt);
-        }
+      for (Int_t i = 0; i < N_PID_CLASSES; i++) {
+        track_response_vector[i]->Fill(evt);
+        shower_response_vector[i]->Fill(evt);
       }
+    }
 
     cout << "NOTICE: Finished filling response" << endl;
 
@@ -302,6 +302,8 @@ void AsimovFitNBinsNOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
       outputfile << percentage << "," << EBins << "," << ctBins << "," << th23 << "," << sinSqTh23_true << "," ;
       for (auto s: sens_w_error) outputfile << s.first << "," << s.second << ",";
       outputfile << min_chi2 << endl;
+
+      delete fitutil;
     }
   }
   outputfile.close();
