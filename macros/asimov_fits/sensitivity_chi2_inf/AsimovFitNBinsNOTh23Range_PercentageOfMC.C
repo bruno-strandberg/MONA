@@ -38,14 +38,14 @@ using namespace RooFit;
  * csv and root files.
  */
 
-void AsimovFitNBinsNOTh23Range_PercentageOfMC(Int_t jobnumber=0) {
+void AsimovFitNBinsNOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) {
 
-  const int N_PID_CLASSES = 3;
+  const int N_PID_CLASSES = N_PID;
   const Double_t PID_CUT = 0.6;
 
   std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
 
-  TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
+  gRandom->SetSeed(0);
 
   TString MONADIR = (TString)getenv("MONADIR") + "/macros/asimov_fits/";
   TString s_outputfile = MONADIR + Form("output/csv/SensChi2Inf/AsimovFit%iBinsNOTh23Range_PercentageOfMC/AsimovFit%iBinsNOTh23Range_PercentageOfMC_%i.csv",
