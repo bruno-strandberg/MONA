@@ -18,7 +18,7 @@ LDEF    = LinkDef.h
 
 # sources of applications
 
-PSOURCES  = contour.C
+PSOURCES  = contour.C fit.C
 PROGRAMS  = $(PSOURCES:.C=)
 
 # compilation
@@ -26,11 +26,9 @@ PROGRAMS  = $(PSOURCES:.C=)
 
 all: $(PROGRAMS)
 
-# note that I get rid of the annoying dictionary file automatically; this is only required for compilation 
-# to programs and can be removed, because no shared library object that requires the dict is created.
 $(PROGRAMS): % : %.C $(SSOURCE) $(DICT).cxx
 	@echo "  Building $@ with pre-requisities $^..."
-	@g++ -O3 -o $@ $^ $(LFLAGS) $(CFLAGS) && rm $(DICT)*
+	@g++ -O3 -o $@ $^ $(LFLAGS) $(CFLAGS)
 
 $(DICT).cxx: $(SHEAD) $(LDEF)
 	@echo "  Making dictionary $@..."
@@ -39,13 +37,12 @@ $(DICT).cxx: $(SHEAD) $(LDEF)
 # clean-up and print command
 #===========================
 
-.PHONY: clean all
+.PHONY: clean all print
 
 clean:
 	@echo "  Cleaning..."
 	@rm -f $(PROGRAMS)
-
-.PHONY: print
+	@rm -f $(DICT)*
 
 print:
 	@echo $(SSOURCE)

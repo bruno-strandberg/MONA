@@ -156,6 +156,27 @@ void ORCA7::CreatePriors(FitUtil *F) {
 
 //*********************************************************************************************************
 
+/** Function to add a prior for dm31 */
+void ORCA7::AddDm31Prior(Bool_t InvertedOrdering) {
+
+  Double_t mean  = 2.525*1e-3;
+  Double_t sigma = (2.622*1e-3 - 2.431*1e-3)/3;
+
+  if ( InvertedOrdering ) {
+    mean  = -2.512*1e-3 + 7.39*1e-5;
+    sigma = ( (-2.413*1e-3 + 7.39*1e-5) - (-2.606*1e-3 + 7.39*1e-5) ) / 3;
+  }
+
+  // nc normalisation taken from Neutrino2018 poster
+  RooGaussian *dm31_prior = new RooGaussian("dm31_prior", "dm31_prior", 
+					    *fFitUtil->GetVar("Dm31"), RooConst(mean), RooConst(sigma) );
+  
+  fPriors.add( *dm31_prior );
+
+}
+
+//*********************************************************************************************************
+
 /** Inline function to populate member vectors that differentiate between oscillation and systematic parameters */
 void ORCA7::PrepareParameters(FitUtil *F) {
 
@@ -309,5 +330,33 @@ void ORCA7::RandomisePars(Bool_t InvertedOrdering, Bool_t RandomiseSyst, Int_t s
     Double_t sigma = 0.15;
     var->setVal( rand.Gaus(mean, sigma) );
   }
+
+}
+
+//*********************************************************************************************************
+
+void ORCA7::ReadFitData(TString infile) {
+
+  TFile fin(infile, "READ");
+  
+  if ( !fin.IsOpen() ) {
+    throw std::invalid_argument("ERROR! ORCA7::ReadFitData() cannot open file " + (string)infile);
+  }
+
+  TTree *tin = (TTree*)fin.Get("fitresult");
+
+  if ( tin == NULL ) {
+    throw std::invalid_argument("ERROR! ORCA7::ReadFitData(0 cannot find TTree fitpacket in input file");
+  }
+
+  fitpacket *packet = new fitpacket();
+  tin->SetBranchAddress("fitpacket", &packet);
+
+  for (Int_t i = 0; i < tin->GetEntries(); i++) {
+    tin->GetEntry(i);
+    fFPs.push_back( new fitpacket( *packet ) );
+  }
+
+  cout << "NOTICE ORCA7::ReadFitData() read " << fFPs.size() << " fitpacket's to member fFPs" << endl;
 
 }
