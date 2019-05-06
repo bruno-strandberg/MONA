@@ -59,3 +59,8 @@ MC chain data/sea data in native format
 Sometime in the (far?) future we will agree that all data (sea data and monte-carlo summary data) will be in XXX format (when this package was started, no such agreement existed - some said `aanet` is the best, some said `hdf5` is the best, some said plain text is the best). Let it be assumed that, for example, `aanet` emerges victorious. How can one now use this package, which assumes `SummaryEvent` format? Should everything be deleted and started from scratch? Or should I convert each file I wish to use to `SummaryEvent` format? This sounds painful...
 
 **Easy and sustainable solution**: TBD set up pseudo-code in `SummaryParser` to exemplify how `aanet` files could be read.
+
+Known bugs
+----------
+
+- When importing `NMHUtils.h` into a ROOT macro that will be subsequenty compiled, CLING will give an error that it cannot find the function from `NMHUtils` that the user is trying to access. The problem does not occur in compiled applications nor in un-compiled ROOT macros. Why this happens is unclear, but it seems to be related to the way `NMHUtils` namespace is treated in `LinkDef.h`, resulting in ROOT not triggering the loading of `libnmhsoft.so`. The problem can be circumvented in compiled macros by importing another `common_software` header, like `EventFilter.h`, which triggers the loading of `libnmhsoft.so`.

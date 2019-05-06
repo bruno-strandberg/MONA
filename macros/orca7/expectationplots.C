@@ -27,8 +27,8 @@ void expectationplots() {
 
     auto pdf = P.second;
     TH1D* nus   = (TH1D*)pdf->GetExpValHist()->Project3D("x");
-    TH1D* muons = (TH1D*)pdf->GetResponse()->GetHistAtmMu1y()->Project3D("x");
-    TH1D* noise = (TH1D*)pdf->GetResponse()->GetHistNoise1y()->Project3D("x");
+    TH1D* muons = (TH1D*)((DetResponse*)pdf->GetResponse())->GetHistAtmMu1y()->Project3D("x");
+    TH1D* noise = (TH1D*)((DetResponse*)pdf->GetResponse())->GetHistNoise1y()->Project3D("x");
 
     nus->SetLineColor(kRed);
     muons->SetLineColor(kBlack);
