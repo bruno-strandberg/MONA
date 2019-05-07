@@ -14,7 +14,7 @@ void CreateDataFileTh23() {
 
   TString MONADIR = (TString)getenv("MONADIR") + "/macros/asimov_fits/";
   // Create TFile with the csv data and a slice of TTree with the data needed for the fit
-  TFile file_out("data_chi2_th23.root", "RECREATE");
+  TFile* file_out = new TFile("data_chi2_th23.root", "RECREATE");
 
   std::vector<Int_t> pid_cats = {2,3,4,5,10};
 
@@ -30,7 +30,7 @@ void CreateDataFileTh23() {
     }
   }
 
-  file_out.Close();
+  file_out->Close();
 }
 
 void WriteSqrtChi2(TTree* tree) {

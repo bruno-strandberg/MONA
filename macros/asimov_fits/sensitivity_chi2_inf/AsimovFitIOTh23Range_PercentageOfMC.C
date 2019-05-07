@@ -41,7 +41,7 @@ void AsimovFitIOTh23Range_PercentageOfMC(Int_t jobnumber=0) {
 
   std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
 
-  TString filefolder = DetectorResponseFolder(N_PID_CLASSES);
+  gRandom->SetSeed(0);
 
   TString MONADIR = (TString)getenv("MONADIR") + "/macros/asimov_fits/";
   TString s_outputfile = MONADIR + Form("output/csv/SensChi2Inf/AsimovFitIOTh23Range_PercentageOfMC/AsimovFitIOTh23Range_PercentageOfMC_%i.csv", jobnumber);

@@ -16,7 +16,7 @@ void FitOverEstimationCompareGraphsIO() {
   TLegend* leg = new TLegend(0.1, 0.7, 0.5, 0.9);
 
 
-  TFile *f = TFile::Open("Chi2Extraplotation.root", "READ");
+  TFile *f = TFile::Open("data_chi2_th23_extraplotation.root", "READ");
      
   TTree* t_2no  = (TTree*)f->Get("fit_tree_2bins_no");
   TTree* t_3no  = (TTree*)f->Get("fit_tree_3bins_no");
@@ -25,15 +25,15 @@ void FitOverEstimationCompareGraphsIO() {
   TTree* t_10no = (TTree*)f->Get("fit_tree_10bins_no");
 
   // Draw the fitted chi2_inf
-  Int_t n2 = t_2no->Draw("th23:fit_chi2", "");
+  Int_t n2 = t_2no->Draw("th23:sqrt_fit_chi2", "");
   TGraph *g2 = new TGraph(n2, t_2no->GetV1(), t_2no->GetV2()); 
-  Int_t n3 = t_3no->Draw("th23:fit_chi2", "");
+  Int_t n3 = t_3no->Draw("th23:sqrt_fit_chi2", "");
   TGraph *g3 = new TGraph(n3, t_3no->GetV1(), t_3no->GetV2()); 
-  Int_t n4 = t_4no->Draw("th23:fit_chi2", "");
+  Int_t n4 = t_4no->Draw("th23:sqrt_fit_chi2", "");
   TGraph *g4 = new TGraph(n4, t_4no->GetV1(), t_4no->GetV2()); 
-  Int_t n5 = t_5no->Draw("th23:fit_chi2", "");
+  Int_t n5 = t_5no->Draw("th23:sqrt_fit_chi2", "");
   TGraph *g5 = new TGraph(n5, t_5no->GetV1(), t_5no->GetV2()); 
-  Int_t n10 = t_10no->Draw("th23:fit_chi2", "");
+  Int_t n10 = t_10no->Draw("th23:sqrt_fit_chi2", "");
   TGraph *g10 = new TGraph(n10, t_10no->GetV1(), t_10no->GetV2()); 
 
   g2->SetLineColor(kBlue+1);
@@ -57,7 +57,7 @@ void FitOverEstimationCompareGraphsIO() {
   g10->SetMarkerStyle(21);
 
   g2->SetMinimum(0);
-  g2->SetMaximum(25);
+  g2->SetMaximum(7);
   g2->Draw("apl"); 
   g3->Draw("pl"); 
   g4->Draw("pl"); 
@@ -67,7 +67,7 @@ void FitOverEstimationCompareGraphsIO() {
     
   g2->SetTitle("#LT #Delta #chi^{2} #GT at infinite statistics ");
   g2->GetXaxis()->SetTitle("#theta_{23}");
-  g2->GetYaxis()->SetTitle("#Delta #chi^{2}");
+  g2->GetYaxis()->SetTitle("#sqrt{ #Delta #chi^{2} }");
 
 
   leg->AddEntry(g2, "#LT #Delta #chi^{2} #GT IO at #infty statistics 2 PID categories", "lp");
