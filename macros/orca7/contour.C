@@ -75,6 +75,9 @@ int main(const int argc, const char** argv) {
     o7.RandomisePars( InvertedOrdering, IncludeSystematics, seed );
   }
 
+  // tau normalisation is not included in this analysis
+  fu->GetVar("Tau_norm")->setVal(1);
+
   // theta-23 is set to the input value
   fu->GetVar("SinsqTh23")->setVal( sinsqth23 );
     
@@ -111,6 +114,9 @@ int main(const int argc, const char** argv) {
       var->setConstant(kTRUE);
     }
   }
+
+  // tau normalisation is not included in the analysis, fix
+  fu->GetVar("Tau_norm")->setConstant(kTRUE);
   
   // always fix these osc pars, no sensitivity
   fu->GetVar("SinsqTh12")->setConstant(kTRUE);

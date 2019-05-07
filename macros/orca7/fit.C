@@ -30,7 +30,6 @@ int main(const int argc, const char** argv) {
 
   Bool_t   InvertedOrdering;
   Bool_t   IncludeSystematics;
-  Bool_t   RandomisePars;
   Int_t    seed;
   Int_t    ncpu;
   string   outfile;
@@ -42,9 +41,8 @@ int main(const int argc, const char** argv) {
     JParser<> zap("This application creates a pseudo-experiment");
 
     zap['i'] = make_field(InvertedOrdering, "Inverted NMO");
-    zap['s'] = make_field(IncludeSystematics, "Include systematic parameters");
-    zap['r'] = make_field(RandomisePars, "Randomise all parameters when 'data' is created");
-    zap['S'] = make_field(seed, "Seed for parameter randomisation and pseudo-experiments") = 416;
+    zap['s'] = make_field(IncludeSystematics, "Include systematic parameters with priors");
+    zap['S'] = make_field(seed, "Seed for pseudo-experiments") = 416;
     zap['N'] = make_field(ncpu, "Number of CPUs for minimisation") = 1;
     zap['o'] = make_field(outfile, "Output file") = "fit.root";
     zap['t'] = make_field(sinsqth23, "SinsqTh23 value at which the 'data' is created") = 0.58;
@@ -68,10 +66,8 @@ int main(const int argc, const char** argv) {
   auto pdfs = o7.fPdfs;
 
   //=====================================================================================
-  // randomise parameters, create data, fix some of the parameters
+  // create data, fix some of the parameters
   //=====================================================================================
-
-  if ( RandomisePars ) o7.RandomisePars( InvertedOrdering, IncludeSystematics, seed ); 
 
   if (InvertedOrdering) { o7.Set_NuFit_4p0_IO(); }
   else                  { o7.Set_NuFit_4p0_NO(); }
@@ -103,6 +99,9 @@ int main(const int argc, const char** argv) {
     }
   }
 
+  // fix tau normalisation in this analysis
+  fu->GetVar("Tau_norm")->setConstant(kTRUE);
+
   // always fix these osc pars, no sensitivity
   fu->GetVar("SinsqTh12")->setConstant(kTRUE);
   fu->GetVar("SinsqTh13")->setConstant(kTRUE);
@@ -133,6 +132,8 @@ int main(const int argc, const char** argv) {
   else                  { o7.Set_NuFit_4p0_NO(); }
   fu->FreeParLims();
   fu->GetVar("SinsqTh23")->setVal(0.45);
+  fu->GetVar("SinsqTh23")->setMin(0.0);
+  fu->GetVar("SinsqTh23")->setMax(0.5);
 
   RooFitResult *fitres_q1 = simPdf.fitTo( comb, Save(kTRUE), NumCPU(ncpu), ExternalConstraints( o7.fPriors ) );
 
@@ -141,6 +142,8 @@ int main(const int argc, const char** argv) {
   else                  { o7.Set_NuFit_4p0_NO(); }
   fu->FreeParLims(); // release the limits
   fu->GetVar("SinsqTh23")->setVal(0.55);
+  fu->GetVar("SinsqTh23")->setMin(0.5);
+  fu->GetVar("SinsqTh23")->setMax(1.0);
 
   RooFitResult *fitres_q2 = simPdf.fitTo( comb, Save(kTRUE), NumCPU(ncpu), ExternalConstraints( o7.fPriors ) );
 

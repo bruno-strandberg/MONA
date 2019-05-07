@@ -12,7 +12,7 @@ IncludePriors      = [True, False]
 # create contour execution commands
 #==============================================================================
 
-os.system( "mkdir {}/tmp".format(os.getcwd()) )
+os.system( "mkdir {}/tmp-contour".format(os.getcwd()) )
 syscmds = []
 
 for th23 in th23values:
@@ -21,7 +21,7 @@ for th23 in th23values:
             for IP in IncludePriors:
 
                 syscmd  = "{}/./contour -t {}".format( os.getcwd(), th23 )
-                outname = "{}/tmp/contour_th23={}".format( os.getcwd(), th23 )
+                outname = "{}/tmp-contour/contour_th23={}".format( os.getcwd(), th23 )
 
                 # choose ordering
                 if IO:
@@ -58,7 +58,7 @@ jobfiles = []
 
 for i, cmd in enumerate(syscmds):
 
-    jobfilename = "{}/tmp/job_{}.sh".format(os.getcwd(), i)
+    jobfilename = "{}/tmp-contour/job_{}.sh".format(os.getcwd(), i)
 
     jobfile = open(jobfilename, 'w')
 
@@ -87,6 +87,6 @@ for job in jobfiles:
     if nohup:
         farmcmd = "nohup bash {} &".format(job)
     else:
-        farmcmd = "qsub -q short7 -o {0} -e {0} {1}".format(os.getcwd()+"/tmp", job)
+        farmcmd = "qsub -q short7 -o {0} -e {0} {1}".format(os.getcwd()+"/tmp-contour", job)
 
     os.system(farmcmd)
