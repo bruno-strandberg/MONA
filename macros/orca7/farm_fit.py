@@ -4,7 +4,7 @@
 Script to farm application `fit` for pseudo-experiment fitting.
 
 Usage:
-    farm_fit.py -t THETA23 [-s SEED] [--dm31prior] [--IO] [--WS] [-j NJOBS]
+    farm_fit.py -t THETA23 [-s SEED] [--dm31prior] [--IO] [--WS] [-j NJOBS] [-d TMPDIR]
     farm_fit.py -h
 
 Option:
@@ -14,6 +14,7 @@ Option:
     --IO         Inverted ordering data
     --WS         Include systematics
     -j NJOBS     Number of farm jobs [default: 100]
+    -d TMPDIR    Temporary directory name where data is written [default: tmp-fit]
     -h --help    Show this screen
 """
 
@@ -23,7 +24,7 @@ from docopt import docopt
 args = docopt(__doc__)
 
 # create temporary directory
-os.system("mkdir -p {}/tmp-fit".format(os.getcwd()))
+os.system( "mkdir -p {}/{}".format( os.getcwd(), args['-d'] ) )
 
 # set seed for python random
 random.seed( int(args['-s']) )
@@ -37,7 +38,7 @@ syscmds = []
 for jnr in range ( 0, int(args['-j']) ):
 
     seed    = random.randint(1, 1e8)
-    outfile = "{}/tmp-fit/fit_out_job_{}.root".format( os.getcwd(), jnr )
+    outfile = "{}/{}/fit_out_job_{}.root".format( os.getcwd(), args['-d'], jnr )
     syscmd  = "{}/./fit -t {} -S {} -o {}".format( os.getcwd(), args['-t'], seed, outfile )
 
     if args['--dm31prior']:
@@ -59,7 +60,7 @@ jobfiles = []
 
 for syscmd in syscmds:
 
-    jobfilename = "{}/tmp-fit/job_{}.sh".format(os.getcwd(), syscmd[0])
+    jobfilename = "{}/{}/job_{}.sh".format(os.getcwd(), args['-d'], syscmd[0])
         
     jobfile = open(jobfilename, 'w')
 
@@ -86,5 +87,5 @@ for syscmd in syscmds:
 
 for job in jobfiles:
     
-    farmcmd = "qsub -q short7 -o {0} -e {0} {1}".format(os.getcwd()+"/tmp-fit", job)
+    farmcmd = "qsub -q short7 -o {0} -e {0} {1}".format(os.getcwd()+"/" + args['-d'], job)
     os.system(farmcmd)
