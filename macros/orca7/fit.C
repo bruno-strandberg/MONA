@@ -175,6 +175,9 @@ int main(const int argc, const char** argv) {
   //=====================================================================================
 
   RooRealVar* V = fu->GetVar("SinsqTh23");
+  V->setMin(0.0);
+  V->setMax(1.0);
+
   RooPlot frame( *V, 0.3, 0.7, 40 );
 
   RooAbsReal* nll1 = simPdf.createNLL( comb, ExternalConstraints( o7.fPriors ), NumCPU(ncpu) );
