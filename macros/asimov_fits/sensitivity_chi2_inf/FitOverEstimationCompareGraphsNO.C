@@ -1,7 +1,7 @@
 #include "TCanvas.h"
 #include "TF1.h"
 #include "TFitResult.h"
-#include "TGraph.h"
+#include "TGraphErrors.h"
 #include "TH1D.h"
 #include "TLegend.h"
 #include "TTree.h"
@@ -25,36 +25,36 @@ void FitOverEstimationCompareGraphsNO() {
   TTree* t_10 = (TTree*)f->Get("fit_tree_10bins_io");
 
   // Draw the fitted chi2_inf
-  Int_t n2 = t_2->Draw("th23:sqrt_fit_chi2", "");
-  TGraph *g2 = new TGraph(n2, t_2->GetV1(), t_2->GetV2()); 
-  Int_t n3 = t_3->Draw("th23:sqrt_fit_chi2", "");
-  TGraph *g3 = new TGraph(n3, t_3->GetV1(), t_3->GetV2()); 
-  Int_t n4 = t_4->Draw("th23:sqrt_fit_chi2", "");
-  TGraph *g4 = new TGraph(n4, t_4->GetV1(), t_4->GetV2()); 
-  Int_t n5 = t_5->Draw("th23:sqrt_fit_chi2", "");
-  TGraph *g5 = new TGraph(n5, t_5->GetV1(), t_5->GetV2()); 
-  Int_t n10 = t_10->Draw("th23:sqrt_fit_chi2", "");
-  TGraph *g10 = new TGraph(n10, t_10->GetV1(), t_10->GetV2()); 
+  Int_t n2 = t_2->Draw("th23:sqrt_fit_chi2:sqrt_chi2_err", "", "goff");
+  TGraphErrors *g2 = new TGraphErrors(n2, t_2->GetV1(), t_2->GetV2(), 0, t_2->GetV3()); 
+  Int_t n3 = t_3->Draw("th23:sqrt_fit_chi2:sqrt_chi2_err", "", "goff");
+  TGraphErrors *g3 = new TGraphErrors(n3, t_3->GetV1(), t_3->GetV2(), 0, t_2->GetV3()); 
+  Int_t n4 = t_4->Draw("th23:sqrt_fit_chi2:sqrt_chi2_err", "", "goff");
+  TGraphErrors *g4 = new TGraphErrors(n4, t_4->GetV1(), t_4->GetV2(), 0, t_2->GetV3()); 
+  Int_t n5 = t_5->Draw("th23:sqrt_fit_chi2:sqrt_chi2_err", "", "goff");
+  TGraphErrors *g5 = new TGraphErrors(n5, t_5->GetV1(), t_5->GetV2(), 0, t_2->GetV3()); 
+  Int_t n10 = t_10->Draw("th23:sqrt_fit_chi2:sqrt_chi2_err", "", "goff");
+  TGraphErrors *g10 = new TGraphErrors(n10, t_10->GetV1(), t_10->GetV2(), 0, t_2->GetV3()); 
 
   g2->SetLineColor(kBlue+1);
   g2->SetMarkerColor(kBlue+1);
-  g2->SetMarkerStyle(21);
+//  g2->SetMarkerStyle(21);
 
   g3->SetLineColor(kGreen+3);
   g3->SetMarkerColor(kGreen+3);
-  g3->SetMarkerStyle(21);
+//  g3->SetMarkerStyle(21);
 
   g4->SetLineColor(kRed+2);
   g4->SetMarkerColor(kRed+2);
-  g4->SetMarkerStyle(21);
+//  g4->SetMarkerStyle(21);
 
   g5->SetLineColor(kAzure+1);
   g5->SetMarkerColor(kAzure+1);
-  g5->SetMarkerStyle(21);
+//  g5->SetMarkerStyle(21);
 
   g10->SetLineColor(kBlack);
   g10->SetMarkerColor(kBlack);
-  g10->SetMarkerStyle(21);
+//  g10->SetMarkerStyle(21);
 
   g2->SetMinimum(0);
   g2->SetMaximum(7);
