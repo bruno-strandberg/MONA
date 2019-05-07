@@ -68,85 +68,21 @@ int main(const int argc, const char** argv) {
   auto pdfs = o7.fPdfs;
 
   //=====================================================================================
-  // create vectors with only oscpars and only systpars
+  // randomise parameters & create data
   //=====================================================================================
 
-  vector<RooRealVar*> oscpars = { fu->GetVar("SinsqTh12"), fu->GetVar("SinsqTh13"), fu->GetVar("SinsqTh23"),
-				  fu->GetVar("dcp"), fu->GetVar("Dm21"), fu->GetVar("Dm31") };
-  vector<RooRealVar*> systpars;
-
-  RooArgSet parset = fu->GetSet();
-  TIterator *it = parset.createIterator();
-  RooRealVar* var;
-
-  while ( ( var = (RooRealVar*)it->Next() ) ) {
-    
-    if ( fu->GetObs().find(var->GetName()) != NULL ) continue; // ignore observables
-
-      Bool_t isOscPar = kFALSE;
-      for (auto o: oscpars) isOscPar = isOscPar || ( o == var );
-      if ( !isOscPar ) systpars.push_back(var);
-      
-  }
-
-  //=====================================================================================
-  // randomise parameters
-  //=====================================================================================
-
-  TRandom  *rand = RooRandom::randomGenerator();
-  rand->SetSeed(seed);
-
-  // randomisation of oscillation parameters
   if ( RandomisePars ) {
-
-    // set to NuFit 4.0 values and limits
-    if (InvertedOrdering) o7.Set_NuFit_4p0_IO(fu);
-    else o7.Set_NuFit_4p0_NO(fu);
-
-    for (auto var: oscpars) {
-      cout << "NOTICE contour: randomising parameter " << var->GetName() << endl; 
-      Double_t mean  = var->getVal();
-      Double_t sigma = ( var->getMax() - var->getMin() )/3 ;
-      var->setVal( rand->Gaus( mean, sigma ) );
-    }
-    
+    o7.RandomisePars( InvertedOrdering, IncludeSystematics, seed );
   }
 
-  // randomisation of systematics, store also the default values
-  std::map<RooRealVar*, Double_t> default_systs;
-
-  for (auto var: systpars) {
-
-    default_systs.insert( std::make_pair( var, var->getVal() ) );
-    
-    if ( !IncludeSystematics ) {
-      cout << "NOTICE contour: fixing parameter " << var->GetName() << endl;
-      var->setConstant(kTRUE);
-    }
-    else  {
-
-      if ( RandomisePars ) {
-	cout << "NOTICE contour: randomising parameter " << var->GetName() << endl; 
-	Double_t mean  = var->getVal();
-	Double_t sigma = 0.15;
-	var->setVal( rand->Gaus(mean, sigma) );
-
-      }
-    }
-    
-  }
+  // tau normalisation is not included in this analysis
+  fu->GetVar("Tau_norm")->setVal(1);
 
   // theta-23 is set to the input value
   fu->GetVar("SinsqTh23")->setVal( sinsqth23 );
-
-  // save the parameter values at which data is created
-  RooArgSet *pars = (RooArgSet*)fu->GetSet().snapshot(kTRUE);
-  
-  //=====================================================================================
-  // create data
-  //=====================================================================================
-  
-  std::map< string, TH1* > exps; // map with response name <--> expectation value histogram
+    
+  // map with response name <--> expectation value histogram
+  std::map< string, TH1* > exps;
 
   for (auto P: pdfs) {
     TString hname = "exp_" + P.first;
@@ -155,34 +91,38 @@ int main(const int argc, const char** argv) {
     exp->SetNameTitle( hname, hname );
     exps.insert( std::make_pair( (string)P.first, (TH1*)exp ) );
   }
+
+  // save the parameter values at which data is created
+  RooArgSet *pars = (RooArgSet*)fu->GetSet().snapshot(kTRUE);
   
   //=====================================================================================
-  // set parameter values for fit start
+  // set parameter values back to defaults for fit start
   //=====================================================================================
 
   // for fit start, set the osc parameters to NuFit central values
-  if (InvertedOrdering) { o7.Set_NuFit_4p0_IO(fu); }
-  else                  { o7.Set_NuFit_4p0_NO(fu); }
+  if (InvertedOrdering) { o7.Set_NuFit_4p0_IO(); }
+  else                  { o7.Set_NuFit_4p0_NO(); }
 
   fu->FreeParLims(); // release the limits
   
   // theta-23 is set to the input value, so that the fit starts in the right quadrant
   fu->GetVar("SinsqTh23")->setVal( sinsqth23 );
 
-  // systematics are set to default values
-  for (auto var: systpars) {
-    var->setVal( default_systs[var] );
+  // fix the systematic parameters if they are not included
+  if (!IncludeSystematics) {
+    for (auto var: o7.fSystPars) {
+      var->setConstant(kTRUE);
+    }
   }
+
+  // tau normalisation is not included in the analysis, fix
+  fu->GetVar("Tau_norm")->setConstant(kTRUE);
   
   // always fix these osc pars, no sensitivity
   fu->GetVar("SinsqTh12")->setConstant(kTRUE);
   fu->GetVar("SinsqTh13")->setConstant(kTRUE);
   fu->GetVar("dcp")->setConstant(kTRUE);
   fu->GetVar("Dm21")->setConstant(kTRUE);
-
-  // for dev, I currently fix tau and E_scale
-  // fu->GetVar("Tau_norm")->setConstant( kTRUE );
-  // fu->GetVar("E_scale") ->setConstant( kTRUE );
 
   //=====================================================================================
   // configure simultaneous fitting
@@ -249,12 +189,12 @@ int main(const int argc, const char** argv) {
 
   while ( ( floatpar = (RooRealVar*)floatit->Next() ) ) {
     RooRealVar *init = (RooRealVar*)pars->find( floatpar->GetName() );
-    cout << "NOTICE fitted parameter: " << floatpar->GetName() << ", true and fitted: " 
+    cout << "NOTICE contour: fitted parameter: " << floatpar->GetName() << ", true and fitted: " 
 	 << init->getVal() << "\t" << floatpar->getVal() << endl;
   }
 
   while ( ( constpar = (RooRealVar*)constit->Next() ) ) {
-    cout << "NOTICE fixed parameter: " << constpar->GetName() << endl;
+    cout << "NOTICE contour: fixed parameter: " << constpar->GetName() << endl;
   }  
 
   Double_t cl90 = TMath::Sqrt( ROOT::Math::chisquared_quantile(0.9,2) );
@@ -274,7 +214,7 @@ int main(const int argc, const char** argv) {
   for (auto N: nlls) {
     N.second->plotOn( &frame, LineColor(1+i), ShiftToZero(), LineStyle(1+i), Name( N.first ) );
     cout << "================================================================================" << endl;
-    cout << "NOTICE contours_wsyst finished scanning channel " << N.first << endl;
+    cout << "NOTICE contour: finished scanning channel " << N.first << endl;
     cout << "================================================================================" << endl;
     i++;
   }
