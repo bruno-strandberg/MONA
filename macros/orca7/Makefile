@@ -13,12 +13,12 @@ SHARED = ORCA7
 
 SHEAD   = $(SHARED:=.h)
 SSOURCE = $(SHARED:=.C)
-DICT    = SharedDic.cxx
+DICT    = SharedDic
 LDEF    = LinkDef.h
 
 # sources of applications
 
-PSOURCES  = contour.C
+PSOURCES  = contour.C fit.C
 PROGRAMS  = $(PSOURCES:.C=)
 
 # compilation
@@ -26,26 +26,23 @@ PROGRAMS  = $(PSOURCES:.C=)
 
 all: $(PROGRAMS)
 
-$(PROGRAMS): % : %.C $(SSOURCE) $(DICT)
+$(PROGRAMS): % : %.C $(SSOURCE) $(DICT).cxx
 	@echo "  Building $@ with pre-requisities $^..."
 	@g++ -O3 -o $@ $^ $(LFLAGS) $(CFLAGS)
 
-$(DICT): $(SHEAD) $(LDEF)
+$(DICT).cxx: $(SHEAD) $(LDEF)
 	@echo "  Making dictionary $@..."
 	@rootcling -f $@ $^
 
 # clean-up and print command
 #===========================
 
-.PHONY: clean all
+.PHONY: clean all print
 
 clean:
 	@echo "  Cleaning..."
 	@rm -f $(PROGRAMS)
-	@rm -f $(DICT)
-	@rm -f *rdict.pcm
-
-.PHONY: print
+	@rm -f $(DICT)*
 
 print:
 	@echo $(SSOURCE)

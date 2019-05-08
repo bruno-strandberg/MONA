@@ -56,7 +56,7 @@ TString CsvFilePath(Int_t n, string ordering) {
 
   switch (n) {
     case 2:
-      filepath = Form("/output/csv/SensChi2Inf/AsimovFit%sTh23Range_PercentageOfMC/AsimovFit%sTh23Range_PercentageOfMC_0-99.csv", ordering.c_str(), ordering.c_str());
+      filepath = Form("/output/csv/SensChi2Inf/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
     case 3:
       filepath = Form("/output/csv/SensChi2Inf/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());

@@ -13,6 +13,50 @@ using namespace std;
 
 #include "TVector3.h"
 #include "RooArgSet.h"
+#include "RooRealVar.h"
+#include "RooFitResult.h"
+#include "TGraph.h"
+
+//===================================================================================================
+// a structure to write fit result data to a ROOT file
+//===================================================================================================
+
+struct fitpacket : public TObject {
+
+  TH3D         *fShw;
+  TH3D         *fMid;
+  TH3D         *fTrk;
+  RooArgSet    *fParData;
+  RooFitResult *fRes_1q;
+  RooFitResult *fRes_2q;
+  TGraph       *fLLHscan_exp;
+  TGraph       *fLLHscan_expected;
+  Int_t         fSeed;
+
+ fitpacket() : fShw(0), fMid(0), fTrk(0), fParData(0), fRes_1q(0), fRes_2q(0), fLLHscan_exp(0), fLLHscan_expected(0), fSeed(0) {};
+ ~fitpacket() {}; 
+
+ // copy constructor to store data read from input on heap
+ fitpacket (const fitpacket &other) : TObject( (TObject)other ) {
+
+   fShw     = (TH3D*)other.fShw->Clone();
+   fMid     = (TH3D*)other.fMid->Clone();
+   fTrk     = (TH3D*)other.fTrk->Clone();
+   fParData = (RooArgSet*)other.fParData->snapshot();
+   fRes_1q  = (RooFitResult*)other.fRes_1q->Clone();
+   fRes_2q  = (RooFitResult*)other.fRes_2q->Clone();
+   fLLHscan_exp      = (TGraph*)other.fLLHscan_exp->Clone();
+   fLLHscan_expected = (TGraph*)other.fLLHscan_expected->Clone();
+   fSeed    = other.fSeed;
+
+   vector<TH1*> hs = { fShw, fMid, fTrk };
+   for (auto h: hs) h->SetDirectory(0);
+
+ };
+
+ ClassDef(fitpacket, 1)
+
+};
 
 //===================================================================================================
 // A namespace that stores some functions and structures necessary in the ORCA7 class
@@ -56,8 +100,10 @@ struct ORCA7 {
   ORCA7(Bool_t ReadResponses);
   ~ORCA7();
 
-  void Set_NuFit_4p0_NO(FitUtil* F);
-  void Set_NuFit_4p0_IO(FitUtil* F);
+  // functions for parameter manipulation
+  void Set_NuFit_4p0_NO();
+  void Set_NuFit_4p0_IO();
+  void RandomisePars(Bool_t InvertedOrdering, Bool_t RandomiseSyst, Int_t seed);
 
   //*********************************************************************************************
   //*********************************************************************************************
@@ -78,6 +124,7 @@ struct ORCA7 {
   Double_t f_R_bymin = 0.0;
   Double_t f_R_bymax = 1.0;
 
+  // pid bin confiugraions and associated responses and pdfs
   vector< O7::PidBinConf > fPidBins;
   std::map< TString, DetResponse*> fResps;
   std::map< TString, FitPDF* > fPdfs;
@@ -93,6 +140,21 @@ struct ORCA7 {
   Double_t f_F_ctmax   = -1e-3;
   Double_t f_F_bymin   = 0;
   Double_t f_F_bymax   = 1;
+
+  // vectors with only oscillation pars and systematic pars; systematic par default values
+  std::vector<RooRealVar*> fOscPars;
+  std::vector<RooRealVar*> fSystPars;
+  std::map<RooRealVar*, Double_t> fSystDefault;
+
+  // vector of fit packets
+  std::vector< fitpacket* > fFPs;
+  
+  // internal functions
+  void CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadResponses);
+  void CreatePriors(FitUtil *F);
+  void PrepareParameters(FitUtil *F);
+  void AddDm31Prior(Bool_t InvertedOrdering);
+  void ReadFitData(TString infile);
 
 };
 

@@ -4,6 +4,7 @@
 
 #include "TFile.h"
 #include "TF1.h"
+#include "TError.h"
 
 #include<stdexcept>
 #include<iostream>
@@ -73,7 +74,7 @@ EffMass::EffMass(TString fname, Int_t nebins, Int_t nctbins, Int_t nbybins, Doub
   fRhoSW = rho_sw;
 
   if (DUMMYFILE == fname) {
-    CreateDummyData();
+    CreateDummyData(nebins, nctbins, nbybins);
     cout << "NOTICE EffMass::EffMass() running in dummy mode, not suitable for physics analyses" << endl;
   }
   else ReadFromFile(fname);
@@ -283,7 +284,7 @@ void EffMass::ReadFromFile(TString fname) {
     In this case the function `EffMass::GetMeff(...)` returns \f$ \rho * 8e6 * ( 1 - e^{-0.5*energy} )\f$ for the effective mass at a certain energy. This reaches a plateu of approx. 8e6 around 20 GeV and roughly mimics a turn-on region below that energy.
 
 */
-void EffMass::CreateDummyData() {
+void EffMass::CreateDummyData(Int_t nebins, Int_t nctbins, Int_t nbybins) {
 
   //---------------------------------------------------------------------
   // configure ranges, binning and volume for dummy data
@@ -291,9 +292,6 @@ void EffMass::CreateDummyData() {
 
   fDataTag = "dummy";
 
-  Int_t nebins  = 240;      // the binning settings as in `apps/effective_mass/EffMhists`
-  Int_t nctbins = 240;
-  Int_t nbybins = 24;
   Double_t dummyvol = 8e6; // dummy volume is 8 MTon
   Double_t alpha = -0.5;   // parameter that defines the "turn-on" region.
   fEmin  =  1;             // dummy range is 1-100 GeV
@@ -432,7 +430,11 @@ void EffMass::CreateMeffHists(Int_t nebins, Int_t nctbins, Int_t nbybins) {
 
 /** Get the effective mass for a neutrino type at given energy, cos-theta, bjorken-y.
 
-    This function looks up the bin in the corresponding effective mass histogram and returns the effective mass in Tons.
+    This function looks up the bin in the corresponding effective mass histogram and returns the effective mass in Tons. If interpolation is requested, a value corresponding the exact input coordinates (E,ct,by) is interpolated by using `TH3::Interpolate`. The coordinate that is outside the interpolation range (bin centers of the first and last bin on the corresponding axis), but still within the axis range (first bin low edge and last bin high edge ) is set to the corresponding bin center, such that interpolation can still be performed.
+
+    In both cases (interpolated and not interpolated) an error is raised if the coordinate point is outside of the axis range.
+
+    The performance in interpolated mode is expected to be (considerably) worse. Due to issues with `TH3->Interpolate`, it is recommended to have at least 2 bins on each axis.
 
     \param flavor       Neutrino flavor (0 - elec, 1 - muon, 2 - tau)
     \param iscc         NC = 0, CC = 1
@@ -440,7 +442,7 @@ void EffMass::CreateMeffHists(Int_t nebins, Int_t nctbins, Int_t nbybins) {
     \param E_true       True neutrino energy
     \param Ct_true      True cos-theta
     \param By_true      True bjorken-y
-    \param interpolate  Interpolate between bin centers to get the exact value (not supported yet)
+    \param interpolate  Interpolate between bin centers using `TH3::Interpolate` to get the exact value.
     \return Effective mass in Tons
  */
 Double_t EffMass::GetMeff(Int_t flavor, Bool_t iscc, Bool_t isnb, 
@@ -454,22 +456,46 @@ Double_t EffMass::GetMeff(Int_t flavor, Bool_t iscc, Bool_t isnb,
     throw std::invalid_argument("ERROR! EffMass::GetMeff() point (E, ct, by) = (" + to_string(E_true) + ", " + to_string(Ct_true) + ", " + to_string(By_true) + ") is outside the covered range" );
   }
 
-  if (interpolate) {
-    cout << "WARNING! EffMass::GetMeff() interpolation not yet implemented, returning content of corresponding bin." << endl;
-  }
-
   TH3D* meff = fhMeff[flavor][(UInt_t)iscc][(UInt_t)isnb];
 
   if (meff == NULL) {
     throw std::logic_error("ERROR! EffMass::GetMeff() effective mass histogram is not initialised.");
   }
+
+  if ( interpolate ) {
+
+    if ( meff->GetXaxis()->GetNbins() == 1 || meff->GetYaxis()->GetNbins() == 1 ) {
+      throw std::invalid_argument("ERROR! EffMass::GetMeff() for interpolation at least 2 energy and 2 cos-theta bins are required.");
+    }
+    
+    Double_t _e  = BringToInterpolRange( meff->GetXaxis(), E_true );
+    Double_t _ct = BringToInterpolRange( meff->GetYaxis(), Ct_true );
+    Double_t _by = BringToInterpolRange( meff->GetZaxis(), By_true );
+
+    // ROOT inheritance scheme is im-perfect, `TH3->Interpolate` does not work if there is only one bjorken-y bin
+    // as it does not manage to call TH2->Interpolate itself, hence I do this expensive operation here.
+    if ( meff->GetZaxis()->GetNbins() == 1 ) {
+      gErrorIgnoreLevel = kFatal; // because otherwise ROOT gives some warning about sumw2 that is irrelevant for interpolation
+      TH2D* p = (TH2D*)meff->Project3D("yx");
+      return p->Interpolate( _e, _ct );
+      delete p;
+      gErrorIgnoreLevel = kWarning;
+    }
+    else {
+      return meff->Interpolate( _e, _ct, _by );
+    }
+    
+  }
+  else {
   
-  Int_t ebin  = meff->GetXaxis()->FindBin(E_true);
-  Int_t ctbin = meff->GetYaxis()->FindBin(Ct_true);
-  Int_t bybin = meff->GetZaxis()->FindBin(By_true);
+    Int_t ebin  = meff->GetXaxis()->FindBin(E_true);
+    Int_t ctbin = meff->GetYaxis()->FindBin(Ct_true);
+    Int_t bybin = meff->GetZaxis()->FindBin(By_true);
 
-  return meff->GetBinContent(ebin, ctbin, bybin);
+    return meff->GetBinContent(ebin, ctbin, bybin);
 
+  }
+  
 }
 
 //********************************************************************
@@ -503,11 +529,41 @@ Double_t EffMass::GetMeffBC(Int_t flavor, Bool_t iscc, Bool_t isnb,
 
 //********************************************************************
 
+/** Private function to check that the requested energy, cos-theta and bjorken-y are in the range covered by the effective mass file
+    \param E_true  energy
+    \param Ct_true cos-theta
+    \param By_true bjorken-y
+    \return true if in covered range, false otherwise
+ */
 Bool_t EffMass::InCoveredRange(Double_t E_true, Double_t Ct_true, Double_t By_true) {
 
   return ( ( E_true  >= fEmin  && E_true  <= fEmax  ) && 
 	   ( Ct_true >= fCtmin && Ct_true <= fCtmax ) && 
 	   ( By_true >= fBymin && By_true <= fBymax ) );
+
+}
+
+//********************************************************************
+
+/** Private function to bring the value to the interpolation range of `TH3::Interpolate`. 
+
+    If the value is <= than the bin center of the first bin or >= than the bin center of the last bin, the return value is set to the corresponding bin center value
+    \param  axis pointer to `TAxis` 
+    \param  val  value
+    \return      value such that the parameter is inside the interpolation range
+ */
+Double_t EffMass::BringToInterpolRange(TAxis *axis, Double_t val) {
+
+  Double_t ret;
+  
+  Double_t min = axis->GetBinCenter(1);
+  Double_t max = axis->GetBinCenter( axis->GetNbins() );
+
+  if      (val <= min) { ret = min + 1e-10; }
+  else if (val >= max) { ret = max - 1e-10; }
+  else                 { ret = val;         }
+
+  return ret;
 
 }
 

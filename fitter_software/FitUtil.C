@@ -1192,7 +1192,7 @@ void FitUtil::UpdateVarCache(const proxymap_t& proxymap) {
   // loop over all parameters in the proxymap (all parameters known to RooFit)
   for (auto p: proxymap) {
 
-    // ignore observables (E, ct, by), we don't wish to cash these
+    // ignore observables (E, ct, by), we don't wish to cache these
     if ( fObsList.find( p.first ) != NULL ) { continue; }
 
     Double_t val = (Double_t)(*p.second);    // current value of the parameter
@@ -1200,9 +1200,13 @@ void FitUtil::UpdateVarCache(const proxymap_t& proxymap) {
     // find the parameter in the par cache map and update it's value. If the parameter is not (yet)
     // in the map insert it. 
     auto it = fParCache.find( p.first );
-    if ( it == fParCache.end() ) { fParCache.insert( std::make_pair( p.first, val ) ); }
-    else                         { it->second = val;                                   }
-
+    if ( it == fParCache.end() ) { 
+      cout << "NOTICE FitUtil::UpdateVarCache() started caching variable " << p.first << endl;
+      fParCache.insert( std::make_pair( p.first, val ) ); 
+    }
+    else { 
+      it->second = val; 
+    }
     
   }
     
