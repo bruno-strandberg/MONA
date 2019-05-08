@@ -124,8 +124,9 @@ int main(const int argc, const char **argv) {
   // check that likelihood is scaled
   Double_t nll_T = res_T->minNll();
   Double_t nll_N = res_N->minNll()/norm;
-  if ( TMath::Abs( nll_T - nll_N ) > 1e-5 ) {
-    cout << "NOTICE TestNorm failed, likelihoods differ" << endl;
+  Double_t nll_diff = TMath::Abs(nll_T - nll_N)/nll_T * 100; // difference in percent
+  if ( nll_diff > 0.001 ) {
+    cout << "NOTICE TestNorm failed, likelihoods differ by more than 0.001%" << endl;
     return 1;
   }
 
