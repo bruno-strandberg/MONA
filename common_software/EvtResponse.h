@@ -34,9 +34,9 @@ class TrueEvt {
   UInt_t GetIsNB() const { return fIsNB; }
   UInt_t GetIsCC() const { return fIsCC; }
   Double_t GetTrueE() const { return fE_true; }
-  Dobule_t GetTrueCt() const { return (Double_t) (fCt_true * 1e-3); }
+  Double_t GetTrueCt() const { return (Double_t) (fCt_true * 1e-3); }
   Double_t GetTrueBy() const { return (Double_t) (fBy_true * 1e-3); }
-  Dobule_t GetW() const { return f_W1y; }
+  Double_t GetW() const { return f_W1y; }
 
   /** Destructor */
   ~TrueEvt() {};

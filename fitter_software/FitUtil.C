@@ -1017,29 +1017,25 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 
 	for (const auto &te: true_evts) {
 
-		    Int_t IsNB = 0;
-		    if(te.fNuType < 0) IsNB = 1;
 		    
-		    if (te.fIsCC) {
+		    if (te.GetIsCC()) {
 
 		      //Int_t e_bin  = ((EvtResponse*)resp)->GetHist3DTrue()->GetXaxis()->FindBin( te.fE_true );
 		      //Int_t ct_bin = ((EvtResponse*)resp)->GetHist3DTrue()->GetYaxis()->FindBin( te.fCt_true );
 		      //Int_t by_bin = ((EvtResponse*)resp)->GetHist3DTrue()->GetZaxis()->FindBin( te.fBy_true );
 
-		      Int_t e_bin  = fHBT->GetHist3DTrue()->GetXaxis()->FindBin( te.fE_true );
-		      Int_t ct_bin = fHBT->GetHist3DTrue()->GetYaxis()->FindBin( te.fCt_true );
-		      Int_t by_bin = fHBT->GetHist3DTrue()->GetZaxis()->FindBin( te.fBy_true );
+		      Int_t e_bin  = fHBT->GetXaxis()->FindBin( te.GetTrueE() );
+		      Int_t ct_bin = fHBT->GetYaxis()->FindBin( te.GetTrueCt() );
+		      Int_t by_bin = fHBT->GetZaxis()->FindBin( te.GetTrueBy() );
 
-		      TrueB osc_bin = TrueB( te.GetFlav(), te.GetIsCC, te.GetIsNB(), e_bin, ct_bin, by_bin);
-
-		      Double_t atm_flux_factor = ew * ctw * fSec_per_y * op_time;
+		      TrueB osc_bin = TrueB( te.GetFlav(), te.GetIsCC(), te.GetIsNB(), e_bin, ct_bin, by_bin);
 
 		      // get the atm nu count
-		      Double_t atm_count_e = fFlux->Flux_dE_dcosz(ELEC, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt());
-		      Double_t atm_count_m = fFlux->Flux_dE_dcosz(MUON, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt());
+		      //Double_t atm_count_e = fFlux->Flux_dE_dcosz(ELEC, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt());
+		      //Double_t atm_count_m = fFlux->Flux_dE_dcosz(MUON, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt());
 		      
-	      	      Double_t ew  = fHBT.GetXaxis()->GetBinWidth(e_bin);
-	      	      Double_t ctw = fHBT.GetYaxis()->GetBinWidth(ct_bin);
+	      	      Double_t ew  = fHBT->GetXaxis()->GetBinWidth(e_bin);
+	      	      Double_t ctw = fHBT->GetYaxis()->GetBinWidth(ct_bin);
 
 
 		      Double_t atm_count_e = GetCachedFlux(ELEC, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt()) / ew / ctw / fSec_per_y;
@@ -1052,7 +1048,7 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 		      Double_t TE = atm_count_e*prob_elec + atm_count_m*prob_muon;
 
 		      det_count += te.GetW() * TE;
-		      det_err   += TMath::Power(te.GetW * TE, 2);
+		      det_err   += TMath::Power(te.GetW() * TE, 2);
 		      
 		    }
 		    else {
@@ -1072,10 +1068,10 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 		      //TE += GetCachedTE(muonTEv).first;
 		      //TE += GetCachedTE(tauTEv).first;
 
-		      TE = fFlux->Flux_dE_dcosz(ELEC, IsNB, te.fE_true, te.fCt_true) + fFlux->Flux_dE_dcosz(MUON, IsNB, te.fE_true, te.fCt_true);
+		      TE = fFlux->Flux_dE_dcosz(ELEC, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt()) + fFlux->Flux_dE_dcosz(MUON, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt());
 		      
-		      det_count += te.f_W1y * TE;
-		      det_err   += TMath::Power(te.f_W1y * TE, 2);
+		      det_count += te.GetW() * TE;
+		      det_err   += TMath::Power(te.GetW() * TE, 2);
 		      
 		    }
 
