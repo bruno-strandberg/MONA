@@ -946,7 +946,7 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
   //----------------------------------------------------------------------------------
 
   if ( resp->GetResponseType() != (AbsResponse::BinnedResponse || AbsResponse::EvtResponse) ) {
-    throw std::invalid_argument("ERROR! FitUtil::RecoEvts currently supports only DetResponse, but type " + (string)typeid(resp).name() + " encountered." );
+    throw std::invalid_argument("ERROR! FitUtil::RecoEvts currently supports only DetResponse and EvtResponse, but type " + (string)typeid(resp).name() + " encountered." );
   }
 
   //----------------------------------------------------------------------------------
@@ -1022,28 +1022,28 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 		    
 		    if (te.fIsCC) {
 
-		      Int_t e_bin  = ((EvtResponse*)resp)->GetHist3DTrue()->GetXaxis()->FindBin( te.fE_true );
-		      Int_t ct_bin = ((EvtResponse*)resp)->GetHist3DTrue()->GetYaxis()->FindBin( te.fCt_true );
-		      Int_t by_bin = ((EvtResponse*)resp)->GetHist3DTrue()->GetZaxis()->FindBin( te.fBy_true );
-		      UInt_t flav = 0; 
-		      switch(TMath::Abs(te.fNuType)){
-		      		case(12):
-					flav = ELEC;
-					break;
-				case(14):
-					flav = MUON;
-					break;
-				case(16):
-					flav = TAU;
-					break;
+		      //Int_t e_bin  = ((EvtResponse*)resp)->GetHist3DTrue()->GetXaxis()->FindBin( te.fE_true );
+		      //Int_t ct_bin = ((EvtResponse*)resp)->GetHist3DTrue()->GetYaxis()->FindBin( te.fCt_true );
+		      //Int_t by_bin = ((EvtResponse*)resp)->GetHist3DTrue()->GetZaxis()->FindBin( te.fBy_true );
 
-		      }	
-		      TrueB osc_bin = TrueB(flav, te.fIsCC, IsNB, e_bin, ct_bin, by_bin);
-		      //TrueB osc_bin = TrueB(((AbsResponse*)resp)->fType_to_Supported.at((UInt_t) TMath::Abs(te.fNuType)), te.fIsCC, IsNB, e_bin, ct_bin, by_bin);
+		      Int_t e_bin  = fHBT->GetHist3DTrue()->GetXaxis()->FindBin( te.fE_true );
+		      Int_t ct_bin = fHBT->GetHist3DTrue()->GetYaxis()->FindBin( te.fCt_true );
+		      Int_t by_bin = fHBT->GetHist3DTrue()->GetZaxis()->FindBin( te.fBy_true );
+
+		      TrueB osc_bin = TrueB( te.GetFlav(), te.GetIsCC, te.GetIsNB(), e_bin, ct_bin, by_bin);
+
+		      Double_t atm_flux_factor = ew * ctw * fSec_per_y * op_time;
 
 		      // get the atm nu count
-		      Double_t atm_count_e = fFlux->Flux_dE_dcosz(ELEC, IsNB, te.fE_true, te.fCt_true);
-		      Double_t atm_count_m = fFlux->Flux_dE_dcosz(MUON, IsNB, te.fE_true, te.fCt_true);
+		      Double_t atm_count_e = fFlux->Flux_dE_dcosz(ELEC, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt());
+		      Double_t atm_count_m = fFlux->Flux_dE_dcosz(MUON, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt());
+		      
+	      	      Double_t ew  = fHBT.GetXaxis()->GetBinWidth(e_bin);
+	      	      Double_t ctw = fHBT.GetYaxis()->GetBinWidth(ct_bin);
+
+
+		      Double_t atm_count_e = GetCachedFlux(ELEC, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt()) / ew / ctw / fSec_per_y;
+		      Double_t atm_count_m = GetCachedFlux(MUON, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt()) / ew / ctw / fSec_per_y;
 		  
 		      // get the oscillation probabilities
 		      Double_t prob_elec = GetCachedOsc(ELEC, osc_bin, proxymap);
@@ -1051,8 +1051,8 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 		   
 		      Double_t TE = atm_count_e*prob_elec + atm_count_m*prob_muon;
 
-		      det_count += te.f_W1y * TE;
-		      det_err   += TMath::Power(te.f_W1y * TE, 2);
+		      det_count += te.GetW() * TE;
+		      det_err   += TMath::Power(te.GetW * TE, 2);
 		      
 		    }
 		    else {

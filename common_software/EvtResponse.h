@@ -16,33 +16,44 @@ class TrueEvt {
       Packs the necessary info from SummaryEvent to member variables.
       \param evt   Pointer to a summary event
    */
-  TrueEvt(SummaryEvent *evt) {
-
-    fNuType = (Short_t) evt->Get_MC_type();
+  TrueEvt(UInt_t flav, UInt_t iscc, UInt_t isnb, SummaryEvent *evt) {
+    
+    fFlav = (Short_t) flav;
+    fIsNB = (bool) isnb;
+    fIsCC = (bool) iscc;
     fE_true = (Float_t) evt->Get_MC_energy();
-    fCt_true= (Float_t) -evt->Get_MC_dir_z();
-    fBy_true = (Float_t) evt->Get_MC_bjorkeny();
-    fIsCC = (UInt_t) evt->Get_MC_is_CC();
+    fCt_true= (Float_t)  (-evt->Get_MC_dir_z() * 1e3);
+    fBy_true = (Float_t) (evt->Get_MC_bjorkeny() * 1e3);
     f_W1y = (Float_t) evt->Get_MC_w1y();
     fIchan = 0; //it might be useful for the future cross section systematics, for now not found in PID summary files
     
   }
+
+
+  UInt_t GetFlav() const { return fFlav; } 
+  UInt_t GetIsNB() const { return fIsNB; }
+  UInt_t GetIsCC() const { return fIsCC; }
+  Double_t GetTrueE() const { return fE_true; }
+  Dobule_t GetTrueCt() const { return (Double_t) (fCt_true * 1e-3); }
+  Double_t GetTrueBy() const { return (Double_t) (fBy_true * 1e-3); }
+  Dobule_t GetW() const { return f_W1y; }
 
   /** Destructor */
   ~TrueEvt() {};
 
   // plus interface functions to "unpack" data from private members to double's
   
- //private:
+ private:
 
-  UInt_t fIsCC;
+
+  Bool_t fIsCC;
+  Bool_t fIsNB;
+  Short_t fFlav;
   Short_t fIchan;   //!< variable that hold the info about the interaction channel (dis, res, qe)
   Short_t fNuType;  //!< variable that holds all the info to determine flavor, iscc, isnb
   Float_t fE_true;  //!< variable that stores energy
-  //Short_t fCt_true; //!< variable that stores cos-theta with 4-digit resolution
-  Float_t fCt_true;
-  //Short_t fBy_true; //!< variable that stores bjorken-y with 4-digit resolution
-  Float_t fBy_true;
+  Short_t fCt_true; //!< variable that stores cos-theta with 4-digit resolution
+  Short_t fBy_true; //!< variable that stores bjorken-y with 4-digit resolution
 
   Float_t f_W1y;    //!< weight 1 year, for testing, to be deleted in the final version
 

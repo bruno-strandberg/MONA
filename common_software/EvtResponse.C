@@ -71,14 +71,6 @@ void EvtResponse::Fill(SummaryEvent *evt) {
   // check that type is supported
   //---------------------------------------------------------------------------------------
 
-  try {
-    fType_to_Supported.at( (UInt_t)TMath::Abs( evt->Get_MC_type() ) );
-  }
-  catch (const std::out_of_range& oor) {
-    throw std::invalid_argument("ERROR! EvtResponse::Fill() unknown particle type " +
-				to_string( TMath::Abs( evt->Get_MC_type() ) ) );
-  }
-
   UInt_t flav;
   try {
     flav  = fType_to_Supported.at( (UInt_t)TMath::Abs( evt->Get_MC_type() ) );
@@ -87,6 +79,9 @@ void EvtResponse::Fill(SummaryEvent *evt) {
     throw std::invalid_argument("ERROR! DetResponse::Fill() unknown particle type " +
 				to_string( TMath::Abs( evt->Get_MC_type() ) ) );
   }
+
+  UInt_t is_cc = evt->Get_MC_is_CC();
+  UInt_t is_nb = (UInt_t)(evt->Get_MC_type() < 0 );
 
   /*********************************************************************************
    Any logic here to do something different with atm muons and noise? 
@@ -108,7 +103,7 @@ void EvtResponse::Fill(SummaryEvent *evt) {
 	  Int_t ct_reco_bin = fhBinsReco->GetYaxis()->FindBin( -fDir.z()  );
 	  Int_t by_reco_bin = fhBinsReco->GetZaxis()->FindBin(  fBy       );
 
-	  fResp[e_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueEvt(evt) );
+	  fResp[e_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueEvt(flav, is_cc, is_nb, evt) );
   }
 
   else if ( flav == ATMMU ) fhAtmMuCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
