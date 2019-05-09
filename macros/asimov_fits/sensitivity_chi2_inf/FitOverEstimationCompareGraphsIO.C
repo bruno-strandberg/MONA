@@ -70,11 +70,11 @@ void FitOverEstimationCompareGraphsIO() {
   g2->GetYaxis()->SetTitle("#sqrt{ #Delta #chi^{2} }");
 
 
-  leg->AddEntry(g2, "#LT #Delta #chi^{2} #GT IO at #infty statistics 2 PID categories", "lp");
-  leg->AddEntry(g3, "#LT #Delta #chi^{2} #GT IO at #infty statistics 3 PID categories", "lp");
-  leg->AddEntry(g4, "#LT #Delta #chi^{2} #GT IO at #infty statistics 4 PID categories", "lp");
-  leg->AddEntry(g5, "#LT #Delta #chi^{2} #GT IO at #infty statistics 5 PID categories", "lp");
-  leg->AddEntry(g10, "#LT #Delta #chi^{2} #GT IO at #infty statistics 10 PID categories", "lp");
+  leg->AddEntry(g2, "#LT #Delta #chi^{2} #GT IO at #infty statistics 2 PID categories", "lpe");
+  leg->AddEntry(g3, "#LT #Delta #chi^{2} #GT IO at #infty statistics 3 PID categories", "lpe");
+  leg->AddEntry(g4, "#LT #Delta #chi^{2} #GT IO at #infty statistics 4 PID categories", "lpe");
+  leg->AddEntry(g5, "#LT #Delta #chi^{2} #GT IO at #infty statistics 5 PID categories", "lpe");
+  leg->AddEntry(g10, "#LT #Delta #chi^{2} #GT IO at #infty statistics 10 PID categories", "lpe");
   leg->Draw();
 }
 

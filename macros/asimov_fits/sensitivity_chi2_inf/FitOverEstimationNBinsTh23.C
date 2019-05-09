@@ -68,8 +68,8 @@ void FitOverEstimationNBinsTh23(Int_t nbins=2) {
   TLegend* leg = new TLegend(0.1, 0.75, 0.3, 0.9);
   leg->AddEntry(g, "#LT #Delta #chi^{2} #GT IO at #infty", "lp");
   leg->AddEntry(h, "#LT #Delta #chi^{2} #GT NO at #infty", "lp");
-  leg->AddEntry(g_no, "#Delta #chi^{2} NO", "lp");
-  leg->AddEntry(g_io, "#Delta #chi^{2} IO", "lp");
+  leg->AddEntry(g_no, "#Delta #chi^{2} IO", "lpe");
+  leg->AddEntry(g_io, "#Delta #chi^{2} NO", "lpe");
   leg->Draw();
 }
 

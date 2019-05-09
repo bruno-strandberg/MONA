@@ -33,8 +33,8 @@ void FitOverEstimationCompareGraphsNO() {
   TGraphErrors *g4 = new TGraphErrors(n4, t_4->GetV1(), t_4->GetV2(), 0, t_2->GetV3()); 
   Int_t n5 = t_5->Draw("th23:sqrt_fit_chi2:sqrt_chi2_err", "", "goff");
   TGraphErrors *g5 = new TGraphErrors(n5, t_5->GetV1(), t_5->GetV2(), 0, t_2->GetV3()); 
-  Int_t n10 = t_10->Draw("th23:sqrt_fit_chi2:sqrt_chi2_err", "", "goff");
-  TGraphErrors *g10 = new TGraphErrors(n10, t_10->GetV1(), t_10->GetV2(), 0, t_2->GetV3()); 
+  //Int_t n10 = t_10->Draw("th23:sqrt_fit_chi2:sqrt_chi2_err", "", "goff");
+  //TGraphErrors *g10 = new TGraphErrors(n10, t_10->GetV1(), t_10->GetV2(), 0, t_2->GetV3()); 
 
   g2->SetLineColor(kBlue+1);
   g2->SetMarkerColor(kBlue+1);
@@ -52,8 +52,8 @@ void FitOverEstimationCompareGraphsNO() {
   g5->SetMarkerColor(kAzure+1);
 //  g5->SetMarkerStyle(21);
 
-  g10->SetLineColor(kBlack);
-  g10->SetMarkerColor(kBlack);
+  //g10->SetLineColor(kBlack);
+  //g10->SetMarkerColor(kBlack);
 //  g10->SetMarkerStyle(21);
 
   g2->SetMinimum(0);
@@ -62,7 +62,7 @@ void FitOverEstimationCompareGraphsNO() {
   g3->Draw("pl"); 
   g4->Draw("pl"); 
   g5->Draw("pl"); 
-  g10->Draw("pl"); 
+  //g10->Draw("pl"); 
 
     
   g2->SetTitle("#LT #Delta #chi^{2} #GT at infinite statistics ");
@@ -70,11 +70,11 @@ void FitOverEstimationCompareGraphsNO() {
   g2->GetYaxis()->SetTitle("#sqrt{ #Delta #chi^{2} }");
 
 
-  leg->AddEntry(g2, "#LT #Delta #chi^{2} #GT NO at #infty statistics 2 PID categories", "lp");
-  leg->AddEntry(g3, "#LT #Delta #chi^{2} #GT NO at #infty statistics 3 PID categories", "lp");
-  leg->AddEntry(g4, "#LT #Delta #chi^{2} #GT NO at #infty statistics 4 PID categories", "lp");
-  leg->AddEntry(g5, "#LT #Delta #chi^{2} #GT NO at #infty statistics 5 PID categories", "lp");
-  leg->AddEntry(g10, "#LT #Delta #chi^{2} #GT NO at #infty statistics 10 PID categories", "lp");
+  leg->AddEntry(g2, "#LT #Delta #chi^{2} #GT NO at #infty statistics 2 PID categories", "lpe");
+  leg->AddEntry(g3, "#LT #Delta #chi^{2} #GT NO at #infty statistics 3 PID categories", "lpe");
+  leg->AddEntry(g4, "#LT #Delta #chi^{2} #GT NO at #infty statistics 4 PID categories", "lpe");
+  leg->AddEntry(g5, "#LT #Delta #chi^{2} #GT NO at #infty statistics 5 PID categories", "lpe");
+  //leg->AddEntry(g10, "#LT #Delta #chi^{2} #GT NO at #infty statistics 10 PID categories", "lpe");
   leg->Draw();
 }
 
