@@ -122,10 +122,10 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
       if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
       SummaryEvent *evt = sp.GetEvt(i);
 
-        // Throw random uniform, if its l.t. a certain percentage, discard the event.
-        Double_t random = gRandom->Uniform(0, 1);
+      // Throw random uniform, if its l.t. a certain percentage, discard the event.
+      Double_t random = gRandom->Uniform(0, 1);
       
-        if (random > percentage) continue;
+      if (random > percentage) continue;
 
       for (Int_t i = 0; i < N_PID_CLASSES; i++) {
         track_response_vector[i]->Fill(evt);
