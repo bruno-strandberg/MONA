@@ -1,4 +1,5 @@
 #include "EvtResponse.h"
+#include <iostream>
 #include <vector>
 
 using namespace std;
@@ -42,6 +43,8 @@ EvtResponse::EvtResponse(reco reco_type, TString resp_name,
     }
   }
 
+  fhAtmMuCount1y = CloneFromTemplate(fhBinsReco, "hAtmMuCount1y_" + fRespName);
+  fhNoiseCount1y = CloneFromTemplate(fhBinsReco, "hNoiseCount1y_" + fRespName);
 }
 
 //=====================================================================================================
@@ -57,6 +60,8 @@ EvtResponse::~EvtResponse() {
     if (fResp[ebin]) delete[] fResp[ebin];
   }
   delete[] fResp;
+  delete fhAtmMuCount1y;
+  delete fhNoiseCount1y;
   
 }
 
@@ -86,32 +91,34 @@ void EvtResponse::Fill(SummaryEvent *evt) {
   /*********************************************************************************
    Any logic here to do something different with atm muons and noise? 
   **********************************************************************************/
+  
 
   // set the reconstruction observables
   SetObservables(evt); //implemented in EventFilter.C
 
+
   if	  ( flav == ELEC || flav == MUON || flav == TAU){
+	
 	  if ( !PassesCuts(evt) ) return;
 
 	  //---------------------------------------------------------------------------------------
 	  // set reco observables, locate the reco bin this event belongs to and add to response
 	  //---------------------------------------------------------------------------------------
 
-	  SetObservables(evt); //implemented in EventFilter.C
+	  //SetObservables(evt); //implemented in EventFilter.C
 
 	  Int_t  e_reco_bin = fhBinsReco->GetXaxis()->FindBin(  fEnergy   );
 	  Int_t ct_reco_bin = fhBinsReco->GetYaxis()->FindBin( -fDir.z()  );
 	  Int_t by_reco_bin = fhBinsReco->GetZaxis()->FindBin(  fBy       );
 
+
 	  fResp[e_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueEvt(flav, is_cc, is_nb, evt) );
   }
-
   else if ( flav == ATMMU ) fhAtmMuCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
   else if ( flav == NOISE ) fhNoiseCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
   else {
       throw std::invalid_argument( "ERROR! DetResponse::Fill() unknown particle with flavor " + to_string(flav) );
   }
-
 
   //---------------------------------------------------------------------------------------
   // if the event does not pass the cuts return
@@ -125,6 +132,20 @@ void EvtResponse::Fill(SummaryEvent *evt) {
   
 
 }
+
+
+TH3D* EvtResponse::CloneFromTemplate(TH3D* tmpl, TString name) {
+
+  TH3D* ret = (TH3D*)tmpl->Clone(name);
+  ret->SetNameTitle(name, name);
+  ret->Reset();
+  ret->SetDirectory(0);
+
+  return ret;
+
+}
+
+
 
 //=====================================================================================================
 

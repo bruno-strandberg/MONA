@@ -880,6 +880,8 @@ TH3D* FitUtil::Expectation(AbsResponse *resp, const proxymap_t &proxymap, const 
 
         auto recoevts = RecoEvts(E, ct, by, resp, proxymap);
 
+	//cout<<"Expectation reco value in bin: "<<recoevts.first*binw<<endl;
+
         hexp->SetBinContent(ebin, ctbin, bybin, recoevts.first*binw  );
         hexp->SetBinError  (ebin, ctbin, bybin, recoevts.second*binw );
 
@@ -1004,7 +1006,10 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 	    }
 
 	  } // end loop over true bins
+	  det_err = TMath::Sqrt(det_err);
   }
+
+  
 
   //----------------------------------------------------------------------------------
   // perform the EvtResponse calculation
@@ -1048,7 +1053,7 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 		      Double_t TE = atm_count_e*prob_elec + atm_count_m*prob_muon;
 
 		      det_count += te.GetW() * TE;
-		      det_err   += TMath::Power(te.GetW() * TE, 2);
+		      det_err   += 0;
 		      
 		    }
 		    else {
@@ -1071,13 +1076,13 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 		      TE = fFlux->Flux_dE_dcosz(ELEC, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt()) + fFlux->Flux_dE_dcosz(MUON, te.GetIsNB(), te.GetTrueE(), te.GetTrueCt());
 		      
 		      det_count += te.GetW() * TE;
-		      det_err   += TMath::Power(te.GetW() * TE, 2);
+		      det_err   += 0;
 		      
 		    }
 
 		  } // end loop over true events
 
-
+		  det_err = TMath::Sqrt(det_count);
 
 
   }
@@ -1085,8 +1090,7 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
   //det_count += resp->GetAtmMuCount1y(E_reco, ct_reco, by_reco) * fOpTime;
   //det_count += resp->GetNoiseCount1y(E_reco, ct_reco, by_reco) * fOpTime;
 
-  det_err = TMath::Sqrt(det_err);
-
+  
   // finally, convert the event counts in reco bin to event density
   Double_t e_w  = fHBR->GetXaxis()->GetBinWidth( fHBR->GetXaxis()->FindBin( E_reco )  );
   Double_t ct_w = fHBR->GetYaxis()->GetBinWidth( fHBR->GetYaxis()->FindBin( Ct_reco ) );

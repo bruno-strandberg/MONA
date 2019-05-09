@@ -83,6 +83,7 @@ class EvtResponse : public AbsResponse {
   ~EvtResponse();
 
   void Fill(SummaryEvent *evt);
+  TH3D* CloneFromTemplate(TH3D* tmpl, TString name);
   resp GetResponseType() { return AbsResponse::EvtResponse; }
   std::vector<TrueEvt>& GetBinEvts(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
 
