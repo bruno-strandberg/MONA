@@ -9,6 +9,7 @@
 
 #include "TMath.h"
 #include "TFile.h"
+#include "TMultiGraph.h"
 
 #include <stdexcept>
 
@@ -120,13 +121,14 @@ int main(const int argc, const char **argv) {
   eranges.push_back( to_string( E_range_low.getLowerLimit() ) + "-" + to_string( E_range_low.getUpperLimit() ) );
   eranges.push_back( to_string( E_range_high.getLowerLimit() ) + "-" + to_string( E_range_high.getUpperLimit() ) );
 
-  vector<TString> searchstr;
+  vector< std::pair<TString, TString> > searchstr;
 
   for (auto f: flavors) {
     for (auto i: ints) {
       for (auto r: eranges) {
-	TString str = input_dir + "/*" + f + "*" + i + "*" + r + "*";
-	searchstr.push_back( str );
+	TString str = input_dir + "/*" + f + "*" + i + "*" + r + "*"; // search string
+	TString nstr = f + "_" + i + "_" + r;                         // name string for ROOT graphs
+	searchstr.push_back( std::make_pair(str, nstr) );
       }
     }
   }
@@ -136,25 +138,25 @@ int main(const int argc, const char **argv) {
   //------------------------------------------------------  
   std::map<TString, vector<TString> > str_vec_pairs;
 
-  for (auto str: searchstr) {
+  for (auto p: searchstr) {
 
     TString syscmd;
 
     TString tmpfile = "tmp.txt";
-    syscmd = "ls " + str + " > " + tmpfile;
+    syscmd = "ls " + p.first + " > " + tmpfile;
     SystemCmd ( syscmd );
     vector<TString> filelines = NMHUtils::ReadLines(tmpfile);
     SystemCmd ( "rm " + tmpfile );
 
     if (filelines.size() == 0) {
-      cout << "NOTICE DataQuality() no files for selection " << str << endl;
+      cout << "NOTICE DataQuality() no files for selection " << p.first << endl;
       continue;
     }
     else {
-      cout << "NOTICE DataQuality() " << filelines.size() << " files for selection " << str << endl;
+      cout << "NOTICE DataQuality() " << filelines.size() << " files for selection " << p.first << endl;
     }
 
-    str_vec_pairs.insert( std::make_pair(str, filelines) );
+    str_vec_pairs.insert( std::make_pair(p.second, filelines) );
 
   }
 
@@ -193,16 +195,83 @@ int main(const int argc, const char **argv) {
   }
 
   //------------------------------------------------------
-  // write to file
+  // create some plots and write to file
   //------------------------------------------------------
   
   TFile fout(output_file, "RECREATE");
 
   for (auto gr: G) {
-    gr.g_gen_nu .Write();
-    gr.g_gen_nub.Write();
-    gr.g_sel_nu .Write();
-    gr.g_sel_nub.Write();
+
+    // sort the graphs in X value
+    gr.g_gen_nu.Sort();
+    gr.g_sel_nu.Sort();
+    gr.g_gen_nub.Sort();
+    gr.g_sel_nub.Sort();
+
+    // check that the same number of runs exist for generated and selected
+    if ( gr.g_gen_nu.GetN() != gr.g_sel_nu.GetN() ) {
+      throw std::logic_error("ERROR! DataQuality() generated and selected nu events have different number of files. Investigate the MC production");
+    }
+
+    if ( gr.g_gen_nub.GetN() != gr.g_sel_nub.GetN() ) {
+      throw std::logic_error("ERROR! DataQuality() generated and selected nubar events have different number of files. Investigate the DataQuality.C code and the MC production");
+    }
+    
+    // loop over the points and calculate the ratio
+    TGraph ratio_nu, ratio_nub;
+    ratio_nu .SetNameTitle( gr.name + "ratio_nu" , gr.name + "ratio_nu"  );
+    ratio_nub.SetNameTitle( gr.name + "ratio_nub", gr.name + "ratio_nub" );
+
+    Double_t xg,yg, xs, ys;
+
+    // --------------------- for nu ------------------------------------------
+    for (Int_t i = 0; i < gr.g_gen_nu.GetN(); i++) {
+
+      gr.g_gen_nu.GetPoint(i, xg, yg);
+      gr.g_sel_nu.GetPoint(i, xs, ys);
+
+      if ( xs != xg ) {
+	throw std::logic_error("ERROR! DataQuality() different run numbers on the x-axis for nu events. Investigate the DataQuality.C code and the MC production");
+      }
+
+      ratio_nu.SetPoint( i, xs, ys/yg );
+      
+    }
+
+    // --------------------- for nub ------------------------------------------
+    for (Int_t i = 0; i < gr.g_gen_nub.GetN(); i++) {
+
+      gr.g_gen_nub.GetPoint(i, xg, yg);
+      gr.g_sel_nub.GetPoint(i, xs, ys);
+
+      if ( xs != xg ) {
+	throw std::logic_error("ERROR! DataQuality() different run numbers on the x-axis for nubar events. Investigate the DataQuality.C code and the MC production");
+      }
+
+      ratio_nub.SetPoint( i, xs, ys/yg );
+      
+    }
+
+    ratio_nu.SetLineColor(kRed);
+    ratio_nu.SetLineWidth(2);
+    ratio_nub.SetLineColor(kRed);
+    ratio_nub.SetLineWidth(2);
+
+    ratio_nu.Write();
+    ratio_nub.Write();
+    
+    // create multigraphs that show all the graphs
+    TMultiGraph mg_nu, mg_nub;
+    
+    mg_nu.Add( &gr.g_gen_nu );
+    mg_nu.Add( &gr.g_sel_nu );
+
+    mg_nub.Add( &gr.g_gen_nub );
+    mg_nub.Add( &gr.g_sel_nub );
+    
+    mg_nu.Write( gr.name + "_nu" );
+    mg_nub.Write( gr.name + "_nub" );
+    
   }
 
   fout.Close();
