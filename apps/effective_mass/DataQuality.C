@@ -167,10 +167,16 @@ int main(const int argc, const char **argv) {
 
   for (auto kv: str_vec_pairs) {
 
+    cout << "NOTICE DataQuality() analysing " << kv.second.size() << 
+      " files for selection " << kv.first << endl;
     Graphs gr( kv.first );
     
+    Int_t counter = 0;
     for (auto fname: kv.second) {
       
+      if (counter % 50 == 0) cout << "File " << counter << " out of " << kv.second.size() << endl;
+      counter++;
+
       Int_t runnr = GetRunNr( fname );
 
       TFile fin( fname, "READ");
