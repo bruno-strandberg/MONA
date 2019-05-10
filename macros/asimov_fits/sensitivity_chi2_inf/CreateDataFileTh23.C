@@ -8,6 +8,7 @@
 
 void WriteSqrtChi2(TTree* tree);
 TString CsvFilePath(Int_t n, string ordering);
+TString CsvFilePathCrossCheck(Int_t n, string ordering);
 TString CsvColumns(Int_t n);
 
 void CreateDataFileTh23() {
@@ -23,6 +24,15 @@ void CreateDataFileTh23() {
       TTree* tree_out = new TTree( Form("data_tree_%i_%s", pid, order), "Data for chi2_inf fit");
 
       tree_out->ReadFile(MONADIR + CsvFilePath(pid, order), CsvColumns(pid), ',');
+
+      WriteSqrtChi2(tree_out);
+
+      tree_out->Write();
+    }
+    for (auto pid: pid_cats) {
+      TTree* tree_out = new TTree( Form("crosscheck_tree_%i_%s", pid, order), "Data for chi2_inf fit crosscheck w/ randomized Q");
+
+      tree_out->ReadFile(MONADIR + CsvFilePathCrossCheck(pid, order), CsvColumns(pid), ',');
 
       WriteSqrtChi2(tree_out);
 
@@ -69,6 +79,31 @@ TString CsvFilePath(Int_t n, string ordering) {
       break;
     case 10:
       filepath = Form("/output/csv/SensChi2Inf/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      break;
+  }
+
+  return filepath;
+}
+
+TString CsvFilePathCrossCheck(Int_t n, string ordering) {
+  TString filepath;
+  for (auto & c: ordering) c = std::toupper(c); // Make the string upper case
+
+  switch (n) {
+    case 2:
+      filepath = Form("/output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      break;
+    case 3:
+      filepath = Form("/output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      break;
+    case 4:
+      filepath = Form("/output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      break;
+    case 5:
+      filepath = Form("/output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      break;
+    case 10:
+      filepath = Form("/output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
   }
 

@@ -40,7 +40,7 @@ using namespace RooFit;
 
 void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) {
 
-  const int N_PID_CLASSES = N_PID;
+  const Int_t N_PID_CLASSES = N_PID;
   const Double_t PID_CUT = 0.6;
 
   std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
