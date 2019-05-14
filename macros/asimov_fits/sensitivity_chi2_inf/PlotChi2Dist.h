@@ -14,7 +14,7 @@
 
 using namespace std;
 
-std::vector<TH1D*> PlotChi2Distribution(TTree* tree, Int_t use_th23=-1, Int_t n_slices_in_graph=10) {
+std::vector<TH1D*> PlotChi2Distribution(TTree* tree, Double_t use_th23=-1, Int_t n_slices_in_graph=10) {
 
   const Int_t N_SLICES = n_slices_in_graph;
 
@@ -45,7 +45,7 @@ std::vector<TH1D*> PlotChi2Distribution(TTree* tree, Int_t use_th23=-1, Int_t n_
     Double_t _max = 0;
     for (Int_t j = 0; j < tree_in->GetEntries(); j++) {
       tree_in->GetEntry(j);
-      if (th23 == use_th23) continue;
+      if (th23 != use_th23) continue;
 
       // For some reason percentage==PERCENTAGES[i] does not work.
       if (std::abs((percentage - PERCENTAGES[i]/100.) / percentage) < 1e-3) {
@@ -55,7 +55,6 @@ std::vector<TH1D*> PlotChi2Distribution(TTree* tree, Int_t use_th23=-1, Int_t n_
     }
 
     // Debugging
-    //cout << "finished looping through file, inserting at " << frac << "  min " << _min << " max " << _max << endl;
     min_map[PERCENTAGES[i]] = _min;
     max_map[PERCENTAGES[i]] = _max;
   }
@@ -73,7 +72,7 @@ std::vector<TH1D*> PlotChi2Distribution(TTree* tree, Int_t use_th23=-1, Int_t n_
   for (Int_t i = 0; i <= N_SLICES; i++) {
     for (Int_t j = 0; j < tree_in->GetEntries(); j++) {
       tree_in->GetEntry(j);
-      if (th23 == use_th23) continue;
+      if (th23 != use_th23) continue;
 
       if (std::abs((percentage - PERCENTAGES[i]/100.) / percentage) < 1e-3) {
         th1d_vector[i]->Fill(fit_chi2);
