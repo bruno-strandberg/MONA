@@ -19,8 +19,6 @@ EvtResponse::EvtResponse(reco reco_type, TString resp_name,
   AbsResponse(reco_type, resp_name,
 	      t_ebins, t_emin, t_emax, t_ctbins, t_ctmin, t_ctmax, t_bybins, t_bymin, t_bymax,
 	      r_ebins, r_emin, r_emax, r_ctbins, r_ctmin, r_ctmax, r_bybins, r_bymin, r_bymax) {
-
-  throw std::logic_error("ERROR! EvtResponse::EvtResponse() this is currently a skeleton code only, use DetResponse for a detector response functionality.");
   
   fMemLim = memlim;
   
@@ -70,64 +68,75 @@ EvtResponse::~EvtResponse() {
 
 //=====================================================================================================
 
-/** Function that checks the input summary event against cuts and fills the events that pass the cuts to response
-    \param evt summary event
+/** Function that checks the input summary event against cuts configured for this response and fills the events that pass the cuts to the response.
+    \param evt   A pointer to a `SummaryEvent` with MC data
  */
 void EvtResponse::Fill(SummaryEvent *evt) {
 
-  //---------------------------------------------------------------------------------------
-  // check that type is supported
-  //---------------------------------------------------------------------------------------
 
+  // check that type is supported
   UInt_t flav;
   try {
     flav  = fType_to_Supported.at( (UInt_t)TMath::Abs( evt->Get_MC_type() ) );
   }
   catch (const std::out_of_range& oor) {
-    throw std::invalid_argument("ERROR! DetResponse::Fill() unknown particle type " +
+    throw std::invalid_argument("ERROR! EvtResponse::Fill() unknown particle type " +
 				to_string( TMath::Abs( evt->Get_MC_type() ) ) );
   }
 
   UInt_t is_cc = evt->Get_MC_is_CC();
   UInt_t is_nb = (UInt_t)(evt->Get_MC_type() < 0 );
 
-  /*********************************************************************************
-   Any logic here to do something different with atm muons and noise? 
-  **********************************************************************************/
-  
-
   // set the reconstruction observables
   SetObservables(evt); //implemented in EventFilter.C
+  
+  // fill neutrino events
+  if ( flav <= TAU ) {
 
+    // exclude events that are outside of the true bins range
+    Double_t nebins  = fhBinsTrue->GetXaxis()->GetNbins();
+    Double_t emin    = fhBinsTrue->GetXaxis()->GetBinLowEdge(1);
+    Double_t emax    = fhBinsTrue->GetXaxis()->GetBinUpEdge(nebins);
 
-  if	  ( flav == ELEC || flav == MUON || flav == TAU){
-	
-	  if ( !PassesCuts(evt) ) return;
+    Double_t nctbins = fhBinsTrue->GetYaxis()->GetNbins();
+    Double_t ctmin   = fhBinsTrue->GetYaxis()->GetBinLowEdge(1);
+    Double_t ctmax   = fhBinsTrue->GetYaxis()->GetBinUpEdge(nctbins);
 
-	  //---------------------------------------------------------------------------------------
-	  // set reco observables, locate the reco bin this event belongs to and add to response
-	  //---------------------------------------------------------------------------------------
+    Double_t nbybins = fhBinsTrue->GetZaxis()->GetNbins();
+    Double_t bymin   = fhBinsTrue->GetZaxis()->GetBinLowEdge(1);
+    Double_t bymax   = fhBinsTrue->GetZaxis()->GetBinUpEdge(nbybins);
 
-	  //SetObservables(evt); //implemented in EventFilter.C
+    if (  evt->Get_MC_energy()   < emin  ||  evt->Get_MC_energy()   >= emax  ||
+	 -evt->Get_MC_dir_z()    < ctmin || -evt->Get_MC_dir_z()    >= ctmax ||
+	  evt->Get_MC_bjorkeny() < bymin ||  evt->Get_MC_bjorkeny() >= bymax ) {
+      return;
+    }
+    
+    // exclude events that do not pass the selection cuts
+    if ( !PassesCuts(evt) ) return;
 
-	  Int_t  e_reco_bin = fhBinsReco->GetXaxis()->FindBin(  fEnergy   );
-	  Int_t ct_reco_bin = fhBinsReco->GetYaxis()->FindBin( -fDir.z()  );
-	  Int_t by_reco_bin = fhBinsReco->GetZaxis()->FindBin(  fBy       );
+    // find the reco bin based on reco variables
+    Int_t  e_reco_bin = fhBinsReco->GetXaxis()->FindBin(  fEnergy   );
+    Int_t ct_reco_bin = fhBinsReco->GetYaxis()->FindBin( -fDir.z()  );
+    Int_t by_reco_bin = fhBinsReco->GetZaxis()->FindBin(  fBy       );
 
-
-	  fResp[e_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueEvt(flav, is_cc, is_nb, evt) );
+    // fill the response
+    fResp[e_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueEvt(flav, is_cc, is_nb, evt) );
   }
-  else if ( flav == ATMMU ) fhAtmMuCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
-  else if ( flav == NOISE ) fhNoiseCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
+
+  // fill noise and atm muon events
   else {
-      throw std::invalid_argument( "ERROR! DetResponse::Fill() unknown particle with flavor " + to_string(flav) );
+
+    // if event does not pass the cuts return
+    if ( !PassesCuts(evt) ) return;
+    
+    if      ( flav == ATMMU ) fhAtmMuCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
+    else if ( flav == NOISE ) fhNoiseCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
+    else {
+      throw std::invalid_argument( "ERROR! EvtResponse::Fill() unknown particle with flavor " + to_string(flav) );
+    }
+ 
   }
-
-  //---------------------------------------------------------------------------------------
-  // if the event does not pass the cuts return
-  //---------------------------------------------------------------------------------------
-
-
 
   /*********************************************************************************
    Add test here to check the RAM usage once TrueEvt class is finalised
@@ -136,7 +145,13 @@ void EvtResponse::Fill(SummaryEvent *evt) {
 
 }
 
+//=====================================================================================================
 
+/** Private function to faciliate easier cloning of histograms
+    \param tmpl   Template `TH3D` histogram
+    \param name   Name and title for the created histogram
+    \return       Pointer to the new empty histogram with identical binning compared to the template
+*/
 TH3D* EvtResponse::CloneFromTemplate(TH3D* tmpl, TString name) {
 
   TH3D* ret = (TH3D*)tmpl->Clone(name);
@@ -147,8 +162,6 @@ TH3D* EvtResponse::CloneFromTemplate(TH3D* tmpl, TString name) {
   return ret;
 
 }
-
-
 
 //=====================================================================================================
 
@@ -166,4 +179,44 @@ std::vector<TrueEvt>& EvtResponse::GetBinEvts(Double_t E_reco, Double_t ct_reco,
 
   return fResp[ebin][ctbin][bybin];
   
+}
+
+//=====================================================================================================
+
+/**
+   Returns the number of atmospheric muon events in 1 year in the bin specified by the reconstruction variables.
+   
+   \param E_reco    Reconstructed energy
+   \param ct_reco   Reconstructed cos-theta
+   \param by_reco   Reconstructed bjorken-y
+   \return          a pair with the atmospheric muon count in 1 year (first) and the MC statistical error (second)
+ */
+std::pair<Double_t, Double_t> EvtResponse::GetAtmMuCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco) {
+
+  Int_t ebin  = fhAtmMuCount1y->GetXaxis()->FindBin(E_reco);
+  Int_t ctbin = fhAtmMuCount1y->GetYaxis()->FindBin(ct_reco);
+  Int_t bybin = fhAtmMuCount1y->GetZaxis()->FindBin(by_reco);
+  
+  return std::make_pair( fhAtmMuCount1y->GetBinContent(ebin, ctbin, bybin), fhAtmMuCount1y->GetBinError(ebin, ctbin, bybin) );
+
+}
+
+//=====================================================================================================
+
+/**
+   Returns the number of noise events in 1 year in the bin specified by the reconstruction variables.
+   
+   \param E_reco    Reconstructed energy
+   \param ct_reco   Reconstructed cos-theta
+   \param by_reco   Reconstructed bjorken-y
+   \return          a pair with noise count in 1 year (first) and the MC statistical error (second)
+ */
+std::pair<Double_t, Double_t> EvtResponse::GetNoiseCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco) {
+
+  Int_t ebin  = fhNoiseCount1y->GetXaxis()->FindBin(E_reco);
+  Int_t ctbin = fhNoiseCount1y->GetYaxis()->FindBin(ct_reco);
+  Int_t bybin = fhNoiseCount1y->GetZaxis()->FindBin(by_reco);
+  
+  return std::make_pair( fhNoiseCount1y->GetBinContent(ebin, ctbin, bybin), fhNoiseCount1y->GetBinError(ebin, ctbin, bybin) );
+
 }

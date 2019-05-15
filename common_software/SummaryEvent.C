@@ -5,8 +5,10 @@ SummaryEvent::SummaryEvent() {
   fMC_runID        = 0.;       
   fMC_evtID        = 0.;       
   fMC_w2           = 0.;          
-  fMC_w1y          = 0.;         
+  fMC_w1y          = 0.;
+  fMC_w2denom      = 0.;         
   fMC_erange_start = 0.;
+  fMC_erange_stop  = 0.;
   fMC_is_CC        = 0.;       
   fMC_is_neutrino  = 0.; 
   fMC_type         = 0.;        
@@ -29,7 +31,8 @@ SummaryEvent::SummaryEvent() {
   fTrack_bjorkeny  = 0.; 
   fTrack_ql0       = 0.;      
   fTrack_ql1       = 0.;      
-  fTrack_ql2       = 0.;      
+  fTrack_ql2       = 0.;
+  fTrack_ql3       = 0.;      
 
   fShower_dir_x    = 0.;
   fShower_dir_y    = 0.;
@@ -41,7 +44,8 @@ SummaryEvent::SummaryEvent() {
   fShower_bjorkeny = 0.; 
   fShower_ql0      = 0.;      
   fShower_ql1      = 0.;
-  fShower_ql2      = 0.;      
+  fShower_ql2      = 0.;
+  fShower_ql3      = 0.;      
 
   fRDF_muon_score  = 0.;  
   fRDF_track_score = 0.; 
@@ -90,8 +94,10 @@ void SummaryEvent::FillPseudoData(Bool_t logE) {
   fMC_runID        = 0.;
   fMC_evtID        = 0.;       
   fMC_w2           = 0.;          
-  fMC_w1y          = 0.;         
+  fMC_w1y          = 0.;
+  fMC_w2denom      = 0.;         
   fMC_erange_start = 0.;
+  fMC_erange_stop  = 0.;
 
   //-----------------------------------------------------------------------------
   //set random MC-truth variables

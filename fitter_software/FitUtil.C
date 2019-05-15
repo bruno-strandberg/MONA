@@ -1036,7 +1036,7 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 	// calculate the oscillated differential flux for the neutrino type
 	Double_t oscf = atm_count_e*prob_elec + atm_count_m*prob_muon;
 
-	det_count += te.GetW() * oscf;
+	det_count += te.GetW1y() * oscf;
 	det_err++;
 		      
       }
@@ -1049,7 +1049,7 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 	// can be simplified and the oscillated flux is just equal to the un-oscillated elec+muon flux
 
 	Double_t oscf = atm_count_e + atm_count_m;
-	det_count += te.GetW() * oscf;
+	det_count += te.GetW1y() * oscf;
 	det_err++;
 	
       }

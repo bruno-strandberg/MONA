@@ -106,8 +106,10 @@ class SummaryEvent : public TObject {
   Double_t Get_MC_runID()        { return fMC_runID; }       
   Double_t Get_MC_evtID()        { return fMC_evtID; }       
   Double_t Get_MC_w2()           { return fMC_w2; }          
-  Double_t Get_MC_w1y()          { return fMC_w1y; }       
+  Double_t Get_MC_w1y()          { return fMC_w1y; }
+  Double_t Get_MC_w2denom()      { return fMC_w2denom; }       
   Double_t Get_MC_erange_start() { return fMC_erange_start; }
+  Double_t Get_MC_erange_stop()  { return fMC_erange_stop;  }
   Double_t Get_MC_is_CC()        { return fMC_is_CC; }  
   Double_t Get_MC_is_neutrino()  { return fMC_is_neutrino; }
   Double_t Get_MC_type()         { return fMC_type; }
@@ -133,6 +135,7 @@ class SummaryEvent : public TObject {
   Double_t Get_track_ql0()       { return fTrack_ql0; }     
   Double_t Get_track_ql1()       { return fTrack_ql1; }
   Double_t Get_track_ql2()       { return fTrack_ql2; }
+  Double_t Get_track_ql3()       { return fTrack_ql3; }
   TVector3 Get_track_dir()       { return TVector3(fTrack_dir_x, fTrack_dir_y, fTrack_dir_z); }
   TVector3 Get_track_pos()       { return TVector3(fTrack_pos_x, fTrack_pos_y, fTrack_pos_z); }
 
@@ -147,6 +150,7 @@ class SummaryEvent : public TObject {
   Double_t Get_shower_ql0()      { return fShower_ql0; }     
   Double_t Get_shower_ql1()      { return fShower_ql1; }
   Double_t Get_shower_ql2()      { return fShower_ql2; }
+  Double_t Get_shower_ql3()      { return fShower_ql3; }
   TVector3 Get_shower_dir()      { return TVector3(fShower_dir_x, fShower_dir_y, fShower_dir_z); }
   TVector3 Get_shower_pos()      { return TVector3(fShower_pos_x, fShower_pos_y, fShower_pos_z); }
 
@@ -165,8 +169,10 @@ class SummaryEvent : public TObject {
   Double_t        fMC_runID;        //!< gSeaGen file run number
   Double_t        fMC_evtID;        //!< Event ID in gSeaGen run
   Double_t        fMC_w2;           //!< Weight 2 from gSeaGen
-  Double_t        fMC_w1y;          //!< multiply atm. muon/noise by this to get evts in year
+  Double_t        fMC_w1y;          //!< multiply atm. muon/noise/nu by this to get evts in year. Calculated as part of ECAP PID pipeline, valid if all events from production are used
+  Double_t        fMC_w2denom;      //!< number of generated events in gSeaGen run; for atm. muons and noise the livetime of the run in seconds
   Double_t        fMC_erange_start; //!< Start of gSeaGen E range, e.g. for 3--100 GeV this is 3
+  Double_t        fMC_erange_stop;  //!< Stop of gSeaGen E range, e.g. for 3--100 GeV this is 100
   Double_t        fMC_is_CC;        //!< 1 - CC, 0 - NC
   Double_t        fMC_is_neutrino;  //!< 1 - atm neutrion, 0 - atm muon
   Double_t        fMC_type;         //!< PDG code of the primary lepton
@@ -187,9 +193,10 @@ class SummaryEvent : public TObject {
   Double_t        fTrack_pos_z;
   Double_t        fTrack_energy;    //!< Reconstructed neutrino energy
   Double_t        fTrack_bjorkeny;  //!< Reconstructed Bjorken Y (currently only placeholder)
-  Double_t        fTrack_ql0;       //!< Quality level 0 - lowest quality event (few quality checks)
-  Double_t        fTrack_ql1;       //!< Quality level 1 - more quality checks
-  Double_t        fTrack_ql2;       //!< Quality level 2 - even more quality checks, see README.md
+  Double_t        fTrack_ql0;       //!< Quality level 0 - lowest quality event (few quality checks), typically just that reco worked
+  Double_t        fTrack_ql1;       //!< Quality level 1 - more quality checks, user can select what to store here, see `MONA/README.md` section `Quality levels`
+  Double_t        fTrack_ql2;       //!< Quality level 2 - even more quality checks, user can select what to store here, see `MONA/README.md` section `Quality levels`
+  Double_t        fTrack_ql3;       //!< Quality level 3 - even more quality checks, user can select what to store here, see `MONA/README.md` section `Quality levels`
 
   Double_t        fShower_dir_x;
   Double_t        fShower_dir_y;
@@ -199,9 +206,10 @@ class SummaryEvent : public TObject {
   Double_t        fShower_pos_z;
   Double_t        fShower_energy;   //!< Reconstructed neutrino energy
   Double_t        fShower_bjorkeny; //!< Reconstructed Bjorken Y
-  Double_t        fShower_ql0;      //!< Similar to gandalf quality levels, see README.md
+  Double_t        fShower_ql0;      //!< Similar to gandalf quality levels, see `MONA/README.md` section `Quality levels`
   Double_t        fShower_ql1;
-  Double_t        fShower_ql2;      //!< currently only placeholder for shower
+  Double_t        fShower_ql2;
+  Double_t        fShower_ql3;
 
   Double_t        fRDF_muon_score;  //!< PID score for this being an atm muon from random dec. forest
   Double_t        fRDF_track_score; //!< PID score for this being a track event from random dec. forest
@@ -210,7 +218,7 @@ class SummaryEvent : public TObject {
   // class definition and version. The index is added to the output. If you e.g. add some more
   // variables, increment the intex by 1. Then at read-in you can check the index and e.g. ignore
   // some variables in older versions
-  ClassDef(SummaryEvent, 1)
+  ClassDef(SummaryEvent, 2)
 };
 
 #endif

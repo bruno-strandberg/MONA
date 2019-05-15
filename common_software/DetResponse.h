@@ -134,9 +134,7 @@ struct TrueB : public TObject {
    //---------------------------------------------------
    SummaryParser sp( getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root");       // init summary parser
    for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {                                 // loop over events and fill
-       sp.GetTree()->GetEntry(i);
-       SummaryEvent *evt = sp.GetEvt();
-       dr.Fill(evt);
+       dr.Fill( sp.GetEvt(i) );
    }
 
    //---------------------------------------------------
@@ -162,7 +160,7 @@ struct TrueB : public TObject {
 
    \endcode
 
-   Note that `GetDetectedTrue()` is pseudo-code - this function needs to be implemented in the code that uses the `DetResponse`. It returns the number of 'detected' events (interacted per Mton * effective mass) for a given (flavor, is_cc, is_nubar, true energy, cos-theta and bjorken-y) combination. For example, such info is stored in the output histograms of `FluxChain.C` in directory `detflux`.
+   Note that `GetDetectedTrue()` is pseudo-code - this function needs to be implemented in the code that uses the `DetResponse`. It returns the number of 'detected' events (interacted per Mton * effective mass) for a given (flavor, is_cc, is_nubar, true energy, cos-theta and bjorken-y) combination. For example, such info is stored in the output histograms of `FluxChain.C` in directory `detflux`. A practical use of the `DetResponse` class can be see in `FitUtil::RecoEvts`.
 
    NB! The binning of the true detected events needs to match the binning used for the `DetResponse`. The detector response should always span the full width of the simulation, i.e., if events are simulated in the range from [1, 100] GeV, [-1, 1] cos theta and [0, 1] bjorken-y, then the detector response needs to cover the full range.
 
@@ -200,11 +198,6 @@ class DetResponse : public AbsResponse {
       \return Pointer to to `TH3` with all the noise events expected in one year.
    */
   TH3D*               GetHistNoise1y() const { return fhNoiseCount1y; }
-
-  /** Get response name
-      \return Name of the response
-   */
-  TString             GetRespName() const { return fRespName; }
 
   /** Returns that this implementation is of the response type `BinnedResponse` 
       \return `AbsResponse::BinnedResponse`
