@@ -1,0 +1,5 @@
+To build the qsub programs run:
+
+g++ -o AsimovQSubNO `root-config --cflags --libs` -lRooFitCore -L/data/antares/users/ljnauta/MONA/fitter_software -L/data/antares/users/ljnauta/MONA/common_software -lfitsoft -lnmhsoft AsimovFitNBinsNOTh23Range_PercentageOfMC_QSub.cpp AsimovFitNBinsNOTh23Range_PercentageOfMC.C                    
+
+g++ -o AsimovQSubIO `root-config --cflags --libs` -lRooFitCore -L/data/antares/users/ljnauta/MONA/fitter_software -L/data/antares/users/ljnauta/MONA/common_software -lfitsoft -lnmhsoft AsimovFitNBinsIOTh23Range_PercentageOfMC_QSub.cpp AsimovFitNBinsIOTh23Range_PercentageOfMC.C

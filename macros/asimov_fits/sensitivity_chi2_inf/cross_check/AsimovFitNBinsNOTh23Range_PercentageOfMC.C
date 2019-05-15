@@ -1,4 +1,4 @@
-#include "../HelperFunctions.h"
+#include "../../HelperFunctions.h"
 
 #include "TSystem.h"
 #include "TROOT.h"
@@ -38,9 +38,10 @@ using namespace RooFit;
  * csv and root files.
  */
 
-void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) {
+void AsimovFitNBinsNOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) {
 
-  const Int_t N_PID_CLASSES = N_PID;
+  Bool_t use_random_q = kTRUE;
+  const int N_PID_CLASSES = N_PID;
   const Double_t PID_CUT = 0.6;
 
   std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
@@ -48,7 +49,7 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
   gRandom->SetSeed(0);
 
   TString MONADIR = (TString)getenv("MONADIR") + "/macros/asimov_fits/";
-  TString s_outputfile = MONADIR + Form("output/csv/SensChi2Inf/AsimovFit%iBinsIOTh23Range_PercentageOfMC/AsimovFit%iBinsIOTh23Range_PercentageOfMC_%i.csv",
+  TString s_outputfile = MONADIR + Form("output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBinsNOTh23Range_PercentageOfMC/AsimovFit%iBinsNOTh23Range_PercentageOfMC_%i.csv",
           N_PID_CLASSES, N_PID_CLASSES, jobnumber);
 
   // DetRes input values
@@ -116,6 +117,10 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
     // fill the detector response and event selection
     //-----------------------------------------------------
 
+    // Get Q distribution
+    TFile* f_q_dist = TFile::Open(MONADIR + "/detector_responses/pid_quality_distribution.root", "READ");
+    TH1D* q_dist = (TH1D*)f_q_dist->Get("h_quality");
+
     auto summary_file = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
     SummaryParser sp(summary_file);
     for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
@@ -124,8 +129,26 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
 
       // Throw random uniform, if its l.t. a certain percentage, discard the event.
       Double_t random = gRandom->Uniform(0, 1);
-      
+    
       if (random > percentage) continue;
+
+      // Randomize the q value of the event.
+      if (use_random_q) {
+        // Get the track score and throw a random from the dist.
+        // If the event is a track (shower) and the random falls
+        // in the area of shower (track), reroll until it doesnt.
+        Double_t track_score = evt->Get_RDF_track_score();
+        Double_t ran = q_dist->GetRandom();
+        if (track_score <= 0.6) {
+          while (ran > 0.6) ran = q_dist->GetRandom();
+        }
+        else {
+           while (ran <= 0.6) ran = q_dist->GetRandom();
+        }
+ 
+        evt->Set_RDF_track_score(ran);
+      }
+
 
       for (Int_t i = 0; i < N_PID_CLASSES; i++) {
         track_response_vector[i]->Fill(evt);
@@ -159,8 +182,8 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
         pdf_tracks_vector.push_back( pdf_tracks );
         pdf_showers_vector.push_back( pdf_showers );
 
-        // Set NO values and make expectation histograms
-        fitutil->SetNOcentvals();
+        // Set IO values and make expectation histograms
+        fitutil->SetIOcentvals();
         fitutil->GetVar("SinsqTh23")->setVal( sinSqTh23_true );
 
         track_vector_true.push_back(  (TH3D*)pdf_tracks.GetExpValHist() );
@@ -188,9 +211,9 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
 
       TStopwatch timer;
 
-      // Fit under IO model, NO data
-      SetIOlimsChi2Fit(fitutil); // This turned out to be necessary for more than 2 bins
-      fitutil->SetIOcentvals();
+      // Fit under NO model, IO data
+      SetNOlimsChi2Fit(fitutil); // This turned out to be necessary for more than 2 bins
+      fitutil->SetNOcentvals();
 
       std::map<string, TH1*> hist_map;
       std::vector<TString> fitRangeCategories;
@@ -212,7 +235,7 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
         }
       }
 
-      RooSimultaneous simPdf("simPdf", "simultaneous Pdf for NO", cats);
+      RooSimultaneous simPdf("simPdf", "simultaneous Pdf for IO", cats);
       for (Int_t i = 0; i < N_PID_CLASSES; i++) {
         if (pid_map[i] < PID_CUT) {
           simPdf.addPdf( pdf_showers_vector[i], shower_vector_true[i]->GetName() );
@@ -227,12 +250,12 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
       RooDataHist data_hists("data_hists", "track and shower data", fitutil->GetObs(), cats, hist_map);
 
       // Fit in both quadrants to find the real minimum of Th23.
-      fitutil->SetIOcentvals();
+      fitutil->SetNOcentvals();
       fitutil->GetVar("SinsqTh23")->setVal(0.4);
       RooFitResult *fitres_1q = simPdf.chi2FitTo( data_hists, Save(), Range("firstq"), DataError(RooAbsData::Poisson) );
       RooArgSet result_1q ( fitres_1q->floatParsFinal() );
 
-      fitutil->SetIOcentvals();
+      fitutil->SetNOcentvals();
       fitutil->GetVar("SinsqTh23")->setVal(0.6);
       RooFitResult *fitres_2q = simPdf.chi2FitTo( data_hists, Save(), Range("secondq"), DataError(RooAbsData::Poisson) );
       RooArgSet result_2q ( fitres_2q->floatParsFinal() );
@@ -267,12 +290,12 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
       for (Int_t i = 0; i < N_PID_CLASSES; i++) {
         if (pid_map[i] < PID_CUT) {
           TH3D *showers_fitted = (TH3D*)pdf_showers_vector[i].GetExpValHist();
-          showers_fitted->SetName( Form("showers_fitted_no_%.2f", pid_map[i]) );
+          showers_fitted->SetName( Form("showers_fitted_io_%.2f", pid_map[i]) );
           fitted.push_back( showers_fitted );
         }
         else {
           TH3D *tracks_fitted = (TH3D*)pdf_tracks_vector[i].GetExpValHist();
-          tracks_fitted->SetName( Form("tracks_fitted_no_%.2f", pid_map[i]) );
+          tracks_fitted->SetName( Form("tracks_fitted_io_%.2f", pid_map[i]) );
           fitted.push_back( tracks_fitted );
         }
       }

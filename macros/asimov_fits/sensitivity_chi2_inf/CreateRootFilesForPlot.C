@@ -11,32 +11,35 @@
 
 
 TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle);
+TTree* GetChi2(TTree* input_ttree, TString tree_nametitle);
 
 void CreateRootFilesForPlot() {
 
   std::vector<Int_t> pid_cats = {2,3,4,5,10};
 
-  TFile* f = TFile::Open("./data_chi2_th23_extraplotation.root", "RECREATE");
   TFile* f_read = TFile::Open("./data_chi2_th23.root", "READ");
+  TFile* f = TFile::Open("./data_chi2_th23_extraplotation.root", "RECREATE");
   for (auto pid: pid_cats) {
 
     TTree* tree_in = (TTree*)f_read->Get( Form("data_tree_%i_no", pid) );
 
-    TTree* t_fit_chi2 = CalculateChi2Infinite(tree_in, Form("%ibins_no", pid));
-    delete tree_in;
+    TTree* t_inf_chi2 = CalculateChi2Infinite(tree_in, Form("%ibins_no", pid));
+    TTree* t_finite_chi2 = GetChi2(tree_in, Form("%ibins_no", pid));
 
     f->cd();
-    t_fit_chi2->Write();
+    t_inf_chi2->Write();
+    t_finite_chi2->Write();
   }
   for (auto pid: pid_cats) {
 
     TTree* tree_in = (TTree*)f_read->Get( Form("data_tree_%i_io", pid) );
 
-    TTree* t_fit_chi2 = CalculateChi2Infinite(tree_in, Form("%ibins_io", pid));
-    delete tree_in;
+    TTree* t_inf_chi2 = CalculateChi2Infinite(tree_in, Form("%ibins_io", pid));
+    TTree* t_finite_chi2 = GetChi2(tree_in, Form("%ibins_io", pid));
 
     f->cd();
-    t_fit_chi2->Write();
+    t_inf_chi2->Write();
+    t_finite_chi2->Write();
   }
   f->Write();
   f->Close();
@@ -49,17 +52,17 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle) {
   Int_t th23_max = input_ttree->GetMaximum("th23");
 
   Int_t th23;
-  Double_t fit_chi2;
-  Double_t fit_err;
-  Double_t sqrt_fit_chi2;
-  Double_t sqrt_chi2_err;
+  Double_t inf_chi2;
+  Double_t inf_err;
+  Double_t sqrt_inf_chi2;
+  Double_t sqrt_inf_err;
 
-  TTree* t_fit_chi2 = new TTree("fit_tree_" + tree_nametitle, "Chi2_inf values from fit " + tree_nametitle);
-  TBranch* b_th23          = t_fit_chi2->Branch("th23", &th23, "th23/I");
-  TBranch* b_fit_chi2      = t_fit_chi2->Branch("fit_chi2", &fit_chi2, "fit_chi2/D");
-  TBranch* b_fit_err       = t_fit_chi2->Branch("fit_err", &fit_err, "fit_err/D");
-  TBranch* b_sqrt_fit_chi2 = t_fit_chi2->Branch("sqrt_fit_chi2", &sqrt_fit_chi2, "sqrt_fit_chi2/D");
-  TBranch* b_sqrt_chi2_err = t_fit_chi2->Branch("sqrt_chi2_err", &sqrt_chi2_err, "sqrt_chi2_err/D");
+  TTree* t_inf_chi2 = new TTree("inf_" + tree_nametitle, "Chi2_inf values from fit " + tree_nametitle);
+  TBranch* b_th23          = t_inf_chi2->Branch("th23", &th23, "th23/I");
+  TBranch* b_inf_chi2      = t_inf_chi2->Branch("inf_chi2", &inf_chi2, "inf_chi2/D");
+  TBranch* b_inf_err       = t_inf_chi2->Branch("inf_err", &inf_err, "inf_err/D");
+  TBranch* b_sqrt_inf_chi2 = t_inf_chi2->Branch("sqrt_inf_chi2", &sqrt_inf_chi2, "sqrt_inf_chi2/D");
+  TBranch* b_sqrt_inf_err  = t_inf_chi2->Branch("sqrt_inf_err", &sqrt_inf_err, "sqrt_inf_err/D");
 
   for (Int_t i = th23_min; i <= th23_max; i++) {
     Int_t n = input_ttree->Draw("percentage:fit_chi2", Form("th23==%i", i), "goff"); 
@@ -67,23 +70,33 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle) {
 
     TF1 *f_tr = new TF1("f_tr", "[0] + ([1] / x)", 1e-3, 10);
     f_tr->SetParameters(1, 1); // Initial values of the params.
-    TFitResultPtr result = g->Fit(f_tr, "S"); // Q = quiet, S = result in pointer
+    TFitResultPtr result = g->Fit(f_tr, "QS"); // Q = quiet, S = result in pointer
 
     Int_t NFreeParams = result->NFreeParameters();
     std::vector<double> pars = result->Parameters();
     std::vector<double> errs = result->Errors();
 
     th23 = i;
-    fit_chi2 = pars[0];
-    sqrt_fit_chi2 = TMath::Sqrt(fit_chi2);
-    fit_err = errs[0];
-    sqrt_chi2_err = fit_err / (2. * sqrt_fit_chi2); // Standard error propagation.
+    inf_chi2 = pars[0];
+    sqrt_inf_chi2 = TMath::Sqrt(inf_chi2);
+    inf_err = errs[0];
+    sqrt_inf_err = inf_err / (2. * sqrt_inf_chi2); // Standard error propagation.
 
     gStyle->SetOptFit(kTRUE);
     g->Write(Form("scatter_chi2_%i_", i) + tree_nametitle);
 
-    t_fit_chi2->Fill();
+    t_inf_chi2->Fill();
   }
+
+  return t_inf_chi2;
+}
+
+TTree* GetChi2(TTree* input_ttree, TString tree_nametitle) {
+  
+  // CloneTree does not work as expected...
+  TTree* t_fit_chi2 = input_ttree->CopyTree("percentage==1");
+  t_fit_chi2->SetName("chi2_" + tree_nametitle);
+  t_fit_chi2->SetTitle("Chi2 values " + tree_nametitle);
 
   return t_fit_chi2;
 }

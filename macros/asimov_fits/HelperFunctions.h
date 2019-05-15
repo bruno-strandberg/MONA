@@ -1,3 +1,6 @@
+#ifndef HELPERS_ASIMOV
+#define HELPERS_ASIMOV
+
 #include "TH3.h"
 #include "TMath.h"
 
@@ -27,8 +30,6 @@ Double_t HistoChi2Test(TH1* h1, TH1* h2,
       for (Int_t zb = 1; zb <= h1->GetZaxis()->GetNbins(); zb++) {
         Double_t val1 = h1->GetBinContent(xb, yb, zb);
         Double_t val2 = h2->GetBinContent(xb, yb, zb);
-        Double_t err1 = h1->GetBinError(xb, yb, zb);
-        Double_t err2 = h2->GetBinError(xb, yb, zb);
         
         if (val1 == 0) {
           chi = 0;
@@ -59,9 +60,6 @@ Double_t HistoChi2Calc(TH1* h1, TH1* h2,
     throw std::invalid_argument( "ERROR! input histograms dimensions mismatch.");
   }
 
-  Double_t chi  = 0;
-  Double_t chi2 = 0;
-
   TH1* _h1 = (TH1*)h1->Clone("h1clone");
   TH1* _h2 = (TH1*)h2->Clone("h2clone");
   _h1->SetDirectory(0);
@@ -72,7 +70,6 @@ Double_t HistoChi2Calc(TH1* h1, TH1* h2,
       for (Int_t zb = 1; zb <= h1->GetZaxis()->GetNbins(); zb++) {
         Double_t xbincenter = _h1->GetXaxis()->GetBinCenter(xb);
         Double_t ybincenter = _h1->GetYaxis()->GetBinCenter(yb);
-        Double_t zbincenter = _h1->GetZaxis()->GetBinCenter(zb);
         if ((xbincenter < xlow) or (ybincenter < ylow)  or
             (xbincenter > xhigh) or (ybincenter > yhigh)) {
 
@@ -288,3 +285,5 @@ TH3D* HistoDifference(TH1* h1, TH1* h2) {
 
   return ret;
 }
+
+#endif

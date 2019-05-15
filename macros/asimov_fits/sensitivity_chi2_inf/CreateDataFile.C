@@ -36,7 +36,7 @@ void CreateDataFile() {
 void WriteSqrtChi2(TTree* tree) {
   // Branch to read from
   Double_t fit_chi2;
-  tree->SetBranchAddress("fit_chi2", &fit_chi1);
+  tree->SetBranchAddress("fit_chi2", &fit_chi2);
 
   // Branch to write to
   Double_t sqrt_fit_chi2;

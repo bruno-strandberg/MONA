@@ -18,6 +18,7 @@ The script `EMH_caller.py` can be called to run `EffMhists` for all of the summa
 
 The application `Combine` uses the `common_software/EffMass` class and combines all of the outputs from `EffMhists` to a single output file. That file can be loaded to another `EffMass` instance to calculate effective masses.
 
+Optionally, the application `DataQuality` can be executed to create some data quality plots from the outputs of `EffMhists`.
 
 Outputs
 ==========

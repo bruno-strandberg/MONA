@@ -1,6 +1,7 @@
 #include "EvtResponse.h"
 #include <iostream>
 #include <vector>
+#include <stdexcept>
 
 using namespace std;
 
@@ -19,6 +20,8 @@ EvtResponse::EvtResponse(reco reco_type, TString resp_name,
 	      t_ebins, t_emin, t_emax, t_ctbins, t_ctmin, t_ctmax, t_bybins, t_bymin, t_bymax,
 	      r_ebins, r_emin, r_emax, r_ctbins, r_ctmin, r_ctmax, r_bybins, r_bymin, r_bymax) {
 
+  throw std::logic_error("ERROR! EvtResponse::EvtResponse() this is currently a skeleton code only, use DetResponse for a detector response functionality.");
+  
   fMemLim = memlim;
   
   //----------------------------------------------------------

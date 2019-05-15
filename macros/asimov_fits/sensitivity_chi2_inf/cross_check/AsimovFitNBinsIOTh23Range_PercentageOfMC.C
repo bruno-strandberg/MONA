@@ -1,4 +1,4 @@
-#include "../HelperFunctions.h"
+#include "../../HelperFunctions.h"
 
 #include "TSystem.h"
 #include "TROOT.h"
@@ -40,7 +40,8 @@ using namespace RooFit;
 
 void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) {
 
-  const Int_t N_PID_CLASSES = N_PID;
+  Bool_t use_random_q = kTRUE;
+  const int N_PID_CLASSES = N_PID;
   const Double_t PID_CUT = 0.6;
 
   std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
@@ -48,7 +49,7 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
   gRandom->SetSeed(0);
 
   TString MONADIR = (TString)getenv("MONADIR") + "/macros/asimov_fits/";
-  TString s_outputfile = MONADIR + Form("output/csv/SensChi2Inf/AsimovFit%iBinsIOTh23Range_PercentageOfMC/AsimovFit%iBinsIOTh23Range_PercentageOfMC_%i.csv",
+  TString s_outputfile = MONADIR + Form("output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBinsIOTh23Range_PercentageOfMC/AsimovFit%iBinsIOTh23Range_PercentageOfMC_%i.csv",
           N_PID_CLASSES, N_PID_CLASSES, jobnumber);
 
   // DetRes input values
@@ -116,6 +117,10 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
     // fill the detector response and event selection
     //-----------------------------------------------------
 
+    // Get Q distribution
+    TFile* f_q_dist = TFile::Open(MONADIR + "/detector_responses/pid_quality_distribution.root", "READ");
+    TH1D* q_dist = (TH1D*)f_q_dist->Get("h_quality");
+
     auto summary_file = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
     SummaryParser sp(summary_file);
     for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
@@ -126,6 +131,24 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
       Double_t random = gRandom->Uniform(0, 1);
       
       if (random > percentage) continue;
+
+      // Randomize the q value of the event.
+      if (use_random_q) {
+        // Get the track score and throw a random from the dist.
+        // If the event is a track (shower) and the random falls
+        // in the area of shower (track), reroll until it doesnt.
+        Double_t track_score = evt->Get_RDF_track_score();
+        Double_t ran = q_dist->GetRandom();
+        if (track_score <= 0.6) {
+          while (ran > 0.6) ran = q_dist->GetRandom();
+        }
+        else {
+           while (ran <= 0.6) ran = q_dist->GetRandom();
+        }
+ 
+        evt->Set_RDF_track_score(ran);
+      }
+
 
       for (Int_t i = 0; i < N_PID_CLASSES; i++) {
         track_response_vector[i]->Fill(evt);

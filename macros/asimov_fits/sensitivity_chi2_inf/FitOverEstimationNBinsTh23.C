@@ -36,22 +36,22 @@ void FitOverEstimationNBinsTh23(Int_t nbins=2) {
 
   // Draw the fitted chi2_inf for N bins, no/io
   Int_t n = t_fit_chi2_no->Draw("th23:sqrt_fit_chi2:sqrt_chi2_err", "", "goff");
-  TGraphErrors *g = new TGraphErrors(n, t_fit_chi2_no->GetV1(), t_fit_chi2_no->GetV2(), 0, t_fit_chi2_no->GetV3()); 
+  TGraphErrors *g_inf_no = new TGraphErrors(n, t_fit_chi2_no->GetV1(), t_fit_chi2_no->GetV2(), 0, t_fit_chi2_no->GetV3()); 
 
   Int_t m = t_fit_chi2_io->Draw("th23:sqrt_fit_chi2:sqrt_chi2_err", "", "goff");
-  TGraphErrors *h = new TGraphErrors(n, t_fit_chi2_io->GetV1(), t_fit_chi2_io->GetV2(), 0, t_fit_chi2_io->GetV3()); 
+  TGraphErrors *g_inf_io = new TGraphErrors(n, t_fit_chi2_io->GetV1(), t_fit_chi2_io->GetV2(), 0, t_fit_chi2_io->GetV3()); 
 
-  g->SetLineColor(kBlue+1);
-  g->SetMarkerColor(kBlue+1);
-//  g->SetMarkerStyle(21);
-  h->SetLineColor(kRed+2);
-  h->SetMarkerColor(kRed+2);
-//  h->SetMarkerStyle(21);
+  g_inf_no->SetLineColor(kBlue+1);
+  g_inf_no->SetMarkerColor(kBlue+1);
+//  g_inf_no->SetMarkerStyle(21);
+  g_inf_io->SetLineColor(kRed+2);
+  g_inf_io->SetMarkerColor(kRed+2);
+//  g_inf_io->SetMarkerStyle(21);
 
-  g->SetMinimum(0);
-  g->SetMaximum(6);
-  g->Draw("apl"); 
-  h->Draw("pl");
+  g_inf_no->SetMinimum(0);
+  g_inf_no->SetMaximum(6);
+  g_inf_no->Draw("apl"); 
+  g_inf_io->Draw("pl");
 
   g_no->SetLineStyle(9);
   g_no->SetLineColor(kBlue+1);
@@ -60,16 +60,16 @@ void FitOverEstimationNBinsTh23(Int_t nbins=2) {
   g_no->Draw("pl");
   g_io->Draw("pl");
   
-  g->SetTitle((TString)"#LT #Delta #chi^{2} #GT at infinite statistics" + Form(" %i PID categories", nbins));
-  g->GetXaxis()->SetTitle("#theta_{23}");
-  g->GetYaxis()->SetTitle("#sqrt{ #Delta #chi^{2} }");
+  g_inf_no->SetTitle((TString)"#LT #Delta #chi^{2} #GT at infinite statistics" + Form(" %i PID categories", nbins));
+  g_inf_no->GetXaxis()->SetTitle("#theta_{23}");
+  g_inf_no->GetYaxis()->SetTitle("#sqrt{ #Delta #chi^{2} }");
 
 
   TLegend* leg = new TLegend(0.1, 0.75, 0.3, 0.9);
-  leg->AddEntry(g, "#LT #Delta #chi^{2} #GT IO at #infty", "lp");
-  leg->AddEntry(h, "#LT #Delta #chi^{2} #GT NO at #infty", "lp");
-  leg->AddEntry(g_no, "#Delta #chi^{2} NO", "lp");
-  leg->AddEntry(g_io, "#Delta #chi^{2} IO", "lp");
+  leg->AddEntry(g_inf_no, "#LT #Delta #chi^{2} #GT IO at #infty", "lp");
+  leg->AddEntry(g_inf_io, "#LT #Delta #chi^{2} #GT NO at #infty", "lp");
+  leg->AddEntry(g_no, "#Delta #chi^{2} IO", "lpe");
+  leg->AddEntry(g_io, "#Delta #chi^{2} NO", "lpe");
   leg->Draw();
 }
 
