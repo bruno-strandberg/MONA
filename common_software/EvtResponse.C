@@ -32,6 +32,7 @@ EvtResponse::EvtResponse(reco reco_type, TString resp_name,
 	      t_ebins, t_emin, t_emax, t_ctbins, t_ctmin, t_ctmax, t_bybins, t_bymin, t_bymax,
 	      r_ebins, r_emin, r_emax, r_ctbins, r_ctmin, r_ctmax, r_bybins, r_bymin, r_bymax) {
 
+  fNormalised = false;
   fNEvts = 0;
   fMemLim = memlim;
   
@@ -100,6 +101,8 @@ void EvtResponse::Fill(SummaryEvent *evt) {
   UInt_t is_cc = evt->Get_MC_is_CC();
   UInt_t is_nb = (UInt_t)(evt->Get_MC_type() < 0 );
 
+  CountEvents(flav, is_cc, is_nb, evt);
+
   // set the reconstruction observables, implemented in EventFilter.C
   SetObservables(evt);
   
@@ -156,6 +159,68 @@ void EvtResponse::Fill(SummaryEvent *evt) {
   if ( ram_used > fMemLim ) {
     throw std::invalid_argument("ERROR! EvtResponse::Fill() the " + to_string(fNEvts) + " filled events occupy " + to_string(ram_used) + " gb of RAM, which is above the limit " + to_string(fMemLim) + " specified in the constructor. Either reduce the MC sample filled to the response or increate the memory limit at construction." );
   }
+  
+}
+
+//=====================================================================================================
+
+/** Private function to count the data necessary for the calculation of weight 1 year.
+
+    To calculate the event weight per year for neutrinos, the W2 from gSeaGen has to be divided by N_tot, where N_tot is the total number of generated events over several runs. For muons and noise, the weight is calculated as 1/total_livetime_sec * sec_per_year, where total_livetime_sec is accumulated from e.g. mupage runs. The book-keeping is further complicated by the fact that there can be overlaps, i.e. there can be muon-CC productions in the range 1-5 GeV and 3-100 GeV that are fed to this response.
+
+    Continuing with the example for muon-CC 1-5 and 3-100, this function does the following. For each neutrino type (in this case [muon][cc=1][nu] and [muon][cc][nubar]) the `EvtResponse` stores a map with structure < rangeID, vector<runID> >. Range ID is just a pair with upper and lower limit, the vector of runID's contains all the different run numbers with their respective N_tot from gSeaGen. So, for muon-CC 1-5 and 3-100, the map [muon][cc][nu] will contain two elements, one pair < {1,5}, vector<runID>{all runs} > and < {3,100}, vector<runID>{all runs} >. With this data, after the response has been filled one can calculate the total number of generated events over all of the runs filled to the response to re-normalise W2 to weight-one-year.
+
+*/
+void  EvtResponse::CountEvents(UInt_t flav, UInt_t iscc, UInt_t isnb, SummaryEvent *evt) {
+
+  rangeID range( evt->Get_MC_erange_start(), evt->Get_MC_erange_stop() ); // emin and emax of the gSeaGen simulation range; some default value for noise and muons
+  runID   run  ( evt->Get_MC_runID(), evt->Get_MC_w2denom() );            // run ID and N_tot(gSeaGen) or livetime (mupage, noise)
+
+  auto M = fRuns[flav][bool(iscc)][bool(isnb)]; // map with < range,vec<run> > for this event type
+
+  auto element = M.find( range ); // try to find by the range in the map
+
+  //-----------------------------------------------------------------
+  // no vector exists for this range in the map, insert it
+  //-----------------------------------------------------------------
+  if ( element == M.end() ) {
+    M.insert( std::make_pair( range, std::vector<runID>{ run } ) );
+  }
+
+  //-----------------------------------------------------------------
+  // vector exists, see if the run exists already in the vector; if not, enter it
+  //-----------------------------------------------------------------
+  else {
+
+    auto V = element->second; // get the vector
+    
+    // try to find the runID in the vector
+    auto RID = std::find_if( V.begin(), V.end(), [run](const runID& other){ return other.first == run.first; } );
+
+    // if found, check that N_tot is also the same and continue;
+    if ( RID != V.end() ) {
+
+      if ( RID->second != run.second ) {
+	throw std::invalid_argument("ERROR! EvtResponse::CountEvents() runID " + to_string(run.first) + " identified with N_tot/livetime " + to_string(run.second) + " and " + to_string( RID->second ) );
+      }
+      
+    }
+    else {
+
+      // run is not found, add it to the vector
+      V.push_back( run );
+      
+    }
+    
+  } // end if range exists
+  
+}
+
+//=====================================================================================================
+
+void  EvtResponse::Normalise() {
+
+  //TBD
   
 }
 

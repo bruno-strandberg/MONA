@@ -153,7 +153,14 @@ class EvtResponse : public AbsResponse {
  private:
 
   TH3D* CloneFromTemplate(TH3D* tmpl, TString name);
+  void  CountEvents(UInt_t flav, UInt_t iscc, UInt_t isnb, SummaryEvent *evt);
+  void  Normalise();
   
+  typedef std::pair<Double_t, Double_t>   rangeID; //!< type definition for identifying a range
+  typedef std::pair<Double_t, Double_t>   runID;   //!< type definition for identifying a run
+  std::map< rangeID, std::vector<runID> > fRuns[NOISE+1][2][2]; //!< structure to count the total number of gSeaGen events (nu's) or total livetime for normalisation
+
+  Bool_t   fNormalised;           //!< flag to indicate that the weights have been normalised to weight one year
   Double_t fNEvts;                //!< calculates the total number of events in a response
   Double_t fMemLim;               //!< user-defined limit to how much RAM the response can eat up
   Int_t    fEbins;                //!< number of reco energy bins in `fResp`
