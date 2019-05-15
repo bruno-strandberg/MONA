@@ -6,7 +6,7 @@
 
 /** A structure to store event data in an event-by-event detector response implemented in the class `EvtResponse`.
 
-    The function `EvtResponse::GetBinEvts()` returns a vector of `TrueEvt` objects associated with the bin in reco space. The `TrueEvt` object stores all of the information necessary to calculate the number of expected events in a reco bin in the class `fitter_software/FitUtil::RecoEvts`. Some data conversions are applied in this object in order to save RAM space, as all of the monte carlo events need to be read into memory for `EvtResponse`.
+    The function `EvtResponse::GetBinEvts()` returns a vector of `TrueEvt` objects associated with the bin in reco space. The `TrueEvt` object stores all of the information necessary to calculate the number of expected events in a reco bin (see e.g. the class `fitter_software/FitUtil::RecoEvts`). Some data conversions are applied in this object in order to save RAM space, as all of the monte carlo events need to be read into memory for `EvtResponse`.
 
  */
 class TrueEvt {
@@ -106,7 +106,7 @@ class TrueEvt {
 
    \endcode
 
-   Note that `GetOscillatedFlux` is pseudo-code, it is a function that returns the oscillated atmospheric neutrino flux at the detector cite for the neutrino type specified in the input argument `TrueEvt`. The usage of the class `EvtResponse` can be inspected in `FitUtil::RecoEvts`.
+   Note that `GetOscillatedFlux` is pseudo-code, it is a function that returns the oscillated atmospheric neutrino flux at the detector cite for the neutrino type specified in the input argument `TrueEvt`. The usage of the class `EvtResponse` is illustrated in `fitter_software/FitUtil::RecoEvts`.
 
 */
 class EvtResponse : public AbsResponse {
@@ -154,6 +154,7 @@ class EvtResponse : public AbsResponse {
 
   TH3D* CloneFromTemplate(TH3D* tmpl, TString name);
   
+  Double_t fNEvts;                //!< calculates the total number of events in a response
   Double_t fMemLim;               //!< user-defined limit to how much RAM the response can eat up
   Int_t    fEbins;                //!< number of reco energy bins in `fResp`
   Int_t    fCtbins;               //!< number of reco cos-theta bins in `fResp`

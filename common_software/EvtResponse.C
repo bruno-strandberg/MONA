@@ -5,8 +5,20 @@
 
 using namespace std;
 
-/** Constructor.
-    For all parameters other than memlim, see `AbsResponse` corresponding constructor. The additional parameterer memlim is to limit the RAM the response can occupy; if exceeded, throw an error and let user to take action. If the user has access to a machine with e.g. 16gb of memory, this number can be increased.
+/** Constructor to initialise the response with the same binning configuration in true space and reco space.
+    See the constructor with different binning configurations for more info.
+*/
+EvtResponse::EvtResponse(reco reco_type, TString resp_name,
+			 Int_t ebins , Double_t emin , Double_t emax ,
+			 Int_t ctbins, Double_t ctmin, Double_t ctmax,
+			 Int_t bybins, Double_t bymin, Double_t bymax,
+			 Double_t memlim) : EvtResponse(reco_type, resp_name, ebins, emin, emax, ctbins, ctmin, ctmax, bybins, bymin, bymax, ebins, emin, emax, ctbins, ctmin, ctmax, bybins, bymin, bymax, memlim) {};
+
+//=====================================================================================================
+
+/** Constructor to initialise the response with a binning configuration in true space and reco space.
+
+    The true space binning can be used in the software that uses the `EvtResponse` class for the dimensioning of e.g. flux cache. For all parameters other than memlim, see `AbsResponse` corresponding constructor. The additional parameterer memlim is to limit the RAM the response can occupy; if exceeded, throw an error and let user to take action. If the user has access to a machine with e.g. 16gb of memory, this number can be increased.
 */
 EvtResponse::EvtResponse(reco reco_type, TString resp_name,
 			 Int_t t_ebins , Double_t t_emin , Double_t t_emax ,
@@ -19,7 +31,8 @@ EvtResponse::EvtResponse(reco reco_type, TString resp_name,
   AbsResponse(reco_type, resp_name,
 	      t_ebins, t_emin, t_emax, t_ctbins, t_ctmin, t_ctmax, t_bybins, t_bymin, t_bymax,
 	      r_ebins, r_emin, r_emax, r_ctbins, r_ctmin, r_ctmax, r_bybins, r_bymin, r_bymax) {
-  
+
+  fNEvts = 0;
   fMemLim = memlim;
   
   //----------------------------------------------------------
@@ -73,9 +86,9 @@ EvtResponse::~EvtResponse() {
  */
 void EvtResponse::Fill(SummaryEvent *evt) {
 
-
-  // check that type is supported
+  // check that the event is recognised
   UInt_t flav;
+
   try {
     flav  = fType_to_Supported.at( (UInt_t)TMath::Abs( evt->Get_MC_type() ) );
   }
@@ -87,8 +100,8 @@ void EvtResponse::Fill(SummaryEvent *evt) {
   UInt_t is_cc = evt->Get_MC_is_CC();
   UInt_t is_nb = (UInt_t)(evt->Get_MC_type() < 0 );
 
-  // set the reconstruction observables
-  SetObservables(evt); //implemented in EventFilter.C
+  // set the reconstruction observables, implemented in EventFilter.C
+  SetObservables(evt);
   
   // fill neutrino events
   if ( flav <= TAU ) {
@@ -115,13 +128,13 @@ void EvtResponse::Fill(SummaryEvent *evt) {
     // exclude events that do not pass the selection cuts
     if ( !PassesCuts(evt) ) return;
 
-    // find the reco bin based on reco variables
+    // find the reco bin based on reco variables and fill the response
     Int_t  e_reco_bin = fhBinsReco->GetXaxis()->FindBin(  fEnergy   );
     Int_t ct_reco_bin = fhBinsReco->GetYaxis()->FindBin( -fDir.z()  );
     Int_t by_reco_bin = fhBinsReco->GetZaxis()->FindBin(  fBy       );
 
-    // fill the response
     fResp[e_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueEvt(flav, is_cc, is_nb, evt) );
+    fNEvts++;
   }
 
   // fill noise and atm muon events
@@ -138,11 +151,12 @@ void EvtResponse::Fill(SummaryEvent *evt) {
  
   }
 
-  /*********************************************************************************
-   Add test here to check the RAM usage once TrueEvt class is finalised
-  **********************************************************************************/
+  // throw an error if too much RAM is eaten up
+  Double_t ram_used = (Double_t)sizeof( TrueEvt ) * fNEvts * 1e-9; // sizeof [byte] * # of TrueEvt * 1e-9 [gbyte/byte]
+  if ( ram_used > fMemLim ) {
+    throw std::invalid_argument("ERROR! EvtResponse::Fill() the " + to_string(fNEvts) + " filled events occupy " + to_string(ram_used) + " gb of RAM, which is above the limit " + to_string(fMemLim) + " specified in the constructor. Either reduce the MC sample filled to the response or increate the memory limit at construction." );
+  }
   
-
 }
 
 //=====================================================================================================
