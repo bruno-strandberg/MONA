@@ -48,11 +48,14 @@ class SummaryEvent : public TObject {
   void Set_MC_runID(Double_t mc_runid)                { fMC_runID = mc_runid; }       
   void Set_MC_evtID(Double_t mc_evtid)                { fMC_evtID = mc_evtid; }       
   void Set_MC_w2(Double_t mc_w2)                      { fMC_w2 = mc_w2; }          
-  void Set_MC_w1y(Double_t mc_w1y)                    { fMC_w1y = mc_w1y; }       
-  void Set_MC_erange_start(Double_t mc_ers)           { fMC_erange_start = mc_ers; }
+  void Set_MC_w1y(Double_t mc_w1y)                    { fMC_w1y = mc_w1y; }
+  void Set_MC_w2denom(Double_t mc_w2denom)            { fMC_w2denom = mc_w2denom; }       
+  void Set_MC_erange_start(Double_t mc_Estart)        { fMC_erange_start = mc_Estart; }
+  void Set_MC_erange_stop(Double_t mc_Estop)          { fMC_erange_stop = mc_Estop; }
   void Set_MC_is_CC(Double_t mc_iscc)                 { fMC_is_CC = mc_iscc; }  
   void Set_MC_is_neutrino(Double_t mc_isnu)           { fMC_is_neutrino = mc_isnu; }
   void Set_MC_type(Double_t mc_type)                  { fMC_type = mc_type; }
+  void Set_MC_ichan(Double_t mc_ichan)                { fMC_ichan = mc_ichan; }
   void Set_MC_energy(Double_t mc_e)                   { fMC_energy = mc_e; }
   void Set_MC_bjorkeny(Double_t mc_by)                { fMC_bjorkeny = mc_by; }
   void Set_MC_dir(Double_t x, Double_t y, Double_t z) { 
@@ -71,6 +74,7 @@ class SummaryEvent : public TObject {
   void Set_track_ql0(Double_t t_ql0)                  { fTrack_ql0 = t_ql0; }     
   void Set_track_ql1(Double_t t_ql1)                  { fTrack_ql1 = t_ql1; }
   void Set_track_ql2(Double_t t_ql2)                  { fTrack_ql2 = t_ql2; }
+  void Set_track_ql3(Double_t t_ql3)                  { fTrack_ql3 = t_ql3; }
   void Set_track_dir(Double_t x, Double_t y, Double_t z) { 
     fTrack_dir_x = x; 
     fTrack_dir_y = y; 
@@ -87,6 +91,7 @@ class SummaryEvent : public TObject {
   void Set_shower_ql0(Double_t s_ql0)                 { fShower_ql0 = s_ql0; }     
   void Set_shower_ql1(Double_t s_ql1)                 { fShower_ql1 = s_ql1; }
   void Set_shower_ql2(Double_t s_ql2)                 { fShower_ql2 = s_ql2; }
+  void Set_shower_ql3(Double_t s_ql3)                 { fShower_ql3 = s_ql3; }
   void Set_shower_dir(Double_t x, Double_t y, Double_t z) { 
     fShower_dir_x = x; 
     fShower_dir_y = y; 
@@ -113,6 +118,7 @@ class SummaryEvent : public TObject {
   Double_t Get_MC_is_CC()        { return fMC_is_CC; }  
   Double_t Get_MC_is_neutrino()  { return fMC_is_neutrino; }
   Double_t Get_MC_type()         { return fMC_type; }
+  Double_t Get_MC_ichan()        { return fMC_ichan; }
   Double_t Get_MC_dir_x()        { return fMC_dir_x; }
   Double_t Get_MC_dir_y()        { return fMC_dir_y; }
   Double_t Get_MC_dir_z()        { return fMC_dir_z; }
@@ -176,6 +182,7 @@ class SummaryEvent : public TObject {
   Double_t        fMC_is_CC;        //!< 1 - CC, 0 - NC
   Double_t        fMC_is_neutrino;  //!< 1 - atm neutrion, 0 - atm muon
   Double_t        fMC_type;         //!< PDG code of the primary lepton
+  Double_t        fMC_ichan;        //!< neutrino interaction channel from gSeaGen
   Double_t        fMC_dir_x;
   Double_t        fMC_dir_y;
   Double_t        fMC_dir_z;

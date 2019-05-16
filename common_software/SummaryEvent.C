@@ -11,7 +11,8 @@ SummaryEvent::SummaryEvent() {
   fMC_erange_stop  = 0.;
   fMC_is_CC        = 0.;       
   fMC_is_neutrino  = 0.; 
-  fMC_type         = 0.;        
+  fMC_type         = 0.;
+  fMC_ichan        = 0.;        
   fMC_dir_x        = 0.;
   fMC_dir_y        = 0.;
   fMC_dir_z        = 0.;
@@ -98,7 +99,8 @@ void SummaryEvent::FillPseudoData(Bool_t logE) {
   fMC_w2denom      = 0.;         
   fMC_erange_start = 0.;
   fMC_erange_stop  = 0.;
-
+  fMC_ichan        = 0.;
+  
   //-----------------------------------------------------------------------------
   //set random MC-truth variables
   //-----------------------------------------------------------------------------
