@@ -85,21 +85,28 @@ int main(const int argc, const char **argv) {
     // out.GetEvt()->Set_MC_runID(PIDR.run_id);       
     // out.GetEvt()->Set_MC_evtID(PIDR.mc_id);       
     // out.GetEvt()->Set_MC_w2(PIDR.weight_w2);    
-    // out.GetEvt()->Set_MC_w1y(PIDR.weight_one_year);   
+    // out.GetEvt()->Set_MC_w1y(PIDR.weight_one_year);
+
+    // if ( PIDR.is_neutrino ) { out.GetEvt()->Set_MC_w2denom( PIDR.n_events_gen ); }
+    // else                    { out.GetEvt()->Set_MC_w2denom( PIDR.livetime_sec ); }
+    
     // out.GetEvt()->Set_MC_erange_start(PIDR.Erange_min);
+    // out.GetEvt()->Set_MC_erange_stop(PIDR.Erange_max);
     // out.GetEvt()->Set_MC_is_CC(PIDR.is_cc); 
     // out.GetEvt()->Set_MC_is_neutrino(PIDR.is_neutrino);
     // out.GetEvt()->Set_MC_type(PIDR.type);
+    // out.GetEvt()->Set_MC_ichan(PIDR.interaction_channel);
     // out.GetEvt()->Set_MC_energy(PIDR.energy);
     // out.GetEvt()->Set_MC_bjorkeny(PIDR.bjorkeny);
     // out.GetEvt()->Set_MC_dir(PIDR.dir_x, PIDR.dir_y, PIDR.dir_z);
     // out.GetEvt()->Set_MC_pos(PIDR.pos_x, PIDR.pos_y, PIDR.pos_z);
 
-    // out.GetEvt()->Set_track_energy(PIDR.gandalf_energy_corrected);
+    // out.GetEvt()->Set_track_energy(PIDR.gandalf_energy);
     // out.GetEvt()->Set_track_bjorkeny(0.);                        //currently gandalf has no bjorkeny
     // out.GetEvt()->Set_track_ql0(PIDR.gandalf_is_good);           
     // out.GetEvt()->Set_track_ql1(PIDR.gandalf_loose_is_selected);
     // out.GetEvt()->Set_track_ql2(PIDR.gandalf_is_selected);
+    // out.GetEvt()->Set_track_ql3(0.);                             //placeholder
     // out.GetEvt()->Set_track_dir(PIDR.gandalf_dir_x, PIDR.gandalf_dir_y, PIDR.gandalf_dir_z);
     // out.GetEvt()->Set_track_pos(PIDR.gandalf_pos_x, PIDR.gandalf_pos_y, PIDR.gandalf_pos_z);
 
@@ -108,6 +115,7 @@ int main(const int argc, const char **argv) {
     // out.GetEvt()->Set_shower_ql0(PIDR.dusj_is_good);     
     // out.GetEvt()->Set_shower_ql1(PIDR.dusj_is_selected);
     // out.GetEvt()->Set_shower_ql2(0.);                            //currently no ql2 for shower
+    // out.GetEvt()->Set_shower_ql3(0.);                            //placeholder
     // out.GetEvt()->Set_shower_dir(PIDR.dusj_dir_x, PIDR.dusj_dir_y, PIDR.dusj_dir_z);
     // out.GetEvt()->Set_shower_pos(PIDR.dusj_pos_x, PIDR.dusj_pos_y, PIDR.dusj_pos_z);
 
