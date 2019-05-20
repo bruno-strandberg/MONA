@@ -102,6 +102,10 @@ void FileHeader::AddParameter(FileHeader &h, TString par_name) {
  */
 TString FileHeader::GetParameter(TString parameter_name, TString output_name, TString application_name) {
 
+  if (parameter_name == "") {
+    throw std::invalid_argument("ERROR! FileHeader::GetParameter() empty string provided as parameter name");
+  }
+  
   TString par_value = "";
 
   if (output_name != "" && application_name != "") {
@@ -121,11 +125,15 @@ TString FileHeader::GetParameter(TString parameter_name, TString output_name, TS
     if (pars.size() > 0) { par_value = pars.front().back(); }
 
   }
-
+  
   if (par_value == "") {
-    cout << "WARNING! FileHeader::GetParameter() could not find parameter " 
-	 << parameter_name << " for output " << output_name << " for application " 
-	 << application_name << endl;
+
+    TString wrnmsg = "WARNING! FileHeader::GetParameter() could not find parameter " + parameter_name;
+    if (output_name != "") wrnmsg += " for output " + output_name;
+    if (application_name != "") wrnmsg += " for application " + application_name;
+
+    cout << wrnmsg << endl;
+    
   }
 
   return par_value;

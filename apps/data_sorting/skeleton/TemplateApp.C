@@ -128,10 +128,7 @@ int main(const int argc, const char **argv) {
   }
 
   // add the tag to the header
-  FileHeader head("NEWREADERCLASSToSummary");
-  head.AddParameter("datatag", (TString)tag);
-  head.WriteHeader(out.GetFile());
-
+  out.GetHeader()->AddParameter("datatag", (TString)tag);
   out.WriteAndClose();
 
   //----------------------------------------------------------------------------

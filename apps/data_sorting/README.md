@@ -26,6 +26,8 @@ For example, this directory contains a reader class `PIDAlpha` and a correspondi
 The Greek letters
 =================
 
+In general, having this data conversion step in version control is challenging, as it is tied to the MC data pipeline versioning. Typically, if you're in this directory and have a (new) PID output from ECAP, your safest bet is to use the scripts `createconverter.py` to create skeleton code to convert data to *analysis format* (see below).
+
 * *PIDAlpha* - this is to convert PID summary files from ECAP in April 2018. This uses ORCA 115 geometry with 23x9m layout, the underlying Monte-Carlo chain originates from 2015.
 
 * *PIDBeta* - this is to convert PID summary files from ECAP in October 2018. This is ORCA 7-line MC with 23x9m layout.
@@ -35,7 +37,7 @@ The Greek letters
 Maintenance
 ===========
 
-Typically, the format of the PID output tree from ECAP is not fixed and changes with every update. If the format of the tree `pid_result_XXX.root` changes, the `PIDAlpha` class will no longer recongnize the `TTree` in the file. The application that uses the reader (`AlphaToSummary` in this case) will complain about missing/wrong branch names. Often, a new reader and an application need to be created to convert a new PID summary file to *analysis format*. This can be achieved with the helper script `createconverter.py` or manually, both options are described below.
+Typically, the format of the PID output tree from ECAP is not fixed and changes with every update. If the format of the tree `pid_result_XXX.root` changes, the `PIDAlpha` class will no longer recongnize the `TTree` in the file. The application that uses the reader (`AlphaToSummary` in this case) will complain about missing/wrong branch names. Typically, a new reader and an application need to be created to convert a new PID summary file to *analysis format*. This can be achieved with the helper script `createconverter.py` or manually, both options are described below.
 
 Helper script
 -------------
