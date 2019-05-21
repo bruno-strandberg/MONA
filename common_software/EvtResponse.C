@@ -337,8 +337,8 @@ void  EvtResponse::Normalise() {
       // no muons or noise runs, hence the histogram should be empty
       if (h->GetEntries() != 0) {
 	std::map<Int_t, string> helper;
-	helper.insert_pair(ATMMU, "atm. muon");
-	helper.insert_pair(NOISE, "noise");
+	helper.insert( std::make_pair<Int_t, string> (ATMMU, "atm. muon") );
+	helper.insert( std::make_pair<Int_t, string> (NOISE, "noise") );
 	throw std::logic_error("ERROR! EvtResponse::Normalise() no muons/noise runs identified, but relevant histograms not empty for " + helper[t] );
       }
       
