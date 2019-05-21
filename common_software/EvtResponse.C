@@ -60,6 +60,7 @@ EvtResponse::EvtResponse(reco reco_type, TString resp_name,
 
   fhAtmMuCount1y = CloneFromTemplate(fhBinsReco, "hAtmMuCount1y_" + fRespName);
   fhNoiseCount1y = CloneFromTemplate(fhBinsReco, "hNoiseCount1y_" + fRespName);
+
 }
 
 //=====================================================================================================
@@ -87,6 +88,10 @@ EvtResponse::~EvtResponse() {
  */
 void EvtResponse::Fill(SummaryEvent *evt) {
 
+  if (fNormalised) {
+    throw std::logic_error("ERROR! EvtResponse::Fill() cannot fill an already normalised response!");
+  }
+  
   // check that the event is recognised
   UInt_t flav;
 
@@ -124,7 +129,7 @@ void EvtResponse::Fill(SummaryEvent *evt) {
 
     if (  evt->Get_MC_energy()   < emin  ||  evt->Get_MC_energy()   >= emax  ||
 	 -evt->Get_MC_dir_z()    < ctmin || -evt->Get_MC_dir_z()    >= ctmax ||
-	  evt->Get_MC_bjorkeny() < bymin ||  evt->Get_MC_bjorkeny() >= bymax ) {
+	  evt->Get_MC_bjorkeny() < bymin ||  evt->Get_MC_bjorkeny() >= bymax ) {      
       return;
     }
     
@@ -146,8 +151,8 @@ void EvtResponse::Fill(SummaryEvent *evt) {
     // if event does not pass the cuts return
     if ( !PassesCuts(evt) ) return;
     
-    if      ( flav == ATMMU ) fhAtmMuCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
-    else if ( flav == NOISE ) fhNoiseCount1y->Fill( fEnergy, -fDir.z(), fBy, evt->Get_MC_w1y() );
+    if      ( flav == ATMMU ) { fhAtmMuCount1y->Fill( fEnergy, -fDir.z(), fBy ); }
+    else if ( flav == NOISE ) { fhNoiseCount1y->Fill( fEnergy, -fDir.z(), fBy ); }
     else {
       throw std::invalid_argument( "ERROR! EvtResponse::Fill() unknown particle with flavor " + to_string(flav) );
     }
@@ -170,14 +175,28 @@ void EvtResponse::Fill(SummaryEvent *evt) {
 
     Continuing with the example for muon-CC 1-5 and 3-100, this function does the following. For each neutrino type (in this case [muon][cc=1][nu] and [muon][cc][nubar]) the `EvtResponse` stores a map with structure < rangeID, vector<runID> >. Range ID is just a pair with upper and lower limit, the vector of runID's contains all the different run numbers with their respective N_tot from gSeaGen. So, for muon-CC 1-5 and 3-100, the map [muon][cc][nu] will contain two elements, one pair < {1,5}, vector<runID>{all runs} > and < {3,100}, vector<runID>{all runs} >. With this data, after the response has been filled one can calculate the total number of generated events over all of the runs filled to the response to re-normalise W2 to weight-one-year.
 
+    \param flav Flavor (0 - elec, 1 - muon, 2 - tau, 3 - atmmu, 4 - noise)
+    \param iscc 0 - NC event, 1 - CC event ( for noise and muons ignored )
+    \param isnb 0 - nu event, 1 - anti-nu event ( for noise and muons ignored )
+    \param evt  Pointer to a `SummaryEvent` with event data
+
 */
 void  EvtResponse::CountEvents(UInt_t flav, UInt_t iscc, UInt_t isnb, SummaryEvent *evt) {
 
   rangeID range( evt->Get_MC_erange_start(), evt->Get_MC_erange_stop() ); // emin and emax of the gSeaGen simulation range; some default value for noise and muons
   runID   run  ( evt->Get_MC_runID(), evt->Get_MC_w2denom() );            // run ID and N_tot(gSeaGen) or livetime (mupage, noise)
 
-  auto M = fRuns[flav][bool(iscc)][bool(isnb)]; // map with < range,vec<run> > for this event type
+  bool _iscc = iscc;
+  bool _isnb = isnb;
 
+  // for muons and noise there is only 1 type of event
+  if ( evt->Get_MC_is_neutrino() < 0.5 ) {
+    _iscc = 0;
+    _isnb = 0;
+  }
+
+  auto& M = fRuns[flav][_iscc][_isnb]; // map with < range,vec<run> > for this event type
+  
   auto element = M.find( range ); // try to find by the range in the map
 
   //-----------------------------------------------------------------
@@ -192,10 +211,10 @@ void  EvtResponse::CountEvents(UInt_t flav, UInt_t iscc, UInt_t isnb, SummaryEve
   //-----------------------------------------------------------------
   else {
 
-    auto V = element->second; // get the vector
+    auto& V = element->second; // get the vector
     
     // try to find the runID in the vector
-    auto RID = std::find_if( V.begin(), V.end(), [run](const runID& other){ return other.first == run.first; } );
+    auto RID = std::find_if(V.begin(), V.end(), [run](const runID& other){ return other.first == run.first; });
 
     // if found, check that N_tot is also the same and continue;
     if ( RID != V.end() ) {
@@ -218,9 +237,163 @@ void  EvtResponse::CountEvents(UInt_t flav, UInt_t iscc, UInt_t isnb, SummaryEve
 
 //=====================================================================================================
 
+/** Private function that converts the W2 weights of each event to weight_per_year.
+
+    The gSeaGen weight w2 can be converted to weight per year by dividing it by the total number N_tot of generated events by gSeaGen. If there are several runs, N_tot is the sum over N_tot in individual files.
+
+    For muons & noise, the weight per 1 year can be calculated as 1/livetime * sec_per_year.
+*/
 void  EvtResponse::Normalise() {
 
-  //TBD
+  // first count together N_tot for each neutrino type
+  std::map< rangeID, Double_t > N_TOT[TAU+1][2][2];
+
+  for (Int_t F = 0; F <= TAU; F++) {
+    for (Int_t iscc = 0; iscc <= 1; iscc++) {
+      for (Int_t isnb = 0; isnb <= 1; isnb++) {
+
+	// get the map with < rangeID, vector<runID> > for this neutrino type
+	auto& M = fRuns[ F ][ iscc ][ isnb ];
+
+	// loop over the ranges, for each range calculate the total number of simulated events
+	for (auto kv: M) {
+
+	  Double_t ntot = 0.;
+	  auto& range   = kv.first;
+	  auto& runs    = kv.second;
+	  for (auto run: runs) { ntot += run.second; }
+
+	  N_TOT[F][iscc][isnb].insert( std::make_pair(range, ntot) );
+	}
+
+      }
+    }
+  }
+  
+  // loop over all of the events in the response (neutrino events only)
+  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
+    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
+      for (Int_t bybin = 0; bybin < fBybins; bybin++) {
+
+	std::vector<TrueEvt>& binevts = fResp[ebin][ctbin][bybin];
+
+	for (auto& evt: binevts) {
+
+	  Double_t w2denom_tot = 0;
+
+	  // get the map with < rangeID, ntot > for this neutrino type
+	  auto& M = N_TOT[ evt.GetFlav() ][ evt.GetIsCC() ][ evt.GetIsNB() ];
+	  
+	  // loop over the energy ranges of this neutrino type
+	  for (auto kv: M) {
+
+	    rangeID  range = kv.first;
+	    Double_t ntot  = kv.second;
+
+	    // if the event is inside the range, accumuate Ntot  (saved in w2denom for neutrinos)
+	    if ( evt.GetTrueE() >= range.first && evt.GetTrueE() < range.second ) {
+	      w2denom_tot += ntot;
+	    }
+	    
+	  } // end loop over ranges
+
+	  // convert W2 (stored in w1y) to weight in one year
+	  evt.SetW1y( evt.GetW1y()/w2denom_tot );
+	  
+	} // end loop over TrueEvt's
+	
+      }
+    }
+  }
+
+  // normalise muons and noise
+  vector <UInt_t> others = {ATMMU, NOISE};
+
+  for (auto t: others) {
+
+    auto M = fRuns[t][0][0]; // for atm muons and noise I only use 1 type
+
+    TH3D *h;
+    if      ( t == ATMMU ) h = fhAtmMuCount1y;
+    else if ( t == NOISE ) h = fhNoiseCount1y;
+    else {
+      throw std::logic_error("ERROR! EvtResponse::Normalise() unexpected type in muon & noise normalisation");
+    }
+    
+    if ( M.size() > 1 ) {
+      throw std::logic_error("ERROR! EvtResponse::Normalise() expecting 1 E-range for atm. mu or noise");
+    }
+    else if ( M.size() == 1 ) {
+
+      vector<runID> runs = M.begin()->second;
+      Double_t tot_livetime = 0;
+      for (auto RID: runs) { tot_livetime += RID.second; }
+      
+      h->Scale( 1./tot_livetime * fSec_per_y );
+      
+    }
+    else {
+
+      // no muons or noise runs, hence the histogram should be empty
+      if (h->GetEntries() != 0) {
+	std::map<Int_t, string> helper;
+	helper.insert_pair(ATMMU, "atm. muon");
+	helper.insert_pair(NOISE, "noise");
+	throw std::logic_error("ERROR! EvtResponse::Normalise() no muons/noise runs identified, but relevant histograms not empty for " + helper[t] );
+      }
+      
+    }
+    
+  }
+  
+  fNormalised = kTRUE;
+  
+}
+
+//=====================================================================================================
+
+/** Function to print the neutrino run data of the events that have been filled to the response.
+
+    This data is used by the function `EvtResponse::Normalise()` for the calculation of weight_1_year.
+*/
+void EvtResponse::PrintRunData() {
+
+  cout << "NOTICE EvtResponse::PrintRunData() printing data of the runs filled to the response" << endl;
+
+  // print neutrino run data
+  for (Int_t F = 0; F <= TAU; F++) {
+    for (Int_t iscc = 0; iscc <= 1; iscc++) {
+      for (Int_t isnb = 0; isnb <= 1; isnb++) {
+	
+	auto M = fRuns[F][iscc][isnb];
+
+	for (auto kv: M) {
+
+	  auto range = kv.first;
+	  auto runs  = kv.second;
+	  
+	  cout << "NOTICE EvtResponse::PrintRunData() Neutrino (f, iscc, isnb): " << F << " " << iscc << " " << isnb << " (emin, emax): " << range.first << " " << range.second << "; runs " << runs.size() << "; (runnr, ntot) of first element: " << runs[0].first << " " << runs[0].second << endl;
+	  
+	}
+
+      }
+    }
+  }
+
+  // print atm. muon and noise data
+  for (Int_t F = ATMMU; F <= NOISE; F++) {
+    auto M = fRuns[F][0][0];
+
+    for (auto kv: M) {
+
+      auto range = kv.first;
+      auto runs  = kv.second;
+	  
+      cout << "NOTICE EvtResponse::PrintRunData() atm. muon/noise data (emin, emax): " << range.first << " " << range.second << "; runs " << runs.size() << "; (runnr, livetime) of first element: " << runs[0].first << " " << runs[0].second << endl;
+	  
+    }
+
+  }
   
 }
 
@@ -252,6 +425,8 @@ TH3D* EvtResponse::CloneFromTemplate(TH3D* tmpl, TString name) {
 */
 std::vector<TrueEvt>& EvtResponse::GetBinEvts(Double_t E_reco, Double_t ct_reco, Double_t by_reco) {
 
+  if (!fNormalised) Normalise();
+  
   Int_t ebin  = fhBinsReco->GetXaxis()->FindBin(E_reco);
   Int_t ctbin = fhBinsReco->GetYaxis()->FindBin(ct_reco);
   Int_t bybin = fhBinsReco->GetZaxis()->FindBin(by_reco);

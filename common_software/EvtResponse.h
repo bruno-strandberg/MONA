@@ -36,11 +36,10 @@ class TrueEvt {
     fE_true  = (Float_t)evt->Get_MC_energy();
     fCt_true = (Short_t)( -evt->Get_MC_dir_z()    * 1e4 );
     fBy_true = (Short_t)(  evt->Get_MC_bjorkeny() * 1e4 );
-    //f_W1y    = (Float_t)evt->Get_MC_w2(); // what it will be
-    f_W1y    = (Float_t)evt->Get_MC_w1y(); // debug for testing
+    f_W1y    = (Float_t)evt->Get_MC_w2();
     
   }
-
+  
   /** Destructor */
   ~TrueEvt() {};
   
@@ -52,10 +51,20 @@ class TrueEvt {
   Double_t GetTrueE()  const { return (Double_t)fE_true; }
   Double_t GetTrueCt() const { return (Double_t)fCt_true * 1e-4; }
   Double_t GetTrueBy() const { return (Double_t)fBy_true * 1e-4; }
-  Double_t GetW1y()    const { return f_W1y; }
+  Double_t GetW1y()    const { return (Float_t)f_W1y; }
 
-  // interface: setter functions
+  /** Function to set value for weight 1 year */
   void SetW1y(Float_t w1y) { f_W1y = w1y; }
+
+  /**
+     Stream operator for cout.
+  */
+  friend std::ostream &operator << ( std::ostream &output, const TrueEvt &te ) { 
+    output << "Flavor, is-cc, is-nb, ichan: " << te.GetFlav() << ' ' << te.GetIsCC() << ' ' << te.GetIsNB()
+	   << ' ' << te.GetIchan() << "; true E, ct, by: " << te.GetTrueE() << ' ' << te.GetTrueCt()
+	   << ' ' << te.GetTrueBy() << "; weight 1 year: " << te.f_W1y << std::endl;
+    return output;
+  }
   
  private:
 
@@ -134,7 +143,8 @@ class EvtResponse : public AbsResponse {
   std::vector<TrueEvt>&         GetBinEvts     (Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   std::pair<Double_t, Double_t> GetAtmMuCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   std::pair<Double_t, Double_t> GetNoiseCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
-  
+  void PrintRunData();
+
   /** Returns that this implementation is of the response type `EvtResponse` 
       \return `AbsResponse::EvtResponse`
   */
@@ -159,6 +169,8 @@ class EvtResponse : public AbsResponse {
   typedef std::pair<Double_t, Double_t>   rangeID; //!< type definition for identifying a range
   typedef std::pair<Double_t, Double_t>   runID;   //!< type definition for identifying a run
   std::map< rangeID, std::vector<runID> > fRuns[NOISE+1][2][2]; //!< structure to count the total number of gSeaGen events (nu's) or total livetime for normalisation
+
+  const double fSec_per_y   = 365.2421897 * 24 * 60 * 60; //!< seconds in a tropical year
 
   Bool_t   fNormalised;           //!< flag to indicate that the weights have been normalised to weight one year
   Double_t fNEvts;                //!< calculates the total number of events in a response
