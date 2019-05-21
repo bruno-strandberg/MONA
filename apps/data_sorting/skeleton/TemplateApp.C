@@ -47,7 +47,7 @@ int main(const int argc, const char **argv) {
   }
 
   if (fin_name == "" || fout_dir  == "" || tag == "") {
-    throw std::invalid_argument("ERROR! NEWREADERCLASSToSummary() all command line arguments need to be specified!");
+    throw std::invalid_argument("ERROR! NEWREADERCLASS_to_MONA() all command line arguments need to be specified!");
   }
 
   //----------------------------------------------------------------------------
@@ -57,7 +57,7 @@ int main(const int argc, const char **argv) {
   TFile *fin = new TFile((TString)fin_name, "READ");
   TTree *tin = (TTree*)fin->Get("NEWTREENAME");
   if (tin == NULL) {
-    throw std::invalid_argument("ERROR! NEWREADERCLASSToSummary() cannot find tree NEWTREENAME in file " + fin_name);
+    throw std::invalid_argument("ERROR! NEWREADERCLASS_to_MONA() cannot find tree NEWTREENAME in file " + fin_name);
   }
   NEWREADERCLASS PIDR(tin);
   PIDR.fChain->SetBranchStatus("*",1);
@@ -65,9 +65,13 @@ int main(const int argc, const char **argv) {
   //----------------------------------------------------------------------------
   // Init the output in analysis format, loop and map variables
   //----------------------------------------------------------------------------
+  SummaryEvent *evt = new SummaryEvent;
+  string sevtv = std::to_string( ( (TClass*)evt->IsA() )->GetClassVersion() ); // summary event version in the library
+  delete evt;
 
-  string fout_name = fout_dir + "ORCA_MC_summary_" + tag + ".root";
-  cout << "NOTICE NEWREADERCLASSToSummary() creating file " << fout_name << endl;
+  string fout_name = fout_dir + "ORCA_MCsummary_SEv" + sevtv + "_" + tag + ".root";
+
+  cout << "NOTICE NEWREADERCLASS_to_MONA() creating file " << fout_name << endl;
 
   SummaryParser out(fout_name, kFALSE); //false means writing mode
 
