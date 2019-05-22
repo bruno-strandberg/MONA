@@ -1,14 +1,14 @@
-#define PIDAlpha_cxx
-#include "PIDAlpha.h"
+#define ECAP180401_cxx
+#include "ECAP180401.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
 
-void PIDAlpha::Loop()
+void ECAP180401::Loop()
 {
 //   In a ROOT session, you can do:
-//      root> .L PIDAlpha.C
-//      root> PIDAlpha t
+//      root> .L ECAP180401.C
+//      root> ECAP180401 t
 //      root> t.GetEntry(12); // Fill t data members with entry number 12
 //      root> t.Show();       // Show values of entry 12
 //      root> t.Show(16);     // Read and show values of entry 16

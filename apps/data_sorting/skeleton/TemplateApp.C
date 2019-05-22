@@ -20,7 +20,7 @@
 using namespace std;
 
 /**
-   This program takes the ECAP PID summary file as input and converts it to `SummaryEvent` format for usage with NMH software.
+   This program takes the ECAP PID summary file as input and converts it to `SummaryEvent` format for usage with MONA software.
  
    See apps/data_sorting/README.md for more info.
    
@@ -37,7 +37,7 @@ int main(const int argc, const char **argv) {
 
     zap['f'] = make_field(fin_name , "PID file from ECAP with the PID TTree that was used to create NEWREADERCLASS.h/C class") = "NEWPIDINPUTFILE";
     zap['d'] = make_field(fout_dir , "Output directory where the data file in SummarEvent format is written, e.g. ../../data/") = "";
-    zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. format ORCA115_23x9m_ECAP0418. Choose this wisely.") = "";
+    zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. format ORCA115_23x9m_ECAP180401. Choose this wisely.") = "";
 
     if ( zap.read(argc, argv) != 0 ) return 1;
 
