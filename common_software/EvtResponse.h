@@ -3,6 +3,7 @@
 
 #include "AbsResponse.h"
 #include "SummaryEvent.h"
+#include "TCanvas.h"
 
 /** A structure to store event data in an event-by-event detector response implemented in the class `EvtResponse`.
 
@@ -144,7 +145,8 @@ class EvtResponse : public AbsResponse {
   std::pair<Double_t, Double_t> GetAtmMuCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   std::pair<Double_t, Double_t> GetNoiseCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   void PrintRunData();
-
+  TCanvas* DisplayResponse(Double_t e_reco, Double_t ct_reco);
+  
   /** Returns that this implementation is of the response type `EvtResponse` 
       \return `AbsResponse::EvtResponse`
   */

@@ -3,6 +3,10 @@
 #include <vector>
 #include <stdexcept>
 
+#include "TCanvas.h"
+#include "TH2.h"
+#include "TGraph.h"
+
 using namespace std;
 
 /** Constructor to initialise the response with the same binning configuration in true space and reco space.
@@ -473,4 +477,83 @@ std::pair<Double_t, Double_t> EvtResponse::GetNoiseCount1y(Double_t E_reco, Doub
   
   return std::make_pair( fhNoiseCount1y->GetBinContent(ebin, ctbin, bybin), fhNoiseCount1y->GetBinError(ebin, ctbin, bybin) );
 
+}
+
+//=====================================================================================================
+
+/** Function to display the true events contributing to the reco bin at the input values
+    
+    A summation over the bjorken-y bins is performed, as visualisation in 3D is difficult.
+
+    \param e_reco  Reco energy
+    \param ct_reco Reco cos-theta
+    \return        Canvas with the visualisation
+
+*/
+TCanvas* EvtResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco) {
+
+   // graphs with true events in the reco bin by nu type
+  TGraph G[fFlavs.size()][fInts.size()][fPols.size()];
+  vector<TGraph*> glist;
+  
+  TString suffix = "_Ereco=" + (TString)to_string(e_reco) + "_ctreco=" + (TString)to_string(ct_reco);
+  
+  for (auto f: fFlavs) {
+    for (auto i: fInts) {
+      for (auto p: fPols) {
+	TGraph& gr = G[f.first][i.first][p.first];
+	TString gname = "events_" + f.second + "_" + i.second + "_" + p.second + suffix;
+	gr.SetNameTitle(gname, gname);
+	gr.GetXaxis()->SetTitle("E^{true}_{nu} [GeV]");
+	gr.GetYaxis()->SetTitle("cos#theta^{true}_{nu}");
+	glist.push_back( &gr );
+      }
+    }
+  }
+
+  // sum over bjorken-y
+  vector<TrueEvt> TE;
+  for (Int_t byb = 1; byb <= fhBinsReco->GetZaxis()->GetNbins(); byb++) {
+    Double_t bjorkeny = fhBinsReco->GetZaxis()->GetBinCenter( byb );
+    auto te = GetBinEvts(e_reco, ct_reco, bjorkeny);
+    for (auto t: te) TE.push_back( t );
+  }
+
+  //create the histogram with reco bin
+  TH2D* hr = (TH2D*)fhBinsReco->Project3D("yx")->Clone("RecoBin_" + suffix);
+  hr->SetDirectory(0);
+  hr->Reset();
+  
+  // add points to the graphs and the histogram
+  for (auto t: TE) {
+    TGraph& gr = G[ t.GetFlav() ][ t.GetIsCC() ][ t.GetIsNB() ];
+    gr.SetPoint( gr.GetN(), t.GetTrueE(), t.GetTrueCt() );
+    hr->Fill(e_reco, ct_reco);
+  }
+
+  // set point styles and ranges; only draw graphs that are not empty
+  vector<TGraph*> _glist;
+  for (auto gr: glist) {
+    gr->SetMinimum(-1);
+    gr->SetMaximum(1);
+    gr->GetXaxis()->SetRangeUser(1,100);
+    gr->SetMarkerStyle(5);
+    gr->SetMarkerColor(kBlue);
+    if ( gr->GetN() > 0 ) _glist.push_back( gr );
+  }
+  
+  // draw the graphs and the true bin
+  TCanvas *c1 = new TCanvas("c1","c1",1);
+  c1->DivideSquare( _glist.size() + 1 );
+
+  c1->cd(1);
+  hr->Draw("colz");
+  
+  for (Int_t i = 0; i < (Int_t)_glist.size(); i++) {
+    c1->cd(i+2);
+    ((TGraph*)_glist[i]->Clone())->Draw("AP");
+  }
+  
+  return c1;
+  
 }
