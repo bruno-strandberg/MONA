@@ -43,7 +43,7 @@ namespace RESTOREPARITY {
 using namespace JTOOLS;
 using namespace RESTOREPARITY;
 
-/** This program takes the file resulting from Alpha(Beta...)ToSummary as argument and splits it up to NMH/data/mcsummary/ directories to match the file scheme used throughout the MC chain.
+/** This program takes the file resulting from ..._to_MONA as argument and splits it up to data/mcsummary/ directories to match the file scheme used throughout the MC chain.
     
    See NMH/data/README.md for more details.
  
@@ -278,15 +278,17 @@ void  RESTOREPARITY::split_to_files_atmnu_fast(FileHeader &_head, JRange<double>
   TString lowrange  = to_string( (int)E_low.getLowerLimit() ) + "-" + to_string( (int)E_low.getUpperLimit() );
   TString highrange = to_string( (int)E_high.getLowerLimit() ) + "-" + to_string( (int)E_high.getUpperLimit() );
 
-  map < Double_t, TString>  emin_to_str = { {  E_low.getLowerLimit(), lowrange }, 
-					    { E_high.getLowerLimit(), highrange} };
-    
+  vector< std::pair< JRange<double>, TString > > er_str = { std::make_pair( E_low, lowrange), 
+							    std::make_pair( E_high, highrange) };
+  // map < JRange<double>, TString >  er_to_str = { { E_low , lowrange  }, 
+  // 						 { E_high, highrange } };
+  
   for (auto const& type : pdg_to_name) {
     for (auto const& interaction : iscc_to_str) {
-      for (auto const& emin : emin_to_str) {
+      for (auto const& er : er_str) {
 
 	cout << "Processing " << type.second << " " << interaction.second
-	     << " " << emin.second << endl;
+	     << " " << er.second << endl;
 	
 	//-------------------------------------------------------
 	//build the cut string and the file name string
@@ -299,12 +301,14 @@ void  RESTOREPARITY::split_to_files_atmnu_fast(FileHeader &_head, JRange<double>
 	// in the low energy range, sometimes tau is cut at threshold, so
 	// when dealing with tau's when emin is below tau threshold, another
 	// tau selection cut is added
-	if ( type.first == 16. && emin.first < fTauThreshold ) {
+	if ( type.first == 16. && er.first.getLowerLimit() < fTauThreshold ) {
 	  cut_string += "&&fMC_erange_start<" + (TString)to_string(fTauThreshold + 0.1);
 	}
 	else {
-	  cut_string += "&&fMC_erange_start==" + (TString)to_string(emin.first);
+	  cut_string += "&&fMC_erange_start==" + (TString)to_string( er.first.getLowerLimit() );
 	}
+
+	cut_string += "&&fMC_erange_stop==" + (TString)to_string( er.first.getUpperLimit() );
 
 	cout << "NOTICE RESTOREPARITY::split_to_files_atmnu_fast() selection string: " << endl
 	     << cut_string << endl;
@@ -312,7 +316,7 @@ void  RESTOREPARITY::split_to_files_atmnu_fast(FileHeader &_head, JRange<double>
 	TString name_string = summarydir + tag + nudir + "/summary_"; 
 	name_string += type.second + "-";
 	name_string += interaction.second + "_";
-	name_string += emin.second + "GeV_";
+	name_string += er.second + "GeV_";
 
 	//-------------------------------------------------------
 	// create level 1 tree for flavor_NC/CC_erange over all file numbers
