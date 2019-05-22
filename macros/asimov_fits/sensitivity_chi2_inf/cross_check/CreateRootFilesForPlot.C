@@ -57,6 +57,7 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle, Bool_t 
   Double_t sqrt_inf_chi2;
   Double_t sqrt_inf_err;
   Double_t kParameter;
+  Double_t kErr;
 
   TTree* t_inf_chi2 = new TTree("inf_" + tree_nametitle, "Chi2_inf values from fit " + tree_nametitle);
   TBranch* b_th23          = t_inf_chi2->Branch("th23", &th23, "th23/I");
@@ -65,6 +66,7 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle, Bool_t 
   TBranch* b_sqrt_inf_chi2 = t_inf_chi2->Branch("sqrt_inf_chi2", &sqrt_inf_chi2, "sqrt_inf_chi2/D");
   TBranch* b_sqrt_inf_err  = t_inf_chi2->Branch("sqrt_inf_err", &sqrt_inf_err, "sqrt_inf_err/D");
   TBranch* b_kParameter    = t_inf_chi2->Branch("kParameter", &kParameter, "kParameter/D");
+  TBranch* b_kErr          = t_inf_chi2->Branch("kErr", &kErr, "kErr/D");
 
   for (Int_t i = th23_min; i <= th23_max; i++) {
     Int_t n = input_ttree->Draw("percentage:fit_chi2", Form("th23==%i", i), "goff"); 
@@ -84,6 +86,7 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle, Bool_t 
     inf_err = errs[0];
     sqrt_inf_err = inf_err / (2. * sqrt_inf_chi2); // Standard error propagation.
     kParameter = pars[1];
+    kErr = errs[1];
 
     gStyle->SetOptFit(kTRUE);
     if (write_scatter) g->Write(Form("scatter_chi2_%i_", i) + tree_nametitle);

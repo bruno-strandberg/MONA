@@ -10,7 +10,7 @@
 #include "TStyle.h"
 
 
-TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle);
+TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle, Bool_t write_scatter=kFALSE);
 TTree* GetChi2(TTree* input_ttree, TString tree_nametitle);
 
 void CreateRootFilesForPlot() {
@@ -41,12 +41,11 @@ void CreateRootFilesForPlot() {
     t_inf_chi2->Write();
     t_finite_chi2->Write();
   }
-  f->Write();
   f->Close();
 }
 
 
-TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle) {
+TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle, Bool_t write_scatter) {
   
   Int_t th23_min = input_ttree->GetMinimum("th23");
   Int_t th23_max = input_ttree->GetMaximum("th23");
@@ -56,6 +55,9 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle) {
   Double_t inf_err;
   Double_t sqrt_inf_chi2;
   Double_t sqrt_inf_err;
+  Double_t kParameter;
+  Double_t kErr;
+  Double_t nEvtsMin; // number of MC events needed to get to 1% of the asymtotic chi2 value (N)
 
   TTree* t_inf_chi2 = new TTree("inf_" + tree_nametitle, "Chi2_inf values from fit " + tree_nametitle);
   TBranch* b_th23          = t_inf_chi2->Branch("th23", &th23, "th23/I");
@@ -63,6 +65,9 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle) {
   TBranch* b_inf_err       = t_inf_chi2->Branch("inf_err", &inf_err, "inf_err/D");
   TBranch* b_sqrt_inf_chi2 = t_inf_chi2->Branch("sqrt_inf_chi2", &sqrt_inf_chi2, "sqrt_inf_chi2/D");
   TBranch* b_sqrt_inf_err  = t_inf_chi2->Branch("sqrt_inf_err", &sqrt_inf_err, "sqrt_inf_err/D");
+  TBranch* b_kParameter    = t_inf_chi2->Branch("kParameter", &kParameter, "kParameter/D");
+  TBranch* b_kErr          = t_inf_chi2->Branch("kErr", &kErr, "kErr/D");
+  TBranch* b_nEvtsMin      = t_inf_chi2->Branch("nEvtsMin", &nEvtsMin, "nEvtsMin/D");
 
   for (Int_t i = th23_min; i <= th23_max; i++) {
     Int_t n = input_ttree->Draw("percentage:fit_chi2", Form("th23==%i", i), "goff"); 
@@ -81,9 +86,12 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle) {
     sqrt_inf_chi2 = TMath::Sqrt(inf_chi2);
     inf_err = errs[0];
     sqrt_inf_err = inf_err / (2. * sqrt_inf_chi2); // Standard error propagation.
+    kParameter = pars[1];
+    kErr = errs[1];
+    nEvtsMin = (kParameter + kErr) / (0.01 * (inf_chi2 - inf_err) );
 
     gStyle->SetOptFit(kTRUE);
-    g->Write(Form("scatter_chi2_%i_", i) + tree_nametitle);
+    if (write_scatter) g->Write(Form("scatter_chi2_%i_", i) + tree_nametitle);
 
     t_inf_chi2->Fill();
   }

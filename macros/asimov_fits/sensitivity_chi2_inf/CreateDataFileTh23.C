@@ -66,19 +66,19 @@ TString CsvFilePath(Int_t n, string ordering) {
 
   switch (n) {
     case 2:
-      filepath = Form("/output/csv/SensChi2Inf/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      filepath = Form("/output/csv/SensChi2Inf_20m/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
     case 3:
-      filepath = Form("/output/csv/SensChi2Inf/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      filepath = Form("/output/csv/SensChi2Inf_20m/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
     case 4:
-      filepath = Form("/output/csv/SensChi2Inf/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      filepath = Form("/output/csv/SensChi2Inf_20m/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
     case 5:
-      filepath = Form("/output/csv/SensChi2Inf/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      filepath = Form("/output/csv/SensChi2Inf_20m/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
     case 10:
-      filepath = Form("/output/csv/SensChi2Inf/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      filepath = Form("/output/csv/SensChi2Inf_20m/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
   }
 
@@ -91,19 +91,19 @@ TString CsvFilePathCrossCheck(Int_t n, string ordering) {
 
   switch (n) {
     case 2:
-      filepath = Form("/output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      filepath = Form("/output/csv/SensChi2Inf_20mCrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
     case 3:
-      filepath = Form("/output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      filepath = Form("/output/csv/SensChi2Inf_20mCrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
     case 4:
-      filepath = Form("/output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      filepath = Form("/output/csv/SensChi2Inf_20mCrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
     case 5:
-      filepath = Form("/output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      filepath = Form("/output/csv/SensChi2Inf_20mCrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
     case 10:
-      filepath = Form("/output/csv/SensChi2Inf_CrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
+      filepath = Form("/output/csv/SensChi2Inf_20mCrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-99.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
   }
 
