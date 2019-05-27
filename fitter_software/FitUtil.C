@@ -734,40 +734,6 @@ std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueB &tb, const proxymap_
   return std::make_pair(det_count, det_err);
 
 }
-/*
-std::pair<Double_t, Double_t> FitUtil::TrueEvts(const TrueEvt &te, const proxymap_t &proxymap, AtmFlux* flux) {
-  
-  Int_t IsNB = 0;
-  if(te.NuType < 0) IsNB = 1;
-
-  // get the atm nu count
-  Double_t atm_count_e = Flux_dE_dcosz(ELEC, IsNB, te.fE_true, te.fCt_true);
-  Double_t atm_count_m = Flux_dE_dcosz(MUON, IsNB, te.fE_true, te.fCt_true);
-  
-  // get the oscillation probabilities
-  Double_t prob_elec = GetCachedOsc(ELEC, te, proxymap);
-  Double_t prob_muon = GetCachedOsc(MUON, te, proxymap);
-  
-  // get the oscillated nu count in operation time (in units 1/m2)
-  Double_t osc_count = ( atm_count_e * prob_elec + atm_count_m * prob_muon );
-
-  // get the interacted neutrino count in operation time (in units 1/MTon)
-  Double_t int_count = osc_count * GetCachedXsec(tb)/fMN * fKg_per_MTon;
-  
-  // get the effective mass (not used in EvtResponse for now!)
-  //Double_t meff = GetCachedMeff(tb);
-
-  // calculate the number of detected events (unitless), *not used in EvtResponse for now!) 
-  //Double_t det_count = int_count * GetCachedBYfrac(tb) * meff * 1e-6;
-
-  // MC stat err, coming from eff mass and BY distribution (0 for now)
-  Double_t det_err = 0.;
-
-  return std::make_pair(int_count, det_err);
-
-}
-*/
-
 
 //***************************************************************************
 
