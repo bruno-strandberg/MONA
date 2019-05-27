@@ -44,6 +44,7 @@ pages:
         - source /Jpp/setenv.sh /Jpp
         - source setenv.sh
         - git checkout master
+        - git pull origin master
         - doxygen doxyconf
         - cp -r doxygen/html/ public/
     artifacts:
