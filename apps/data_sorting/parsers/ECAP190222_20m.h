@@ -1,12 +1,12 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Fri Feb  1 15:47:45 2019 by ROOT version 6.10/02
+// Mon May 27 10:16:43 2019 by ROOT version 6.10/02
 // from TTree PID/PID
-// found on file: ../../data/pid_result_18Dec2018_ORCA115_20x9m.root
+// found on file: irodsdata/ORCA_115_20m_9m_v5.0_190222_v1.0.root
 //////////////////////////////////////////////////////////
 
-#ifndef PIDGamma_h
-#define PIDGamma_h
+#ifndef ECAP190222_20m_h
+#define ECAP190222_20m_h
 
 #include <TROOT.h>
 #include <TChain.h>
@@ -14,7 +14,7 @@
 
 // Header file for the classes stored in the TTree if any.
 
-class PIDGamma {
+class ECAP190222_20m {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
@@ -244,6 +244,8 @@ public :
    Double_t        dusj_is_selected_without_coverage;
    Double_t        dusj_passes_anti_noise_cut;
    Double_t        dusj_is_selected;
+   Double_t        dusj_energy_corrected;
+   Double_t        dusj_log10_energy_corrected;
    Double_t        gandalf_upward_fraction;
    Double_t        gandalf_updown_deltaChi2;
    Double_t        gandalf_updown_deltaChi2_red;
@@ -251,14 +253,105 @@ public :
    Double_t        gandalf_bestdown_chi2_red;
    Double_t        n_files_gen;
    Double_t        weight_one_year;
+   Double_t        HitPdfFeatures_Nhit_distance0m;
+   Double_t        HitPdfFeatures_Nnohit_distance0m;
+   Double_t        HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted0p2MuonLength;
+   Double_t        HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted0p2MuonLength;
+   Double_t        HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted0p4MuonLength;
+   Double_t        HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted0p4MuonLength;
+   Double_t        HitPdfFeatures_llh_hit_distance0m_elecCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_nohit_distance0m_elecCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted0p2MuonLength;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted0p4MuonLength;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance0m_elecCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier;
+   Double_t        HitPdfFeatures_Nhit_distance20m;
+   Double_t        HitPdfFeatures_Nnohit_distance20m;
+   Double_t        HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted0p2MuonLength;
+   Double_t        HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted0p2MuonLength;
+   Double_t        HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted0p4MuonLength;
+   Double_t        HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted0p4MuonLength;
+   Double_t        HitPdfFeatures_llh_hit_distance20m_elecCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_nohit_distance20m_elecCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted0p2MuonLength;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted0p4MuonLength;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance20m_elecCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier;
+   Double_t        HitPdfFeatures_Nhit_distance30m;
+   Double_t        HitPdfFeatures_Nnohit_distance30m;
+   Double_t        HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted0p2MuonLength;
+   Double_t        HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted0p2MuonLength;
+   Double_t        HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted0p4MuonLength;
+   Double_t        HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted0p4MuonLength;
+   Double_t        HitPdfFeatures_llh_hit_distance30m_elecCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_nohit_distance30m_elecCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted0p2MuonLength;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted0p4MuonLength;
+   Double_t        HitPdfFeatures_llh_hitANDnohit_distance30m_elecCC_vtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier;
+   Double_t        HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier;
+   Double_t        tau_decay_channel;
+   Double_t        tau_decay_invisible_energy;
+   Double_t        tau_decay_inside_can;
    Double_t        group_id;
-   Double_t        _crossValidationTrainingMask_track_score_Orca20m_181218;
-   Double_t        track_score_Orca20m_181218;
-   Double_t        dusj_energy_corrected;
-   Double_t        dusj_log10_energy_corrected;
-   Double_t        dusj_energy_corrected_extendedTableRange;
-   Double_t        dusj_log10_energy_corrected_extendedTableRange;
    Double_t        dusj_is_selected_buggedGeoCoverageValues;
+   Double_t        _crossValidationTrainingMask_track_score_Orca20m_190222;
+   Double_t        track_score_Orca20m_190222;
+   Double_t        _crossValidationTrainingMask_track_score_Orca20m_190222_hitpdf_all;
+   Double_t        track_score_Orca20m_190222_hitpdf_all;
 
    // List of branches
    TBranch        *b_weight_w3;   //!
@@ -483,6 +576,8 @@ public :
    TBranch        *b_dusj_is_selected_without_coverage;   //!
    TBranch        *b_dusj_passes_anti_noise_cut;   //!
    TBranch        *b_dusj_is_selected;   //!
+   TBranch        *b_dusj_energy_corrected;   //!
+   TBranch        *b_dusj_log10_energy_corrected;   //!
    TBranch        *b_gandalf_upward_fraction;   //!
    TBranch        *b_gandalf_updown_deltaChi2;   //!
    TBranch        *b_gandalf_updown_deltaChi2_red;   //!
@@ -490,17 +585,108 @@ public :
    TBranch        *b_gandalf_bestdown_chi2_red;   //!
    TBranch        *b_n_files_gen;   //!
    TBranch        *b_weight_one_year;   //!
+   TBranch        *b_HitPdfFeatures_Nhit_distance0m;   //!
+   TBranch        *b_HitPdfFeatures_Nnohit_distance0m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted0p2MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted0p2MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted0p4MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted0p4MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance0m_elecCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance0m_elecCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted0p2MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted0p4MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance0m_elecCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_HitPdfFeatures_Nhit_distance20m;   //!
+   TBranch        *b_HitPdfFeatures_Nnohit_distance20m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted0p2MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted0p2MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted0p4MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted0p4MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance20m_elecCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance20m_elecCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted0p2MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted0p4MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance20m_elecCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_HitPdfFeatures_Nhit_distance30m;   //!
+   TBranch        *b_HitPdfFeatures_Nnohit_distance30m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted0p2MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted0p2MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted0p4MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted0p4MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hit_distance30m_elecCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_nohit_distance30m_elecCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted0p2MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted0p4MuonLength;   //!
+   TBranch        *b_HitPdfFeatures_llh_hitANDnohit_distance30m_elecCC_vtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier;   //!
+   TBranch        *b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier;   //!
+   TBranch        *b_tau_decay_channel;   //!
+   TBranch        *b_tau_decay_invisible_energy;   //!
+   TBranch        *b_tau_decay_inside_can;   //!
    TBranch        *b_group_id;   //!
-   TBranch        *b__crossValidationTrainingMask_track_score_Orca20m_181218;   //!
-   TBranch        *b_track_score_Orca20m_181218;   //!
-   TBranch        *b_dusj_energy_corrected;   //!
-   TBranch        *b_dusj_log10_energy_corrected;   //!
-   TBranch        *b_dusj_energy_corrected_extendedTableRange;   //!
-   TBranch        *b_dusj_log10_energy_corrected_extendedTableRange;   //!
    TBranch        *b_dusj_is_selected_buggedGeoCoverageValues;   //!
+   TBranch        *b__crossValidationTrainingMask_track_score_Orca20m_190222;   //!
+   TBranch        *b_track_score_Orca20m_190222;   //!
+   TBranch        *b__crossValidationTrainingMask_track_score_Orca20m_190222_hitpdf_all;   //!
+   TBranch        *b_track_score_Orca20m_190222_hitpdf_all;   //!
 
-   PIDGamma(TTree *tree=0);
-   virtual ~PIDGamma();
+   ECAP190222_20m(TTree *tree=0);
+   virtual ~ECAP190222_20m();
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
@@ -512,15 +698,15 @@ public :
 
 #endif
 
-#ifdef PIDGamma_cxx
-PIDGamma::PIDGamma(TTree *tree) : fChain(0) 
+#ifdef ECAP190222_20m_cxx
+ECAP190222_20m::ECAP190222_20m(TTree *tree) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("../../data/pid_result_18Dec2018_ORCA115_20x9m.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("irodsdata/ORCA_115_20m_9m_v5.0_190222_v1.0.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("../../data/pid_result_18Dec2018_ORCA115_20x9m.root");
+         f = new TFile("irodsdata/ORCA_115_20m_9m_v5.0_190222_v1.0.root");
       }
       f->GetObject("PID",tree);
 
@@ -528,19 +714,19 @@ PIDGamma::PIDGamma(TTree *tree) : fChain(0)
    Init(tree);
 }
 
-PIDGamma::~PIDGamma()
+ECAP190222_20m::~ECAP190222_20m()
 {
    if (!fChain) return;
    delete fChain->GetCurrentFile();
 }
 
-Int_t PIDGamma::GetEntry(Long64_t entry)
+Int_t ECAP190222_20m::GetEntry(Long64_t entry)
 {
 // Read contents of entry.
    if (!fChain) return 0;
    return fChain->GetEntry(entry);
 }
-Long64_t PIDGamma::LoadTree(Long64_t entry)
+Long64_t ECAP190222_20m::LoadTree(Long64_t entry)
 {
 // Set the environment to read one entry
    if (!fChain) return -5;
@@ -553,7 +739,7 @@ Long64_t PIDGamma::LoadTree(Long64_t entry)
    return centry;
 }
 
-void PIDGamma::Init(TTree *tree)
+void ECAP190222_20m::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -791,6 +977,8 @@ void PIDGamma::Init(TTree *tree)
    fChain->SetBranchAddress("dusj_is_selected_without_coverage", &dusj_is_selected_without_coverage, &b_dusj_is_selected_without_coverage);
    fChain->SetBranchAddress("dusj_passes_anti_noise_cut", &dusj_passes_anti_noise_cut, &b_dusj_passes_anti_noise_cut);
    fChain->SetBranchAddress("dusj_is_selected", &dusj_is_selected, &b_dusj_is_selected);
+   fChain->SetBranchAddress("dusj_energy_corrected", &dusj_energy_corrected, &b_dusj_energy_corrected);
+   fChain->SetBranchAddress("dusj_log10_energy_corrected", &dusj_log10_energy_corrected, &b_dusj_log10_energy_corrected);
    fChain->SetBranchAddress("gandalf_upward_fraction", &gandalf_upward_fraction, &b_gandalf_upward_fraction);
    fChain->SetBranchAddress("gandalf_updown_deltaChi2", &gandalf_updown_deltaChi2, &b_gandalf_updown_deltaChi2);
    fChain->SetBranchAddress("gandalf_updown_deltaChi2_red", &gandalf_updown_deltaChi2_red, &b_gandalf_updown_deltaChi2_red);
@@ -798,18 +986,109 @@ void PIDGamma::Init(TTree *tree)
    fChain->SetBranchAddress("gandalf_bestdown_chi2_red", &gandalf_bestdown_chi2_red, &b_gandalf_bestdown_chi2_red);
    fChain->SetBranchAddress("n_files_gen", &n_files_gen, &b_n_files_gen);
    fChain->SetBranchAddress("weight_one_year", &weight_one_year, &b_weight_one_year);
+   fChain->SetBranchAddress("HitPdfFeatures_Nhit_distance0m", &HitPdfFeatures_Nhit_distance0m, &b_HitPdfFeatures_Nhit_distance0m);
+   fChain->SetBranchAddress("HitPdfFeatures_Nnohit_distance0m", &HitPdfFeatures_Nnohit_distance0m, &b_HitPdfFeatures_Nnohit_distance0m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted1m", &HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted1m, &b_HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted1m", &HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted1m, &b_HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted0p2MuonLength", &HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted0p2MuonLength, &b_HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted0p2MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted0p2MuonLength", &HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted0p2MuonLength, &b_HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted0p2MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted0p4MuonLength", &HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted0p4MuonLength, &b_HitPdfFeatures_llh_hit_distance0m_muonCC_vtxshifted0p4MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted0p4MuonLength", &HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted0p4MuonLength, &b_HitPdfFeatures_llh_nohit_distance0m_muonCC_vtxshifted0p4MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance0m_elecCC_vtxshifted1m", &HitPdfFeatures_llh_hit_distance0m_elecCC_vtxshifted1m, &b_HitPdfFeatures_llh_hit_distance0m_elecCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance0m_elecCC_vtxshifted1m", &HitPdfFeatures_llh_nohit_distance0m_elecCC_vtxshifted1m, &b_HitPdfFeatures_llh_nohit_distance0m_elecCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted1m", &HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted1m, &b_HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted0p2MuonLength", &HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted0p2MuonLength, &b_HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted0p2MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted0p4MuonLength", &HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted0p4MuonLength, &b_HitPdfFeatures_llh_hitANDnohit_distance0m_muonCC_vtxshifted0p4MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance0m_elecCC_vtxshifted1m", &HitPdfFeatures_llh_hitANDnohit_distance0m_elecCC_vtxshifted1m, &b_HitPdfFeatures_llh_hitANDnohit_distance0m_elecCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance0m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_Nhit_distance20m", &HitPdfFeatures_Nhit_distance20m, &b_HitPdfFeatures_Nhit_distance20m);
+   fChain->SetBranchAddress("HitPdfFeatures_Nnohit_distance20m", &HitPdfFeatures_Nnohit_distance20m, &b_HitPdfFeatures_Nnohit_distance20m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted1m", &HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted1m, &b_HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted1m", &HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted1m, &b_HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted0p2MuonLength", &HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted0p2MuonLength, &b_HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted0p2MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted0p2MuonLength", &HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted0p2MuonLength, &b_HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted0p2MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted0p4MuonLength", &HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted0p4MuonLength, &b_HitPdfFeatures_llh_hit_distance20m_muonCC_vtxshifted0p4MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted0p4MuonLength", &HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted0p4MuonLength, &b_HitPdfFeatures_llh_nohit_distance20m_muonCC_vtxshifted0p4MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance20m_elecCC_vtxshifted1m", &HitPdfFeatures_llh_hit_distance20m_elecCC_vtxshifted1m, &b_HitPdfFeatures_llh_hit_distance20m_elecCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance20m_elecCC_vtxshifted1m", &HitPdfFeatures_llh_nohit_distance20m_elecCC_vtxshifted1m, &b_HitPdfFeatures_llh_nohit_distance20m_elecCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted1m", &HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted1m, &b_HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted0p2MuonLength", &HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted0p2MuonLength, &b_HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted0p2MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted0p4MuonLength", &HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted0p4MuonLength, &b_HitPdfFeatures_llh_hitANDnohit_distance20m_muonCC_vtxshifted0p4MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance20m_elecCC_vtxshifted1m", &HitPdfFeatures_llh_hitANDnohit_distance20m_elecCC_vtxshifted1m, &b_HitPdfFeatures_llh_hitANDnohit_distance20m_elecCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance20m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_Nhit_distance30m", &HitPdfFeatures_Nhit_distance30m, &b_HitPdfFeatures_Nhit_distance30m);
+   fChain->SetBranchAddress("HitPdfFeatures_Nnohit_distance30m", &HitPdfFeatures_Nnohit_distance30m, &b_HitPdfFeatures_Nnohit_distance30m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted1m", &HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted1m, &b_HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted1m", &HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted1m, &b_HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted0p2MuonLength", &HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted0p2MuonLength, &b_HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted0p2MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted0p2MuonLength", &HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted0p2MuonLength, &b_HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted0p2MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted0p4MuonLength", &HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted0p4MuonLength, &b_HitPdfFeatures_llh_hit_distance30m_muonCC_vtxshifted0p4MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted0p4MuonLength", &HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted0p4MuonLength, &b_HitPdfFeatures_llh_nohit_distance30m_muonCC_vtxshifted0p4MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hit_distance30m_elecCC_vtxshifted1m", &HitPdfFeatures_llh_hit_distance30m_elecCC_vtxshifted1m, &b_HitPdfFeatures_llh_hit_distance30m_elecCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_nohit_distance30m_elecCC_vtxshifted1m", &HitPdfFeatures_llh_nohit_distance30m_elecCC_vtxshifted1m, &b_HitPdfFeatures_llh_nohit_distance30m_elecCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted1m", &HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted1m, &b_HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted0p2MuonLength", &HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted0p2MuonLength, &b_HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted0p2MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted0p4MuonLength", &HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted0p4MuonLength, &b_HitPdfFeatures_llh_hitANDnohit_distance30m_muonCC_vtxshifted0p4MuonLength);
+   fChain->SetBranchAddress("HitPdfFeatures_llh_hitANDnohit_distance30m_elecCC_vtxshifted1m", &HitPdfFeatures_llh_hitANDnohit_distance30m_elecCC_vtxshifted1m, &b_HitPdfFeatures_llh_hitANDnohit_distance30m_elecCC_vtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m", &HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hitANDnohit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted1m_elecCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p2MuonLength_elecCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_elecCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeTwoOutlier);
+   fChain->SetBranchAddress("HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier", &HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier, &b_HitPdfFeatures_diffllh_hit_distance30m_muonCCvtxshifted0p4MuonLength_muonCCvtxshifted1m__removeFourOutlier);
+   fChain->SetBranchAddress("tau_decay_channel", &tau_decay_channel, &b_tau_decay_channel);
+   fChain->SetBranchAddress("tau_decay_invisible_energy", &tau_decay_invisible_energy, &b_tau_decay_invisible_energy);
+   fChain->SetBranchAddress("tau_decay_inside_can", &tau_decay_inside_can, &b_tau_decay_inside_can);
    fChain->SetBranchAddress("group_id", &group_id, &b_group_id);
-   fChain->SetBranchAddress("_crossValidationTrainingMask_track_score_Orca20m_181218", &_crossValidationTrainingMask_track_score_Orca20m_181218, &b__crossValidationTrainingMask_track_score_Orca20m_181218);
-   fChain->SetBranchAddress("track_score_Orca20m_181218", &track_score_Orca20m_181218, &b_track_score_Orca20m_181218);
-   fChain->SetBranchAddress("dusj_energy_corrected", &dusj_energy_corrected, &b_dusj_energy_corrected);
-   fChain->SetBranchAddress("dusj_log10_energy_corrected", &dusj_log10_energy_corrected, &b_dusj_log10_energy_corrected);
-   fChain->SetBranchAddress("dusj_energy_corrected_extendedTableRange", &dusj_energy_corrected_extendedTableRange, &b_dusj_energy_corrected_extendedTableRange);
-   fChain->SetBranchAddress("dusj_log10_energy_corrected_extendedTableRange", &dusj_log10_energy_corrected_extendedTableRange, &b_dusj_log10_energy_corrected_extendedTableRange);
    fChain->SetBranchAddress("dusj_is_selected_buggedGeoCoverageValues", &dusj_is_selected_buggedGeoCoverageValues, &b_dusj_is_selected_buggedGeoCoverageValues);
+   fChain->SetBranchAddress("_crossValidationTrainingMask_track_score_Orca20m_190222", &_crossValidationTrainingMask_track_score_Orca20m_190222, &b__crossValidationTrainingMask_track_score_Orca20m_190222);
+   fChain->SetBranchAddress("track_score_Orca20m_190222", &track_score_Orca20m_190222, &b_track_score_Orca20m_190222);
+   fChain->SetBranchAddress("_crossValidationTrainingMask_track_score_Orca20m_190222_hitpdf_all", &_crossValidationTrainingMask_track_score_Orca20m_190222_hitpdf_all, &b__crossValidationTrainingMask_track_score_Orca20m_190222_hitpdf_all);
+   fChain->SetBranchAddress("track_score_Orca20m_190222_hitpdf_all", &track_score_Orca20m_190222_hitpdf_all, &b_track_score_Orca20m_190222_hitpdf_all);
    Notify();
 }
 
-Bool_t PIDGamma::Notify()
+Bool_t ECAP190222_20m::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -820,18 +1099,18 @@ Bool_t PIDGamma::Notify()
    return kTRUE;
 }
 
-void PIDGamma::Show(Long64_t entry)
+void ECAP190222_20m::Show(Long64_t entry)
 {
 // Print contents of entry.
 // If entry is not specified, print current entry
    if (!fChain) return;
    fChain->Show(entry);
 }
-Int_t PIDGamma::Cut(Long64_t entry)
+Int_t ECAP190222_20m::Cut(Long64_t entry)
 {
 // This function may be called from Loop.
 // returns  1 if entry is accepted.
 // returns -1 otherwise.
    return 1;
 }
-#endif // #ifdef PIDGamma_cxx
+#endif // #ifdef ECAP190222_20m_cxx
