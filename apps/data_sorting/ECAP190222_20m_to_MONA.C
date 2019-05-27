@@ -5,7 +5,7 @@
 
 // NMH headers
 #include "SummaryParser.h"
-#include "PIDGamma.h"
+#include "ECAP190222_20m.h"
 #include "FileHeader.h"
 
 // jpp headers
@@ -20,7 +20,7 @@
 using namespace std;
 
 /**
-   This program takes the ECAP PID summary file as input and converts it to `SummaryEvent` format for usage with NMH software.
+   This program takes the ECAP PID summary file as input and converts it to `SummaryEvent` format for usage with MONA software.
  
    See apps/data_sorting/README.md for more info.
    
@@ -33,11 +33,11 @@ int main(const int argc, const char **argv) {
 
   try {
 
-    JParser<> zap("This program takes the ECAP PID summary file as input, reading it with PIDGamma.h/C class, and converts it to `SummaryEvent` format for usage with NMH software.");
+    JParser<> zap("This program takes the ECAP PID summary file as input, reading it with ECAP190222_20m.h/C class, and converts it to `SummaryEvent` format for usage with NMH software.");
 
-    zap['f'] = make_field(fin_name , "PID file from ECAP with the PID TTree that was used to create PIDGamma.h/C class") = "../../data/pid_result_18Dec2018_ORCA115_20x9m.root";
+    zap['f'] = make_field(fin_name , "PID file from ECAP with the PID TTree that was used to create ECAP190222_20m.h/C class") = "irodsdata/ORCA_115_20m_9m_v5.0_190222_v1.0.root";
     zap['d'] = make_field(fout_dir , "Output directory where the data file in SummarEvent format is written, e.g. ../../data/") = "";
-    zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. format ORCA115_23x9m_ECAP0418. Choose this wisely.") = "";
+    zap['t'] = make_field(tag      , "Identifier tag used to create the SummaryEvent file, e.g. format ORCA115_23x9m_ECAP180401. Choose this wisely.") = "";
 
     if ( zap.read(argc, argv) != 0 ) return 1;
 
@@ -47,7 +47,7 @@ int main(const int argc, const char **argv) {
   }
 
   if (fin_name == "" || fout_dir  == "" || tag == "") {
-    throw std::invalid_argument("ERROR! PIDGammaToSummary() all command line arguments need to be specified!");
+    throw std::invalid_argument("ERROR! ECAP190222_20m_to_MONA() all command line arguments need to be specified!");
   }
 
   //----------------------------------------------------------------------------
@@ -57,17 +57,21 @@ int main(const int argc, const char **argv) {
   TFile *fin = new TFile((TString)fin_name, "READ");
   TTree *tin = (TTree*)fin->Get("PID");
   if (tin == NULL) {
-    throw std::invalid_argument("ERROR! PIDGammaToSummary() cannot find tree PID in file " + fin_name);
+    throw std::invalid_argument("ERROR! ECAP190222_20m_to_MONA() cannot find tree PID in file " + fin_name);
   }
-  PIDGamma PIDR(tin);
+  ECAP190222_20m PIDR(tin);
   PIDR.fChain->SetBranchStatus("*",1);
 
   //----------------------------------------------------------------------------
   // Init the output in analysis format, loop and map variables
   //----------------------------------------------------------------------------
+  SummaryEvent *evt = new SummaryEvent;
+  string sevtv = std::to_string( ( (TClass*)evt->IsA() )->GetClassVersion() ); // summary event version in the library
+  delete evt;
 
-  string fout_name = fout_dir + "ORCA_MC_summary_" + tag + ".root";
-  cout << "NOTICE PIDGammaToSummary() creating file " << fout_name << endl;
+  string fout_name = fout_dir + "ORCA_MCsummary_SEv" + sevtv + "_" + tag + ".root";
+
+  cout << "NOTICE ECAP190222_20m_to_MONA() creating file " << fout_name << endl;
 
   SummaryParser out(fout_name, kFALSE); //false means writing mode
 
@@ -85,45 +89,50 @@ int main(const int argc, const char **argv) {
     out.GetEvt()->Set_MC_runID(PIDR.run_id);       
     out.GetEvt()->Set_MC_evtID(PIDR.mc_id);       
     out.GetEvt()->Set_MC_w2(PIDR.weight_w2);    
-    out.GetEvt()->Set_MC_w1y(PIDR.weight_one_year);   
+    out.GetEvt()->Set_MC_w1y(PIDR.weight_one_year);
+
+    if ( PIDR.is_neutrino ) { out.GetEvt()->Set_MC_w2denom( PIDR.n_events_gen ); }
+    else                    { out.GetEvt()->Set_MC_w2denom( PIDR.livetime_sec ); }
+    
     out.GetEvt()->Set_MC_erange_start(PIDR.Erange_min);
+    out.GetEvt()->Set_MC_erange_stop(PIDR.Erange_max);
     out.GetEvt()->Set_MC_is_CC(PIDR.is_cc); 
     out.GetEvt()->Set_MC_is_neutrino(PIDR.is_neutrino);
     out.GetEvt()->Set_MC_type(PIDR.type);
+    out.GetEvt()->Set_MC_ichan(PIDR.interaction_channel);
     out.GetEvt()->Set_MC_energy(PIDR.energy);
     out.GetEvt()->Set_MC_bjorkeny(PIDR.bjorkeny);
     out.GetEvt()->Set_MC_dir(PIDR.dir_x, PIDR.dir_y, PIDR.dir_z);
     out.GetEvt()->Set_MC_pos(PIDR.pos_x, PIDR.pos_y, PIDR.pos_z);
 
     out.GetEvt()->Set_track_energy(PIDR.gandalf_energy);
-    out.GetEvt()->Set_track_bjorkeny(0.);  //currently gandalf has no bjorkeny
-    out.GetEvt()->Set_track_ql0(PIDR.gandalf_is_good);           
-    out.GetEvt()->Set_track_ql1(PIDR.gandalf_loose_is_selected);
-    out.GetEvt()->Set_track_ql2(0);
+    out.GetEvt()->Set_track_bjorkeny(0.);                                      //currently gandalf has no bjorkeny
+    out.GetEvt()->Set_track_ql0(PIDR.gandalf_is_good);                         // reco worked flag         
+    out.GetEvt()->Set_track_ql1(PIDR.gandalf_is_selected_without_containment); // basic reco quality cuts
+    out.GetEvt()->Set_track_ql2(PIDR.gandalf_loose_is_selected);               // ql1 + loose containment
+    out.GetEvt()->Set_track_ql3(PIDR.gandalf_is_selected);                     // ql1 + containment
     out.GetEvt()->Set_track_dir(PIDR.gandalf_dir_x, PIDR.gandalf_dir_y, PIDR.gandalf_dir_z);
     out.GetEvt()->Set_track_pos(PIDR.gandalf_pos_x, PIDR.gandalf_pos_y, PIDR.gandalf_pos_z);
 
     out.GetEvt()->Set_shower_energy(PIDR.dusj_energy_corrected);
     out.GetEvt()->Set_shower_bjorkeny(PIDR.dusj_best_DusjOrcaUsingProbabilitiesFinalFit_BjorkenY);
-    out.GetEvt()->Set_shower_ql0(PIDR.dusj_is_good);     
-    out.GetEvt()->Set_shower_ql1(PIDR.dusj_is_selected);
-    out.GetEvt()->Set_shower_ql2(PIDR.dusj_is_selected_buggedGeoCoverageValues); // for matching to old 23x9m
+    out.GetEvt()->Set_shower_ql0(PIDR.dusj_is_good);                               // reco worked
+    out.GetEvt()->Set_shower_ql1(PIDR.dusj_is_selected_without_coverage);          // basic quality cuts
+    out.GetEvt()->Set_shower_ql2(PIDR.dusj_is_selected);                           // ql1 + containment
+    out.GetEvt()->Set_shower_ql3(PIDR.dusj_is_selected_buggedGeoCoverageValues);   // for comp with ECAP180401
     out.GetEvt()->Set_shower_dir(PIDR.dusj_dir_x, PIDR.dusj_dir_y, PIDR.dusj_dir_z);
     out.GetEvt()->Set_shower_pos(PIDR.dusj_pos_x, PIDR.dusj_pos_y, PIDR.dusj_pos_z);
 
-    out.GetEvt()->Set_RDF_muon_score(0.);  // no muons at the moment
-    out.GetEvt()->Set_RDF_track_score(PIDR.track_score_Orca20m_181218); 
-    out.GetEvt()->Set_RDF_noise_score(0.); // no noise at the moment
+    out.GetEvt()->Set_RDF_muon_score( 0. );  // no muon score in this version
+    out.GetEvt()->Set_RDF_track_score(PIDR.track_score_Orca20m_190222_hitpdf_all);
+    out.GetEvt()->Set_RDF_noise_score( 0. ); // no noise score in this version
 
     out.GetTree()->Fill();
 
   }
 
   // add the tag to the header
-  FileHeader head("PIDGammaToSummary");
-  head.AddParameter("datatag", (TString)tag);
-  head.WriteHeader(out.GetFile());
-
+  out.GetHeader()->AddParameter("datatag", (TString)tag);
   out.WriteAndClose();
 
   //----------------------------------------------------------------------------

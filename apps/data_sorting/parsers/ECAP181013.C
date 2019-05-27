@@ -1,14 +1,14 @@
-#define PIDGamma_cxx
-#include "PIDGamma.h"
+#define ECAP181013_cxx
+#include "ECAP181013.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
 
-void PIDGamma::Loop()
+void ECAP181013::Loop()
 {
 //   In a ROOT session, you can do:
-//      root> .L PIDGamma.C
-//      root> PIDGamma t
+//      root> .L ECAP181013.C
+//      root> ECAP181013 t
 //      root> t.GetEntry(12); // Fill t data members with entry number 12
 //      root> t.Show();       // Show values of entry 12
 //      root> t.Show(16);     // Read and show values of entry 16

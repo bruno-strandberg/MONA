@@ -4,6 +4,7 @@
 #include <TChain.h>
 #include <TFile.h>
 #include "SummaryEvent.h"
+#include "FileHeader.h"
 
 #include <iostream>
 using namespace std;
@@ -18,13 +19,14 @@ class SummaryParser {
   SummaryEvent   *fEvt;       //!< pointer to the event structure
   TFile          *fOut;       //!< pointer to output file in write mode
   Bool_t          fReadMode;  //!< flag to indicate read/write mode
+  FileHeader     *fHead;      //!< header instance
   
  public:
   SummaryParser(TString fname, Bool_t ReadMode=kTRUE);
    ~SummaryParser();
 
    /// write mode - write the filled tree to fOut and close file
-   void           WriteAndClose() { fOut->cd(); fChain->Write(); fOut->Close(); };
+   void           WriteAndClose() { fOut->cd(); fChain->Write(); fHead->WriteHeader(fOut); fOut->Close(); }
 
    // getters
 
@@ -53,6 +55,9 @@ class SummaryParser {
     */
    SummaryEvent*  GetEvt(Int_t i)  { if (fChain) fChain->GetEntry(i); return fEvt; }
 
+   /** Function to get a pointer to the header of the summary file*/
+   FileHeader*    GetHeader()      { return fHead; }
+   
 };
 
 #endif

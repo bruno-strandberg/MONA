@@ -1,28 +1,30 @@
 include $(MONADIR)/Makerules
 
-CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS) $(JPPCFLAGS)
+CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS) $(JPPCFLAGS) -I./parsers/
 LFLAGS = $(ROOTLIBS) $(NMHLIB)
 
-COMMON   = PIDAlpha.C PIDBeta.C PIDGamma.C PIDDelta.C
-SOURCES  = $(filter-out $(COMMON), $(wildcard *.C))
-PACKAGES = $(SOURCES:.C=)
+PARSERS  = $(wildcard parsers/*.C)
+SOURCES  = $(wildcard *.C)
+APPS     = $(SOURCES:.C=)
 
-all: $(PACKAGES)
+all: $(APPS)
 
-$(PACKAGES): % : %.C $(COMMON)
-	@echo "  Building $@ with pre-requisities $^..."
+$(APPS): % : %.C $(PARSERS)
+	@echo "  Building $@..."
 	@g++ -O3 -o $@ $^ $(LFLAGS) $(CFLAGS)
 
 
 .PHONY: clean
 
 clean:
-	rm -f $(PACKAGES)
+	rm -f $(APPS)
 
 
 .PHONY: print
 
 print:
-	@echo $(COMMON)
+	@echo $(PARSERS)
 	@echo $(SOURCES)
-	@echo $(PACKAGES)
+	@echo $(APPS)
+	@echo $(CFLAGS)
+	@echo $(LFLAGS)

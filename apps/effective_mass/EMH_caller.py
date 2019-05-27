@@ -110,7 +110,7 @@ def execute_effmass_calc(args):
 
         else:
             
-            fnr = fnr[:-1]+'-' # replace filenr search string to form _nr- instead of _nr.
+            fnr = fnr1[: fnr1.index('.evt')]+'-'  # replace filenr search string to form _nr- instead of _nr.
 
             # fnr in searched in the part after GeV, otherwise the range _1-5 always matches for fnr=_1-
             trigfile = [ t for t in triggerfiles if ( flav[0] in t and inter[0] in t and erange in t and 

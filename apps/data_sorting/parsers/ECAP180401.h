@@ -1,12 +1,12 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Tue Jan 29 18:13:11 2019 by ROOT version 6.10/02
+// Wed May 22 13:20:36 2019 by ROOT version 6.10/02
 // from TTree PID/
-// found on file: ../../data/pid_result_10Apr2018_ORCA115.root
+// found on file: irodsdata/pid_output_atm_neutrino_atm_muon_pure_noise_shiftedVertexEventSelection_180401.root
 //////////////////////////////////////////////////////////
 
-#ifndef PIDAlpha_h
-#define PIDAlpha_h
+#ifndef ECAP180401_h
+#define ECAP180401_h
 
 #include <TROOT.h>
 #include <TChain.h>
@@ -14,7 +14,7 @@
 
 // Header file for the classes stored in the TTree if any.
 
-class PIDAlpha {
+class ECAP180401 {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
@@ -627,8 +627,8 @@ public :
    TBranch        *b_dusj_dir_x;   //!
    TBranch        *b_dusj_dir_z;   //!
 
-   PIDAlpha(TTree *tree=0);
-   virtual ~PIDAlpha();
+   ECAP180401(TTree *tree=0);
+   virtual ~ECAP180401();
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
@@ -640,15 +640,15 @@ public :
 
 #endif
 
-#ifdef PIDAlpha_cxx
-PIDAlpha::PIDAlpha(TTree *tree) : fChain(0) 
+#ifdef ECAP180401_cxx
+ECAP180401::ECAP180401(TTree *tree) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("../../data/pid_result_10Apr2018_ORCA115.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("irodsdata/pid_output_atm_neutrino_atm_muon_pure_noise_shiftedVertexEventSelection_180401.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("../../data/pid_result_10Apr2018_ORCA115.root");
+         f = new TFile("irodsdata/pid_output_atm_neutrino_atm_muon_pure_noise_shiftedVertexEventSelection_180401.root");
       }
       f->GetObject("PID",tree);
 
@@ -656,19 +656,19 @@ PIDAlpha::PIDAlpha(TTree *tree) : fChain(0)
    Init(tree);
 }
 
-PIDAlpha::~PIDAlpha()
+ECAP180401::~ECAP180401()
 {
    if (!fChain) return;
    delete fChain->GetCurrentFile();
 }
 
-Int_t PIDAlpha::GetEntry(Long64_t entry)
+Int_t ECAP180401::GetEntry(Long64_t entry)
 {
 // Read contents of entry.
    if (!fChain) return 0;
    return fChain->GetEntry(entry);
 }
-Long64_t PIDAlpha::LoadTree(Long64_t entry)
+Long64_t ECAP180401::LoadTree(Long64_t entry)
 {
 // Set the environment to read one entry
    if (!fChain) return -5;
@@ -681,7 +681,7 @@ Long64_t PIDAlpha::LoadTree(Long64_t entry)
    return centry;
 }
 
-void PIDAlpha::Init(TTree *tree)
+void ECAP180401::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -1001,7 +1001,7 @@ void PIDAlpha::Init(TTree *tree)
    Notify();
 }
 
-Bool_t PIDAlpha::Notify()
+Bool_t ECAP180401::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -1012,18 +1012,18 @@ Bool_t PIDAlpha::Notify()
    return kTRUE;
 }
 
-void PIDAlpha::Show(Long64_t entry)
+void ECAP180401::Show(Long64_t entry)
 {
 // Print contents of entry.
 // If entry is not specified, print current entry
    if (!fChain) return;
    fChain->Show(entry);
 }
-Int_t PIDAlpha::Cut(Long64_t entry)
+Int_t ECAP180401::Cut(Long64_t entry)
 {
 // This function may be called from Loop.
 // returns  1 if entry is accepted.
 // returns -1 otherwise.
    return 1;
 }
-#endif // #ifdef PIDAlpha_cxx
+#endif // #ifdef ECAP180401_cxx

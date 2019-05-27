@@ -182,7 +182,7 @@ void DetResponse::CleanResponse() {
 void DetResponse::Fill(SummaryEvent *evt) {
 
   if (fNormalised) {
-    throw std::invalid_argument( "ERROR! DetResponse::Fill() cannot fill an already normalised response!" );
+    throw std::logic_error( "ERROR! DetResponse::Fill() cannot fill an already normalised response!" );
   }
   
   // determine event type (either neutrinos or other). Catch the exception if the particle type is

@@ -4,6 +4,7 @@
 // NMH and OscProb
 #include "AbsResponse.h"
 #include "DetResponse.h" // required here for TrueB definition
+#include "EvtResponse.h"
 #include "AtmFlux.h"
 #include "NuXsec.h"
 #include "EffMass.h"

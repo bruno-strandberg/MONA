@@ -20,15 +20,16 @@ namespace RESTOREPARITY {
 
   using namespace JTOOLS;
 
-  void  split_to_files_atmnu_fast(TString tag, JRange<double> E_low, JRange<double> E_high, Int_t max_file_handles=950);
-  void  split_to_files_mupage(TString tag, Bool_t overwrite=false, Bool_t separate=false);
-  void  split_to_files_noise(TString tag);
+  void  split_to_files_atmnu_fast(FileHeader& _head, JRange<double> E_low, JRange<double> E_high, Int_t max_file_handles=950);
+  void  split_to_files_mupage(FileHeader& _head, Bool_t overwrite=false, Bool_t separate=false);
+  void  split_to_files_noise(FileHeader& _head);
   Int_t get_max_run_nr(TString cut_string);
   void  systemcmd(TString syscmd);
 
   /// Global pointer to a summary file parser class.
   SummaryParser *fSp;
   TString tagpar     = "datatag";
+  TString SEVpar     = "SummaryEventVersion";
   TString summarydir = (TString)getenv("MONADIR") + "/data/mcsummary/";
   TString gseagendir = (TString)getenv("MONADIR") + "/data/gseagen/";
   TString muondir    = "/data_mupage/";
@@ -42,7 +43,7 @@ namespace RESTOREPARITY {
 using namespace JTOOLS;
 using namespace RESTOREPARITY;
 
-/** This program takes the file resulting from Alpha(Beta...)ToSummary as argument and splits it up to NMH/data/mcsummary/ directories to match the file scheme used throughout the MC chain.
+/** This program takes the file resulting from ..._to_MONA as argument and splits it up to data/mcsummary/ directories to match the file scheme used throughout the MC chain.
     
    See NMH/data/README.md for more details.
  
@@ -58,9 +59,9 @@ int main(const int argc, const char **argv) {
   JRange<double> E_high;
 
   try {
-    JParser<> zap("This program takes the file resulting from Alpha(Beta...)ToSummary as argument and splits it up to NMH/data/mcsummary/ directories to match the file scheme used throughout the MC chain.");
+    JParser<> zap("This program takes the file resulting from app ..._to_MONA as argument and splits it up to MONA/data/mcsummary/ directories to match the file scheme used throughout the MC chain.");
 
-    zap['f'] = make_field(fname , "Name of the file created by Alpha(Beta...)ToSummary");
+    zap['f'] = make_field(fname , "Name of the file created by ..._to_MONA");
     zap['l'] = make_field(E_low , "For ORCA, typically two energy ranges are used with gSeaGen, events from both are present in the -f argument file. Provide the low range") = JRange<double>(1, 5);
     zap['u'] = make_field(E_high, "For ORCA, typically two energy ranges are used with gSeaGen, events from both are present in the -f argument file. Provide the high range") = JRange<double>(3, 100);
 
@@ -88,9 +89,9 @@ int main(const int argc, const char **argv) {
   //-------------------------------------------------------------------
   //call functions
   //-------------------------------------------------------------------
-  split_to_files_atmnu_fast(head.GetParameter(tagpar), E_low, E_high);
-  split_to_files_mupage(head.GetParameter(tagpar), true, false);
-  split_to_files_noise(head.GetParameter(tagpar));
+  split_to_files_atmnu_fast(head, E_low, E_high);
+  split_to_files_mupage(head, true, false);
+  split_to_files_noise(head);
   
 }
 
@@ -139,8 +140,9 @@ Int_t RESTOREPARITY::get_max_run_nr(TString cut_string) {
  * \param separate Separate MUPAGE files (11k files), if false MUPAGE events in one file in NMH/data/mc_end/data_atmmu/tag/
  *
  */
-void RESTOREPARITY::split_to_files_mupage(TString tag, Bool_t overwrite, Bool_t separate) { 
+void RESTOREPARITY::split_to_files_mupage(FileHeader& _head, Bool_t overwrite, Bool_t separate) { 
 
+  TString tag    = _head.GetParameter(tagpar);
   TString sumdir = summarydir + tag + muondir;
   TString gsgdir = gseagendir + tag + muondir;
   systemcmd( "mkdir -p " + sumdir );
@@ -178,7 +180,8 @@ void RESTOREPARITY::split_to_files_mupage(TString tag, Bool_t overwrite, Bool_t 
     
     // create header
     FileHeader head("RestoreParity");
-    head.AddParameter(tagpar, tag);
+    head.AddParameter(_head, tagpar);
+    head.AddParameter(_head, SEVpar);
     head.WriteHeader(fout);
 
     fout->Close();
@@ -202,8 +205,9 @@ void RESTOREPARITY::split_to_files_mupage(TString tag, Bool_t overwrite, Bool_t 
  *  files are split.
  *
  */
-void RESTOREPARITY::split_to_files_noise(TString tag) {
+void RESTOREPARITY::split_to_files_noise(FileHeader& _head) {
 
+  TString tag    = _head.GetParameter(tagpar);
   TString sumdir = summarydir + tag + noisedir;
   TString gsgdir = gseagendir + tag + noisedir;
   systemcmd( "mkdir -p " + sumdir );
@@ -223,7 +227,8 @@ void RESTOREPARITY::split_to_files_noise(TString tag) {
 
   // create header
   FileHeader head("RestoreParity");
-  head.AddParameter(tagpar, tag);
+  head.AddParameter(_head, tagpar);
+  head.AddParameter(_head, SEVpar);
   head.WriteHeader(fout);
   
   fout->Close();
@@ -247,12 +252,15 @@ void RESTOREPARITY::split_to_files_noise(TString tag) {
  *  However, typically there is a limit to how many files can be opened in parallel (e.g. 1024). For this
  *  reason, the function needs to select events in several steps before it can open files in parallel.
  *
+ *  \param _head            Reference to a header file
+ *  \param E_low            Low energy range of the MC simulation
+ *  \param E_high           High energy range of the MC simulation
  *  \param max_file_handles Maximum nr of files opened in parallel.
  *
  */
-void  RESTOREPARITY::split_to_files_atmnu_fast(TString tag, JRange<double> E_low, JRange<double> E_high, Int_t max_file_handles) {
+void  RESTOREPARITY::split_to_files_atmnu_fast(FileHeader &_head, JRange<double> E_low, JRange<double> E_high, Int_t max_file_handles) {
 
-
+  TString tag    = _head.GetParameter(tagpar);
   TString sumdir = summarydir + tag + nudir;
   TString gsgdir = gseagendir + tag + nudir;
   systemcmd( "mkdir -p " + sumdir );
@@ -270,15 +278,17 @@ void  RESTOREPARITY::split_to_files_atmnu_fast(TString tag, JRange<double> E_low
   TString lowrange  = to_string( (int)E_low.getLowerLimit() ) + "-" + to_string( (int)E_low.getUpperLimit() );
   TString highrange = to_string( (int)E_high.getLowerLimit() ) + "-" + to_string( (int)E_high.getUpperLimit() );
 
-  map < Double_t, TString>  emin_to_str = { {  E_low.getLowerLimit(), lowrange }, 
-					    { E_high.getLowerLimit(), highrange} };
-    
+  vector< std::pair< JRange<double>, TString > > er_str = { std::make_pair( E_low, lowrange), 
+							    std::make_pair( E_high, highrange) };
+  // map < JRange<double>, TString >  er_to_str = { { E_low , lowrange  }, 
+  // 						 { E_high, highrange } };
+  
   for (auto const& type : pdg_to_name) {
     for (auto const& interaction : iscc_to_str) {
-      for (auto const& emin : emin_to_str) {
+      for (auto const& er : er_str) {
 
 	cout << "Processing " << type.second << " " << interaction.second
-	     << " " << emin.second << endl;
+	     << " " << er.second << endl;
 	
 	//-------------------------------------------------------
 	//build the cut string and the file name string
@@ -291,12 +301,14 @@ void  RESTOREPARITY::split_to_files_atmnu_fast(TString tag, JRange<double> E_low
 	// in the low energy range, sometimes tau is cut at threshold, so
 	// when dealing with tau's when emin is below tau threshold, another
 	// tau selection cut is added
-	if ( type.first == 16. && emin.first < fTauThreshold ) {
+	if ( type.first == 16. && er.first.getLowerLimit() < fTauThreshold ) {
 	  cut_string += "&&fMC_erange_start<" + (TString)to_string(fTauThreshold + 0.1);
 	}
 	else {
-	  cut_string += "&&fMC_erange_start==" + (TString)to_string(emin.first);
+	  cut_string += "&&fMC_erange_start==" + (TString)to_string( er.first.getLowerLimit() );
 	}
+
+	cut_string += "&&fMC_erange_stop==" + (TString)to_string( er.first.getUpperLimit() );
 
 	cout << "NOTICE RESTOREPARITY::split_to_files_atmnu_fast() selection string: " << endl
 	     << cut_string << endl;
@@ -304,7 +316,7 @@ void  RESTOREPARITY::split_to_files_atmnu_fast(TString tag, JRange<double> E_low
 	TString name_string = summarydir + tag + nudir + "/summary_"; 
 	name_string += type.second + "-";
 	name_string += interaction.second + "_";
-	name_string += emin.second + "GeV_";
+	name_string += er.second + "GeV_";
 
 	//-------------------------------------------------------
 	// create level 1 tree for flavor_NC/CC_erange over all file numbers
@@ -364,9 +376,10 @@ void  RESTOREPARITY::split_to_files_atmnu_fast(TString tag, JRange<double> E_low
 	    if ( touts_lev3[fi]->GetEntries() == 0 ) temp_files.push_back( fouts_lev3[fi]->GetName() );
 	    touts_lev3[fi]->Write();
 
-	    // create header and add to file
+	    // create header, copy over the summary event version and tag and add to file
 	    FileHeader head("RestoreParity");
-	    head.AddParameter(tagpar, tag);
+	    head.AddParameter(_head, tagpar);
+	    head.AddParameter(_head, SEVpar);
 	    head.WriteHeader(fouts_lev3[fi]);
 
 	    fouts_lev3[fi]->Close();
