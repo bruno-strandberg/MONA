@@ -1,14 +1,14 @@
-#define PIDDelta_cxx
-#include "PIDDelta.h"
+#define ECAP190222_23m_cxx
+#include "ECAP190222_23m.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
 
-void PIDDelta::Loop()
+void ECAP190222_23m::Loop()
 {
 //   In a ROOT session, you can do:
-//      root> .L PIDDelta.C
-//      root> PIDDelta t
+//      root> .L ECAP190222_23m.C
+//      root> ECAP190222_23m t
 //      root> t.GetEntry(12); // Fill t data members with entry number 12
 //      root> t.Show();       // Show values of entry 12
 //      root> t.Show(16);     // Read and show values of entry 16

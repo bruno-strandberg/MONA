@@ -1,12 +1,12 @@
 //////////////////////////////////////////////////////////
 // This class has been automatically generated on
-// Tue May  7 16:47:52 2019 by ROOT version 6.14/06
+// Mon May 27 13:41:00 2019 by ROOT version 6.10/02
 // from TTree PID/PID
-// found on file: ../../data/pid_result_6May2019_ORCA115_23x9m.root
+// found on file: irodsdata/ORCA_115_23m_9m_v5.0_190222_v1.0.root
 //////////////////////////////////////////////////////////
 
-#ifndef PIDDelta_h
-#define PIDDelta_h
+#ifndef ECAP190222_23m_h
+#define ECAP190222_23m_h
 
 #include <TROOT.h>
 #include <TChain.h>
@@ -14,7 +14,7 @@
 
 // Header file for the classes stored in the TTree if any.
 
-class PIDDelta {
+class ECAP190222_23m {
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
@@ -685,8 +685,8 @@ public :
    TBranch        *b__crossValidationTrainingMask_track_score_Orca23m_190222_hitpdf_all;   //!
    TBranch        *b_track_score_Orca23m_190222_hitpdf_all;   //!
 
-   PIDDelta(TTree *tree=0);
-   virtual ~PIDDelta();
+   ECAP190222_23m(TTree *tree=0);
+   virtual ~ECAP190222_23m();
    virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
@@ -698,15 +698,15 @@ public :
 
 #endif
 
-#ifdef PIDDelta_cxx
-PIDDelta::PIDDelta(TTree *tree) : fChain(0) 
+#ifdef ECAP190222_23m_cxx
+ECAP190222_23m::ECAP190222_23m(TTree *tree) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), connect the file
 // used to generate this class and read the Tree.
    if (tree == 0) {
-      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("../../data/pid_result_6May2019_ORCA115_23x9m.root");
+      TFile *f = (TFile*)gROOT->GetListOfFiles()->FindObject("irodsdata/ORCA_115_23m_9m_v5.0_190222_v1.0.root");
       if (!f || !f->IsOpen()) {
-         f = new TFile("../../data/pid_result_6May2019_ORCA115_23x9m.root");
+         f = new TFile("irodsdata/ORCA_115_23m_9m_v5.0_190222_v1.0.root");
       }
       f->GetObject("PID",tree);
 
@@ -714,19 +714,19 @@ PIDDelta::PIDDelta(TTree *tree) : fChain(0)
    Init(tree);
 }
 
-PIDDelta::~PIDDelta()
+ECAP190222_23m::~ECAP190222_23m()
 {
    if (!fChain) return;
    delete fChain->GetCurrentFile();
 }
 
-Int_t PIDDelta::GetEntry(Long64_t entry)
+Int_t ECAP190222_23m::GetEntry(Long64_t entry)
 {
 // Read contents of entry.
    if (!fChain) return 0;
    return fChain->GetEntry(entry);
 }
-Long64_t PIDDelta::LoadTree(Long64_t entry)
+Long64_t ECAP190222_23m::LoadTree(Long64_t entry)
 {
 // Set the environment to read one entry
    if (!fChain) return -5;
@@ -739,7 +739,7 @@ Long64_t PIDDelta::LoadTree(Long64_t entry)
    return centry;
 }
 
-void PIDDelta::Init(TTree *tree)
+void ECAP190222_23m::Init(TTree *tree)
 {
    // The Init() function is called when the selector needs to initialize
    // a new tree or chain. Typically here the branch addresses and branch
@@ -1088,7 +1088,7 @@ void PIDDelta::Init(TTree *tree)
    Notify();
 }
 
-Bool_t PIDDelta::Notify()
+Bool_t ECAP190222_23m::Notify()
 {
    // The Notify() function is called when a new file is opened. This
    // can be either for a new TTree in a TChain or when when a new TTree
@@ -1099,18 +1099,18 @@ Bool_t PIDDelta::Notify()
    return kTRUE;
 }
 
-void PIDDelta::Show(Long64_t entry)
+void ECAP190222_23m::Show(Long64_t entry)
 {
 // Print contents of entry.
 // If entry is not specified, print current entry
    if (!fChain) return;
    fChain->Show(entry);
 }
-Int_t PIDDelta::Cut(Long64_t entry)
+Int_t ECAP190222_23m::Cut(Long64_t entry)
 {
 // This function may be called from Loop.
 // returns  1 if entry is accepted.
 // returns -1 otherwise.
    return 1;
 }
-#endif // #ifdef PIDDelta_cxx
+#endif // #ifdef ECAP190222_23m_cxx
