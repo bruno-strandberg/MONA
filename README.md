@@ -45,6 +45,7 @@ export OSCPROBDIR=/my/path/to/oscprob/
 source /my/path/to/MONA/setenv.sh
 ~~~
 * Build the package by typing `make` in the master directory
+* For most analyses, one required ORCA MC data in MONA format and a MONA effective mass file, which based on the MC summary data and gSeaGen (generator) data. These can be created by the user (section **Setup for usage**) or fetched from iRODS for selected MC productions (section **Pre-processed MC productions**)
 
 Setup for usage
 ===============
@@ -56,11 +57,11 @@ When Monte-Carlo data is in the equation, it needs to be in the analysis format,
 
 2. Effective mass
 -----------------
-*Effective mass* is required to predict the number of *selected* neutrino events in the detector in some time period. Typically, *selected* is defined as the events that would pass the trigger and simple atmospheric muon rejection cuts and end up in the ECAP PID output tree. The class `common_software/EffMass.h/C` provides a class that performs effective mass calculations, given an input file with histograms for *selected* (ECAP PID events) and *generated* (gSeaGen) events. The applications in `apps/effective_mass` can be used to create such a file, see `apps/effective_mass/README.md` for more info.
+*Effective mass* is required to predict the number of *selected* neutrino events in the detector in some time period. Typically, *selected* is defined as the events that would pass the trigger and simple atmospheric muon rejection cuts and end up in the ECAP PID output tree. The class `common_software/EffMass.h/C` provides a class that performs effective mass calculations, given an input file with histograms for *selected* (ECAP PID events) and *generated* (gSeaGen) events. The applications in `apps/effective_mass` can be used to create such a file, see `apps/effective_mass/README.md` for more info. When event-by-event detector response `EvtResponse` is used (approx 10-times slower than binned `DetResponse`) to desribe the detector response, the effective mass file is not required and `EffMass::DUMMYFILE` can be provided as argument to `FitUtil`.
 
 3. Bjorken-y distributions
 ---------------------------
-To distribute expectation values for *selected* events in bjorken-y (in addition to the conventional energy and cos-theta), knowledge of a 2D neutrino energy vs bjorken-y distribution is required. Such distributions can be generated from gSeaGen data, the applications in `apps/bjorkeny_dists` create such distributions, see `apps/bjorkeny_dists/README.md` for more info. Note that one such distribution file was generated from gSeaGen v4r1 data and comes with the repo. If significant updates are expected to the cross-section calculation in gSeaGen (this depends on the underlying GENIE version), the `apps/bjorkeny_dists` programs should be run again to update the distribution file `data/cross_sections_gSeaGen_v4r1/by_dists.root`. Otherwise, the existing file can be used. The `by_dists.root` file is used by `common_software/NuXsec.h/C` class.
+To distribute expectation values for *selected* events in bjorken-y (in addition to the conventional energy and cos-theta), knowledge of a 2D neutrino energy vs bjorken-y distribution is required. Such distributions can be generated from gSeaGen data, the applications in `apps/bjorkeny_dists` create such distributions, see `apps/bjorkeny_dists/README.md` for more info. Note that one such distribution file was generated from gSeaGen v4r1 data and comes with the repo. If significant updates are expected to the cross-section calculation in gSeaGen (this depends on the underlying GENIE version), the `apps/bjorkeny_dists` programs should be run again to update the distribution file `data/cross_sections_gSeaGen_v4r1/by_dists.root`. Otherwise, the existing file can be used. The `by_dists.root` file is used by `common_software/NuXsec.h/C` class. **This is not required, if only 1 bjorken-y bin is used, or when `EvtResponse` is used, or when no signifcant changes have occurred in xsec calculation**
 
 Pre-processed MC productions
 =============================
