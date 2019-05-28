@@ -252,8 +252,7 @@ void FileHeader::ReadHeader(TString filename) {
 
   TTree *t = (TTree*)f.Get(fHeaderTree);
   if ( t == NULL ) {
-    cout << "WARNING! FileHeader::ReadHeader() cannot find directory " << fHeaderTree << " in file " << filename << ", header reading failed." << endl;
-    return;
+    throw std::invalid_argument("ERROR! FileHeader::ReadHeader() cannot find header in file " + (string)filename);
   }
 
   Char_t line[fLineLength];

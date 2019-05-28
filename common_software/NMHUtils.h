@@ -19,6 +19,8 @@ namespace NMHUtils {
   Bool_t           FileExists(TString filename, Double_t size = 0);
   TString          Getcwd();
   Bool_t           BinsMatch(TH1 *h1, TH1 *h2);
+  Bool_t           HeaderParameterMatch(TString file1, TString file2, TString parameter_name);
+  Bool_t           DatatagMatch(TString file1, TString file2);
 
   std::tuple<TH1*, Double_t, Double_t> 
     Asymmetry(TH1 *h1, TH1* h2, TString nametitle, 
