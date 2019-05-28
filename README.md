@@ -40,10 +40,10 @@ The numbers in the version string `vA.B.C-D`, where A to D are numbers, have the
 Setup in lyon and elsewhere
 ===========================
 * Add the following to your shell environment
-```
+~~~
 export OSCPROBDIR=/my/path/to/oscprob/
 source /my/path/to/MONA/setenv.sh
-```
+~~~
 * Build the package by typing `make` in the master directory
 
 Setup for usage
@@ -62,6 +62,18 @@ When Monte-Carlo data is in the equation, it needs to be in the analysis format,
 ---------------------------
 To distribute expectation values for *selected* events in bjorken-y (in addition to the conventional energy and cos-theta), knowledge of a 2D neutrino energy vs bjorken-y distribution is required. Such distributions can be generated from gSeaGen data, the applications in `apps/bjorkeny_dists` create such distributions, see `apps/bjorkeny_dists/README.md` for more info. Note that one such distribution file was generated from gSeaGen v4r1 data and comes with the repo. If significant updates are expected to the cross-section calculation in gSeaGen (this depends on the underlying GENIE version), the `apps/bjorkeny_dists` programs should be run again to update the distribution file `data/cross_sections_gSeaGen_v4r1/by_dists.root`. Otherwise, the existing file can be used. The `by_dists.root` file is used by `common_software/NuXsec.h/C` class.
 
+Pre-processed MC productions
+=============================
+
+For the following Monte-Carlo productions, the data conversion steps of the previous section have been performed and the MONA files are available on the following iRODS locations:
+
+* `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v1.1.1/postprocessing/MONA_180401/dataprocessing_ECAP180401`
+* `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v5.0/postprocessing/MONA_190222_v1.0/dataprocessing_ECAP190222_23m`
+* `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_20m_9m/v5.0/postprocessing/MONA_190222_v1.0/dataprocessing_ECAP190222_20m`
+* `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_7_23m_9m/v0.0/postprocessing/MONA_181013/dataprocessing_ECAP181013`
+
+The naming convention is as follows. The directory up to `.../postprocessing` specifies the ORCA mass-production and corresponds to a general naming scheme used within the collaboration. Then, the directory `MONA_<version_tag>` corresponds to the PID output directory `pid_<version_tag>`. I.e, if a new PID output becomes available for the mass production, a new MONA directory should be included. The subdirectory in `MONA_<version_tag>/` uses the same name as a MONA version tag. In this way, one can trace down the exact software version that was used for the MONA file creation. E.g., `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v5.0/postprocessing/MONA_190222_v1.0/dataprocessing_ECAP190222_23m` converts the PID output `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v5.0/postprocessing/pid_190222_v1.0`, and MONA has a tag `dataprocessing_ECAP190222_23m` which specifies the exact version of MONA used for the creation of the MONA formatted summary file.
+
 Available applications
 ======================
 As listed in the previous section, generic applications are available in the `apps/` directory for data preparation for analysis with MONA. There are additional applications in the `apps/` directory, which are typically accompanied with a README file to explain scope and usage.
@@ -73,13 +85,13 @@ ORCA Monte-Carlo chain
 ----------------------
 
 The typical ORCA MC chain consists of the applications and steps as illustrated below:
-```
+~~~
 gSeaGen->KM3Sim                JGandalf for tracks                                           
                \             /                      \                                       
 		       JTE->                                -    -> merge, PID training -->summary  
                /             \                      /                                       
 mupage->KM3                    Dusj reco for showers                                        
-```
+~~~
 The summary files come from ECAP and are described in more detail at https://wiki.km3net.de/index.php/ORCA_PID. Basically it is one huge root `TTree` with all of the simulated events that contains all the information from the reconstruction algorithms, plus PID info and MC truth.
 
 There are numerous gSeaGen and mupage files. We have *something* like `gSeaGen_<flavor>_<interaction>_<erange>_<runnr>.root`, where flavor is `muon/elec/tau`, interaction is `CC` or `NC`, erange is `1-5` or `3-100`, runnr is `1-600`.
@@ -109,8 +121,8 @@ For each reconstruction there are branches called `<reco>_ql0, <reco>_ql1, ...`,
 
 For ECAP April 2018 MC data We are usually advised to use ql1, as it selects more events and improves statistics. For shower there is no level 2 defined.
 
-The quality levels are populated by the user in applications `apps/data_sorting/Alpha(Beta...)ToSummary`. In the end, it is up to the user to choose what sort of qualities these flags are used for. There is freedom to create custom quality cuts when PID tree is converted to summary formate, e.g. the user can create a new variable in the summary event 
-```
+The quality levels are populated by the user in applications `apps/data_sorting/..._to_MONA`. In the end, it is up to the user to choose what sort of qualities these flags are used for. There is freedom to create custom quality cuts when PID tree is converted to summary formate, e.g. the user can create a new variable in the summary event 
+~~~
 Double_t fTrack_ql3 = (nhits > 30)
-```
+~~~
 and use it when filtering events for `EventSelection` and `DetResponse`.
