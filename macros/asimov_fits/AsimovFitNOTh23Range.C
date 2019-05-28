@@ -113,7 +113,7 @@ void AsimovFitNOTh23Range() {
 
   if (not files_exist) {
 
-    auto summary_file = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_all_10Apr2018.root";
+    auto summary_file = (TString)getenv("MONADIR") + "/data/ORCA_MCsummary_SEv2_ORCA115_23x9m_ECAP180401.root";
     SummaryParser sp(summary_file);
     for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
       if (i % (Int_t)1e6 == 0) cout << "Event: " << i << endl;
@@ -144,7 +144,7 @@ void AsimovFitNOTh23Range() {
   // set up the PDFs and static oscillation parameters
   //----------------------------------------------------------
 
-  auto meff_file = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
+  auto meff_file = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP180401.root";
 
   // Open root file to save histograms
   TFile fout(s_rootfile, "RECREATE");
