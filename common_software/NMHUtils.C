@@ -1,4 +1,5 @@
 #include "NMHUtils.h"
+#include "FileHeader.h"
 #include "TAxis.h"
 #include "TMath.h"
 #include "TH3.h"
@@ -336,7 +337,6 @@ NMHUtils::Asymmetry(TH1 *h1, TH1* h2, TString nametitle,
   return std::make_tuple(h_asym, asym, asym_err);
 }
 
-
 //****************************************************************************
 
 /**
@@ -365,4 +365,58 @@ std::tuple<Double_t, Double_t> NMHUtils::SquaredSumErrorProp(std::vector<std::pa
   total_error = 1 / total_value * std::sqrt(total_error);
 
   return std::make_tuple(total_value, total_error);
+}
+
+//****************************************************************************
+
+/** Function to check that a parameter in a header has the same value in two files.
+
+    An error is thrown if either of the two files does not have a `FileHeader` header attatched to it.
+    An error is thrown if the parameter cannot be found in the header of either of the two files.
+    
+    \param file1          Input file 1 (e.g. MONA MC summary file)
+    \param file2          Input file 2 (e.g. MONA effective mass file)
+    \param parameter_name Name of the parameter (e.g. datatag)
+    \return               True if the parameters match, false otherwise
+ */
+Bool_t NMHUtils::HeaderParameterMatch(TString file1, TString file2, TString parameter_name) {
+
+  // read the headers from both files
+  FileHeader hf1("hf1");
+  FileHeader hf2("hf2");
+
+  hf1.ReadHeader(file1);
+  hf2.ReadHeader(file2);
+
+  TString par_f1 = hf1.GetParameter( parameter_name );
+
+  if (par_f1 == "") {
+    throw std::invalid_argument( "ERROR! NMHUtils::HeaderParameterMatch() cannot find parameter " + (string)parameter_name + " in file " + (string)file1 );
+  }
+
+  TString par_f2 = hf2.GetParameter( parameter_name );
+
+  if (par_f2 == "") {
+    throw std::invalid_argument( "ERROR! NMHUtils::HeaderParameterMatch() cannot find parameter " + (string)parameter_name + " in file " + (string)file2 );
+  }
+
+  return ( par_f1 == par_f2 );
+
+}
+
+//****************************************************************************
+
+/** Utility function to check that the datatag matches in two files
+
+    The function looks for the parameter `datatag` (see `apps/data_sorting/...to_MONA.C`) in both files to see that they match.
+
+    \param file1          Input file 1 (e.g. MONA MC summary file)
+    \param file2          Input file 2 (e.g. MONA effective mass file)
+    \return               True if datatag's match, false otherwise.
+
+*/
+Bool_t NMHUtils::DatatagMatch(TString file1, TString file2) {
+
+  return HeaderParameterMatch(file1, file2, "datatag");
+
 }
