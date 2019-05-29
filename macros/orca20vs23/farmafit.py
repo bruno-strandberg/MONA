@@ -6,8 +6,8 @@ Script to farm asimovfit.C macro. At each theta-23 value the script calls the as
 If nohup is used, the script will keep running until all jobs are processed.
 
 Usage:
-    farm_th23dm31.py --min TH23_MIN --max TH23_MAX --step TH23_STEP [--IOdata] (--nikhef | --lyon | --nohup) [--ncpu N_NOHUPCPU]
-    farm_th23dm31.py -h
+    farmafit.py --min TH23_MIN --max TH23_MAX --step TH23_STEP [--IOdata] (--nikhef | --lyon | --nohup) [--ncpu N_NOHUPCPU]
+    farmafit.py -h
 
 Option:
     --min TH23_MIN     Start value of sin^2(th23)
