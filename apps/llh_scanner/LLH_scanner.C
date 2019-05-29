@@ -1,11 +1,14 @@
 
 //nmh headers
+#include "AbsResponse.h"
 #include "DetResponse.h"
+#include "EvtResponse.h"
 #include "FitUtilWsyst.h"
 #include "SummaryEvent.h"
 #include "SummaryParser.h"
 #include "EffMass.h"
 #include "FitPDF.h"
+#include "NMHUtils.h"
 
 //root and roofit headers
 #include "RooArgList.h"
@@ -41,12 +44,12 @@ namespace LLHSCAN {
     Double_t pid_max;
     Double_t muon_cut;
     Double_t noise_cut;
-    DetResponse::reco reco;
+    AbsResponse::reco reco;
     TString  name;
 
-    PIDBIN() : pid_min(0), pid_max(0), muon_cut(0), noise_cut(0), reco(DetResponse::shower), name("") {}
+    PIDBIN() : pid_min(0), pid_max(0), muon_cut(0), noise_cut(0), reco(AbsResponse::shower), name("") {}
     PIDBIN(Double_t _pid_min, Double_t _pid_max, Double_t _muon_cut, Double_t _noise_cut, 
-	   DetResponse::reco _reco, TString _name) {
+	   AbsResponse::reco _reco, TString _name) {
       pid_min   = _pid_min;
       pid_max   = _pid_max;
       muon_cut  = _muon_cut;
@@ -114,10 +117,10 @@ int main(const int argc, const char **argv) {
   vector<double> _noise_cuts = {0.03, 0.03, 0.03};   // default noise suppression cuts
   vector<string> _reco       = {"shw","shw","comb"}; // default reco's
 
-  std::map<string, DetResponse::reco> recomap = { {"mc"  , DetResponse::mc_truth},
-						  {"trk" , DetResponse::track},
-						  {"shw" , DetResponse::shower},
-						  {"comb", DetResponse::customreco} };
+  std::map<string, AbsResponse::reco> recomap = { {"mc"  , AbsResponse::mc_truth},
+						  {"trk" , AbsResponse::track},
+						  {"shw" , AbsResponse::shower},
+						  {"comb", AbsResponse::customreco} };
 
   //======================================================
   // parse command line arguments
@@ -140,6 +143,7 @@ int main(const int argc, const char **argv) {
   vector<string> fixed_pars;
   Bool_t profileLLH;
   Bool_t IO;
+  Bool_t evtResp;
 
   try {
 
@@ -168,10 +172,25 @@ int main(const int argc, const char **argv) {
     zap['w'] = make_field(profileLLH, "In addition to LLH scans, create a profile LLH scan. This will take more time, as at each point in the plot a fit is performed");
     zap['z'] = make_field(fixed_pars, "Names of the parameters to be fixed - this only affects profile LLH scans") = std::vector<string> {};
     
+    zap['e'] = make_field(evtResp, "Use event-by-event detector response (EvtResponse), instead of binned response (DetResponse). Note that this is approx 10 times slower. EvtResponse does not work with pseudodata, so a datafileneeds to be specified. The use of EvtResponse does not require an effective mass file, this can remain default.");
+
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
   catch(const exception &error) {
     FATAL(error.what() << endl);
+  }
+
+  if (evtResp) { cout << "NOTICE LLH_scanner: using event-by-event detector response" << endl; }
+  else         { cout << "NOTICE LLH_scanner: using binned detector response" << endl; }
+
+  // EvtResponse does not work with pseudo-data
+  if (evtResp && data_file == pseudo_data) {
+    throw std::invalid_argument("ERROR! LLH_scanner: EvtResponse requires actual ORCA MC summary data");
+  }
+
+  // Check that datafile and effective mass file match
+  if ( data_file != pseudo_data && meff_file != EffMass::DUMMYFILE ) {
+    if ( !NMHUtils::DatatagMatch( data_file, meff_file) ) throw std::invalid_argument("ERROR! LLH_scanner: datatag mismatch between the input MC summary file and the effective mass file.");
   }
 
   // if not specified use default values
@@ -269,23 +288,30 @@ int main(const int argc, const char **argv) {
   // init the responses and fill
   //---------------------
 
-  std::map< TString, DetResponse* > resps;
+  std::map< TString, AbsResponse* > resps;
 
   for (UInt_t i = 0; i < pidbins.size(); i++) {
 
     PIDBIN PB = pidbins[i];
     TString name = PB.name+"R";
-    DetResponse *resp = new DetResponse( PB.reco, PB.name+"R", nebins, 1, 100, nctbins, -1, 1, nbybins, 0, 1 );
+    AbsResponse *resp;
+
+    if ( evtResp ) {
+      resp = new EvtResponse( PB.reco, PB.name+"R", nebins, 1, 100, nctbins, -1, 1, nbybins, 0, 1 );
+    }
+    else {
+      resp = new DetResponse( PB.reco, PB.name+"R", nebins, 1, 100, nctbins, -1, 1, nbybins, 0, 1 );
+    }
 
     // decide which reco quality must be checked
-    if ( PB.reco == DetResponse::track ) {
+    if ( PB.reco == AbsResponse::track ) {
       resp->AddCut( &SummaryEvent::Get_track_ql0 , std::greater<double>(), 0.5, true);
     }
-    else if (PB.reco == DetResponse::customreco ) {
+    else if (PB.reco == AbsResponse::customreco ) {
       resp->AddCut( &SummaryEvent::Get_track_ql0 , std::greater<double>(), 0.5, true);
       resp->SetObsFuncPtrs( &CustomEnergy, &CustomDir, &CustomPos, &CustomBY );
     }
-    else if ( PB.reco == DetResponse::shower ) {
+    else if ( PB.reco == AbsResponse::shower ) {
       resp->AddCut( &SummaryEvent::Get_shower_ql0, std::greater<double>(), 0.5, true);
     }
     
@@ -327,7 +353,8 @@ int main(const int argc, const char **argv) {
 
   // init fitutil and pdf's, create data
   //---------------------
-  FitUtilWsyst fu(run_time, resps.begin()->second->GetHist3D(), 3, 65, -1, -1e-3, 0, 1, meff_file);
+  FitUtilWsyst fu(run_time, resps.begin()->second->GetHist3DTrue(), resps.begin()->second->GetHist3DReco(), 
+		  3, 65, -1, -1e-3, 0, 1, meff_file);
 
   std::map< TString, FitPDF* > pdfs;
   for (auto &R: resps) {

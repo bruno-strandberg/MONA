@@ -4,12 +4,14 @@
 Script to farm out LLH_scanner application. It creates a LLH scan job for each parameter.
 
 Usage:
-    farm_llhscanner [-d DATA_FILE] [-m EFFMASS_FILE] -i ID_STR
+    farm_llhscanner [-d DATA_FILE] [-m EFFMASS_FILE] [-n NPOINTS] --evtresp -i ID_STR
     farm_llhscanner -h
 
 Option:
     -d DATA_FILE      MC chain summary data file in MONA format
     -m EFFMASS_FILE   Effective mass file in MONA format
+    -n NPOINTS        Number of points in LLH scan. If not specified, LLH_scanner default is used.
+    --evtresp         Use event-by-event response
     -i ID_STR         Identifier string used to create job names and job outputs
     -h --help         Show this screen
 
@@ -73,6 +75,12 @@ for par in pars:
     if ( args['-m'] != None ):
         fpath = os.path.abspath(args['-M'])
         cmd += " -M {}".format(fpath)
+
+    if ( args['-n'] != None ):
+        cmd += " -N {}".format( args['-n'] )
+
+    if args['--evtresp']:
+        cmd += ' -e'
 
     jobscript = create_script(jobscript, "/user/bstrand/.bashrc", cmd)
     scripts.append( jobscript )
