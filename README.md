@@ -70,7 +70,7 @@ For the following Monte-Carlo productions, the data conversion steps of the prev
 * `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v1.1.1/postprocessing/MONA_180401/dataprocessing_ECAP180401`
 * `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v5.0/postprocessing/MONA_190222_v1.0/dataprocessing_ECAP190222_23m`
 * `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_20m_9m/v5.0/postprocessing/MONA_190222_v1.0/dataprocessing_ECAP190222_20m`
-* `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_7_23m_9m/v0.0/postprocessing/MONA_181013/dataprocessing_ECAP181013`
+* `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_7_23m_9m/v0.0/postprocessing/MONA_181013/dataprocessing_ECAP181013_v2`
 
 The naming convention is as follows. The directory up to `.../postprocessing` specifies the ORCA mass-production and corresponds to a general naming scheme used within the collaboration. Then, the directory `MONA_<version_tag>` corresponds to the PID output directory `pid_<version_tag>`. I.e, if a new PID output becomes available for the mass production, a new MONA directory should be included. The subdirectory in `MONA_<version_tag>/` uses the same name as a MONA version tag. In this way, one can trace down the exact software version that was used for the MONA file creation. E.g., `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v5.0/postprocessing/MONA_190222_v1.0/dataprocessing_ECAP190222_23m` converts the PID output `/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v5.0/postprocessing/pid_190222_v1.0`, and MONA has a tag `dataprocessing_ECAP190222_23m` which specifies the exact version of MONA used for the creation of the MONA formatted summary file.
 
