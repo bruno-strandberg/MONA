@@ -24,17 +24,17 @@ Double_t O7::CustomBY (SummaryEvent *evt) { return evt->Get_track_bjorkeny(); }
 //*********************************************************************************************************
 
 /** Constructor */
-ORCA7::ORCA7(Bool_t ReadResponses) {
+ORCA7::ORCA7(Bool_t ReadResponses, Bool_t UseEvtResp) {
 
   // set the PID bins
   fPidBins.push_back( PidBinConf(0.0, 0.3, 0.05, 0.0, "shw") );
   fPidBins.push_back( PidBinConf(0.3, 0.7, 0.01, 0.0, "mid") );
   fPidBins.push_back( PidBinConf(0.7, 1.0+1e-5, 0.05, 0.1, "trk") );
 
-  CreateResponses( fPidBins, ReadResponses );
+  CreateResponses( fPidBins, ReadResponses, UseEvtResp );
 
   // create fitutil and pdfs
-  fFitUtil = new FitUtilWsyst(f_F_runtime, fResps["trk"]->GetHist3D(), f_F_emin, f_F_emax, 
+  fFitUtil = new FitUtilWsyst(f_F_runtime, fResps["trk"]->GetHist3DReco(), f_F_emin, f_F_emax, 
 			      f_F_ctmin, f_F_ctmax, f_F_bymin, f_F_bymax, fEffmF);
   
   for (auto P: fResps) {
@@ -51,7 +51,7 @@ ORCA7::ORCA7(Bool_t ReadResponses) {
 //*********************************************************************************************************
 
 /** Inline function to construct the responses in the constructor*/
-void ORCA7::CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadResponses) {
+void ORCA7::CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadResponses, Bool_t UseEvtResp) {
 
   //=========================================================
   // create a response for each PID bin
@@ -59,16 +59,32 @@ void ORCA7::CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadRespon
 
   for (auto PB: pid_bins) {
 
-    DetResponse *R = NULL;
+    AbsResponse *R = NULL;
       
     if ( PB.pid_min < 0.7 ) {
+
+      if ( UseEvtResp ) {
+      R = new EvtResponse(EvtResponse::shower, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
+			  f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
+      }
+      else {
       R = new DetResponse(DetResponse::shower, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
 			  f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
+      }
+
       R->AddCut( &SummaryEvent::Get_shower_ql0, std::greater<double>(), 0.5, true );
     }
     else {
-      R = new DetResponse(DetResponse::customreco, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
-			  f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
+
+      if ( UseEvtResp ) {
+	R = new EvtResponse(EvtResponse::customreco, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
+			    f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
+      }
+      else {
+	R = new DetResponse(DetResponse::customreco, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
+			    f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
+      }
+
       R->SetObsFuncPtrs( &CustomEnergy, &CustomDir, &CustomPos, &CustomBY );
       R->AddCut( &SummaryEvent::Get_track_ql0, std::greater<double>(), 0.5, true );
     }
@@ -91,14 +107,14 @@ void ORCA7::CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadRespon
   Int_t sysret = system("mkdir -p " + out_dir);
   if ( sysret != 0 ) cout << "WARNING! ORCA7::ORCA7 system returned " << sysret << endl;
 
-  vector< std::pair<TString, DetResponse*> > resp_names;// vector that stores the outname and the response pairs
+  vector< std::pair<TString, AbsResponse*> > resp_names;// vector that stores the outname and the response pairs
   Bool_t ReadFromFile = ReadResponses;                  // flag to indicate whether responses should be read
 
   for (auto P: fResps) {
     auto R = P.second;
     TString outname = out_dir + "resp_" + R->GetRespName() + ".root";
     resp_names.push_back( std::make_pair(outname, R) );
-    ReadFromFile = ReadFromFile && NMHUtils::FileExists(outname);
+    ReadFromFile = ReadFromFile && NMHUtils::FileExists(outname) && !UseEvtResp;
   }
 
   //=========================================================
@@ -106,7 +122,7 @@ void ORCA7::CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadRespon
   //=========================================================
 
   if ( ReadFromFile ) {
-    for (auto p: resp_names) p.second->ReadFromFile( p.first );
+    for (auto p: resp_names) dynamic_cast<DetResponse*>(p.second)->ReadFromFile( p.first );
   }
   else {
       
@@ -116,8 +132,10 @@ void ORCA7::CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadRespon
 				<< sp.GetTree()->GetEntries() << endl;
       for (auto R: fResps) R.second->Fill( sp.GetEvt(i) );
     }
-      
-    for (auto p: resp_names) p.second->WriteToFile( p.first );
+   
+    if ( !UseEvtResp ) {
+      for (auto p: resp_names) dynamic_cast<DetResponse*>(p.second)->WriteToFile( p.first );
+    }
 
   }
 

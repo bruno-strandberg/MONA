@@ -35,6 +35,7 @@ int main(const int argc, const char** argv) {
   string   outfile;
   Double_t sinsqth23;
   Bool_t   addDm31Prior;
+  Bool_t   evtResp;
   
   try {
 
@@ -47,6 +48,7 @@ int main(const int argc, const char** argv) {
     zap['o'] = make_field(outfile, "Output file") = "fit.root";
     zap['t'] = make_field(sinsqth23, "SinsqTh23 value at which the 'data' is created") = 0.58;
     zap['p'] = make_field(addDm31Prior, "Add external prior for dm31 from NuFit");
+    zap['e'] = make_field(evtResp, "Use event-by-event detector response");
 
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
@@ -61,7 +63,7 @@ int main(const int argc, const char** argv) {
   TStopwatch timer;
 
   // init the class with binning info, PID ranges and responses
-  ORCA7 o7( kTRUE );
+  ORCA7 o7( kTRUE, evtResp );
   FitUtilWsyst *fu = o7.fFitUtil;
   auto pdfs = o7.fPdfs;
 

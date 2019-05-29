@@ -36,6 +36,7 @@ int main(const int argc, const char** argv) {
   Int_t    seed;
   Int_t    ncpu;
   string   outfile;
+  Bool_t   evtResp;
   
   try {
 
@@ -49,6 +50,7 @@ int main(const int argc, const char** argv) {
     zap['S'] = make_field(seed, "Seed for parameter randomisation") = 416;
     zap['N'] = make_field(ncpu, "Number of CPUs for minimisation") = 1;
     zap['o'] = make_field(outfile, "Output file") = "contour.root";
+    zap['e'] = make_field(evtResp, "Use event-by-event detector response");
 
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
@@ -63,7 +65,7 @@ int main(const int argc, const char** argv) {
   TStopwatch timer;
 
   // init the class with binning info, PID ranges and responses
-  ORCA7 o7( kTRUE );
+  ORCA7 o7( kTRUE, evtResp );
   FitUtilWsyst *fu = o7.fFitUtil;
   auto pdfs = o7.fPdfs;
 
