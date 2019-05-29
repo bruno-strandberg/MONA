@@ -24,6 +24,8 @@
 #include "TStopwatch.h"
 #include "RooConstVar.h"
 #include "RooGaussian.h"
+#include "TGraph.h"
+#include "TF2.h"
 
 //jpp headers
 #include "JTools/JRange.hh"
@@ -444,10 +446,6 @@ int main(const int argc, const char **argv) {
   // create the LLH scanners, for each PID bin and simultaneous
   //======================================================
   
-  TString title = TString("-Log(L) scan in ") + (TString)var->GetName();
-  RooPlot frame( *var, var->getMin(), var->getMax(), npoints );
-  frame.SetNameTitle(title, title);
-
   vector<RooDataHist*> rfdata; // pointers for clean-up
   std::map<TString, RooNLLVar*> nlls;
 
@@ -478,25 +476,66 @@ int main(const int argc, const char **argv) {
   // do the plotting, write plots to output
   //======================================================
 
+  TString title = TString("-Log(L) scan in ") + (TString)var->GetName();
+
   cout << "=====================================================================" << endl;
   cout << "NOTICE LLH_scanner: scanning LLH in variable " << var->GetName() << " in range " 
-       << var->getMin() << " - " << var->getMax() << endl;
+       << var->getMin() << " - " << var->getMax() << ", " << " nr of points " << npoints << endl;
   cout << "=====================================================================" << endl;
 
-  // plot all LLH curves
-  Int_t i = 0;
+  std::map<TString, TGraph*> graphs;
+
+  // plot all LLH curves. In principle, this could be achieved with nll->plotOn(frame), but identical
+  // behaviour can be obtained, much faster, with just doing nll->getVal(). There seems to be some
+  // integration overhead in plotOn.
+
+  Int_t style = 0;                       // counter for line color and style
+  TF2 shifter("shifter", "y - [0]", 1);  // function to help shift the Y values to start from 0
+
   for (auto N: nlls) {
-    N.second->plotOn( &frame, LineColor(1+i), ShiftToZero(), LineStyle(1+i), Name( N.first ) );
+
+    // create graph
+    TString name = "llhscan_" + N.first;
+    TGraph *gnll = new TGraph();
+    gnll->SetNameTitle( name, title + ", " + N.first );
+
+    // save the default value
+    Double_t X_default = var->getVal();
+
+    // go over scan range
+    for (Double_t X = var->getMin(); X <= var->getMax(); X += ( var->getMax() - var->getMin() )/npoints ) {
+      var->setVal(X);
+      gnll->SetPoint( gnll->GetN(), X, N.second->getVal() );
+    }
+
+    // find the minimum Y value and shift the graph to start from 0
+    shifter.SetParameter(0, TMath::MinElement( gnll->GetN(), gnll->GetY() ) );
+    gnll->Apply( &shifter );
+
+    // set the parameter back to default
+    var->setVal( X_default );
+
+    // set the style
+    gnll->SetLineColor( 1+style );
+    gnll->SetLineStyle( 1+style );
+    gnll->SetLineWidth(2);
+
+    // store the graph
+    graphs.insert( std::make_pair(N.first, gnll) );
+
+    // increment the style
+    style++;
+
     cout << "=====================================================================" << endl;
     cout << "NOTICE LLH_scanner: scan for PID range " << N.first << " done" << endl;
     cout << "=====================================================================" << endl;
-    i++;
-  }
+
+  } // end loop over NLL functions
 
   // add a legend
   TLegend *leg1 = new TLegend(0.3, 0.6, 0.7, 0.9);
   for (auto N: nlls) {
-     leg1->AddEntry( frame.findObject( N.first ), N.first, "l" );
+     leg1->AddEntry( graphs[N.first], N.first, "l" );
   }
   leg1->SetLineWidth(0);
   leg1->SetFillStyle(0);
@@ -504,6 +543,9 @@ int main(const int argc, const char **argv) {
   //======================================================
   // if requested, perform profile LLH scan
   //======================================================
+
+  RooPlot frame( *var, var->getMin(), var->getMax(), npoints );
+  frame.SetNameTitle(title, title);
   
   if (profileLLH) {
 
@@ -523,7 +565,7 @@ int main(const int argc, const char **argv) {
     cout << "NOTICE LLH_scanner: started profile likelihood calculation" << endl;
     cout << "=====================================================================" << endl;
     RooAbsReal *profile = nll_comb_wp->createProfile( *var );
-    profile->plotOn( &frame, LineColor(i+1), LineStyle(i+1), ShiftToZero(), Name("profileLLH") );
+    profile->plotOn( &frame, LineColor(style+1), LineStyle(style+1), ShiftToZero(), Name("profileLLH") );
     leg1->AddEntry( frame.findObject( "profileLLH" ), "profileLLH", "l" );
      
   }
@@ -534,6 +576,7 @@ int main(const int argc, const char **argv) {
   pars_data->Write("Parameters");
   for (auto E: exphists)     E.second->Write( (TString)E.first );
   for (auto E: exphists_err) E.second->Write( (TString)E.first + TString("_err") );
+  for (auto g: graphs)       g.second->Write();
   fout.Close();
 
   // clean-up
@@ -543,6 +586,7 @@ int main(const int argc, const char **argv) {
   for (auto E: exphists_err) if (E.second) delete E.second;
   for (auto d: rfdata) if (d) delete d;
   for (auto n: nlls) if (n.second) delete n.second;
+  for (auto g: graphs) if (g.second) delete g.second;
   
   cout << "NOTICE LLH_scanner: total run time [s]: " << (Double_t)timer.RealTime() << endl;
 
