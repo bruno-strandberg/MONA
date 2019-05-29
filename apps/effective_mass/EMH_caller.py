@@ -19,7 +19,7 @@ Option:
     --nmin NMIN                 Minimum nr of files to analyse per farm job [default: 190]
     --local                     Run locally
     --lyonfarm                  Run on the lyon farm
-    --nikeffarm                 Run on the nikhef farm
+    --nikheffarm                 Run on the nikhef farm
     -h --help                   Show this screen
 
 """
