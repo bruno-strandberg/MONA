@@ -75,6 +75,15 @@ int main(const int argc, const char **argv) {
 
   SummaryParser out(fout_name, kFALSE); //false means writing mode
 
+  // in this ORCA7 production the extremely bad idea of grouping together runs at JTE level was followed
+  // This means run numbers go in steps of 20, i.e, run 1, run 20, run 40. Due to this, some info was lost, i.e.
+  // it is not possible to track down from which exact run the event came from. For the w1y calculation in
+  // EvtResponse, this messes up the run count. Hence I need to factor in the grouping in the denominator
+  // To spice things up a bit further, different grouping was used for different runs
+  Double_t JTE_grouping_nu    = 20;
+  Double_t JTE_grouping_atmmu = 50;
+  Double_t JTE_grouping_noise = 1;
+
   Long64_t nentries = PIDR.fChain->GetEntries();
   for (Int_t i = 0; i < nentries; i++) {
 
@@ -91,8 +100,13 @@ int main(const int argc, const char **argv) {
     out.GetEvt()->Set_MC_w2(PIDR.weight_w2);    
     out.GetEvt()->Set_MC_w1y(PIDR.weight_one_year);   
 
-    if ( PIDR.is_neutrino ) { out.GetEvt()->Set_MC_w2denom( PIDR.n_events_gen ); }
-    else                    { out.GetEvt()->Set_MC_w2denom( PIDR.livetime_sec ); }
+    if ( PIDR.is_neutrino ) { 
+      out.GetEvt()->Set_MC_w2denom( PIDR.n_events_gen * JTE_grouping_nu ); // N_tot is 20 times as large due to grouping
+    }
+    else { 
+      if ( PIDR.type == 0 ) { out.GetEvt()->Set_MC_w2denom( PIDR.livetime_sec * JTE_grouping_noise ); }
+      else                  { out.GetEvt()->Set_MC_w2denom( PIDR.livetime_sec * JTE_grouping_atmmu ); }
+    }
 
     out.GetEvt()->Set_MC_erange_start(PIDR.Erange_min);
     out.GetEvt()->Set_MC_erange_stop(PIDR.Erange_max);
