@@ -4,7 +4,7 @@
 Script to farm out LLH_scanner application. It creates a LLH scan job for each parameter.
 
 Usage:
-    farm_llhscanner [-d DATA_FILE] [-m EFFMASS_FILE] [-n NPOINTS] --evtresp -i ID_STR
+    farm_llhscanner [-d DATA_FILE] [-m EFFMASS_FILE] [-n NPOINTS] [--evtresp] -i ID_STR
     farm_llhscanner -h
 
 Option:
@@ -69,15 +69,15 @@ for par in pars:
     cmd = "{0}/./{1} -p {2} -o {3}".format(cwd, app, par, output)
 
     if ( args['-d'] != None ):
-        fpath = os.path.abspath(args['-D'])
-        cmd += " -D {}".format(fpath)
+        fpath = os.path.abspath(args['-d'])
+        cmd += " -d {}".format(fpath)
 
     if ( args['-m'] != None ):
-        fpath = os.path.abspath(args['-M'])
-        cmd += " -M {}".format(fpath)
+        fpath = os.path.abspath(args['-m'])
+        cmd += " -m {}".format(fpath)
 
     if ( args['-n'] != None ):
-        cmd += " -N {}".format( args['-n'] )
+        cmd += " -n {}".format( args['-n'] )
 
     if args['--evtresp']:
         cmd += ' -e'
