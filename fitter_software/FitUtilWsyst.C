@@ -2,13 +2,13 @@
 
 #include "TMath.h"
 
-/** Constructor - see `FitUtil::FitUtil` constructor for parameter list.
+/** Constructor - see `FitUtil::FitUtil` constructors for parameter list.
     The added fit parameters are initialised here.
 */
-FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
+FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_temp_T, TH3* h_temp_R,
 			   Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax,
 			   Double_t bymin, Double_t bymax, TString meff_file) :
-  FitUtil(op_time, h_template, emin, emax, ctmin, ctmax, bymin, bymax, meff_file) {
+  FitUtil(op_time, h_temp_T, h_temp_R, emin, emax, ctmin, ctmax, bymin, bymax, meff_file) {
 
   /*----------------------------------------------------------------------------------
     Init the systematic parameters. It is important to add all common parameters to `FitUtil::fParSet` to make them known to `FitPDF` and accessible in `FitUtil::proxymap_t` that is passed to `RecoEvts` and subsequent functions.
@@ -51,6 +51,14 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
   }
     
 };
+
+//***************************************************************************************
+
+/** Same as the default constructor, but in this case the same binning is used for true bins and reco bins.*/
+FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_template,
+			   Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax,
+			   Double_t bymin, Double_t bymax, TString meff_file) : 
+  FitUtilWsyst(op_time, h_template, h_template, emin, emax, ctmin, ctmax, bymin, bymax, meff_file) {}
 
 //***************************************************************************************
 
@@ -282,6 +290,105 @@ std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t C
   // take sqrt of the error and return
   return std::make_pair( RE, TMath::Sqrt(REerr) );
    
+}
+
+//***************************************************************************************
+
+/** Overload the virtual function `FitUtil::RecoEvtsER` to accommodate calculations with systematics, see that function for the parameter interface.
+
+    The structuring of the virtual functions gets a bit complicated here, but that is to avoid duplicating code. As one can see, `FitUtilWsyst::RecoEvts` applies the energy scale systematic, but otherwise calls `FitUtil::RecoEvts`. The latter, in turn, calls two virtual functions, `FitUtil::RecoEvtsDR` and `FitUtil::RecoEvtsER`. The first of those performs the calculation using the binned response `DetResponse`, the latter uses the `EvtResponse`. `RecoEvtsDR` does not need to be modified here, because most of the systematics are taken care of in the `FitUtilWsyst::TrueEvts` function, that is used by `RecoEvtsDR`. On the other hand, `RecoEvtsER` needs to be modified, because it does not use `TrueEvts` and this one needs to account for the systematics here.
+    
+*/
+std::pair< Double_t, Double_t > FitUtilWsyst::RecoEvtsER(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+							 EvtResponse *resp, const proxymap_t &proxymap,
+							 Bool_t AddMuonsNoise) {
+
+  Double_t det_count = 0.;
+  Double_t det_err   = 0.;
+
+  auto true_evts = resp->GetBinEvts( E_reco, Ct_reco, By_reco );
+
+  for (const auto &te: true_evts) {
+
+    // find bin coordinates for retrieving info for the cache
+    Int_t e_bin  = fHBT->GetXaxis()->FindBin( te.GetTrueE() );
+    Int_t ct_bin = fHBT->GetYaxis()->FindBin( te.GetTrueCt() );
+    Int_t by_bin = fHBT->GetZaxis()->FindBin( te.GetTrueBy() );
+
+    // get bin widths to calculate differential flux from the cache
+    Double_t ew  = fHBT->GetXaxis()->GetBinWidth(e_bin);
+    Double_t ctw = fHBT->GetYaxis()->GetBinWidth(ct_bin);
+
+    // calculate constant to convert back to differential flux and calculate the fluxes
+    Double_t flux_conv = ew * ctw * fSec_per_y * TMath::Pi() * 2;
+
+    // use `GetFluxWsyst` instead of GetCachedFlux, this takes care of the flux systematics
+    Double_t atm_count_e = GetFluxWsyst(ELEC, te.GetIsNB(), e_bin, ct_bin, proxymap) / flux_conv;
+    Double_t atm_count_m = GetFluxWsyst(MUON, te.GetIsNB(), e_bin, ct_bin, proxymap) / flux_conv;
+
+    if ( te.GetIsCC() ) {
+
+      //create trueB object to access cached oscillation probabilities
+      TrueB TB( te.GetFlav(), te.GetIsCC(), te.GetIsNB(), e_bin, ct_bin, by_bin);
+	
+      Double_t prob_elec = GetCachedOsc(ELEC, TB, proxymap);
+      Double_t prob_muon = GetCachedOsc(MUON, TB, proxymap);
+		   
+      // calculate the oscillated differential flux for the neutrino type
+      Double_t oscf = atm_count_e*prob_elec + atm_count_m*prob_muon;
+
+      // apply tau normalisation
+      if ( te.GetFlav() == TAU ) oscf *= *( proxymap.at( (TString)fTau_norm->GetName() ) );
+
+      det_count += te.GetW1y() * oscf;
+      det_err++;
+		      
+    }
+    else {
+
+      // for NC, the xsec and meff for all flavors are the ~same. For this reason, only elec-NC are simulated.
+      // For this calculation, however, the NC flux of muons and tau's also needs to be taken into account.
+      // The calculation for CC events after oscillation is osc_flux * xsec_{flavor} * meff_{flavor}. As
+      // xsec_{flavor} and meff_{flavor} are the same for elec, muon, tau for NC events, the calculation
+      // can be simplified and the oscillated flux is just equal to the un-oscillated elec+muon flux
+
+      Double_t oscf = atm_count_e + atm_count_m;
+
+      // calculate the fraction of tau events in the total flux to apply tau normalisation also to NC events
+      TrueB TB_tau( TAU, kFALSE, te.GetIsNB(), e_bin, ct_bin, by_bin );	
+      Double_t prob_e_tau  = GetCachedOsc(ELEC, TB_tau, proxymap); // probability for elec->tau
+      Double_t prob_mu_tau = GetCachedOsc(MUON, TB_tau, proxymap); // probability for muon->tau
+      Double_t oscf_tau    = atm_count_e*prob_e_tau + atm_count_m*prob_mu_tau; // oscillated tau flux
+
+      oscf = oscf + oscf_tau * ( *( proxymap.at( (TString)fTau_norm ->GetName() ) ) - 1 );
+
+      // apply NC normalisation
+      oscf *= *( proxymap.at( (TString)fNC_norm ->GetName() ) );
+
+      det_count += te.GetW1y() * oscf;
+      det_err++;
+	
+    }
+
+  } // end loop over true events
+
+  // convert the error to the fraction of the neutrino events
+  det_err = TMath::Sqrt(det_err)/det_err * det_count;
+
+  if ( AddMuonsNoise ) {
+
+    auto muons = resp->GetAtmMuCount1y(E_reco, Ct_reco, By_reco);
+    auto noise = resp->GetNoiseCount1y(E_reco, Ct_reco, By_reco);
+    det_count += muons.first * fOpTime;
+    det_count += noise.first * fOpTime;
+    Double_t errsq = det_err * det_err + 
+      TMath::Power(muons.second, 2) * fOpTime + TMath::Power(noise.second, 2) * fOpTime;
+
+    det_err = TMath::Sqrt( errsq );
+  }
+
+  return std::make_pair( det_count, det_err );
+
 }
 
 //***************************************************************************************

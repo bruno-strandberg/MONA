@@ -145,12 +145,12 @@ class AsimovFit {
   std::map<Detector, TString> fDetStrings = { {ORCA20, "ORCA20"}, {ORCA23, "ORCA23"} };
 
   std::map<Detector, TString> fSimFiles = { 
-    { ORCA20, (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_ORCA115_20x9m_ECAP1218.root" }, 
-    { ORCA23, (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root" } };
+    { ORCA20, (TString)getenv("MONADIR") + "/data/ORCA_MCsummary_SEv2_ORCA115_20x9m_ECAP190222.root" }, 
+    { ORCA23, (TString)getenv("MONADIR") + "/data/ORCA_MCsummary_SEv2_ORCA115_23x9m_ECAP190222.root" } };
 
   std::map<Detector, TString> fEffmFiles = { 
-    { ORCA20, (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_20x9m_ECAP1218.root" }, 
-    { ORCA23, (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root" } };
+    { ORCA20, (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_20x9m_ECAP190222.root" }, 
+    { ORCA23, (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP190222.root" } };
 
   //---------------------------------------------------------------------------
   // member variables
@@ -174,7 +174,7 @@ class AsimovFit {
   Double_t fFitEmin  =  3;
   Double_t fFitEmax  = 80;
   Double_t fFitCTmin = -1;
-  Double_t fFitCTmax =  0;
+  Double_t fFitCTmax =  -1e-5;
   Double_t fFitBYmin =  0;
   Double_t fFitBYmax =  1;
 

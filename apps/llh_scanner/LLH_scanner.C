@@ -1,11 +1,14 @@
 
 //nmh headers
+#include "AbsResponse.h"
 #include "DetResponse.h"
+#include "EvtResponse.h"
 #include "FitUtilWsyst.h"
 #include "SummaryEvent.h"
 #include "SummaryParser.h"
 #include "EffMass.h"
 #include "FitPDF.h"
+#include "NMHUtils.h"
 
 //root and roofit headers
 #include "RooArgList.h"
@@ -21,6 +24,8 @@
 #include "TStopwatch.h"
 #include "RooConstVar.h"
 #include "RooGaussian.h"
+#include "TGraph.h"
+#include "TF2.h"
 
 //jpp headers
 #include "JTools/JRange.hh"
@@ -41,12 +46,12 @@ namespace LLHSCAN {
     Double_t pid_max;
     Double_t muon_cut;
     Double_t noise_cut;
-    DetResponse::reco reco;
+    AbsResponse::reco reco;
     TString  name;
 
-    PIDBIN() : pid_min(0), pid_max(0), muon_cut(0), noise_cut(0), reco(DetResponse::shower), name("") {}
+    PIDBIN() : pid_min(0), pid_max(0), muon_cut(0), noise_cut(0), reco(AbsResponse::shower), name("") {}
     PIDBIN(Double_t _pid_min, Double_t _pid_max, Double_t _muon_cut, Double_t _noise_cut, 
-	   DetResponse::reco _reco, TString _name) {
+	   AbsResponse::reco _reco, TString _name) {
       pid_min   = _pid_min;
       pid_max   = _pid_max;
       muon_cut  = _muon_cut;
@@ -114,10 +119,10 @@ int main(const int argc, const char **argv) {
   vector<double> _noise_cuts = {0.03, 0.03, 0.03};   // default noise suppression cuts
   vector<string> _reco       = {"shw","shw","comb"}; // default reco's
 
-  std::map<string, DetResponse::reco> recomap = { {"mc"  , DetResponse::mc_truth},
-						  {"trk" , DetResponse::track},
-						  {"shw" , DetResponse::shower},
-						  {"comb", DetResponse::customreco} };
+  std::map<string, AbsResponse::reco> recomap = { {"mc"  , AbsResponse::mc_truth},
+						  {"trk" , AbsResponse::track},
+						  {"shw" , AbsResponse::shower},
+						  {"comb", AbsResponse::customreco} };
 
   //======================================================
   // parse command line arguments
@@ -140,6 +145,7 @@ int main(const int argc, const char **argv) {
   vector<string> fixed_pars;
   Bool_t profileLLH;
   Bool_t IO;
+  Bool_t evtResp;
 
   try {
 
@@ -168,10 +174,25 @@ int main(const int argc, const char **argv) {
     zap['w'] = make_field(profileLLH, "In addition to LLH scans, create a profile LLH scan. This will take more time, as at each point in the plot a fit is performed");
     zap['z'] = make_field(fixed_pars, "Names of the parameters to be fixed - this only affects profile LLH scans") = std::vector<string> {};
     
+    zap['e'] = make_field(evtResp, "Use event-by-event detector response (EvtResponse), instead of binned response (DetResponse). Note that this is approx 10 times slower. EvtResponse does not work with pseudodata, so a datafileneeds to be specified. The use of EvtResponse does not require an effective mass file, this can remain default.");
+
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
   catch(const exception &error) {
     FATAL(error.what() << endl);
+  }
+
+  if (evtResp) { cout << "NOTICE LLH_scanner: using event-by-event detector response" << endl; }
+  else         { cout << "NOTICE LLH_scanner: using binned detector response" << endl; }
+
+  // EvtResponse does not work with pseudo-data
+  if (evtResp && data_file == pseudo_data) {
+    throw std::invalid_argument("ERROR! LLH_scanner: EvtResponse requires actual ORCA MC summary data");
+  }
+
+  // Check that datafile and effective mass file match
+  if ( data_file != pseudo_data && meff_file != EffMass::DUMMYFILE ) {
+    if ( !NMHUtils::DatatagMatch( data_file, meff_file) ) throw std::invalid_argument("ERROR! LLH_scanner: datatag mismatch between the input MC summary file and the effective mass file.");
   }
 
   // if not specified use default values
@@ -269,23 +290,30 @@ int main(const int argc, const char **argv) {
   // init the responses and fill
   //---------------------
 
-  std::map< TString, DetResponse* > resps;
+  std::map< TString, AbsResponse* > resps;
 
   for (UInt_t i = 0; i < pidbins.size(); i++) {
 
     PIDBIN PB = pidbins[i];
     TString name = PB.name+"R";
-    DetResponse *resp = new DetResponse( PB.reco, PB.name+"R", nebins, 1, 100, nctbins, -1, 1, nbybins, 0, 1 );
+    AbsResponse *resp;
+
+    if ( evtResp ) {
+      resp = new EvtResponse( PB.reco, PB.name+"R", nebins, 1, 100, nctbins, -1, 1, nbybins, 0, 1 );
+    }
+    else {
+      resp = new DetResponse( PB.reco, PB.name+"R", nebins, 1, 100, nctbins, -1, 1, nbybins, 0, 1 );
+    }
 
     // decide which reco quality must be checked
-    if ( PB.reco == DetResponse::track ) {
+    if ( PB.reco == AbsResponse::track ) {
       resp->AddCut( &SummaryEvent::Get_track_ql0 , std::greater<double>(), 0.5, true);
     }
-    else if (PB.reco == DetResponse::customreco ) {
+    else if (PB.reco == AbsResponse::customreco ) {
       resp->AddCut( &SummaryEvent::Get_track_ql0 , std::greater<double>(), 0.5, true);
       resp->SetObsFuncPtrs( &CustomEnergy, &CustomDir, &CustomPos, &CustomBY );
     }
-    else if ( PB.reco == DetResponse::shower ) {
+    else if ( PB.reco == AbsResponse::shower ) {
       resp->AddCut( &SummaryEvent::Get_shower_ql0, std::greater<double>(), 0.5, true);
     }
     
@@ -327,7 +355,8 @@ int main(const int argc, const char **argv) {
 
   // init fitutil and pdf's, create data
   //---------------------
-  FitUtilWsyst fu(run_time, resps.begin()->second->GetHist3D(), 3, 65, -1, -1e-3, 0, 1, meff_file);
+  FitUtilWsyst fu(run_time, resps.begin()->second->GetHist3DTrue(), resps.begin()->second->GetHist3DReco(), 
+		  3, 65, -1, -1e-3, 0, 1, meff_file);
 
   std::map< TString, FitPDF* > pdfs;
   for (auto &R: resps) {
@@ -417,10 +446,6 @@ int main(const int argc, const char **argv) {
   // create the LLH scanners, for each PID bin and simultaneous
   //======================================================
   
-  TString title = TString("-Log(L) scan in ") + (TString)var->GetName();
-  RooPlot frame( *var, var->getMin(), var->getMax(), npoints );
-  frame.SetNameTitle(title, title);
-
   vector<RooDataHist*> rfdata; // pointers for clean-up
   std::map<TString, RooNLLVar*> nlls;
 
@@ -451,25 +476,66 @@ int main(const int argc, const char **argv) {
   // do the plotting, write plots to output
   //======================================================
 
+  TString title = TString("-Log(L) scan in ") + (TString)var->GetName();
+
   cout << "=====================================================================" << endl;
   cout << "NOTICE LLH_scanner: scanning LLH in variable " << var->GetName() << " in range " 
-       << var->getMin() << " - " << var->getMax() << endl;
+       << var->getMin() << " - " << var->getMax() << ", " << " nr of points " << npoints << endl;
   cout << "=====================================================================" << endl;
 
-  // plot all LLH curves
-  Int_t i = 0;
+  std::map<TString, TGraph*> graphs;
+
+  // plot all LLH curves. In principle, this could be achieved with nll->plotOn(frame), but identical
+  // behaviour can be obtained, much faster, with just doing nll->getVal(). There seems to be some
+  // integration overhead in plotOn.
+
+  Int_t style = 0;                       // counter for line color and style
+  TF2 shifter("shifter", "y - [0]", 1);  // function to help shift the Y values to start from 0
+
   for (auto N: nlls) {
-    N.second->plotOn( &frame, LineColor(1+i), ShiftToZero(), LineStyle(1+i), Name( N.first ) );
+
+    // create graph
+    TString name = "llhscan_" + N.first;
+    TGraph *gnll = new TGraph();
+    gnll->SetNameTitle( name, title + ", " + N.first );
+
+    // save the default value
+    Double_t X_default = var->getVal();
+
+    // go over scan range
+    for (Double_t X = var->getMin(); X <= var->getMax(); X += ( var->getMax() - var->getMin() )/npoints ) {
+      var->setVal(X);
+      gnll->SetPoint( gnll->GetN(), X, N.second->getVal() );
+    }
+
+    // find the minimum Y value and shift the graph to start from 0
+    shifter.SetParameter(0, TMath::MinElement( gnll->GetN(), gnll->GetY() ) );
+    gnll->Apply( &shifter );
+
+    // set the parameter back to default
+    var->setVal( X_default );
+
+    // set the style
+    gnll->SetLineColor( 1+style );
+    gnll->SetLineStyle( 1+style );
+    gnll->SetLineWidth(2);
+
+    // store the graph
+    graphs.insert( std::make_pair(N.first, gnll) );
+
+    // increment the style
+    style++;
+
     cout << "=====================================================================" << endl;
     cout << "NOTICE LLH_scanner: scan for PID range " << N.first << " done" << endl;
     cout << "=====================================================================" << endl;
-    i++;
-  }
+
+  } // end loop over NLL functions
 
   // add a legend
   TLegend *leg1 = new TLegend(0.3, 0.6, 0.7, 0.9);
   for (auto N: nlls) {
-     leg1->AddEntry( frame.findObject( N.first ), N.first, "l" );
+     leg1->AddEntry( graphs[N.first], N.first, "l" );
   }
   leg1->SetLineWidth(0);
   leg1->SetFillStyle(0);
@@ -477,6 +543,9 @@ int main(const int argc, const char **argv) {
   //======================================================
   // if requested, perform profile LLH scan
   //======================================================
+
+  RooPlot frame( *var, var->getMin(), var->getMax(), npoints );
+  frame.SetNameTitle(title, title);
   
   if (profileLLH) {
 
@@ -496,7 +565,7 @@ int main(const int argc, const char **argv) {
     cout << "NOTICE LLH_scanner: started profile likelihood calculation" << endl;
     cout << "=====================================================================" << endl;
     RooAbsReal *profile = nll_comb_wp->createProfile( *var );
-    profile->plotOn( &frame, LineColor(i+1), LineStyle(i+1), ShiftToZero(), Name("profileLLH") );
+    profile->plotOn( &frame, LineColor(style+1), LineStyle(style+1), ShiftToZero(), Name("profileLLH") );
     leg1->AddEntry( frame.findObject( "profileLLH" ), "profileLLH", "l" );
      
   }
@@ -507,6 +576,7 @@ int main(const int argc, const char **argv) {
   pars_data->Write("Parameters");
   for (auto E: exphists)     E.second->Write( (TString)E.first );
   for (auto E: exphists_err) E.second->Write( (TString)E.first + TString("_err") );
+  for (auto g: graphs)       g.second->Write();
   fout.Close();
 
   // clean-up
@@ -516,6 +586,7 @@ int main(const int argc, const char **argv) {
   for (auto E: exphists_err) if (E.second) delete E.second;
   for (auto d: rfdata) if (d) delete d;
   for (auto n: nlls) if (n.second) delete n.second;
+  for (auto g: graphs) if (g.second) delete g.second;
   
   cout << "NOTICE LLH_scanner: total run time [s]: " << (Double_t)timer.RealTime() << endl;
 

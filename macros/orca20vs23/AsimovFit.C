@@ -47,17 +47,8 @@ void AsimovFit::ParseInput(Detector detector) {
   fDataFile = fSimFiles[detector];
   fEffmFile = fEffmFiles[detector];
 
-  // check that datatag's match in the simulation file and the effective mass file
-  FileHeader h1("h1");
-  FileHeader h2("h2");
-
-  h1.ReadHeader(fDataFile);
-  h2.ReadHeader(fEffmFile);
-  TString datatag = "datatag";
-
-  if ( h1.GetParameter(datatag) != h2.GetParameter(datatag) ) {
-    throw std::invalid_argument("ERROR! AsimovFit::ParseInput() data-tag mismatch, found tags: " + 
-				(string)h1.GetParameter(datatag) + " and " + (string)h2.GetParameter(datatag) );
+  if ( !NMHUtils::DatatagMatch(fDataFile, fEffmFile) ) {
+    throw std::invalid_argument("ERROR! AsimovFit::ParseInput() datatag mismatch between data and effmass file");
   }
 
 }
@@ -72,28 +63,15 @@ void AsimovFit::InitResponses(Detector detector) {
   TString trkresp = fDetStr + "_trkresp";
   TString shwresp = fDetStr + "_shwresp";
 
-  // track response - same irrespective of the detector
+  // track response
   fTrkResp = new DetResponse(DetResponse::track, trkresp, fNebins, 1, 100, fNctbins, -1, 1, fNbybins, 0, 1);
-  fTrkResp->AddCut( &SummaryEvent::Get_track_ql1      , std::greater<double>(), 0.5, true );
+  fTrkResp->AddCut( &SummaryEvent::Get_track_ql2      , std::greater<double>(), 0.5, true );
   fTrkResp->AddCut( &SummaryEvent::Get_RDF_track_score, std::greater<double>(), 0.6, true );
 
-  // shower response - the quality level cut is different for different geometries
-  // due to bug-matching, see `apps/data_sorting/PIDGammaToSummary.C`
+  // shower response
   fShwResp = new DetResponse(DetResponse::shower, shwresp, fNebins, 1, 100, fNctbins, -1, 1, fNbybins, 0, 1);
+  fShwResp->AddCut( &SummaryEvent::Get_shower_ql2     , std::greater<double>()   , 0.5, true);  
   fShwResp->AddCut( &SummaryEvent::Get_RDF_track_score, std::less_equal<double>(), 0.6, true);
-  
-  switch (detector) {
-   
-  case ORCA20:
-    fShwResp->AddCut( &SummaryEvent::Get_shower_ql2, std::greater<double>(), 0.5, true);
-    break;
-  case ORCA23:
-    fShwResp->AddCut( &SummaryEvent::Get_shower_ql1, std::greater<double>(), 0.5, true);
-    break;
-    
-  default:
-    throw std::invalid_argument("ERROR! AsimovFit::InitResponses() unknown detector."); 
-  }
   
   //-----------------------------------------------------------------------
   // fill; if possible read from file
@@ -489,7 +467,7 @@ std::tuple<Double_t, Double_t, Double_t> AsimovFit::GetChi2(fitpacket &fp, Bool_
 
   // additional chi2 term from the constraint on theta-13
   Double_t th13_fit     = ( (RooRealVar*)fitres->floatParsFinal().find("SinsqTh13") )->getVal();
-  Double_t th13_fit_err = ( (RooRealVar*)fitres->floatParsFinal().find("SinsqTh13") )->getError();
+  //Double_t th13_fit_err = ( (RooRealVar*)fitres->floatParsFinal().find("SinsqTh13") )->getError();
   Double_t chi2_th13 = TMath::Power(th13_fit - fTh13mean, 2)/(fTh13sigma*fTh13sigma);
 
   Double_t trkX2  = chi2_trk.getVal();

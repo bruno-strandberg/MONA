@@ -61,6 +61,7 @@ FitUtil::FitUtil(Double_t op_time, TH3 *h_temp_T, TH3* h_temp_R,
   FillFluxCache(fFlux, fOpTime, fFluxSamplesN);
   FillXsecMeffCache(fXsec, fMeff);
 
+  fAddAtmMuNoise      = kFALSE;
   fOscSamplesN        = 1;
   f_cache_oscsamplesn = 0;
   
@@ -909,141 +910,201 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
     throw exception;
   }  
 
-  Double_t det_count = 0.;
-  Double_t det_err   = 0.;
+  //----------------------------------------------------------------------------------
+  // reco events calculation depending on the response type
+  //----------------------------------------------------------------------------------
 
-  //----------------------------------------------------------------------------------
-  // perform the BinnedResponse calculation
-  //----------------------------------------------------------------------------------
+  std::pair< Double_t, Double_t > recoevts;
     
   if ( resp->GetResponseType() == AbsResponse::BinnedResponse ) {
-
-    //----------------------------------------------------------------------------------
-    // if any of the fit parameters has changed re-calculate the TrueEvts cache
-    //----------------------------------------------------------------------------------
-
-    if ( CheckVarCache(proxymap) ) {
-      FillTECache(proxymap);
-      UpdateVarCache(proxymap); // this function makes sure that the cache values of all variables is updated
-    }
-    
-    auto true_bins = ((DetResponse*)resp)->GetBinWeights( E_reco, Ct_reco, By_reco );
-	  
-    for (const auto &tb: true_bins) {
-	    
-      if (tb.fIsCC) {
-	      
-	Double_t TE = GetCachedTE(tb).first;
-
-	det_count += tb.fW * TE;
-	det_err   += TMath::Power(tb.fWE * TE, 2);
-	      
-      }
-      else {
-
-	Double_t TE = 0.;
-
-	/* for NC events the response only says how the elec-NC events from the considered true bin contribute to the reco-bin. However, in the flux chain we have we also have a contribution from muon-NC and tau-NC true bin to the reco bin, which are assumed to look identical to the detector as elec-NC (this is why we only simulate elec-NC). Hence for NC events I need to add `TrueEvts` contributions from the three NC flavours */
-
-	TrueB elecTB( tb );
-	TrueB muonTB( tb );
-	TrueB tauTB ( tb );
-	elecTB.fFlav = ELEC;
-	muonTB.fFlav = MUON;
-	tauTB.fFlav  = TAU;
-	      
-	TE += GetCachedTE(elecTB).first;
-	TE += GetCachedTE(muonTB).first;
-	TE += GetCachedTE(tauTB).first;
-	      
-	det_count += tb.fW * TE;
-	det_err   += TMath::Power(tb.fWE * TE, 2);
-
-      }
-
-    } // end loop over true bins
-    
-    det_err = TMath::Sqrt(det_err);
-    
+    recoevts = RecoEvtsDR( E_reco, Ct_reco, By_reco, dynamic_cast<DetResponse*>(resp), proxymap, fAddAtmMuNoise);
   }
-
-  //----------------------------------------------------------------------------------
-  // perform the EvtResponse calculation
-  //----------------------------------------------------------------------------------
-
   else if ( resp->GetResponseType() == AbsResponse::EvtResponse ) {
-  
-    auto true_evts = ((EvtResponse*)resp)->GetBinEvts( E_reco, Ct_reco, By_reco );
-
-    for (const auto &te: true_evts) {
-
-      // find bin coordinates for retrieving info for the cache
-      Int_t e_bin  = fHBT->GetXaxis()->FindBin( te.GetTrueE() );
-      Int_t ct_bin = fHBT->GetYaxis()->FindBin( te.GetTrueCt() );
-      Int_t by_bin = fHBT->GetZaxis()->FindBin( te.GetTrueBy() );
-
-      // get bin widths to calculate differential flux from the cache
-      Double_t ew  = fHBT->GetXaxis()->GetBinWidth(e_bin);
-      Double_t ctw = fHBT->GetYaxis()->GetBinWidth(ct_bin);
-
-      // calculate constant to convert back to differential flux and calculate the fluxes
-      Double_t flux_conv = ew * ctw * fSec_per_y * TMath::Pi() * 2;
-      Double_t atm_count_e = GetCachedFlux(ELEC, te.GetIsNB(), e_bin, ct_bin) / flux_conv;
-      Double_t atm_count_m = GetCachedFlux(MUON, te.GetIsNB(), e_bin, ct_bin) / flux_conv;
-
-      if ( te.GetIsCC() ) {
-
-	//create trueB object to access cached oscillation probabilities
-	TrueB TB( te.GetFlav(), te.GetIsCC(), te.GetIsNB(), e_bin, ct_bin, by_bin);
-	
-	Double_t prob_elec = GetCachedOsc(ELEC, TB, proxymap);
-	Double_t prob_muon = GetCachedOsc(MUON, TB, proxymap);
-		   
-	// calculate the oscillated differential flux for the neutrino type
-	Double_t oscf = atm_count_e*prob_elec + atm_count_m*prob_muon;
-
-	det_count += te.GetW1y() * oscf;
-	det_err++;
-		      
-      }
-      else {
-
-	// for NC, the xsec and meff for all flavors are the ~same. For this reason, only elec-NC are simulated.
-	// For this calculation, however, the NC flux of muons and tau's also needs to be taken into account.
-	// The calculation for CC events after oscillation is osc_flux * xsec_{flavor} * meff_{flavor}. As
-	// xsec_{flavor} and meff_{flavor} are the same for elec, muon, tau for NC events, the calculation
-	// can be simplified and the oscillated flux is just equal to the un-oscillated elec+muon flux
-
-	Double_t oscf = atm_count_e + atm_count_m;
-	det_count += te.GetW1y() * oscf;
-	det_err++;
-	
-      }
-
-    } // end loop over true events
-
-    det_err = TMath::Sqrt(det_err)/det_err * det_count;
-
-  //----------------------------------------------------------------------------------
-  // unknown response type, throw error
-  //----------------------------------------------------------------------------------
-    
-  }
+    recoevts = RecoEvtsER( E_reco, Ct_reco, By_reco, dynamic_cast<EvtResponse*>(resp), proxymap, fAddAtmMuNoise);
+  }    
   else {
     throw std::invalid_argument("ERROR! FitUtil::RecoEvts() unknown response type " + (string)typeid( *resp ).name() );
   }
   
-  // should you wish to add atm muons and noise at some point
-  //det_count += resp->GetAtmMuCount1y(E_reco, ct_reco, by_reco) * fOpTime;
-  //det_count += resp->GetNoiseCount1y(E_reco, ct_reco, by_reco) * fOpTime;
-
-  // finally, convert the event counts in reco bin to event density
+  // convert the event counts in reco bin to event density
   Double_t e_w  = fHBR->GetXaxis()->GetBinWidth( fHBR->GetXaxis()->FindBin( E_reco )  );
   Double_t ct_w = fHBR->GetYaxis()->GetBinWidth( fHBR->GetYaxis()->FindBin( Ct_reco ) );
   Double_t by_w = fHBR->GetZaxis()->GetBinWidth( fHBR->GetZaxis()->FindBin( By_reco ) );
   Double_t binw = e_w * ct_w * by_w;
   
-  return std::make_pair(det_count/binw, det_err/binw);
+  return std::make_pair(recoevts.first/binw, recoevts.second/binw);
+
+}
+
+//***************************************************************************
+
+/** This function calculates the expectation value in a reco bin using the binned response `DetResponse`.
+
+    \param E_reco         Reco energy
+    \param Ct_reco        Reco cos-theta
+    \param By_reco        Reco bjorken-y
+    \param resp           Pointer to `DetResponse` instance
+    \param proxymap       A proxy map with `RooFit` variables from `FitPDF` that contains the shared fit parameters, including oscillation parameters.
+    \param AttMuonsNoise Add atmospheric muon and noise events
+    \return              a pair with the number of events in a bin and the associated statistical uncertainty
+*/
+std::pair< Double_t, Double_t > FitUtil::RecoEvtsDR(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+						    DetResponse *resp, const proxymap_t &proxymap, 
+						    Bool_t AddMuonsNoise) {
+
+  Double_t det_count = 0.;
+  Double_t det_err   = 0.;
+
+  //----------------------------------------------------------------------------------
+  // if any of the fit parameters has changed re-calculate the TrueEvts cache
+  //----------------------------------------------------------------------------------
+
+  if ( CheckVarCache(proxymap) ) {
+    FillTECache(proxymap);
+    UpdateVarCache(proxymap); // this function makes sure that the cache values of all variables is updated
+  }
+ 
+  //----------------------------------------------------------------------------------
+  // get the true bins of this reco bin and accumulate signal
+  //----------------------------------------------------------------------------------
+  
+  auto true_bins = resp->GetBinWeights( E_reco, Ct_reco, By_reco );
+	  
+  for (const auto &tb: true_bins) {
+	    
+    if (tb.fIsCC) {
+	      
+      Double_t TE = GetCachedTE(tb).first;
+
+      det_count += tb.fW * TE;
+      det_err   += TMath::Power(tb.fWE * TE, 2);
+	      
+    }
+    else {
+
+      Double_t TE = 0.;
+
+      /* for NC events the response only says how the elec-NC events from the considered true bin contribute to the reco-bin. However, in the flux chain we have we also have a contribution from muon-NC and tau-NC true bin to the reco bin, which are assumed to look identical to the detector as elec-NC (this is why we only simulate elec-NC). Hence for NC events I need to add `TrueEvts` contributions from the three NC flavours */
+
+      TrueB elecTB( tb );
+      TrueB muonTB( tb );
+      TrueB tauTB ( tb );
+      elecTB.fFlav = ELEC;
+      muonTB.fFlav = MUON;
+      tauTB.fFlav  = TAU;
+	      
+      TE += GetCachedTE(elecTB).first;
+      TE += GetCachedTE(muonTB).first;
+      TE += GetCachedTE(tauTB).first;
+	      
+      det_count += tb.fW * TE;
+      det_err   += TMath::Power(tb.fWE * TE, 2);
+
+    }
+
+  } // end loop over true bins
+    
+  if ( AddMuonsNoise ) {
+
+    auto muons = resp->GetAtmMuCount1y(E_reco, Ct_reco, By_reco);
+    auto noise = resp->GetNoiseCount1y(E_reco, Ct_reco, By_reco);
+    det_count += muons.first * fOpTime;
+    det_count += noise.first * fOpTime;
+    det_err   += TMath::Power(muons.second, 2) * fOpTime;
+    det_err   += TMath::Power(noise.second, 2) * fOpTime;
+
+  }
+
+  det_err = TMath::Sqrt(det_err);
+
+  return std::make_pair( det_count, det_err );
+  
+}
+
+//***************************************************************************
+
+/** This function calculates the expectation value in a reco bin using the event-by-event response `EvtResponse`.
+
+    \param E_reco        Reco energy
+    \param Ct_reco       Reco cos-theta
+    \param By_reco       Reco bjorken-y
+    \param resp          Pointer to `DetResponse` instance
+    \param proxymap      A proxy map with `RooFit` variables from `FitPDF` that contains the shared fit parameters, including oscillation parameters.
+    \param AttMuonsNoise Add atmospheric muon and noise events
+    \return              a pair with the number of events in a bin and the associated statistical uncertainty */
+
+std::pair< Double_t, Double_t > FitUtil::RecoEvtsER(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+						    EvtResponse *resp, const proxymap_t &proxymap,
+						    Bool_t AddMuonsNoise) {
+
+  Double_t det_count = 0.;
+  Double_t det_err   = 0.;
+
+  auto true_evts = resp->GetBinEvts( E_reco, Ct_reco, By_reco );
+
+  for (const auto &te: true_evts) {
+
+    // find bin coordinates for retrieving info for the cache
+    Int_t e_bin  = fHBT->GetXaxis()->FindBin( te.GetTrueE() );
+    Int_t ct_bin = fHBT->GetYaxis()->FindBin( te.GetTrueCt() );
+    Int_t by_bin = fHBT->GetZaxis()->FindBin( te.GetTrueBy() );
+
+    // get bin widths to calculate differential flux from the cache
+    Double_t ew  = fHBT->GetXaxis()->GetBinWidth(e_bin);
+    Double_t ctw = fHBT->GetYaxis()->GetBinWidth(ct_bin);
+
+    // calculate constant to convert back to differential flux and calculate the fluxes
+    Double_t flux_conv = ew * ctw * fSec_per_y * TMath::Pi() * 2;
+    Double_t atm_count_e = GetCachedFlux(ELEC, te.GetIsNB(), e_bin, ct_bin) / flux_conv;
+    Double_t atm_count_m = GetCachedFlux(MUON, te.GetIsNB(), e_bin, ct_bin) / flux_conv;
+
+    if ( te.GetIsCC() ) {
+
+      //create trueB object to access cached oscillation probabilities
+      TrueB TB( te.GetFlav(), te.GetIsCC(), te.GetIsNB(), e_bin, ct_bin, by_bin);
+	
+      Double_t prob_elec = GetCachedOsc(ELEC, TB, proxymap);
+      Double_t prob_muon = GetCachedOsc(MUON, TB, proxymap);
+		   
+      // calculate the oscillated differential flux for the neutrino type
+      Double_t oscf = atm_count_e*prob_elec + atm_count_m*prob_muon;
+
+      det_count += te.GetW1y() * oscf;
+      det_err++;
+		      
+    }
+    else {
+
+      // for NC, the xsec and meff for all flavors are the ~same. For this reason, only elec-NC are simulated.
+      // For this calculation, however, the NC flux of muons and tau's also needs to be taken into account.
+      // The calculation for CC events after oscillation is osc_flux * xsec_{flavor} * meff_{flavor}. As
+      // xsec_{flavor} and meff_{flavor} are the same for elec, muon, tau for NC events, the calculation
+      // can be simplified and the oscillated flux is just equal to the un-oscillated elec+muon flux
+
+      Double_t oscf = atm_count_e + atm_count_m;
+      det_count += te.GetW1y() * oscf;
+      det_err++;
+	
+    }
+
+  } // end loop over true events
+
+  // convert the error to the fraction of the neutrino events
+  det_err = TMath::Sqrt(det_err)/det_err * det_count;
+
+  if ( AddMuonsNoise ) {
+
+    auto muons = resp->GetAtmMuCount1y(E_reco, Ct_reco, By_reco);
+    auto noise = resp->GetNoiseCount1y(E_reco, Ct_reco, By_reco);
+    det_count += muons.first * fOpTime;
+    det_count += noise.first * fOpTime;
+    Double_t errsq = det_err * det_err + 
+      TMath::Power(muons.second, 2) * fOpTime + TMath::Power(noise.second, 2) * fOpTime;
+
+    det_err = TMath::Sqrt( errsq );
+  }
+
+  return std::make_pair( det_count, det_err );
 
 }
 

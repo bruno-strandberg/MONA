@@ -27,11 +27,11 @@ void effmass(Int_t nu_pdg = 14, Bool_t iscc = 1, TString outname = "") {
     throw std::invalid_argument("ERROR! effmass() Unknown neutrino flavor, supported are +- 12, 14, 16");
   }
 
-  TString effmf_orca23 = "../../data/eff_mass/EffMass_ORCA115_23x9m_ECAP0418.root";
-  TString effmf_orca20 = "../../data/eff_mass/EffMass_ORCA115_20x9m_ECAP1218.root";
+  TString effmf_orca23 = "../../data/eff_mass/EffMass_ORCA115_23x9m_ECAP190222.root";
+  TString effmf_orca20 = "../../data/eff_mass/EffMass_ORCA115_20x9m_ECAP190222.root";
 
-  TString dataf_orca23 = "../../data/ORCA_MC_summary_ORCA115_23x9m_ECAP0418.root";
-  TString dataf_orca20 = "../../data/ORCA_MC_summary_ORCA115_20x9m_ECAP1218.root";
+  TString dataf_orca23 = "../../data/ORCA_MCsummary_SEv2_ORCA115_23x9m_ECAP190222.root";
+  TString dataf_orca20 = "../../data/ORCA_MCsummary_SEv2_ORCA115_20x9m_ECAP190222.root";
 
   Int_t nebins  = 40;
   Int_t nctbins = 4;
@@ -44,12 +44,12 @@ void effmass(Int_t nu_pdg = 14, Bool_t iscc = 1, TString outname = "") {
   EffMass *orca20em = new EffMass(effmf_orca20, nebins, nctbins, 1);
 
   DetResponse r_orca23(DetResponse::mc_truth, "resp_orca23", nebins, 1, 100, nctbins, -1, 1, 1, 0, 1);
-  r_orca23.AddCut( &SummaryEvent::Get_track_ql1 , std::greater<double>(), 0.5, false ); // this is "gandalf_loose_is_selected", see 'apps/data_sorting/PIDAlphaToSummary'
-  r_orca23.AddCut( &SummaryEvent::Get_shower_ql1, std::greater<double>(), 0.5, false ); // this is "dusj_is_selected", see 'apps/data_sorting/PIDAlphaToSummary'
+  r_orca23.AddCut( &SummaryEvent::Get_track_ql1 , std::greater<double>(), 0.5, false );
+  r_orca23.AddCut( &SummaryEvent::Get_shower_ql1, std::greater<double>(), 0.5, false );
 
   DetResponse r_orca20(DetResponse::mc_truth, "resp_orca20", nebins, 1, 100, nctbins, -1, 1, 1, 0, 1);
-  r_orca20.AddCut( &SummaryEvent::Get_track_ql1 , std::greater<double>(), 0.5, false ); // this is "gandalf_loose_is_selected", see 'apps/data_sorting/PIDGammaToSummary'
-  r_orca20.AddCut( &SummaryEvent::Get_shower_ql2, std::greater<double>(), 0.5, false ); // this is dusj selection as in 23x9, see 'apps/data_sorting/PIDGammaToSummary'
+  r_orca20.AddCut( &SummaryEvent::Get_track_ql1 , std::greater<double>(), 0.5, false );
+  r_orca20.AddCut( &SummaryEvent::Get_shower_ql1, std::greater<double>(), 0.5, false );
 
   // here I add cuts that are common to both selections to select neutrino events of the type
   // specified at input
@@ -62,14 +62,14 @@ void effmass(Int_t nu_pdg = 14, Bool_t iscc = 1, TString outname = "") {
 
   SummaryParser sp_orca23(dataf_orca23);
   for (Int_t i = 0; i < sp_orca23.GetTree()->GetEntries(); i++) {
-    if ( i % 1000000 == 0) cout << "Event: " << i << " of " << sp_orca23.GetTree()->GetEntries() << endl;
+    if ( i % 1000000 == 0) cout << "Event: " << i << "/" << sp_orca23.GetTree()->GetEntries() << endl;
     r_orca23.Fill( sp_orca23.GetEvt(i) );
   }
   cout << "NOTICE ORCA 23x9 response ready" << endl;
 
   SummaryParser sp_orca20(dataf_orca20);
   for (Int_t i = 0; i < sp_orca20.GetTree()->GetEntries(); i++) {
-    if ( i % 1000000 == 0) cout << "Event: " << i << " of " << sp_orca20.GetTree()->GetEntries() << endl;
+    if ( i % 1000000 == 0) cout << "Event: " << i << "/" << sp_orca20.GetTree()->GetEntries() << endl;
     r_orca20.Fill( sp_orca20.GetEvt(i) );
   }
   cout << "NOTICE ORCA 20x9 response ready" << endl;
@@ -191,8 +191,8 @@ void effmass(Int_t nu_pdg = 14, Bool_t iscc = 1, TString outname = "") {
   Int_t pad = 1;
   for (auto slice: slices) {
     c1->cd(pad);
-    std::get<1>(slice)->Draw("HIST");
-    std::get<0>(slice)->Draw("HISTsame");
+    std::get<0>(slice)->Draw("HIST");
+    std::get<1>(slice)->Draw("HISTsame");
     std::get<2>(slice)->Draw("HISTsame");
     std::get<3>(slice)->Draw("HISTsame");
     leg->Draw();

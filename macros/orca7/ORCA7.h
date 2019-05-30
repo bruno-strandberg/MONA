@@ -6,7 +6,9 @@ using namespace std;
 
 #include "NMHUtils.h"
 #include "SummaryEvent.h"
+#include "AbsResponse.h"
 #include "DetResponse.h"
+#include "EvtResponse.h"
 #include "SummaryParser.h"
 #include "FitUtilWsyst.h"
 #include "FitPDF.h"
@@ -97,7 +99,7 @@ namespace O7 {
 struct ORCA7 {
 
   /** Constructor */
-  ORCA7(Bool_t ReadResponses);
+  ORCA7(Bool_t ReadResponses, Bool_t UseEvtResp=kFALSE);
   ~ORCA7();
 
   // functions for parameter manipulation
@@ -108,8 +110,8 @@ struct ORCA7 {
   //*********************************************************************************************
   //*********************************************************************************************
 
-  TString fDataF  = (TString)getenv("MONADIR") + "/data/ORCA_MC_summary_ORCA7_23x9m_ECAP1018.root";
-  TString fEffmF  = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP1018.root";
+  TString fDataF  = (TString)getenv("MONADIR") + "/data/ORCA_MCsummary_SEv2_ORCA7_23x9m_ECAP181013.root";
+  TString fEffmF  = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP181013.root";
 
   // detector response binning configuration
   Int_t f_R_ebins    = 20;     
@@ -126,7 +128,7 @@ struct ORCA7 {
 
   // pid bin confiugraions and associated responses and pdfs
   vector< O7::PidBinConf > fPidBins;
-  std::map< TString, DetResponse*> fResps;
+  std::map< TString, AbsResponse*> fResps;
   std::map< TString, FitPDF* > fPdfs;
 
   FitUtilWsyst *fFitUtil;
@@ -150,7 +152,7 @@ struct ORCA7 {
   std::vector< fitpacket* > fFPs;
   
   // internal functions
-  void CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadResponses);
+  void CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadResponses, Bool_t UseEvtResp);
   void CreatePriors(FitUtil *F);
   void PrepareParameters(FitUtil *F);
   void AddDm31Prior(Bool_t InvertedOrdering);

@@ -36,6 +36,8 @@ int main(const int argc, const char** argv) {
   Int_t    seed;
   Int_t    ncpu;
   string   outfile;
+  Bool_t   evtResp;
+  Bool_t   llhScans;
   
   try {
 
@@ -49,6 +51,8 @@ int main(const int argc, const char** argv) {
     zap['S'] = make_field(seed, "Seed for parameter randomisation") = 416;
     zap['N'] = make_field(ncpu, "Number of CPUs for minimisation") = 1;
     zap['o'] = make_field(outfile, "Output file") = "contour.root";
+    zap['e'] = make_field(evtResp, "Use event-by-event detector response");
+    zap['l'] = make_field(llhScans, "In addition to the contour, perform LLH scans in SinsqTh23");
 
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
@@ -63,7 +67,7 @@ int main(const int argc, const char** argv) {
   TStopwatch timer;
 
   // init the class with binning info, PID ranges and responses
-  ORCA7 o7( kTRUE );
+  ORCA7 o7( kTRUE, evtResp );
   FitUtilWsyst *fu = o7.fFitUtil;
   auto pdfs = o7.fPdfs;
 
@@ -209,23 +213,28 @@ int main(const int argc, const char** argv) {
     fu->GetVar( floatpar->GetName() )->setVal( floatpar->getVal() );
   }  
   
-  // plot all LLH curves
-  Int_t i = 0;
-  for (auto N: nlls) {
-    N.second->plotOn( &frame, LineColor(1+i), ShiftToZero(), LineStyle(1+i), Name( N.first ) );
-    cout << "================================================================================" << endl;
-    cout << "NOTICE contour: finished scanning channel " << N.first << endl;
-    cout << "================================================================================" << endl;
-    i++;
-  }
-
-  // add a legend
   TLegend leg1(0.3, 0.6, 0.7, 0.9);
-  for (auto N: nlls) {
-    leg1.AddEntry( frame.findObject( N.first ), N.first, "l" );
+
+  // optinally plot all LLH curves
+  if (llhScans) {
+
+    Int_t i = 0;
+    for (auto N: nlls) {
+      N.second->plotOn( &frame, LineColor(1+i), ShiftToZero(), LineStyle(1+i), Name( N.first ) );
+      cout << "================================================================================" << endl;
+      cout << "NOTICE contour: finished scanning channel " << N.first << endl;
+      cout << "================================================================================" << endl;
+      i++;
+    }
+
+    // add to legend
+    for (auto N: nlls) {
+      leg1.AddEntry( frame.findObject( N.first ), N.first, "l" );
+    }
+    leg1.SetLineWidth(0);
+    leg1.SetFillStyle(0);
+
   }
-  leg1.SetLineWidth(0);
-  leg1.SetFillStyle(0);
 
   // clone the graphs from RooPlot for easier draw option manipulation
   TGraph *g_cont = (TGraph*)contplot->getObject(1)->Clone("g_cont");
