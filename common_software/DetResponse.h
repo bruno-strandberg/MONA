@@ -168,10 +168,20 @@ struct TrueB : public TObject {
 class DetResponse : public AbsResponse {
 
  public:
-  DetResponse(reco reco_type, TString resp_name="",
+
+  DetResponse(reco reco_type, TString resp_name,
   	      Int_t ebins  = 40, Double_t emin  =  1., Double_t emax  = 100.,
   	      Int_t ctbins = 40, Double_t ctmin = -1., Double_t ctmax = 1.,
   	      Int_t bybins =  1, Double_t bymin =  0., Double_t bymax = 1.);
+
+  DetResponse(reco reco_type, TString resp_name,
+  	      Int_t t_ebins , Double_t t_emin , Double_t t_emax ,
+  	      Int_t t_ctbins, Double_t t_ctmin, Double_t t_ctmax,
+  	      Int_t t_bybins, Double_t t_bymin, Double_t t_bymax,
+  	      Int_t r_ebins , Double_t r_emin , Double_t r_emax ,
+  	      Int_t r_ctbins, Double_t r_ctmin, Double_t r_ctmax,
+  	      Int_t r_bybins, Double_t r_bymin, Double_t r_bymax);
+
   DetResponse(TString name, const DetResponse &detresp);
   ~DetResponse();
 
