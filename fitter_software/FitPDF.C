@@ -21,6 +21,7 @@ FitPDF::FitPDF(const FitPDF& other, const char* name) : RooAbsPdf(other, name) {
   fFitUtil  = other.fFitUtil;
   fResponse = other.fResponse;
   fRand     = other.fRand;
+  fExtMode  = other.fExtMode;
 
   // re-create the proxy map
   for (auto &p: other.fProxies) {    
@@ -57,6 +58,7 @@ FitPDF::FitPDF(const char *name, const char *title, FitUtil *futil, AbsResponse 
   
   fFitUtil  = futil;
   fResponse = resp;
+  fExtMode  = RooAbsPdf::CanNotBeExtended;
   
   if ( !NMHUtils::BinsMatch( fFitUtil->GetBinningHistReco(), fResponse->GetHist3DReco() ) ||
        !NMHUtils::BinsMatch( fFitUtil->GetBinningHistTrue(), fResponse->GetHist3DTrue() ) ) {
