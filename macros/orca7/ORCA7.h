@@ -105,6 +105,8 @@ struct ORCA7 {
   // functions for parameter manipulation
   void Set_NuFit_4p0_NO();
   void Set_NuFit_4p0_IO();
+  void Set_NuFit_3p2_NO();
+  void Set_NuFit_3p2_IO();
   void RandomisePars(Bool_t InvertedOrdering, Bool_t RandomiseSyst, Int_t seed);
 
   //*********************************************************************************************

@@ -278,6 +278,45 @@ void ORCA7::Set_NuFit_4p0_NO() {
 
 //*********************************************************************************************************
 
+/** Set oscillation parameters to normal ordering and systematic parameters to default values*/
+void ORCA7::Set_NuFit_3p2_NO() {
+
+  FitUtil* F = fFitUtil;
+
+  F->FreeParLims();
+
+  F->GetVar("SinsqTh12")->setVal( 0.307 );
+  F->GetVar("SinsqTh12")->setMin( 0.272 );
+  F->GetVar("SinsqTh12")->setMax( 0.346 );
+
+  F->GetVar("SinsqTh13")->setVal( 0.02206 );
+  F->GetVar("SinsqTh13")->setMin( 0.01981 );
+  F->GetVar("SinsqTh13")->setMax( 0.02436 );
+
+  F->GetVar("SinsqTh23")->setVal( 0.538 );
+  F->GetVar("SinsqTh23")->setMin( 0.418 );
+  F->GetVar("SinsqTh23")->setMax( 0.613 );
+
+  F->GetVar("dcp")      ->setVal( 234. * TMath::DegToRad() / TMath::Pi() );
+  F->GetVar("dcp")      ->setMin( 144. * TMath::DegToRad() / TMath::Pi() );
+  F->GetVar("dcp")      ->setMax( 374. * TMath::DegToRad() / TMath::Pi() );
+
+  F->GetVar("Dm21")     ->setVal( 7.40*1e-5  );
+  F->GetVar("Dm21")     ->setMin( 6.80*1e-5  );
+  F->GetVar("Dm21")     ->setMax( 8.02*1e-5  );
+
+  F->GetVar("Dm31")     ->setVal( 2.494*1e-3 );
+  F->GetVar("Dm31")     ->setMin( 2.399*1e-3 );
+  F->GetVar("Dm31")     ->setMax( 2.593*1e-3 );
+
+  for (auto kv: fSystDefault) {
+    F->GetVar( kv.first->GetName() )->setVal( kv.second );
+  }
+
+};
+
+//*********************************************************************************************************
+
 /** Set oscillation parameters to inverted ordering and systematic parameters to default values*/
 void ORCA7::Set_NuFit_4p0_IO() {
 
@@ -308,6 +347,45 @@ void ORCA7::Set_NuFit_4p0_IO() {
   F->GetVar("Dm31")     ->setVal( -2.512*1e-3 + 7.39*1e-5 );
   F->GetVar("Dm31")     ->setMin( -2.606*1e-3 + 7.39*1e-5 );
   F->GetVar("Dm31")     ->setMax( -2.413*1e-3 + 7.39*1e-5 );
+
+  for (auto kv: fSystDefault) {
+    F->GetVar( kv.first->GetName() )->setVal( kv.second );
+  }
+
+}
+
+//*********************************************************************************************************
+
+/** Set oscillation parameters to inverted ordering and systematic parameters to default values*/
+void ORCA7::Set_NuFit_3p2_IO() {
+
+  FitUtil* F = fFitUtil;
+
+  F->FreeParLims();
+
+  F->GetVar("SinsqTh12")->setVal( 0.307   );
+  F->GetVar("SinsqTh12")->setMin( 0.272   );
+  F->GetVar("SinsqTh12")->setMax( 0.346   );
+
+  F->GetVar("SinsqTh13")->setVal( 0.02227 );
+  F->GetVar("SinsqTh13")->setMin( 0.02006 );
+  F->GetVar("SinsqTh13")->setMax( 0.02452 );
+
+  F->GetVar("SinsqTh23")->setVal( 0.554   );
+  F->GetVar("SinsqTh23")->setMin( 0.435   );
+  F->GetVar("SinsqTh23")->setMax( 0.616   );
+
+  F->GetVar("dcp")      ->setVal( 278. * TMath::DegToRad() / TMath::Pi() );
+  F->GetVar("dcp")      ->setMin( 192. * TMath::DegToRad() / TMath::Pi() );
+  F->GetVar("dcp")      ->setMax( 354. * TMath::DegToRad() / TMath::Pi() );
+
+  F->GetVar("Dm21")     ->setVal( 7.40*1e-5 );
+  F->GetVar("Dm21")     ->setMin( 6.80*1e-5  );
+  F->GetVar("Dm21")     ->setMax( 8.02*1e-5  );
+
+  F->GetVar("Dm31")     ->setVal( -2.465*1e-3 + 7.40*1e-5 );
+  F->GetVar("Dm31")     ->setMin( -2.562*1e-3 + 7.40*1e-5 );
+  F->GetVar("Dm31")     ->setMax( -2.369*1e-3 + 7.40*1e-5 );
 
   for (auto kv: fSystDefault) {
     F->GetVar( kv.first->GetName() )->setVal( kv.second );
