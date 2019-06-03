@@ -5,8 +5,8 @@ import os
 job_file = "job_{0}_{1}_{2}.sh"
 
 for order in ["no", "io"]:
-  for pid in [2,3,4,5,10]:
-    for job_nr in range(0, 100):
+  for pid in [2,3,4,5,10,31,32,41]:
+    for job_nr in range(0, 200):
       lines = ['#!/bin/bash', 'echo "input jobnumber: {0} pidnumber: {1}"'.format(job_nr, pid),
                'command="$MONADIR/macros/asimov_fits/sensitivity_chi2_inf/AsimovQSub{2} {0} {1}"'.format(job_nr, pid, order.upper()),
                'echo $command && eval $command']
