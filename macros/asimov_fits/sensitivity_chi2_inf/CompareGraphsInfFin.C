@@ -19,38 +19,47 @@ void CompareGraphsInfFin() {
   TCanvas* c2 = ComparisonGraph(2, "io", 2.5, 5);
   fout->cd();
   c2->Write("comaprison_2bins_io");
+  c2->SaveAs("CompareInfFin2IO.pdf");
 
   TCanvas* c3 = ComparisonGraph(3, "io", 2.5, 5);
   fout->cd();
   c3->Write("comaprison_3bins_io");
+  c3->SaveAs("CompareInfFin3IO.pdf");
 
   TCanvas* c4 = ComparisonGraph(4, "io", 2.5, 5);
   fout->cd();
   c4->Write("comaprison_4bins_io");
+  c4->SaveAs("CompareInfFin4IO.pdf");
 
   TCanvas* c5 = ComparisonGraph(5, "io", 2.5, 5);
   fout->cd();
   c5->Write("comaprison_5bins_io");
+  c5->SaveAs("CompareInfFin5IO.pdf");
 
   for (auto c: {c2,c3,c4,c5}) delete c;
 
-  TCanvas* c6 = ComparisonGraph(2, "no", 2.5, 5.5);
+  TCanvas* c6 = ComparisonGraph(2, "no", 2.5, 6);
   fout->cd();
   c6->Write("comaprison_2bins_no");
+  c6->SaveAs("CompareInfFin2NO.pdf");
 
-  TCanvas* c7 = ComparisonGraph(3, "no", 2, 6);
+  TCanvas* c7 = ComparisonGraph(3, "no", 2.5, 6);
   fout->cd();
   c7->Write("comaprison_3bins_no");
+  c7->SaveAs("CompareInfFin3NO.pdf");
 
   TCanvas* c8 = ComparisonGraph(4, "no", 2.5, 6);
   fout->cd();
   c8->Write("comaprison_4bins_no");
+  c8->SaveAs("CompareInfFin4NO.pdf");
 
   TCanvas* c9 = ComparisonGraph(5, "no", 2.5, 6);
   fout->cd();
   c9->Write("comaprison_5bins_no");
+  c9->SaveAs("CompareInfFin5NO.pdf");
 
   fout->Close();
+
 
 }
 
@@ -65,18 +74,20 @@ TCanvas* ComparisonGraph(Int_t nPidCategories, TString ordering, Double_t yMin, 
   TString getString = Form("comaprison_%ibins_", nPidCategories) + ordering;
 
   TGraphErrors* gBinNormQFinIO = (TGraphErrors*)fNormalQ->Get(getString + "_fin"); // N Bins, Normal Q, Finite statistics, IO
-  gBinNormQFinIO->SetLineColor(kBlue+1);
+  gBinNormQFinIO->SetLineColor(kRed+2);
+  gBinNormQFinIO->SetLineStyle(7);
 
   TGraphErrors* gBinNormQInfIO = (TGraphErrors*)fNormalQ->Get(getString + "_inf");
-  gBinNormQInfIO->SetLineColor(kBlue+1);
-  gBinNormQInfIO->SetLineStyle(7);
+  gBinNormQInfIO->SetLineColor(kRed+2);
+  gBinNormQInfIO->SetLineWidth(2);
 
   TGraphErrors* gBinRandQFinIO = (TGraphErrors*)fRandomQ->Get(getString + "_fin");
-  gBinRandQFinIO->SetLineColor(kGreen-3);
+  gBinRandQFinIO->SetLineColor(kBlue+1);
+  gBinRandQFinIO->SetLineStyle(7);
 
   TGraphErrors* gBinRandQInfIO = (TGraphErrors*)fRandomQ->Get(getString + "_inf");
-  gBinRandQInfIO->SetLineColor(kGreen-3);
-  gBinRandQInfIO->SetLineStyle(7);
+  gBinRandQInfIO->SetLineColor(kBlue+1);
+  gBinRandQInfIO->SetLineWidth(2);
     
 
   gBinNormQFinIO->SetMinimum(yMin);
@@ -87,15 +98,15 @@ TCanvas* ComparisonGraph(Int_t nPidCategories, TString ordering, Double_t yMin, 
   gBinRandQFinIO->Draw("same");
   gBinRandQInfIO->Draw("same");
 
-  gBinNormQFinIO->SetTitle(Form("Sensitivity comparison for %i PID categories", nPidCategories));
+  ordering.ToUpper();
+  gBinNormQFinIO->SetTitle(Form("Sensitivity comparison: %i PID categories " + ordering, nPidCategories));
   gBinNormQFinIO->GetXaxis()->SetTitle("#theta_{23}");
   gBinNormQFinIO->GetYaxis()->SetTitle("#sqrt{ #Delta #chi^{2} }");
 
-  ordering.ToUpper();
-  leg->AddEntry(gBinNormQFinIO, "#Delta #chi^{2}, normal Q, " + ordering, "lp");
-  leg->AddEntry(gBinNormQInfIO, "#LT #Delta #chi^{2} #GT at #infty, normal Q, " + ordering, "lpe");
-  leg->AddEntry(gBinRandQFinIO, "#Delta #chi^{2}, random Q, " + ordering, "lp");
-  leg->AddEntry(gBinRandQInfIO, "#LT #Delta #chi^{2} #GT at #infty, random Q, " + ordering, "lpe");
+  leg->AddEntry(gBinNormQFinIO, "#Delta #chi^{2}, real track score ", "lp");
+  leg->AddEntry(gBinNormQInfIO, "#Delta #chi^{2} #infty, real track score" , "lpe");
+  leg->AddEntry(gBinRandQFinIO, "#Delta #chi^{2}, random track score", "lp");
+  leg->AddEntry(gBinRandQInfIO, "#Delta #chi^{2} #infty, random track score", "lpe");
   leg->Draw();
 
   return c;
