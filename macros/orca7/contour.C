@@ -32,27 +32,29 @@ int main(const int argc, const char** argv) {
   Double_t sinsqth23;
   Bool_t   IncludeSystematics;
   Bool_t   IncludePriors;
-  Bool_t   RandomisePars;
   Int_t    seed;
   Int_t    ncpu;
   string   outfile;
   Bool_t   evtResp;
   Bool_t   llhScans;
+  Bool_t   extendedFit;
+  Bool_t   nufit3p2;
   
   try {
 
     JParser<> zap("This application creates contour plots for ORCA7");
 
     zap['i'] = make_field(InvertedOrdering, "Inverted NMO");
-    zap['t'] = make_field(sinsqth23, "SinsqTh23 value at which the 'data' is created") = 0.58;
+    zap['t'] = make_field(sinsqth23, "SinsqTh23 value at which the 'data' is created. NuFit4.0 = 0.58, NuFit3.2 = 0.538") = 0.58;
     zap['s'] = make_field(IncludeSystematics, "Include systematic parameters");
     zap['p'] = make_field(IncludePriors, "Include priors for systematics");
-    zap['r'] = make_field(RandomisePars, "Randomise all parameters when 'data' is created");
     zap['S'] = make_field(seed, "Seed for parameter randomisation") = 416;
     zap['N'] = make_field(ncpu, "Number of CPUs for minimisation") = 1;
     zap['o'] = make_field(outfile, "Output file") = "contour.root";
     zap['e'] = make_field(evtResp, "Use event-by-event detector response");
     zap['l'] = make_field(llhScans, "In addition to the contour, perform LLH scans in SinsqTh23");
+    zap['E'] = make_field(extendedFit, "Perform and extended likelihood fit, in which case also the overall normalisation is included in the LLH");
+    zap['x'] = make_field(nufit3p2, "Use NuFit3.2 values, instead of NuFit4.0. Note that th23 needs to be configured separately on the command line");
 
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
@@ -72,15 +74,22 @@ int main(const int argc, const char** argv) {
   auto pdfs = o7.fPdfs;
 
   //=====================================================================================
-  // randomise parameters & create data
+  // create data
   //=====================================================================================
 
-  if ( RandomisePars ) {
-    o7.RandomisePars( InvertedOrdering, IncludeSystematics, seed );
-  }
+  // set the osc parameters to NuFit central values and systematics to defaults
+  if (nufit3p2) {
 
-  // tau normalisation is not included in this analysis
-  fu->GetVar("Tau_norm")->setVal(1);
+    if (InvertedOrdering) { o7.Set_NuFit_3p2_IO(); }
+    else                  { o7.Set_NuFit_3p2_NO(); }
+
+  }
+  else {
+
+    if (InvertedOrdering) { o7.Set_NuFit_4p0_IO(); }
+    else                  { o7.Set_NuFit_4p0_NO(); }
+
+  }
 
   // theta-23 is set to the input value
   fu->GetVar("SinsqTh23")->setVal( sinsqth23 );
@@ -94,24 +103,18 @@ int main(const int argc, const char** argv) {
     TH3D   *exp = pdf->GetExpValHist();
     exp->SetNameTitle( hname, hname );
     exps.insert( std::make_pair( (string)P.first, (TH1*)exp ) );
+
   }
 
   // save the parameter values at which data is created
   RooArgSet *pars = (RooArgSet*)fu->GetSet().snapshot(kTRUE);
   
   //=====================================================================================
-  // set parameter values back to defaults for fit start
+  // manipulate parameters for fit start
   //=====================================================================================
-
-  // for fit start, set the osc parameters to NuFit central values
-  if (InvertedOrdering) { o7.Set_NuFit_4p0_IO(); }
-  else                  { o7.Set_NuFit_4p0_NO(); }
 
   fu->FreeParLims(); // release the limits
   
-  // theta-23 is set to the input value, so that the fit starts in the right quadrant
-  fu->GetVar("SinsqTh23")->setVal( sinsqth23 );
-
   // fix the systematic parameters if they are not included
   if (!IncludeSystematics) {
     for (auto var: o7.fSystPars) {
@@ -152,14 +155,16 @@ int main(const int argc, const char** argv) {
   
   vector< RooDataHist* > rfdata;         // vector to store pointers to RooFit data, for clean-up
   std::map< TString, RooAbsReal* > nlls; // map with response name <--> nll variable
+
   for (auto &P: pdfs) {
 
     TH3D   *hin = (TH3D*)exps[ (string)P.first ];
     FitPDF *pdf = P.second;
+
+    if ( extendedFit ) pdf->IncludeNorm();
     
     TString hname = TString("rf_") + (TString)hin->GetName();
     RooDataHist *rfh = new RooDataHist( hname, hname, fu->GetObs(), Import(*hin) );
-
     
     RooAbsReal *nll;
     if (IncludePriors) { nll = pdf->createNLL( *rfh, ExternalConstraints( o7.fPriors ), NumCPU(ncpu) ); }
@@ -258,8 +263,8 @@ int main(const int argc, const char** argv) {
   //------------------------------------------------------------
 
   TFile fout((TString)outfile, "RECREATE");
-  g_cont->Write("contour_2sigma");
-  leg2   .Write("legend_contour_2sigma");
+  g_cont->Write("contour_90cl");
+  leg2   .Write("legend_contour_90cl");
   frame  .Write("llhscan");
   leg1   .Write("legend_llhscan");
   pars  ->Write("data_parameters");  
