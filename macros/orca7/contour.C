@@ -185,6 +185,10 @@ int main(const int argc, const char** argv) {
   // Minimize and create contour plot
   //=====================================================================================
 
+  // need to offset these for the fitter to map out the surroundings of the minimum
+  fu->GetVar("SinsqTh23")->setVal( fu->GetVar("SinsqTh23")->getVal() + gRandom->Uniform(-0.02, 0.02) );
+  fu->GetVar("Dm31")->setVal( fu->GetVar("Dm31")->getVal() + gRandom->Uniform(-0.00003, 0.00003) );
+
   RooMinimizer *min = new RooMinimizer( *nll_sim );
 
   // call the minimiser and save the result
