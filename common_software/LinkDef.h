@@ -19,6 +19,7 @@
 #pragma link C++ class DetResponse+;
 #pragma link C++ class EvtResponse+;
 #pragma link C++ class TrueB+;
+#pragma link C++ class TrueEvt+;
 #pragma link C++ class EffMass+;
 
 #endif

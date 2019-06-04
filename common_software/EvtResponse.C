@@ -1,4 +1,5 @@
 #include "EvtResponse.h"
+#include "FileHeader.h"
 #include <iostream>
 #include <vector>
 #include <stdexcept>
@@ -6,6 +7,8 @@
 #include "TCanvas.h"
 #include "TH2.h"
 #include "TGraph.h"
+#include "TFile.h"
+#include "TTree.h"
 
 using namespace std;
 
@@ -42,25 +45,15 @@ EvtResponse::EvtResponse(reco reco_type, TString resp_name,
   
   //----------------------------------------------------------
   // calculate the binning for the fResp structure and init fResp. bin [0] is underflow, bin[ axis->GetNbins() ]
-  // is the last counting bin (hence dimension length +1), bin[ axis->GetNbins()+1 ] is overflow (hence dimension length + 2)
+  // is the last counting bin (hence dimension length +1), bin[ axis->GetNbins()+1 ] is overflow
+  // (hence dimension length + 2)
   //----------------------------------------------------------
 
   fEbins  = fhBinsReco->GetXaxis()->GetNbins() + 2;
   fCtbins = fhBinsReco->GetYaxis()->GetNbins() + 2;
   fBybins = fhBinsReco->GetZaxis()->GetNbins() + 2;
 
-  //----------------------------------------------------------
-  // initialise the response structure. This is kind-of like a TH3D, but instead of doubles, the array at [xbin][ybin][zbin] stores
-  // a vector of TrueEvt's. Thus it allows to store all of the MC data on event-by-event basis, sorted to reconstruction bins.
-  //----------------------------------------------------------
-
-  fResp = new vector<TrueEvt>** [fEbins]();
-  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
-    fResp[ebin] = new vector<TrueEvt>* [fCtbins]();
-    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
-      fResp[ebin][ctbin] = new vector<TrueEvt> [fBybins]();
-    }
-  }
+  InitResponse( fEbins, fCtbins, fBybins );
 
   fhAtmMuCount1y = CloneFromTemplate(fhBinsReco, "hAtmMuCount1y_" + fRespName);
   fhNoiseCount1y = CloneFromTemplate(fhBinsReco, "hNoiseCount1y_" + fRespName);
@@ -72,14 +65,8 @@ EvtResponse::EvtResponse(reco reco_type, TString resp_name,
 /** Destructor */
 EvtResponse::~EvtResponse() {
 
-  // de-allocate the memory used by fResp
-  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
-    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
-      if (fResp[ebin][ctbin]) delete[] fResp[ebin][ctbin];
-    }
-    if (fResp[ebin]) delete[] fResp[ebin];
-  }
-  delete[] fResp;
+  CleanResponse();
+
   delete fhAtmMuCount1y;
   delete fhNoiseCount1y;
   
@@ -556,4 +543,172 @@ TCanvas* EvtResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco) {
   
   return c1;
   
+}
+
+//=====================================================================================================
+
+/**
+   Function to write the response to file.
+
+   \param filename  Name of the output file.
+
+ */
+void EvtResponse::WriteToFile(TString filename) {
+
+  if (!fNormalised) Normalise();
+
+  FileHeader h("EvtResponse");
+  h.AddParameter( "fRespName", fRespName);
+  h.AddParameter( "fEbins"   , (TString)to_string(fEbins) );
+  h.AddParameter( "fCtbins"  , (TString)to_string(fCtbins) );
+  h.AddParameter( "fBybins"  , (TString)to_string(fBybins) );
+  
+  TFile fout(filename, "RECREATE");
+  TTree tout("evtresponse","Detector response data");
+
+  TrueEvt *te = new TrueEvt();
+  Int_t E_reco_bin, ct_reco_bin, by_reco_bin;
+
+  tout.Branch("E_reco_bin" , &E_reco_bin , "E_reco_bin/I");
+  tout.Branch("ct_reco_bin", &ct_reco_bin, "ct_reco_bin/I");
+  tout.Branch("by_reco_bin", &by_reco_bin, "by_reco_bin/I");
+  tout.Branch("TrueEvt", &te, 2);
+
+  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
+    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
+      for (Int_t bybin = 0; bybin < fBybins; bybin++) {
+
+	E_reco_bin  = ebin;
+	ct_reco_bin = ctbin;
+	by_reco_bin = bybin;
+
+	for (auto true_evt: fResp[ebin][ctbin][bybin]) {
+	  *te = true_evt;
+	  tout.Fill();
+	}
+
+      }
+    }
+  }
+
+  tout.Write();
+
+  fhBinsTrue->Write("hbinstrue");
+  fhBinsReco->Write("hbinsreco");
+  fhAtmMuCount1y->Write("atmmucount");
+  fhNoiseCount1y->Write("noisecount");
+
+  h.WriteHeader(&fout);
+
+  fout.Close();
+  delete te;
+  
+}
+
+//=====================================================================================================
+
+/**
+   Function to read the response from file.
+
+   \param filename   Name of the file where the response is stored.
+ */
+void EvtResponse::ReadFromFile(TString filename) {
+
+  // if the evtresponse is read from file, the binning is changed to match that
+  // of the evtresponse that is being read in
+  CleanResponse();
+
+  FileHeader h("for_read_in");
+  h.ReadHeader(filename);
+
+  fRespName   = h.GetParameter("fRespName");
+  fNormalised = true;
+  fEbins      = std::stoi( (string)h.GetParameter("fEbins")  );
+  fCtbins     = std::stoi( (string)h.GetParameter("fCtbins") );
+  fBybins     = std::stoi( (string)h.GetParameter("fBybins") );
+
+  InitResponse(fEbins, fCtbins, fBybins);
+
+  // read in the true bin data to the response
+
+  TFile fin(filename, "READ");
+  TTree *tin = (TTree*)fin.Get("evtresponse");
+
+  TrueEvt *te = new TrueEvt();
+  Int_t E_reco_bin, ct_reco_bin, by_reco_bin;
+
+  tin->SetBranchAddress("E_reco_bin", &E_reco_bin);
+  tin->SetBranchAddress("ct_reco_bin", &ct_reco_bin);
+  tin->SetBranchAddress("by_reco_bin", &by_reco_bin);
+  tin->SetBranchAddress("TrueEvt", &te);
+
+  for (Int_t i = 0; i < tin->GetEntries(); i++) {
+    tin->GetEntry(i);
+    fResp[E_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueEvt(*te) );
+  }
+
+  // get the histgrams
+
+  fhBinsTrue = (TH3D*)fin.Get("hbinstrue")->Clone();
+  fhBinsTrue->SetDirectory(0);
+  fhBinsTrue->SetNameTitle("hbinstrue_" + fRespName, "hbinstrue_" + fRespName);
+
+  fhBinsReco = (TH3D*)fin.Get("hbinsreco")->Clone();
+  fhBinsReco->SetDirectory(0);
+  fhBinsReco->SetNameTitle("hbinsreco_" + fRespName, "hbinsreco_" + fRespName);
+
+  fhAtmMuCount1y = (TH3D*)fin.Get("atmmucount")->Clone();
+  fhAtmMuCount1y->SetDirectory(0);
+  fhAtmMuCount1y->SetNameTitle("hAtmMuCount1y_" + fRespName, "hAtmMuCount1y_" + fRespName);
+
+  fhNoiseCount1y = (TH3D*)fin.Get("noisecount")->Clone();
+  fhNoiseCount1y->SetDirectory(0);
+  fhNoiseCount1y->SetNameTitle("hNoiseCount1y_" + fRespName, "hNoiseCount1y_" + fRespName);
+
+  delete te;
+  fin.Close();
+
+}
+
+//=====================================================================================================
+
+/**
+   Private function to de-allocate memory of the member `fResp` structure
+ */
+void EvtResponse::CleanResponse() {
+
+  for (Int_t ebin = 0; ebin < fEbins; ebin++) {
+    for (Int_t ctbin = 0; ctbin < fCtbins; ctbin++) {
+      if (fResp[ebin][ctbin]) delete[] fResp[ebin][ctbin];
+    }
+    if (fResp[ebin]) delete[] fResp[ebin];
+  }
+  delete[] fResp;
+
+}
+
+//=====================================================================================================
+
+/**
+   Private function to initialise the member `fResp` structure.
+   \param ebins  Number of energy bins
+   \param ctbins Number of cos-theta bins
+   \param bybins Number of bjorken-y bins
+ */
+void EvtResponse::InitResponse(Int_t ebins, Int_t ctbins, Int_t bybins) {
+
+  //----------------------------------------------------------
+  // initialise the response structure. This is kind-of like a TH3D, but instead of doubles, the array at
+  // [xbin][ybin][zbin] stores a vector of TrueEvt's. Thus it allows to store all of the MC data on
+  // event-by-event basis, sorted to reconstruction bins.
+  //----------------------------------------------------------
+  
+  fResp = new vector<TrueEvt>** [ebins]();
+  for (Int_t ebin = 0; ebin < ebins; ebin++) {
+    fResp[ebin] = new vector<TrueEvt>* [ctbins]();
+    for (Int_t ctbin = 0; ctbin < ctbins; ctbin++) {
+      fResp[ebin][ctbin] = new vector<TrueEvt> [bybins]();
+    }
+  }
+
 }
