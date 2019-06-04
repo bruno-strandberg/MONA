@@ -16,7 +16,7 @@ TTree* GetChi2QRand(TTree* input_ttree, TString tree_nametitle);
 
 void CreateRootFilesForPlot() {
 
-  std::vector<Int_t> pid_cats = {2,3,4,5,10};
+  std::vector<Int_t> pid_cats = {2,3,4,5,10,21,22,31,32,41};
 
   TFile* f_read = TFile::Open("./data_chi2_th23.root", "READ");
   TFile* f = TFile::Open("./data_chi2_th23_extraplotation.root", "RECREATE");

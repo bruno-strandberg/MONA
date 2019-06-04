@@ -16,7 +16,7 @@ void CreateDataFileTh23() {
   // Create TFile with the csv data and a slice of TTree with the data needed for the fit
   TFile* file_out = new TFile("data_chi2_th23.root", "RECREATE");
 
-  std::vector<Int_t> pid_cats = {2,3,4,5,10};
+  std::vector<Int_t> pid_cats = {2,3,4,5,10,21,22,31,32,41};
 
   for (auto order: {"no", "io"}) {
     for (auto pid: pid_cats) {
@@ -70,6 +70,12 @@ TString CsvFilePath(Int_t n, string ordering) {
     case 10:
       filepath = Form("/output/csv/SensChi2Inf_20mCrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-199.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
+    case 21:
+      filepath = Form("/output/csv/SensChi2Inf_20mCrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-199.csv", n, ordering.c_str(), n, ordering.c_str());
+      break;
+    case 22:
+      filepath = Form("/output/csv/SensChi2Inf_20mCrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-199.csv", n, ordering.c_str(), n, ordering.c_str());
+      break;
     case 31:
       filepath = Form("/output/csv/SensChi2Inf_20mCrossCheck/AsimovFit%iBins%sTh23Range_PercentageOfMC/AsimovFit%iBins%sTh23Range_PercentageOfMC_0-199.csv", n, ordering.c_str(), n, ordering.c_str());
       break;
@@ -103,6 +109,12 @@ TString CsvColumns(Int_t n) {
       break;
     case 10:
       columns = "percentage/D:Ebins/I:ctBins/I:th23/D:sinSqTh23/D:sens_0/D:sens_err_0/D:sens_1/D:sens_err_1/D:sens_2/D:sens_err_2/D:sens_3/D:sens_err_3/D:sens_4/D:sens_err_4/D:sens_5/D:sens_err_5/D:sens_6/D:sens_err_6/D:sens_7/D:sens_err_7/D:sens_8/D:sens_err_8/D:sens_9/D:sens_err_9/D:fit_chi2/D";
+      break;
+    case 21:
+      columns = "percentage/D:Ebins/I:ctBins/I:th23/D:sinSqTh23/D:sens_0/D:sens_err_0/D:sens_1/D:sens_err_1/D:fit_chi2/D";
+      break;
+    case 22:
+      columns = "percentage/D:Ebins/I:ctBins/I:th23/D:sinSqTh23/D:sens_0/D:sens_err_0/D:sens_1/D:sens_err_1/D:fit_chi2/D";
       break;
     case 31:
       columns = "percentage/D:Ebins/I:ctBins/I:th23/D:sinSqTh23/D:sens_0/D:sens_err_0/D:sens_1/D:sens_err_1/D:sens_2/D:sens_err_2/D:fit_chi2/D";

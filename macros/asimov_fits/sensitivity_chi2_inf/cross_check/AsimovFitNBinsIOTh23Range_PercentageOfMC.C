@@ -140,11 +140,11 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
         // in the area of shower (track), reroll until it doesnt.
         Double_t track_score = evt->Get_RDF_track_score();
         Double_t ran = q_dist->GetRandom();
-        if (track_score <= 0.6) {
-          while (ran > 0.6) ran = q_dist->GetRandom();
+        if (track_score <= PID_CUT) {
+          while (ran > PID_CUT) ran = q_dist->GetRandom();
         }
         else {
-           while (ran <= 0.6) ran = q_dist->GetRandom();
+           while (ran <= PID_CUT) ran = q_dist->GetRandom();
         }
  
         evt->Set_RDF_track_score(ran);

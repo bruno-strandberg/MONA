@@ -10,8 +10,6 @@
 
 void FitOverEstimationCompareGraphsNO() {
 
-  std::vector<Int_t> pid_cats = {2,3,4,5,10};
-
   TFile *f = TFile::Open("data_chi2_th23_extraplotation.root", "READ");
     
   TString s_tree; // tree name
@@ -50,25 +48,54 @@ void FitOverEstimationCompareGraphsNO() {
     TTree* t_4  = (TTree*)f->Get(s_tree + "4bins_io");
     TTree* t_5  = (TTree*)f->Get(s_tree + "5bins_io");
     TTree* t_10 = (TTree*)f->Get(s_tree + "10bins_io");
+    TTree* t_21 = (TTree*)f->Get(s_tree + "21bins_io");
+    TTree* t_22 = (TTree*)f->Get(s_tree + "22bins_io");
+    TTree* t_31 = (TTree*)f->Get(s_tree + "31bins_io");
+    TTree* t_32 = (TTree*)f->Get(s_tree + "32bins_io");
+    TTree* t_41 = (TTree*)f->Get(s_tree + "41bins_io");
   
     // Draw the fitted chi2_inf
   
     Int_t n2 = t_2->Draw(plot_selection, "", "goff");
     TGraphErrors *g2 = new TGraphErrors(n2, t_2->GetV1(), t_2->GetV2(), 0, t_2->GetV3()); 
     g2->Sort(&TGraph::CompareX);
+
     Int_t n3 = t_3->Draw(plot_selection, "", "goff");
-    TGraphErrors *g3 = new TGraphErrors(n3, t_3->GetV1(), t_3->GetV2(), 0, t_2->GetV3()); 
+    TGraphErrors *g3 = new TGraphErrors(n3, t_3->GetV1(), t_3->GetV2(), 0, t_3->GetV3()); 
     g3->Sort(&TGraph::CompareX);
+
     Int_t n4 = t_4->Draw(plot_selection, "", "goff");
-    TGraphErrors *g4 = new TGraphErrors(n4, t_4->GetV1(), t_4->GetV2(), 0, t_2->GetV3()); 
+    TGraphErrors *g4 = new TGraphErrors(n4, t_4->GetV1(), t_4->GetV2(), 0, t_4->GetV3()); 
     g4->Sort(&TGraph::CompareX);
+
     Int_t n5 = t_5->Draw(plot_selection, "", "goff");
-    TGraphErrors *g5 = new TGraphErrors(n5, t_5->GetV1(), t_5->GetV2(), 0, t_2->GetV3()); 
+    TGraphErrors *g5 = new TGraphErrors(n5, t_5->GetV1(), t_5->GetV2(), 0, t_5->GetV3()); 
     g5->Sort(&TGraph::CompareX);
+
     //Int_t n10 = t_10->Draw(plot_selection, "", "goff");
-    //TGraphErrors *g10 = new TGraphErrors(n10, t_10->GetV1(), t_10->GetV2(), 0, t_2->GetV3()); 
+    //TGraphErrors *g10 = new TGraphErrors(n10, t_10->GetV1(), t_10->GetV2(), 0, t_10->GetV3()); 
     //g10->Sort(&TGraph::CompareX);
   
+    Int_t n21 = t_21->Draw(plot_selection, "", "goff");
+    TGraphErrors *g21 = new TGraphErrors(n21, t_21->GetV1(), t_21->GetV2(), 0, t_21->GetV3()); 
+    g21->Sort(&TGraph::CompareX);
+  
+    Int_t n22 = t_22->Draw(plot_selection, "", "goff");
+    TGraphErrors *g22 = new TGraphErrors(n22, t_22->GetV1(), t_22->GetV2(), 0, t_22->GetV3()); 
+    g22->Sort(&TGraph::CompareX);
+  
+    Int_t n31 = t_31->Draw(plot_selection, "", "goff");
+    TGraphErrors *g31 = new TGraphErrors(n31, t_31->GetV1(), t_31->GetV2(), 0, t_31->GetV3()); 
+    g31->Sort(&TGraph::CompareX);
+
+    Int_t n32 = t_32->Draw(plot_selection, "", "goff");
+    TGraphErrors *g32 = new TGraphErrors(n32, t_32->GetV1(), t_32->GetV2(), 0, t_32->GetV3()); 
+    g32->Sort(&TGraph::CompareX);
+    
+    Int_t n41 = t_41->Draw(plot_selection, "", "goff");
+    TGraphErrors *g41 = new TGraphErrors(n41, t_41->GetV1(), t_41->GetV2(), 0, t_41->GetV3()); 
+    g41->Sort(&TGraph::CompareX);
+    
     g2->SetLineColor(kBlue+1);
     g2->SetMarkerColor(kBlue+1);
   //  g2->SetMarkerStyle(21);
@@ -116,6 +143,11 @@ void FitOverEstimationCompareGraphsNO() {
     g3->Write("comaprison_3bins_no_" + out_name);
     g4->Write("comaprison_4bins_no_" + out_name);
     g5->Write("comaprison_5bins_no_" + out_name);
+    g21->Write("comaprison_21bins_no_" + out_name);
+    g22->Write("comaprison_22bins_no_" + out_name);
+    g31->Write("comaprison_31bins_no_" + out_name);
+    g32->Write("comaprison_32bins_no_" + out_name);
+    g41->Write("comaprison_41bins_no_" + out_name);
     fout->Close();
 
     if (plot_inf) c1->SaveAs("CompareChi2AtInfStatisticsNO.pdf");
