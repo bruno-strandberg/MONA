@@ -178,6 +178,18 @@ std::map<Int_t, Double_t> SetPIDCase(Int_t n) {
         pid_map.insert(std::make_pair(i, i / float(n) )); 
       }
       break;
+    case 21:
+      cout << "NOTICE: Set PID case " << n << endl;
+      pid_map.insert(std::make_pair(0, 0.0)); // shower
+      pid_map.insert(std::make_pair(1, 0.7)); // track
+      pid_map.insert(std::make_pair(2, 1.0)); // upper limit
+      break;
+    case 22:
+      cout << "NOTICE: Set PID case " << n << endl;
+      pid_map.insert(std::make_pair(0, 0.0)); // shower
+      pid_map.insert(std::make_pair(1, 0.8)); // track
+      pid_map.insert(std::make_pair(2, 1.0)); // upper limit
+      break;
     case 31:
       cout << "NOTICE: Set PID case " << n << endl;
       cout << "NOTICE: Non-standard ranges on the PID categories!" << endl;
@@ -236,6 +248,8 @@ Int_t GetNumPIDCats(Int_t n) {
  */
 Double_t GetPIDCut(Int_t n) {
   if (n <= 10) return 0.6;
+  else if (n == 21) return 0.7;
+  else if (n == 22) return 0.8;
   else if (n == 31) return 0.8;
   else if (n == 32) return 0.7;
   else if (n == 41) return 0.7;
