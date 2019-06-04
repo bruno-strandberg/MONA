@@ -147,7 +147,7 @@ class EvtResponse : public AbsResponse {
   void PrintRunData();
   void WriteToFile(TString filename);
   void ReadFromFile(TString filename);
-  TCanvas* DisplayResponse(Double_t e_reco, Double_t ct_reco);
+  TCanvas* DisplayResponse(Double_t e_reco, Double_t ct_reco, TString outname="");
   
   /** Returns that this implementation is of the response type `EvtResponse` 
       \return `AbsResponse::EvtResponse`

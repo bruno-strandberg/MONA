@@ -474,10 +474,11 @@ std::pair<Double_t, Double_t> EvtResponse::GetNoiseCount1y(Double_t E_reco, Doub
 
     \param e_reco  Reco energy
     \param ct_reco Reco cos-theta
+    \param outname If specified, graphs are written to the output file
     \return        Canvas with the visualisation
 
 */
-TCanvas* EvtResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco) {
+TCanvas* EvtResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco, TString outname) {
 
    // graphs with true events in the reco bin by nu type
   TGraph G[fFlavs.size()][fInts.size()][fPols.size()];
@@ -539,6 +540,12 @@ TCanvas* EvtResponse::DisplayResponse(Double_t e_reco, Double_t ct_reco) {
   for (Int_t i = 0; i < (Int_t)_glist.size(); i++) {
     c1->cd(i+2);
     ((TGraph*)_glist[i]->Clone())->Draw("AP");
+  }
+
+  if (outname != "") {
+    TFile fout(outname, "RECREATE");
+    for (auto g: _glist) g->Write();
+    fout.Close();
   }
   
   return c1;
