@@ -124,9 +124,9 @@ class EvtResponse : public AbsResponse {
  public:
 
   EvtResponse(reco reco_type, TString resp_name,
-	      Int_t ebins , Double_t emin , Double_t emax ,
-  	      Int_t ctbins, Double_t ctmin, Double_t ctmax,
-  	      Int_t bybins, Double_t bymin, Double_t bymax,
+	      Int_t ebins  = 40, Double_t emin  =  1., Double_t emax  = 100.,
+  	      Int_t ctbins = 40, Double_t ctmin = -1., Double_t ctmax = 1.,
+  	      Int_t bybins =  1, Double_t bymin =  0., Double_t bymax = 1.,
 	      Double_t memlim = 4);
   
   EvtResponse(reco reco_type, TString resp_name,
@@ -145,7 +145,9 @@ class EvtResponse : public AbsResponse {
   std::pair<Double_t, Double_t> GetAtmMuCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   std::pair<Double_t, Double_t> GetNoiseCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   void PrintRunData();
-  TCanvas* DisplayResponse(Double_t e_reco, Double_t ct_reco);
+  void WriteToFile(TString filename);
+  void ReadFromFile(TString filename);
+  TCanvas* DisplayResponse(Double_t e_reco, Double_t ct_reco, TString outname="");
   
   /** Returns that this implementation is of the response type `EvtResponse` 
       \return `AbsResponse::EvtResponse`
@@ -167,6 +169,9 @@ class EvtResponse : public AbsResponse {
   TH3D* CloneFromTemplate(TH3D* tmpl, TString name);
   void  CountEvents(UInt_t flav, UInt_t iscc, UInt_t isnb, SummaryEvent *evt);
   void  Normalise();
+  void  CleanResponse();
+  void  InitResponse(Int_t ebins, Int_t ctbins, Int_t bybins);
+
   
   typedef std::pair<Double_t, Double_t>   rangeID; //!< type definition for identifying a range
   typedef std::pair<Double_t, Double_t>   runID;   //!< type definition for identifying a run
