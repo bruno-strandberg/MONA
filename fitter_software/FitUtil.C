@@ -1051,9 +1051,9 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
 
 /** Public function to fetch a pointer to a variable in the member `fParSet`.
 
-    This function knows of all the variables known to `RooFit`. If the variable is not found set an exception is thrown.
+    This function knows of all the variables known to `RooFit`. If the variable is not known an exception is thrown. A command-line program `monafitpars` can be used to print out all of the fit parameters used by `FitUtil` and to RooFit. Do `monafitpars -h!` for usage.
 
-    \param varname   Name of the variable
+    \param varname   Name of the variable (execute `monafitpars -h!` in the terminal for help)
     \return          Pointer to the variable
  */
 RooRealVar* FitUtil::GetVar(TString varname) {
