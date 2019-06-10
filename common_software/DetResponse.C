@@ -524,8 +524,17 @@ void DetResponse::ReadFromFile(TString filename) {
   // read in the true bin data to the response
 
   TFile fin(filename, "READ");
+
+  if ( !fin.IsOpen() ) {
+    throw std::invalid_argument("ERROR! DetResponse::ReadFromFile() cannot open file " + (string)filename);
+  }
+  
   TTree *tin = (TTree*)fin.Get("detresponse");
 
+  if ( tin == NULL ) {
+    throw std::invalid_argument("ERROR! DetResponse::ReadFromFile() cannot find a TTree named 'detresponse' in the input file.");    
+  }
+  
   TrueB *tb = new TrueB();
   Int_t E_reco_bin, ct_reco_bin, by_reco_bin;
 
