@@ -98,8 +98,11 @@ namespace O7 {
 //===================================================================================================
 struct ORCA7 {
 
+  /** enumerator with response options: DetResponse, EvtResponse, EvtResponse with external W1Y*/
+  enum { DETR, EVTR, EVTR_EXTW1Y };
+  
   /** Constructor */
-  ORCA7(Bool_t ReadResponses, Bool_t UseEvtResp=kFALSE);
+  ORCA7(UInt_t ResponseType = DETR);
   ~ORCA7();
 
   // functions for parameter manipulation
@@ -154,7 +157,7 @@ struct ORCA7 {
   std::vector< fitpacket* > fFPs;
   
   // internal functions
-  void CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadResponses, Bool_t UseEvtResp);
+  void CreateResponses(vector< O7::PidBinConf > pid_bins, UInt_t ResponseType);
   void CreatePriors(FitUtil *F);
   void PrepareParameters(FitUtil *F);
   void AddDm31Prior(Bool_t InvertedOrdering);

@@ -24,14 +24,14 @@ Double_t O7::CustomBY (SummaryEvent *evt) { return evt->Get_track_bjorkeny(); }
 //*********************************************************************************************************
 
 /** Constructor */
-ORCA7::ORCA7(Bool_t ReadResponses, Bool_t UseEvtResp) {
+ORCA7::ORCA7(UInt_t ResponseType) {
 
   // set the PID bins
   fPidBins.push_back( PidBinConf(0.0, 0.3, 0.05, 0.0, "shw") );
   fPidBins.push_back( PidBinConf(0.3, 0.7, 0.01, 0.0, "mid") );
   fPidBins.push_back( PidBinConf(0.7, 1.0+1e-5, 0.05, 0.1, "trk") );
 
-  CreateResponses( fPidBins, ReadResponses, UseEvtResp );
+  CreateResponses( fPidBins, ResponseType );
 
   // create fitutil and pdfs
   fFitUtil = new FitUtilWsyst(f_F_runtime, fResps["trk"]->GetHist3DReco(), f_F_emin, f_F_emax, 
@@ -51,92 +51,73 @@ ORCA7::ORCA7(Bool_t ReadResponses, Bool_t UseEvtResp) {
 //*********************************************************************************************************
 
 /** Inline function to construct the responses in the constructor*/
-void ORCA7::CreateResponses(vector< O7::PidBinConf > pid_bins, Bool_t ReadResponses, Bool_t UseEvtResp) {
+void ORCA7::CreateResponses(vector< O7::PidBinConf > pid_bins, UInt_t ResponseType) {
 
   //=========================================================
   // create a response for each PID bin
   //=========================================================
-
+  std::map<UInt_t, TString> rmap = { {DETR, "DetResponse"}, {EVTR, "EvtResponse"}, {EVTR_EXTW1Y, "EvtResponse_externalW1Y"} };
+  
+  cout << "NOTICE ORCA7::CreateResponses() initialising " << rmap[ResponseType] << endl;
+  
   for (auto PB: pid_bins) {
 
+    Bool_t UseExtW1Y = ( ResponseType == EVTR_EXTW1Y );
     AbsResponse *R = NULL;
-      
+
+    // init shower and middle responses
     if ( PB.pid_min < 0.7 ) {
 
-      if ( UseEvtResp ) {
-      R = new EvtResponse(EvtResponse::shower, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
-			  f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
+      if ( ResponseType == DETR ) {
+	R = new DetResponse(DetResponse::shower, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
+			    f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
+
       }
       else {
-      R = new DetResponse(DetResponse::shower, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
-			  f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
+	R = new EvtResponse(EvtResponse::shower, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
+			    f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax, UseExtW1Y);
       }
 
       R->AddCut( &SummaryEvent::Get_shower_ql0, std::greater<double>(), 0.5, true );
+      
     }
+
+    // init the track response
     else {
 
-      if ( UseEvtResp ) {
-	R = new EvtResponse(EvtResponse::customreco, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
+      if ( ResponseType == DETR ) {
+	R = new DetResponse(DetResponse::customreco, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
 			    f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
       }
       else {
-	R = new DetResponse(DetResponse::customreco, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
-			    f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
+	R = new EvtResponse(EvtResponse::customreco, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
+			    f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax, UseExtW1Y);
       }
 
       R->SetObsFuncPtrs( &CustomEnergy, &CustomDir, &CustomPos, &CustomBY );
       R->AddCut( &SummaryEvent::Get_track_ql0, std::greater<double>(), 0.5, true );
+      
     }
 
+    // add common cuts
     R->AddCut(&SummaryEvent::Get_RDF_noise_score, std::less_equal<double>()   , PB.noise_cut, true);
     R->AddCut(&SummaryEvent::Get_RDF_muon_score , std::less_equal<double>()   , PB.muon_cut , true);
     R->AddCut(&SummaryEvent::Get_RDF_track_score, std::greater_equal<double>(), PB.pid_min  , true);
     R->AddCut(&SummaryEvent::Get_RDF_track_score, std::less<double>()         , PB.pid_max  , true);
-
+    
     fResps.insert( std::make_pair(PB.name, R) );
 
   }
 
   //=========================================================
-  // create an output name for each response
+  // Fill the responses
   //=========================================================
-
-  // directory where responses are stored
-  TString out_dir = (TString)getenv("MONADIR") + "/macros/orca7/rootfiles/";
-  Int_t sysret = system("mkdir -p " + out_dir);
-  if ( sysret != 0 ) cout << "WARNING! ORCA7::ORCA7 system returned " << sysret << endl;
-
-  vector< std::pair<TString, AbsResponse*> > resp_names;// vector that stores the outname and the response pairs
-  Bool_t ReadFromFile = ReadResponses;                  // flag to indicate whether responses should be read
-
-  for (auto P: fResps) {
-    auto R = P.second;
-    TString outname = out_dir + "resp_" + R->GetRespName() + ".root";
-    resp_names.push_back( std::make_pair(outname, R) );
-    ReadFromFile = ReadFromFile && NMHUtils::FileExists(outname) && !UseEvtResp;
-  }
-
-  //=========================================================
-  // read the responses from file or fill from summary data
-  //=========================================================
-
-  if ( ReadFromFile ) {
-    for (auto p: resp_names) dynamic_cast<DetResponse*>(p.second)->ReadFromFile( p.first );
-  }
-  else {
-      
-    SummaryParser sp(fDataF);
-    for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
-      if (i % 100000 == 0) cout << "NOTICE ORCA7::ORCA7() event " << i << " of " 
-				<< sp.GetTree()->GetEntries() << endl;
-      for (auto R: fResps) R.second->Fill( sp.GetEvt(i) );
-    }
-   
-    if ( !UseEvtResp ) {
-      for (auto p: resp_names) dynamic_cast<DetResponse*>(p.second)->WriteToFile( p.first );
-    }
-
+  
+  SummaryParser sp(fDataF);
+  for (Int_t i = 0; i < sp.GetTree()->GetEntries(); i++) {
+    if (i % 500000 == 0) cout << "NOTICE ORCA7::ORCA7() event " << i << " of " 
+			      << sp.GetTree()->GetEntries() << endl;
+    for (auto R: fResps) R.second->Fill( sp.GetEvt(i) );
   }
 
 }

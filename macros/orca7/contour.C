@@ -28,6 +28,8 @@ using namespace RooFit;
 
 int main(const int argc, const char** argv) {
 
+  vector<UInt_t> resp_types = { ORCA7::DETR, ORCA7::EVTR, ORCA7::EVTR_EXTW1Y };
+  
   Bool_t   InvertedOrdering;
   Double_t sinsqth23;
   Bool_t   IncludeSystematics;
@@ -35,10 +37,10 @@ int main(const int argc, const char** argv) {
   Int_t    seed;
   Int_t    ncpu;
   string   outfile;
-  Bool_t   evtResp;
   Bool_t   llhScans;
   Bool_t   extendedFit;
   Bool_t   nufit3p2;
+  UInt_t   respType;
   
   try {
 
@@ -51,7 +53,7 @@ int main(const int argc, const char** argv) {
     zap['S'] = make_field(seed, "Seed for parameter randomisation") = 416;
     zap['N'] = make_field(ncpu, "Number of CPUs for minimisation") = 1;
     zap['o'] = make_field(outfile, "Output file") = "contour.root";
-    zap['e'] = make_field(evtResp, "Use event-by-event detector response");
+    zap['e'] = make_field(respType, "0 - DetResponse, 1 - EvtResponse, 2 - EvtResponse with externally calculated weight-1-year") = resp_types;
     zap['l'] = make_field(llhScans, "In addition to the contour, perform LLH scans in SinsqTh23");
     zap['E'] = make_field(extendedFit, "Perform and extended likelihood fit, in which case also the overall normalisation is included in the LLH");
     zap['x'] = make_field(nufit3p2, "Use NuFit3.2 values, instead of NuFit4.0. Note that th23 needs to be configured separately on the command line");
@@ -69,7 +71,7 @@ int main(const int argc, const char** argv) {
   TStopwatch timer;
 
   // init the class with binning info, PID ranges and responses
-  ORCA7 o7( kTRUE, evtResp );
+  ORCA7 o7( respType );
   FitUtilWsyst *fu = o7.fFitUtil;
   auto pdfs = o7.fPdfs;
 

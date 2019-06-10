@@ -28,6 +28,8 @@ using namespace RooFit;
 
 int main(const int argc, const char** argv) {
 
+  vector<UInt_t> resp_types = { ORCA7::DETR, ORCA7::EVTR, ORCA7::EVTR_EXTW1Y };
+  
   Bool_t   InvertedOrdering;
   Bool_t   IncludeSystematics;
   Int_t    seed;
@@ -35,7 +37,7 @@ int main(const int argc, const char** argv) {
   string   outfile;
   Double_t sinsqth23;
   Bool_t   addDm31Prior;
-  Bool_t   evtResp;
+  UInt_t   respType;
   
   try {
 
@@ -48,7 +50,7 @@ int main(const int argc, const char** argv) {
     zap['o'] = make_field(outfile, "Output file") = "fit.root";
     zap['t'] = make_field(sinsqth23, "SinsqTh23 value at which the 'data' is created") = 0.58;
     zap['p'] = make_field(addDm31Prior, "Add external prior for dm31 from NuFit");
-    zap['e'] = make_field(evtResp, "Use event-by-event detector response");
+    zap['e'] = make_field(respType, "0 - DetResponse, 1 - EvtResponse, 2 - EvtResponse with externally calculated weight-1-year") = resp_types;
 
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
@@ -63,7 +65,7 @@ int main(const int argc, const char** argv) {
   TStopwatch timer;
 
   // init the class with binning info, PID ranges and responses
-  ORCA7 o7( kTRUE, evtResp );
+  ORCA7 o7( respType );
   FitUtilWsyst *fu = o7.fFitUtil;
   auto pdfs = o7.fPdfs;
 
