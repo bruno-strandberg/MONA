@@ -19,13 +19,16 @@ EvtResponse::EvtResponse(reco reco_type, TString resp_name,
 			 Int_t ebins , Double_t emin , Double_t emax ,
 			 Int_t ctbins, Double_t ctmin, Double_t ctmax,
 			 Int_t bybins, Double_t bymin, Double_t bymax,
-			 Double_t memlim) : EvtResponse(reco_type, resp_name, ebins, emin, emax, ctbins, ctmin, ctmax, bybins, bymin, bymax, ebins, emin, emax, ctbins, ctmin, ctmax, bybins, bymin, bymax, memlim) {};
+			 Bool_t UseExtW1Y, Double_t memlim) : EvtResponse(reco_type, resp_name, ebins, emin, emax, ctbins, ctmin, ctmax, bybins, bymin, bymax, ebins, emin, emax, ctbins, ctmin, ctmax, bybins, bymin, bymax, UseExtW1Y, memlim) {};
 
 //=====================================================================================================
 
 /** Constructor to initialise the response with a binning configuration in true space and reco space.
 
-    The true space binning can be used in the software that uses the `EvtResponse` class for the dimensioning of e.g. flux cache. For all parameters other than memlim, see `AbsResponse` corresponding constructor. The additional parameterer memlim is to limit the RAM the response can occupy; if exceeded, throw an error and let user to take action. If the user has access to a machine with e.g. 16gb of memory, this number can be increased.
+    The true space binning can be used in the software that uses the `EvtResponse` class for the dimensioning of e.g. flux cache. For all parameters other than `memlim` and `UseExtW1Y`, see `AbsResponse` corresponding constructor. 
+
+    \param  UseExtW1Y  Use the weight-1-year stored in `SummaryEvent`. This weight is usually pre-calculated for ECAP PID outputs. If this argument is false, the weight-1-year of `TrueEvt` is calculated from gSeaGen W2 and Ntot data by this class in fuction `EvtResponse::Normalise`.
+    \param  memlim     is to limit the RAM the response can occupy; if exceeded, throw an error and let user to take action. If the user has access to a machine with e.g. 16gb of memory, this number can be increased.
 */
 EvtResponse::EvtResponse(reco reco_type, TString resp_name,
 			 Int_t t_ebins , Double_t t_emin , Double_t t_emax ,
@@ -34,12 +37,13 @@ EvtResponse::EvtResponse(reco reco_type, TString resp_name,
 			 Int_t r_ebins , Double_t r_emin , Double_t r_emax ,
 			 Int_t r_ctbins, Double_t r_ctmin, Double_t r_ctmax,
 			 Int_t r_bybins, Double_t r_bymin, Double_t r_bymax,
-			 Double_t memlim) :
+			 Bool_t UseExtW1Y, Double_t memlim) :
   AbsResponse(reco_type, resp_name,
 	      t_ebins, t_emin, t_emax, t_ctbins, t_ctmin, t_ctmax, t_bybins, t_bymin, t_bymax,
 	      r_ebins, r_emin, r_emax, r_ctbins, r_ctmin, r_ctmax, r_bybins, r_bymin, r_bymax) {
 
-  fNormalised = false;
+  fNormalised = UseExtW1Y; // normalised if the externally calculated weight-1-year is used, otherwise set by `EvtResponse::Normalise`
+  fUseExtW1Y  = UseExtW1Y;
   fNEvts = 0;
   fMemLim = memlim;
   
@@ -79,7 +83,7 @@ EvtResponse::~EvtResponse() {
  */
 void EvtResponse::Fill(SummaryEvent *evt) {
 
-  if (fNormalised) {
+  if ( fNormalised && !fUseExtW1Y ) {
     throw std::logic_error("ERROR! EvtResponse::Fill() cannot fill an already normalised response!");
   }
   
@@ -132,7 +136,7 @@ void EvtResponse::Fill(SummaryEvent *evt) {
     Int_t ct_reco_bin = fhBinsReco->GetYaxis()->FindBin( -fDir.z()  );
     Int_t by_reco_bin = fhBinsReco->GetZaxis()->FindBin(  fBy       );
 
-    fResp[e_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueEvt(flav, is_cc, is_nb, evt) );
+    fResp[e_reco_bin][ct_reco_bin][by_reco_bin].push_back( TrueEvt(flav, is_cc, is_nb, evt, fUseExtW1Y) );
     fNEvts++;
   }
 
@@ -236,6 +240,12 @@ void  EvtResponse::CountEvents(UInt_t flav, UInt_t iscc, UInt_t isnb, SummaryEve
 */
 void  EvtResponse::Normalise() {
 
+  // no normalisation is performed if external weight-1-year is used
+  if ( fUseExtW1Y ) return; 
+
+  // don't normalise if already normalised
+  if ( fNormalised ) return;
+  
   // first count together N_tot for each neutrino type
   std::map< rangeID, Double_t > N_TOT[TAU+1][2][2];
 
@@ -639,7 +649,16 @@ void EvtResponse::ReadFromFile(TString filename) {
   // read in the true bin data to the response
 
   TFile fin(filename, "READ");
+
+  if ( !fin.IsOpen() ) {
+    throw std::invalid_argument("ERROR! EvtResponse::ReadFromFile() cannot open file " + (string)filename);
+  }
+  
   TTree *tin = (TTree*)fin.Get("evtresponse");
+
+  if ( tin == NULL ) {
+    throw std::invalid_argument("ERROR! EvtResponse::ReadFromFile() cannot find a TTree named 'evtresponse' in the input file.");    
+  }
 
   TrueEvt *te = new TrueEvt();
   Int_t E_reco_bin, ct_reco_bin, by_reco_bin;
