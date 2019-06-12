@@ -19,7 +19,7 @@ Directory structure
 Prerequisities
 ==============
 * ROOT 6: tested at Lyon with /usr/local/root/6.10.02
-* Jpp with aanet, compiled against ROOT 6: tested with v10.1.11007 at Lyon
+* Jpp with aanet, compiled against ROOT 6: tested with v10.1.11007 at Lyon and Ubuntu 16.04
 * [OscProb](https://github.com/joaoabcoelho/OscProb) package needs be available and compiled and an environment variable `OSCPROBDIR` needs to be set to point to the `OscProb` directory.
 * Python scripts will require `docopt` package
 
@@ -39,13 +39,15 @@ The numbers in the version string `vA.B.C-D`, where A to D are numbers, have the
 
 Setup in lyon and elsewhere
 ===========================
-* Add the following to your shell environment
+* Compile `Jpp` against ROOT6 and source `Jpp/setenv.sh`, see sect. *Prerequisities*
+* Compile `OscProb` against ROOT6, see sect. *Prerequisities*
+* Add the following to your shell environment script
 ~~~
 export OSCPROBDIR=/my/path/to/oscprob/
 source /my/path/to/MONA/setenv.sh
 ~~~
 * Build the package by typing `make` in the master directory
-* For most analyses, one required ORCA MC data in MONA format and a MONA effective mass file, which based on the MC summary data and gSeaGen (generator) data. These can be created by the user (section **Setup for usage**) or fetched from iRODS for selected MC productions (section **Pre-processed MC productions**)
+* For most analyses, one requires ORCA MC data in MONA format and a MONA effective mass file, which is based on the MC summary data (ECAP PID) and gSeaGen (generator) data. These can be created by the user (section **Setup for usage**) or fetched from iRODS for selected MC productions (section **Pre-processed MC productions**)
 
 Setup for usage
 ===============
@@ -77,7 +79,7 @@ The naming convention is as follows. The directory up to `.../postprocessing` sp
 
 Available applications
 ======================
-As listed in the previous section, generic applications are available in the `apps/` directory for data preparation for analysis with MONA. There are additional applications in the `apps/` directory, which are typically accompanied with a README file to explain scope and usage.
+As listed in the previous section, generic applications are available in the `apps/` directory for data preparation for analysis with MONA. There are additional applications in the `apps/` directory, which are typically accompanied with a README file to explain scope and usage. Of those, two are highlighted here. Firstly, `apps/LLH_scanner/llh_scanner` can be used to create log-likelihood scans in some oscillation/systematic variable that is very helpful for initial estimates towards the sensitivity of a specific parameter. Secondly, `apps/cmdapps/monafitpars` is a simple command-line tool that prints the names of fit parameters. This is useful when writing analyses and working with `FitUtil`.
 
 ORCA Monte-Carlo chain and *analysis format*
 ============================================
@@ -107,22 +109,20 @@ The analysis format is defined by the class `common_software/SummaryEvent.h/C`. 
 * pos and dir refer to vertex position and neutrino direction, respectively, and are provided for MC truth and 2 reco's (track and shower).
 * energy and bjorkeny refer to the neutrion energy and Bjorken y, respectively, given for MC truth and 2 reco's (bjorkeny for tracks is currently empty).
 * there are variables for various PID scores.
-* For further info, see the documentation for `SummaryParser.h`
+* For further info, see the documentation for `SummaryParser` and `SummaryEvent`
 * The variables `<reco>_ql0(12)` define *quality levels* and are described in detail below.
 
 ### Quality levels
 
 For each reconstruction there are branches called `<reco>_ql0, <reco>_ql1, ...`, where  `ql` stands for *quality level*.
 
-* Quality level 0 is the lowest quality level, meaning somewhere in the reco chain it has been tested that the reconstruction worked in the most minimal way, e.g. that it did not return a NaN.
+* Quality level 0 is the lowest quality level, meaning somewhere in the reco chain it has been tested that the reconstruction worked in the most minimal way, e.g. that it did not return a NaN. E.g, for tracks, typically `gandalf_is_good` flag is stored there.
 
-* Quality level 1 is the next lowest quality level. In this case the reconstruction has been tested against quality cuts set by the reconstruction specialists, as described on the wiki and the Moritz' script. Additionally, in this case the event containment cut is loosened, such that the vertex can be up to 30 m outside the instrumented volume.
+* Quality level 1 is the next lowest quality level. It is up to the user to define what is written there, e.g. for tracks `gandalf_is_selected` can be stored there. To see what is stored in `ql1` for different pre-processed MC mass productions, consult the corresponding `apps/data_sorting/...to_MONA.C` source code.
 
-* Quality level 2 is the highest quality level. It is the same as above, but the vertex needs to be inside the instrumented volume.
+* Quality level 2 and 3 can be used similarly to Quality level 1.
 
-For ECAP April 2018 MC data We are usually advised to use ql1, as it selects more events and improves statistics. For shower there is no level 2 defined.
-
-The quality levels are populated by the user in applications `apps/data_sorting/..._to_MONA`. In the end, it is up to the user to choose what sort of qualities these flags are used for. There is freedom to create custom quality cuts when PID tree is converted to summary formate, e.g. the user can create a new variable in the summary event 
+The quality levels are populated by the user in applications `apps/data_sorting/..._to_MONA`. In the end, it is up to the user to choose what sort of qualities these flags are used for. There is freedom to create custom quality cuts when PID tree is converted to summary format, e.g. the user can create a new variable in the summary event 
 ~~~
 Double_t fTrack_ql3 = (nhits > 30)
 ~~~
