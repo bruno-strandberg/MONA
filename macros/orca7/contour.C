@@ -124,8 +124,9 @@ int main(const int argc, const char** argv) {
     }
   }
 
-  // tau normalisation is not included in the analysis, fix
+  // tau normalisation and e-scale are not included in the analysis, fix
   fu->GetVar("Tau_norm")->setConstant(kTRUE);
+  fu->GetVar("E_scale")->setConstant(kTRUE);
   
   // always fix these osc pars, no sensitivity
   fu->GetVar("SinsqTh12")->setConstant(kTRUE);

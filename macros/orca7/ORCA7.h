@@ -119,17 +119,20 @@ struct ORCA7 {
   TString fEffmF  = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA7_23x9m_ECAP181013.root";
 
   // detector response binning configuration
+  Int_t f_T_ebins    = 40; // true energy bins
+  Int_t f_T_ctbins   = 40; // true cos-theta bins
+  Int_t f_T_bybins   =  1; // true cos-theta bins
   Int_t f_R_ebins    = 20;     
   Int_t f_R_ctbins   = 40;     
   Int_t f_R_bybins   = 1;
 
   // detector response limits
-  Double_t f_R_emin  = 1.0;
-  Double_t f_R_emax  = 100.0;
-  Double_t f_R_ctmin = -1.0;
-  Double_t f_R_ctmax =  1.0;
-  Double_t f_R_bymin = 0.0;
-  Double_t f_R_bymax = 1.0;
+  Double_t f_emin  = 1.0;
+  Double_t f_emax  = 100.0;
+  Double_t f_ctmin = -1.0;
+  Double_t f_ctmax =  1.0;
+  Double_t f_bymin = 0.0;
+  Double_t f_bymax = 1.0;
 
   // pid bin confiugraions and associated responses and pdfs
   vector< O7::PidBinConf > fPidBins;

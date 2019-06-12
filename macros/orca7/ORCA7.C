@@ -34,7 +34,7 @@ ORCA7::ORCA7(UInt_t ResponseType) {
   CreateResponses( fPidBins, ResponseType );
 
   // create fitutil and pdfs
-  fFitUtil = new FitUtilWsyst(f_F_runtime, fResps["trk"]->GetHist3DReco(), f_F_emin, f_F_emax, 
+  fFitUtil = new FitUtilWsyst(f_F_runtime, fResps["trk"]->GetHist3DTrue(), fResps["trk"]->GetHist3DReco(), f_F_emin, f_F_emax, 
 			      f_F_ctmin, f_F_ctmax, f_F_bymin, f_F_bymax, fEffmF);
   
   for (auto P: fResps) {
@@ -69,13 +69,15 @@ void ORCA7::CreateResponses(vector< O7::PidBinConf > pid_bins, UInt_t ResponseTy
     if ( PB.pid_min < 0.7 ) {
 
       if ( ResponseType == DETR ) {
-	R = new DetResponse(DetResponse::shower, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
-			    f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
+	R = new DetResponse(DetResponse::shower, PB.name+"R",
+			    f_T_ebins, f_emin, f_emax, f_T_ctbins, f_ctmin, f_ctmax, f_T_bybins, f_bymin, f_bymax,
+			    f_R_ebins, f_emin, f_emax, f_R_ctbins, f_ctmin, f_ctmax, f_R_bybins, f_bymin, f_bymax);
 
       }
       else {
-	R = new EvtResponse(EvtResponse::shower, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
-			    f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax, UseExtW1Y);
+	R = new EvtResponse(EvtResponse::shower, PB.name+"R",
+			    f_T_ebins, f_emin, f_emax, f_T_ctbins, f_ctmin, f_ctmax, f_T_bybins, f_bymin, f_bymax,
+			    f_R_ebins, f_emin, f_emax, f_R_ctbins, f_ctmin, f_ctmax, f_R_bybins, f_bymin, f_bymax, UseExtW1Y);
       }
 
       R->AddCut( &SummaryEvent::Get_shower_ql0, std::greater<double>(), 0.5, true );
@@ -86,12 +88,14 @@ void ORCA7::CreateResponses(vector< O7::PidBinConf > pid_bins, UInt_t ResponseTy
     else {
 
       if ( ResponseType == DETR ) {
-	R = new DetResponse(DetResponse::customreco, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
-			    f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax);
+	R = new DetResponse(DetResponse::customreco, PB.name+"R",
+			    f_T_ebins, f_emin, f_emax, f_T_ctbins, f_ctmin, f_ctmax, f_T_bybins, f_bymin, f_bymax,
+			    f_R_ebins, f_emin, f_emax, f_R_ctbins, f_ctmin, f_ctmax, f_R_bybins, f_bymin, f_bymax);
       }
       else {
-	R = new EvtResponse(EvtResponse::customreco, PB.name+"R", f_R_ebins, f_R_emin, f_R_emax, 
-			    f_R_ctbins, f_R_ctmin, f_R_ctmax, f_R_bybins, f_R_bymin, f_R_bymax, UseExtW1Y);
+	R = new EvtResponse(EvtResponse::customreco, PB.name+"R",
+			    f_T_ebins, f_emin, f_emax, f_T_ctbins, f_ctmin, f_ctmax, f_T_bybins, f_bymin, f_bymax,
+			    f_R_ebins, f_emin, f_emax, f_R_ctbins, f_ctmin, f_ctmax, f_R_bybins, f_bymin, f_bymax, UseExtW1Y);
       }
 
       R->SetObsFuncPtrs( &CustomEnergy, &CustomDir, &CustomPos, &CustomBY );
@@ -135,21 +139,17 @@ void ORCA7::CreatePriors(FitUtil *F) {
   // the uncertainty there is <=20%, a prior of 20% hopefully helps to avoid the fitter going
   // to regions we know are not physical
   RooGaussian *mu_amu_prior = new RooGaussian("mu_amu_prior", "mu_amu_prior", 
-					      *F->GetVar("skew_mu_amu"), RooConst(0.), RooConst(0.2) );
+					      *F->GetVar("skew_mu_amu"), RooConst(0.), RooConst(0.1) );
   RooGaussian *e_ae_prior = new RooGaussian("e_ae_prior"  , "e_ae_prior"  , 
-					    *F->GetVar("skew_e_ae")  , RooConst(0.), RooConst(0.2) );
+					    *F->GetVar("skew_e_ae")  , RooConst(0.), RooConst(0.1) );
   RooGaussian *mu_e_prior = new RooGaussian("mu_e_prior"  , "mu_e_prior"  , 
-					    *F->GetVar("skew_mu_e")  , RooConst(0.), RooConst(0.2) );
-
-  // energy scale prior is a complete guess; setting 0.15, which means 2sigma is 30%, seems kind-of reasonable
-  RooGaussian *escale_prior = new RooGaussian("escale_prior", "escale_prior", 
-					      *F->GetVar("E_scale"), RooConst(0.), RooConst(0.15));
+					    *F->GetVar("skew_mu_e")  , RooConst(0.), RooConst(0.1) );
 
   // nc normalisation taken from Neutrino2018 poster
   RooGaussian *ncnorm_prior = new RooGaussian("ncnorm_prior", "ncnorm_prior", 
 					      *F->GetVar("NC_norm"), RooConst(1.), RooConst(0.1) );
 
-  fPriors.add( RooArgSet(*mu_amu_prior, *e_ae_prior, *mu_e_prior, *escale_prior, *ncnorm_prior) );
+  fPriors.add( RooArgSet(*mu_amu_prior, *e_ae_prior, *mu_e_prior, *ncnorm_prior) );
 
 }
 
