@@ -108,8 +108,8 @@ void FitOverEstimationCompareGraphsNO() {
     g4->SetMarkerColor(kRed+2);
   //  g4->SetMarkerStyle(21);
   
-    g5->SetLineColor(kAzure+1);
-    g5->SetMarkerColor(kAzure+1);
+    //g5->SetLineColor(kAzure+1);
+    //g5->SetMarkerColor(kAzure+1);
   //  g5->SetMarkerStyle(21);
   
     //g10->SetLineColor(kBlack);
@@ -121,7 +121,7 @@ void FitOverEstimationCompareGraphsNO() {
     g2->Draw("apl"); 
     g3->Draw("pl"); 
     g4->Draw("pl"); 
-    g5->Draw("pl"); 
+    //g5->Draw("pl"); 
     //g10->Draw("pl"); 
   
     g2->SetTitle(plot_title);
@@ -133,7 +133,7 @@ void FitOverEstimationCompareGraphsNO() {
     leg->AddEntry(g2, Form(legend_label, 2), legend_plotstyle);
     leg->AddEntry(g3, Form(legend_label, 3), legend_plotstyle);
     leg->AddEntry(g4, Form(legend_label, 4), legend_plotstyle);
-    leg->AddEntry(g5, Form(legend_label, 5), legend_plotstyle);
+    //leg->AddEntry(g5, Form(legend_label, 5), legend_plotstyle);
     //leg->AddEntry(g10, Form(legend_label, 10), legend_plotstyle);
     leg->Draw();
   

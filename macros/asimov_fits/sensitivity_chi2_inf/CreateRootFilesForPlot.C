@@ -58,6 +58,7 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle, Bool_t 
   Double_t kParameter;
   Double_t kErr;
   Double_t nEvtsMin; // number of MC events needed to get to 1% of the asymtotic chi2 value (N)
+  Double_t exponent;
 
   TTree* t_inf_chi2 = new TTree("inf_" + tree_nametitle, "Chi2_inf values from fit " + tree_nametitle);
   TBranch* b_th23          = t_inf_chi2->Branch("th23", &th23, "th23/I");
@@ -68,6 +69,7 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle, Bool_t 
   TBranch* b_kParameter    = t_inf_chi2->Branch("kParameter", &kParameter, "kParameter/D");
   TBranch* b_kErr          = t_inf_chi2->Branch("kErr", &kErr, "kErr/D");
   TBranch* b_nEvtsMin      = t_inf_chi2->Branch("nEvtsMin", &nEvtsMin, "nEvtsMin/D");
+  TBranch* b_exponent      = t_inf_chi2->Branch("exponent", &exponent, "exponent/D");
 
   for (Int_t i = th23_min; i <= th23_max; i++) {
     Int_t n = input_ttree->Draw("percentage:fit_chi2", Form("th23==%i", i), "goff"); 
@@ -89,6 +91,7 @@ TTree* CalculateChi2Infinite(TTree* input_ttree, TString tree_nametitle, Bool_t 
     kParameter = pars[1];
     kErr = errs[1];
     nEvtsMin = (kParameter + kErr) / (0.01 * (inf_chi2 - inf_err) );
+    exponent = pars[2];
 
     gStyle->SetOptFit(kTRUE);
     if (write_scatter) g->Write(Form("scatter_chi2_%i_", i) + tree_nametitle);
