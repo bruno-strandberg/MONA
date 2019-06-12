@@ -124,7 +124,8 @@ TCanvas* ComparisonGraph(Int_t nPidCategories, TString ordering, Double_t yMin, 
 
   TGraphErrors* gBinNormQFinIO = (TGraphErrors*)fNormalQ->Get(getString + "_fin"); // N Bins, Normal Q, Finite statistics, IO
   gBinNormQFinIO->SetLineColor(kRed+2);
-  gBinNormQFinIO->SetLineStyle(7);
+  gBinNormQFinIO->SetLineStyle(1);
+  gBinNormQFinIO->SetLineWidth(2);
 
   TGraphErrors* gBinNormQInfIO = (TGraphErrors*)fNormalQ->Get(getString + "_inf");
   gBinNormQInfIO->SetLineColor(kRed+2);
@@ -132,7 +133,8 @@ TCanvas* ComparisonGraph(Int_t nPidCategories, TString ordering, Double_t yMin, 
 
   TGraphErrors* gBinRandQFinIO = (TGraphErrors*)fRandomQ->Get(getString + "_fin");
   gBinRandQFinIO->SetLineColor(kBlue+1);
-  gBinRandQFinIO->SetLineStyle(7);
+  gBinRandQFinIO->SetLineStyle(1);
+  gBinRandQFinIO->SetLineWidth(2);
 
   TGraphErrors* gBinRandQInfIO = (TGraphErrors*)fRandomQ->Get(getString + "_inf");
   gBinRandQInfIO->SetLineColor(kBlue+1);
@@ -143,9 +145,9 @@ TCanvas* ComparisonGraph(Int_t nPidCategories, TString ordering, Double_t yMin, 
   gBinNormQFinIO->SetMaximum(yMax);
 
   gBinNormQFinIO->Draw();
-  gBinNormQInfIO->Draw("same");
+  //gBinNormQInfIO->Draw("same");
   gBinRandQFinIO->Draw("same");
-  gBinRandQInfIO->Draw("same");
+  //gBinRandQInfIO->Draw("same");
 
   ordering.ToUpper();
   gBinNormQFinIO->SetTitle(Form("Sensitivity comparison: %i PID categories " + ordering, nPidCategories));
@@ -153,9 +155,9 @@ TCanvas* ComparisonGraph(Int_t nPidCategories, TString ordering, Double_t yMin, 
   gBinNormQFinIO->GetYaxis()->SetTitle("#sqrt{ #Delta #chi^{2} }");
 
   leg->AddEntry(gBinNormQFinIO, "#Delta #chi^{2}, real track score ", "lp");
-  leg->AddEntry(gBinNormQInfIO, "#Delta #chi^{2} #infty, real track score" , "lpe");
+  //leg->AddEntry(gBinNormQInfIO, "#Delta #chi^{2} #infty, real track score" , "lpe");
   leg->AddEntry(gBinRandQFinIO, "#Delta #chi^{2}, random track score", "lp");
-  leg->AddEntry(gBinRandQInfIO, "#Delta #chi^{2} #infty, random track score", "lpe");
+  //leg->AddEntry(gBinRandQInfIO, "#Delta #chi^{2} #infty, random track score", "lpe");
   leg->Draw();
 
   return c;
