@@ -122,6 +122,7 @@ def run_tests(tests_dir):
         executables = os.popen("find {} -maxdepth 1 -perm -111 -type f".format(subdir)).read().split()        
         for test_script in executables:
             print("+ {}".format(test_script), end=' => ')
+            sys.stdout.flush()
             start_time = time()
             proc = Popen(test_script, stdout=PIPE, stderr=PIPE)
             out, err = proc.communicate()
