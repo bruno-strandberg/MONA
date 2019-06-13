@@ -5,6 +5,7 @@
 #include "TH1.h"
 #include "TStyle.h"
 #include "TLegend.h"
+#include "TLatex.h"
 
 void EoverZ() {
   
@@ -124,5 +125,9 @@ void EoverZ() {
   }
 
   leg->Draw();
+
+  TLatex latex;
+  latex.DrawLatex(350, 50, "KM3NeT preliminary");
+
   
 }
