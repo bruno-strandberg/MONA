@@ -1,7 +1,0 @@
-#===============================================
-# below here I ignore some specific cases
-#===============================================
-
-SharedDic.cxx
-plots/
-rootfiles/
