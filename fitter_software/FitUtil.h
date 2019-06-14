@@ -94,6 +94,7 @@ class FitUtil {
   void SetIOlims();
   void SetIOcentvals();
   void FreeParLims();
+  void PrintParameters();
   
   //------------------------------------------------------------------
   // setters/getters

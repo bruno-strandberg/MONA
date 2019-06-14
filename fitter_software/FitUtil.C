@@ -1343,3 +1343,28 @@ void FitUtil::ClearCache3D(cache3D_t cache, TAxis *xaxis, TAxis *yaxis) {
   delete [] cache;
 	
 }
+
+//***************************************************************************
+
+/** Helper function for developers and users that prints out all parameters known to `RooFit`.
+
+    The printed names can be as input for the function `FitUtil::GetVar` to manipuate fit parameters.
+
+*/
+void FitUtil::PrintParameters() {
+
+  TIterator *it = fParSet.createIterator();
+  RooRealVar* var;
+
+  while ( ( var = (RooRealVar*)it->Next() ) ) {
+
+    if ( fObsList.find(var->GetName()) != NULL ) {
+      cout << "NOTICE FitUtil::PrintParameters() observable: " << var->GetName() << endl;
+    }
+    else {
+      cout << "NOTICE FitUtil::PrintParameters() parameter: " << var->GetName() << endl;
+    }
+
+  }
+  
+}
