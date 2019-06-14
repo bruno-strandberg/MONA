@@ -136,6 +136,17 @@ void AsimovFitNOTh23Range_PercentageOfMC(Int_t jobnumber=0) {
 
     auto meff_file = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_23x9m_ECAP180401.root";
 
+    Bool_t mcFilesMatch =  NMHUtils::DatatagMatch(summary_file, meff_file);
+    if (not mcFilesMatch) { 
+      cout << "ERROR: The datatags on the MC input files do not match: " << endl;
+      cout << summary_file << endl;
+      cout << meff_file << endl;
+      exit(-1);
+    }
+    else { 
+      cout << "NOTICE: The datatags on the MC input files match!" << endl;
+    }
+
     for (Int_t j = 0; j < 11; j++) {
       FitUtil *fitutil = new FitUtil(3, track_response_vector[0]->GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);
 

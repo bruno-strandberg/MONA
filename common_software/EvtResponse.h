@@ -18,12 +18,13 @@ class TrueEvt {
  TrueEvt() : fFlav(0), fIsCC(0), fIsNB(0), fIchan(0), fE_true(0), fCt_true(0), fBy_true(0), f_W1y(0) {};
 
   /** Constructor from `SummaryEvent` that packs the necessary info to member variables.
-      \param flav  Neutrino flavor (0 - elec, 1 - muon, 2 - tau)
-      \param iscc  Interaction type 0 - NC, 1 - CC
-      \param isnb  nu or antineutrino 0 - neutrino, 1 - antineutrino
-      \param evt   Pointer to a summary event
+      \param flav   Neutrino flavor (0 - elec, 1 - muon, 2 - tau)
+      \param iscc   Interaction type 0 - NC, 1 - CC
+      \param isnb   nu or antineutrino 0 - neutrino, 1 - antineutrino
+      \param evt    Pointer to a summary event
+      \param extw1y Use the weight-1-year stored in the `SummaryEvent`; otherwise weight-1-year is calculated from gSeaGen W2 by `EvtResponse::Normalise`
    */
-  TrueEvt(UInt_t flav, UInt_t iscc, UInt_t isnb, SummaryEvent *evt) {
+  TrueEvt(UInt_t flav, UInt_t iscc, UInt_t isnb, SummaryEvent *evt, Bool_t extw1y) {
 
     if (flav > 2 || iscc > 1 || isnb > 1) {
       throw std::invalid_argument( "ERROR! TrueEvt::TrueEvt() unknown neutrino type with flavor, is_cc (flag), is_nb (flag) "
@@ -33,11 +34,11 @@ class TrueEvt {
     fFlav    = (Short_t)flav;
     fIsCC    = (bool)iscc;
     fIsNB    = (bool)isnb;
-    fIchan   = 0;                             //future placeholder for xsec systematics, for now not used
+    fIchan   = (Short_t)evt->Get_MC_ichan();
     fE_true  = (Float_t)evt->Get_MC_energy();
     fCt_true = (Short_t)( -evt->Get_MC_dir_z()    * 1e4 );
     fBy_true = (Short_t)(  evt->Get_MC_bjorkeny() * 1e4 );
-    f_W1y    = (Float_t)evt->Get_MC_w2();
+    extw1y ? f_W1y = (Float_t)evt->Get_MC_w1y() : f_W1y = (Float_t)evt->Get_MC_w2();
     
   }
   
@@ -124,10 +125,10 @@ class EvtResponse : public AbsResponse {
  public:
 
   EvtResponse(reco reco_type, TString resp_name,
-	      Int_t ebins , Double_t emin , Double_t emax ,
-  	      Int_t ctbins, Double_t ctmin, Double_t ctmax,
-  	      Int_t bybins, Double_t bymin, Double_t bymax,
-	      Double_t memlim = 4);
+	      Int_t ebins  = 40, Double_t emin  =  1., Double_t emax  = 100.,
+  	      Int_t ctbins = 40, Double_t ctmin = -1., Double_t ctmax = 1.,
+  	      Int_t bybins =  1, Double_t bymin =  0., Double_t bymax = 1.,
+	      Bool_t UseExtW1Y = kTRUE, Double_t memlim = 4);
   
   EvtResponse(reco reco_type, TString resp_name,
 	      Int_t t_ebins , Double_t t_emin , Double_t t_emax ,
@@ -136,7 +137,7 @@ class EvtResponse : public AbsResponse {
 	      Int_t r_ebins , Double_t r_emin , Double_t r_emax ,
   	      Int_t r_ctbins, Double_t r_ctmin, Double_t r_ctmax,
   	      Int_t r_bybins, Double_t r_bymin, Double_t r_bymax,
-	      Double_t memlim = 4);
+	      Bool_t UseExtW1Y = kTRUE, Double_t memlim = 4);
 
   ~EvtResponse();
 
@@ -145,7 +146,9 @@ class EvtResponse : public AbsResponse {
   std::pair<Double_t, Double_t> GetAtmMuCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   std::pair<Double_t, Double_t> GetNoiseCount1y(Double_t E_reco, Double_t ct_reco, Double_t by_reco);
   void PrintRunData();
-  TCanvas* DisplayResponse(Double_t e_reco, Double_t ct_reco);
+  void WriteToFile(TString filename);
+  void ReadFromFile(TString filename);
+  TCanvas* DisplayResponse(Double_t e_reco, Double_t ct_reco, TString outname="");
   
   /** Returns that this implementation is of the response type `EvtResponse` 
       \return `AbsResponse::EvtResponse`
@@ -167,6 +170,9 @@ class EvtResponse : public AbsResponse {
   TH3D* CloneFromTemplate(TH3D* tmpl, TString name);
   void  CountEvents(UInt_t flav, UInt_t iscc, UInt_t isnb, SummaryEvent *evt);
   void  Normalise();
+  void  CleanResponse();
+  void  InitResponse(Int_t ebins, Int_t ctbins, Int_t bybins);
+
   
   typedef std::pair<Double_t, Double_t>   rangeID; //!< type definition for identifying a range
   typedef std::pair<Double_t, Double_t>   runID;   //!< type definition for identifying a run
@@ -175,6 +181,7 @@ class EvtResponse : public AbsResponse {
   const double fSec_per_y   = 365.2421897 * 24 * 60 * 60; //!< seconds in a tropical year
 
   Bool_t   fNormalised;           //!< flag to indicate that the weights have been normalised to weight one year
+  Bool_t   fUseExtW1Y;            //!< flag to indicate that instead of trying to calculuate weight-1-year from w2, use the weight-1-year stored in the summary events 
   Double_t fNEvts;                //!< calculates the total number of events in a response
   Double_t fMemLim;               //!< user-defined limit to how much RAM the response can eat up
   Int_t    fEbins;                //!< number of reco energy bins in `fResp`

@@ -6,15 +6,15 @@ Programs in this directory can be used to create effective mass histograms. The 
 Prerequisities
 ==============
 * The scripts use the library in`common_software/` and Jpp headers.
-* The scripts require ORCA simulation chain summary files in analysis format in `NMH/data/mcsummary/TAG/data_atmnu/`. These can be created with the applications in `apps/data_sorting/`.
-* The scripts require ORCA simulation chain start (gSeaGen files) in `NMH/data/gseagen/TAG/data_atmnu`
+* The scripts require ORCA simulation chain summary files in analysis format in `MONA/data/mcsummary/TAG/data_atmnu/`. These can be created with the `RestoreParity` applications in `apps/data_sorting/`.
+* The scripts require ORCA simulation chain start (gSeaGen files) in `MONA/data/gseagen/TAG/data_atmnu`
 
 How to run
 ==========
 
-The application `EffMhists` creates effective mass histograms for one flavor for a given gSeaGen and summary file. Do `./EffMhists -h!` and read the doxygen doxumentation for more information.
+The application `EffMhists` creates effective mass histograms for one flavor for a given gSeaGen and summary file. Do `./EffMhists -h!` and read the doxygen doxumentation for more information.  NB: This application is applied to *one* summaryfile that is split up after `RestoreParity`. It can take multiple gSeaGen files as input, but only one summaryfile.
 
-The script `EMH_caller.py` can be called to run `EffMhists` for all of the summary files in `NMH/data/mcsummary/TAG/data_atmnu/` directory, given that corresponding gSeaGen files are available.
+The script `EMH_caller.py` can be called to run `EffMhists` for all of the summary files in `MONA/data/mcsummary/TAG/data_atmnu/` directory, given that corresponding gSeaGen files are available.
 
 The application `Combine` uses the `common_software/EffMass` class and combines all of the outputs from `EffMhists` to a single output file. That file can be loaded to another `EffMass` instance to calculate effective masses.
 

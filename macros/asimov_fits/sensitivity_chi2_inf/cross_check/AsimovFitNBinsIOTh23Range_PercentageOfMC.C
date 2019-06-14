@@ -41,16 +41,17 @@ using namespace RooFit;
 void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) {
 
   Bool_t use_random_q = kTRUE;
-  const int N_PID_CLASSES = N_PID;
-  const Double_t PID_CUT = 0.6;
+  const Int_t N_PID_PATH_NUMBER = N_PID;
+  const Int_t N_PID_CLASSES = GetNumPIDCats(N_PID);
+  const Double_t PID_CUT = GetPIDCut(N_PID);
 
-  std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID_CLASSES);
+  std::map<Int_t, Double_t> pid_map = SetPIDCase(N_PID);
 
   gRandom->SetSeed(0);
 
   TString MONADIR = (TString)getenv("MONADIR") + "/macros/asimov_fits/";
   TString s_outputfile = MONADIR + Form("output/csv/SensChi2Inf_20mCrossCheck/AsimovFit%iBinsIOTh23Range_PercentageOfMC/AsimovFit%iBinsIOTh23Range_PercentageOfMC_%i.csv",
-          N_PID_CLASSES, N_PID_CLASSES, jobnumber);
+          N_PID_PATH_NUMBER, N_PID_PATH_NUMBER, jobnumber);
 
   // DetRes input values
   Int_t EBins = 20;
@@ -139,11 +140,11 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
         // in the area of shower (track), reroll until it doesnt.
         Double_t track_score = evt->Get_RDF_track_score();
         Double_t ran = q_dist->GetRandom();
-        if (track_score <= 0.6) {
-          while (ran > 0.6) ran = q_dist->GetRandom();
+        if (track_score <= PID_CUT) {
+          while (ran > PID_CUT) ran = q_dist->GetRandom();
         }
         else {
-           while (ran <= 0.6) ran = q_dist->GetRandom();
+           while (ran <= PID_CUT) ran = q_dist->GetRandom();
         }
  
         evt->Set_RDF_track_score(ran);
@@ -163,6 +164,17 @@ void AsimovFitNBinsIOTh23Range_PercentageOfMC(Int_t jobnumber=0, Int_t N_PID=3) 
     //----------------------------------------------------------
 
     auto meff_file = (TString)getenv("MONADIR") + "/data/eff_mass/EffMass_ORCA115_20x9m_ECAP190222.root";
+
+    Bool_t mcFilesMatch =  NMHUtils::DatatagMatch(summary_file, meff_file);
+    if (not mcFilesMatch) { 
+      cout << "ERROR: The datatags on the MC input files do not match: " << endl;
+      cout << summary_file << endl;
+      cout << meff_file << endl;
+      exit(-1);
+    }
+    else { 
+      cout << "NOTICE: The datatags on the MC input files match!" << endl;
+    }
 
     for (Int_t j = 0; j < 11; j++) {
       FitUtil *fitutil = new FitUtil(3, track_response_vector[0]->GetHist3D(), fitEMin, fitEMax, fitctMin, fitctMax, 0, 1, meff_file);

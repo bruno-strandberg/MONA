@@ -178,10 +178,85 @@ std::map<Int_t, Double_t> SetPIDCase(Int_t n) {
         pid_map.insert(std::make_pair(i, i / float(n) )); 
       }
       break;
+    case 21:
+      cout << "NOTICE: Set PID case " << n << endl;
+      pid_map.insert(std::make_pair(0, 0.0)); // shower
+      pid_map.insert(std::make_pair(1, 0.7)); // track
+      pid_map.insert(std::make_pair(2, 1.0)); // upper limit
+      break;
+    case 22:
+      cout << "NOTICE: Set PID case " << n << endl;
+      pid_map.insert(std::make_pair(0, 0.0)); // shower
+      pid_map.insert(std::make_pair(1, 0.8)); // track
+      pid_map.insert(std::make_pair(2, 1.0)); // upper limit
+      break;
+    case 31:
+      cout << "NOTICE: Set PID case " << n << endl;
+      cout << "NOTICE: Non-standard ranges on the PID categories!" << endl;
+      cout << "NOTICE: The user must set the track-shower cut to 0.8" << endl;
+      pid_map.insert(std::make_pair(0, 0.0)); // shower
+      pid_map.insert(std::make_pair(1, 0.4)); // middle group: shower
+      pid_map.insert(std::make_pair(2, 0.8)); // track
+      pid_map.insert(std::make_pair(3, 1.0)); // upper limit 
+      break;
+    case 32:
+      cout << "NOTICE: Set PID case " << n << endl;
+      cout << "NOTICE: Non-standard ranges on the PID categories!" << endl;
+      cout << "NOTICE: The user must set the track-shower cut to 0.7" << endl;
+      pid_map.insert(std::make_pair(0, 0.0)); // shower
+      pid_map.insert(std::make_pair(1, 0.3)); // middle group: shower
+      pid_map.insert(std::make_pair(2, 0.7)); // track
+      pid_map.insert(std::make_pair(3, 1.0)); // upper limit 
+      break;
+    case 41:
+      cout << "NOTICE: Set PID case " << n << endl;
+      cout << "NOTICE: Non-standard ranges on the PID categories!" << endl;
+      cout << "NOTICE: The user must set the track-shower cut to 0.7" << endl;
+      pid_map.insert(std::make_pair(0, 0.0)); // shower
+      pid_map.insert(std::make_pair(1, 0.3)); // lower group: shower
+      pid_map.insert(std::make_pair(2, 0.5)); // middle group: shower
+      pid_map.insert(std::make_pair(3, 0.7)); // track
+      pid_map.insert(std::make_pair(4, 1.0)); // upper limit 
+      break;
   }
 
   return pid_map;
 
+}
+
+
+/** Function to give the PID cut for track and shower.
+ *  
+ *  There are some exceptional cases for the PID binnins, they are stored under
+ *  the values 31, 42, etc. These number mean: 
+ *  31 --> 3 PID bins, case 1
+ *  42 --> 4 PID bins, case 2, etc.
+ *  This naming scheme works under the assumption that we never take more than 10 
+ *  PID categories.
+ *
+ *  returns Int_t below 10.
+ */
+Int_t GetNumPIDCats(Int_t n) {
+  if (n <= 10) return n;
+  else return n / 10;
+}
+
+/** Funtion to return the PID cut between tracks and showers.
+ *  Watch out that these values are hardcoded and depend on the
+ *  values above. Above is safer since it does not depend on
+ *  anything. This function depends on SetPIDCase.
+ */
+Double_t GetPIDCut(Int_t n) {
+  if (n <= 10) return 0.6;
+  else if (n == 21) return 0.7;
+  else if (n == 22) return 0.8;
+  else if (n == 31) return 0.8;
+  else if (n == 32) return 0.7;
+  else if (n == 41) return 0.7;
+  else {
+    cout << "ERROR: Invalid PID number given. Exiting." << endl;   
+    exit(-1);
+  }
 }
 
 

@@ -94,6 +94,7 @@ class FitUtil {
   void SetIOlims();
   void SetIOcentvals();
   void FreeParLims();
+  void PrintParameters();
   
   //------------------------------------------------------------------
   // setters/getters
@@ -134,6 +135,14 @@ class FitUtil {
     fFluxSamplesN = nsamples;
     FillFluxCache(fFlux, fOpTime, fFluxSamplesN);  // re-fill the cache
   }
+
+  /** Function to control the usage of atm. mu and noise events filled to the detector responses
+      
+      If set the true, the functions `GetAtmMuCount1y` and `GetNoiseCount1y` of `DetResponse` and `EvtResponse` are used to add the atm. muon and noise events that pass the selection cuts to the expectation value returned by `FitUtil::RecoEvts`. Note that in some ORCA MC summary data noise and atm. mu are not present - clearly if no muon and noise data are filled to the responses, addition of atm. muon anod noise data will not affect the expectation.
+
+      \param useatmmunoise if true, use atm. muons and noise; don't use them if false
+   */
+  void SetUseAtmMuAndNoise(Bool_t useatmmunoise) { fAddAtmMuNoise = useatmmunoise; }
 
   /** Get the `RooArgSet` with all parameters known to `RooFit`
       \return `RooArgSet` with known parameters.
@@ -286,10 +295,13 @@ class FitUtil {
   Bool_t          CheckVarCache(const proxymap_t& proxymap);
   void            UpdateVarCache(const proxymap_t& proxymap);
 
-  void FillTECache(const proxymap_t& proxymap);
-  
   virtual Bool_t ConfigOscProb(const proxymap_t& proxymap);
-  void           ProbCacher(const proxymap_t& proxymap, UInt_t nsamples);  
+  virtual std::pair< Double_t, Double_t > RecoEvtsDR(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+						     DetResponse *resp, const proxymap_t &proxymap,
+						     Bool_t AddMuonsNoise);
+  virtual std::pair< Double_t, Double_t > RecoEvtsER(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+						     EvtResponse *resp, const proxymap_t &proxymap,
+						     Bool_t AddMuonsNoise);
 
   cache1D_t InitCache1D(TAxis* xaxis);
   cache2D_t InitCache2D(TAxis* xaxis, TAxis* yaxis);
@@ -302,6 +314,8 @@ class FitUtil {
   void InitCacheHists(TH3D *h_template);
   void FillFluxCache(AtmFlux *flux, Double_t op_time, UInt_t nsamples);
   void FillXsecMeffCache(NuXsec *xsec, EffMass *meff);
+  void ProbCacher(const proxymap_t& proxymap, UInt_t nsamples);    
+  void FillTECache(const proxymap_t& proxymap);
 
   std::tuple<Double_t, Double_t, Int_t, Int_t> GetRange(Double_t min, Double_t max, TAxis *axis);
   enum rangeret { MIN=0, MAX, MINBIN, MAXBIN };           //!< enum for function `GetRange` return
@@ -345,6 +359,7 @@ class FitUtil {
   
   UInt_t   fFluxSamplesN;        //!< determines the number of samples^2 per bin in flux calculation
   UInt_t   fOscSamplesN;         //!< determines the number of samples^2 per bin in oscillation prob calculation
+  Bool_t   fAddAtmMuNoise;       //!< flag to determine whether atm muons and noise are included in the model
   UInt_t   f_cache_oscsamplesn;  //!< internal cache for fOscSamplesN values
 
   //------------------------------------------------------------------

@@ -54,6 +54,12 @@ class AbsResponse : public EventFilter {
   /** Purely virtual method to fill the response that needs to be re-implemented in inheriting classes */
   virtual void Fill(SummaryEvent* evt) = 0;
 
+  /** Purely virtual method to write the response into a file */
+  virtual void WriteToFile(TString filename) = 0;
+
+  /** Purely virtual method to read the response from a file */
+  virtual void ReadFromFile(TString filename) = 0;
+  
   /** Purely virtual method to return the response type from the enumerator `AbsResponse::resp` in the inheriting class.
       This is required to be able to be to have a singular interface to RooFit functionality, but decide in the function `FitUtil::RecoEvts` how to proceed with the calculation.
    */

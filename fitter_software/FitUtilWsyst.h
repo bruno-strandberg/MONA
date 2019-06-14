@@ -14,6 +14,10 @@ class FitUtilWsyst : public FitUtil {
   
 public:
 
+  FitUtilWsyst(Double_t op_time, TH3 *h_temp_T, TH3 *h_temp_R,
+	       Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax,
+	       Double_t bymin, Double_t bymax, TString meff_file);
+
   FitUtilWsyst(Double_t op_time, TH3 *h_template,
 	       Double_t emin, Double_t emax, Double_t ctmin, Double_t ctmax,
 	       Double_t bymin, Double_t bymax, TString meff_file);
@@ -35,7 +39,10 @@ protected:
   //--------------------------------------------------------------------
   // protected functions
   //--------------------------------------------------------------------
-  
+
+  virtual std::pair< Double_t, Double_t > RecoEvtsER(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+						     EvtResponse *resp, const proxymap_t &proxymap,
+						     Bool_t AddMuonsNoise);  
   Double_t FluxTiltCoeff(Double_t energy, Double_t costheta, Double_t e_tilt, Double_t ct_tilt);  
   void     CalcTiltedFluxNorms(Double_t e_tilt, Double_t ct_tilt);  
   Double_t GetTiltedFlux(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin,

@@ -17,9 +17,24 @@ using namespace std;
     
  */
 DetResponse::DetResponse(reco reco_type, TString resp_name,
-			 Int_t ebins , Double_t emin , Double_t emax  ,
-			 Int_t ctbins, Double_t ctmin, Double_t ctmax ,
-			 Int_t bybins, Double_t bymin, Double_t bymax ) : AbsResponse(reco_type, resp_name, ebins, emin, emax, ctbins, ctmin, ctmax, bybins, bymin, bymax) {
+			 Int_t ebins , Double_t emin , Double_t emax ,
+			 Int_t ctbins, Double_t ctmin, Double_t ctmax,
+			 Int_t bybins, Double_t bymin, Double_t bymax) : DetResponse(reco_type, resp_name, ebins, emin, emax, ctbins, ctmin, ctmax, bybins, bymin, bymax, ebins, emin, emax, ctbins, ctmin, ctmax, bybins, bymin, bymax) {};
+
+//*********************************************************************************
+
+/** Constructor.
+
+    See `AbsResponse` constructor with matching parameter interface for more info.
+    
+ */
+DetResponse::DetResponse(reco reco_type, TString resp_name,
+			 Int_t t_ebins , Double_t t_emin , Double_t t_emax  ,
+			 Int_t t_ctbins, Double_t t_ctmin, Double_t t_ctmax ,
+			 Int_t t_bybins, Double_t t_bymin, Double_t t_bymax ,
+			 Int_t r_ebins , Double_t r_emin , Double_t r_emax  ,
+			 Int_t r_ctbins, Double_t r_ctmin, Double_t r_ctmax ,
+			 Int_t r_bybins, Double_t r_bymin, Double_t r_bymax ) : AbsResponse(reco_type, resp_name, t_ebins, t_emin, t_emax, t_ctbins, t_ctmin, t_ctmax, t_bybins, t_bymin, t_bymax, r_ebins, r_emin, r_emax, r_ctbins, r_ctmin, r_ctmax, r_bybins, r_bymin, r_bymax) {
   
   fNormalised = false;
     
@@ -45,9 +60,9 @@ DetResponse::DetResponse(reco reco_type, TString resp_name,
   // bin [0] is underflow, bin[ axis->GetNbins() ] is the last counting bin (hence dimension length +1),
   // bin[ axis->GetNbins()+1 ] is overflow (hence dimension length + 2)
   //----------------------------------------------------------
-  fEbins  = fHResp->GetXaxis()->GetNbins() + 2;
-  fCtbins = fHResp->GetYaxis()->GetNbins() + 2;
-  fBybins = fHResp->GetZaxis()->GetNbins() + 2;
+  fEbins  = fhBinsReco->GetXaxis()->GetNbins() + 2;
+  fCtbins = fhBinsReco->GetYaxis()->GetNbins() + 2;
+  fBybins = fhBinsReco->GetZaxis()->GetNbins() + 2;
 
   InitResponse(fEbins, fCtbins, fBybins);
   
@@ -269,13 +284,13 @@ void DetResponse::FillNuEvents(UInt_t flav, UInt_t is_cc, UInt_t is_nb, SummaryE
 
   fHResp->Fill(fEnergy, -fDir.z(), fBy);
 
-  Int_t  e_true_bin = fHResp->GetXaxis()->FindBin(  evt->Get_MC_energy()   );
-  Int_t ct_true_bin = fHResp->GetYaxis()->FindBin( -evt->Get_MC_dir_z()    );
-  Int_t by_true_bin = fHResp->GetZaxis()->FindBin(  evt->Get_MC_bjorkeny() );
+  Int_t  e_true_bin = fhBinsTrue->GetXaxis()->FindBin(  evt->Get_MC_energy()   );
+  Int_t ct_true_bin = fhBinsTrue->GetYaxis()->FindBin( -evt->Get_MC_dir_z()    );
+  Int_t by_true_bin = fhBinsTrue->GetZaxis()->FindBin(  evt->Get_MC_bjorkeny() );
 
-  Int_t  e_reco_bin = fHResp->GetXaxis()->FindBin(  fEnergy   );
-  Int_t ct_reco_bin = fHResp->GetYaxis()->FindBin( -fDir.z()  );
-  Int_t by_reco_bin = fHResp->GetZaxis()->FindBin(  fBy       );
+  Int_t  e_reco_bin = fhBinsReco->GetXaxis()->FindBin(  fEnergy   );
+  Int_t ct_reco_bin = fhBinsReco->GetYaxis()->FindBin( -fDir.z()  );
+  Int_t by_reco_bin = fhBinsReco->GetZaxis()->FindBin(  fBy       );
 
   TrueB tbin(flav, is_cc, is_nb, e_true_bin, ct_true_bin, by_true_bin);
   std::vector<TrueB>& true_bins = fResp[e_reco_bin][ct_reco_bin][by_reco_bin];
@@ -349,9 +364,9 @@ const std::vector<TrueB>& DetResponse::GetBinWeights(Double_t E_reco, Double_t c
 
   if (!fNormalised) Normalise();
   
-  Int_t ebin  = fHResp->GetXaxis()->FindBin(E_reco);
-  Int_t ctbin = fHResp->GetYaxis()->FindBin(ct_reco);
-  Int_t bybin = fHResp->GetZaxis()->FindBin(by_reco);
+  Int_t ebin  = fhBinsReco->GetXaxis()->FindBin(E_reco);
+  Int_t ctbin = fhBinsReco->GetYaxis()->FindBin(ct_reco);
+  Int_t bybin = fhBinsReco->GetZaxis()->FindBin(by_reco);
 
   return fResp[ebin][ctbin][bybin];
 }
@@ -470,6 +485,8 @@ void DetResponse::WriteToFile(TString filename) {
   }
 
   fHResp->Write("hresp");
+  fhBinsTrue->Write("hbinstrue");
+  fhBinsReco->Write("hbinsreco");
   fhAtmMuCount1y->Write("atmmucount");
   fhNoiseCount1y->Write("noisecount");
 
@@ -507,8 +524,17 @@ void DetResponse::ReadFromFile(TString filename) {
   // read in the true bin data to the response
 
   TFile fin(filename, "READ");
+
+  if ( !fin.IsOpen() ) {
+    throw std::invalid_argument("ERROR! DetResponse::ReadFromFile() cannot open file " + (string)filename);
+  }
+  
   TTree *tin = (TTree*)fin.Get("detresponse");
 
+  if ( tin == NULL ) {
+    throw std::invalid_argument("ERROR! DetResponse::ReadFromFile() cannot find a TTree named 'detresponse' in the input file.");    
+  }
+  
   TrueB *tb = new TrueB();
   Int_t E_reco_bin, ct_reco_bin, by_reco_bin;
 
@@ -539,6 +565,14 @@ void DetResponse::ReadFromFile(TString filename) {
   fHResp = (TH3D*)fin.Get("hresp")->Clone();
   fHResp->SetDirectory(0);
   fHResp->SetNameTitle("hresp_" + fRespName, "hresp_" + fRespName);
+
+  fhBinsTrue = (TH3D*)fin.Get("hbinstrue")->Clone();
+  fhBinsTrue->SetDirectory(0);
+  fhBinsTrue->SetNameTitle("hbinstrue_" + fRespName, "hbinstrue_" + fRespName);
+
+  fhBinsReco = (TH3D*)fin.Get("hbinsreco")->Clone();
+  fhBinsReco->SetDirectory(0);
+  fhBinsReco->SetNameTitle("hbinsreco_" + fRespName, "hbinsreco_" + fRespName);
 
   fhAtmMuCount1y = (TH3D*)fin.Get("atmmucount")->Clone();
   fhAtmMuCount1y->SetDirectory(0);
@@ -582,8 +616,8 @@ std::tuple<TCanvas*,TCanvas*,TCanvas*> DetResponse::DisplayResponse(Double_t e_r
       for (auto p: fPols) {
 	TString wname = "weights_" + f.second + "_" + i.second + "_" + p.second + suffix;
 	TString nname = "counts_" + f.second + "_" + i.second + "_" + p.second + suffix;
-	hw[f.first][i.first][p.first] = (TH2D*)fHResp->Project3D("yx")->Clone();
-	hn[f.first][i.first][p.first] = (TH2D*)fHResp->Project3D("yx")->Clone();
+	hw[f.first][i.first][p.first] = (TH2D*)fhBinsTrue->Project3D("yx")->Clone();
+	hn[f.first][i.first][p.first] = (TH2D*)fhBinsTrue->Project3D("yx")->Clone();
 	hw[f.first][i.first][p.first]->Reset();
 	hn[f.first][i.first][p.first]->Reset();
 	hw[f.first][i.first][p.first]->SetDirectory(0);
@@ -599,7 +633,7 @@ std::tuple<TCanvas*,TCanvas*,TCanvas*> DetResponse::DisplayResponse(Double_t e_r
   //----------------------------------------------------------------------
   // histogram displaying the number of events in the selected reconstruction bin
   //----------------------------------------------------------------------  
-  TH2D *h_rb  = (TH2D*)fHResp->Project3D("yx")->Clone();
+  TH2D *h_rb  = (TH2D*)fhBinsReco->Project3D("yx")->Clone();
   h_rb->SetDirectory(0);
   h_rb->SetNameTitle("reco_bin"+suffix,"reco_bin"+suffix);
   Int_t ebin  = h_rb->GetXaxis()->FindBin(e_reco);
