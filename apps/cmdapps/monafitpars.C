@@ -50,24 +50,24 @@ int main(const int argc, const char **argv) {
   TIterator *it = pars.createIterator();
   RooRealVar *var;
 
-  vector< TString > parameters;
-  vector< TString > observables;
+  vector< RooRealVar* > parameters;
+  vector< RooRealVar* > observables;
   
   while ( ( var = (RooRealVar*)it->Next() ) ) {
     if ( fu->GetObs().find( var->GetName() ) ) {
-      observables.push_back( (TString)var->GetName() );
+      observables.push_back( var );
     }
     else {
-      parameters.push_back( (TString)var->GetName() );
+      parameters.push_back( var );
     }
   }
 
   cout << "============================================================================" << endl;
   cout << "Observables (by name) in class " << fitutility << ":" << endl;
-  for (auto o: observables) cout << o << endl;
+  for (auto o: observables) cout << "Name: " << o->GetName() << endl;
   cout << "============================================================================" << endl;
   cout << "Fit parameters (by name) in class " << fitutility << ":" << endl;
-  for (auto p: parameters) cout << p << endl;
+  for (auto o: parameters) cout << "Name: " << o->GetName() << "\t default value: " << o->getVal() << endl;
   cout << "============================================================================" << endl;
   
 }
