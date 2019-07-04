@@ -76,7 +76,7 @@ public:
 	}
       }
 
-      if ( TMath::Abs(fluxint - fluxintws) > 1e-3 ) {
+      if ( TMath::Abs(fluxint - fluxintws) > 1e-2 ) {
 	cout << "NOTICE TestFitUtilWsystFlux test failed at flux integral preservation with tilt parameters, fluxes and diff: " << fluxint << "\t" << fluxintws << "\t" << fluxint - fluxintws << endl;
 	this->PrintParameters();
 	return 1;
