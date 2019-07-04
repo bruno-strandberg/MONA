@@ -1359,10 +1359,10 @@ void FitUtil::PrintParameters() {
   while ( ( var = (RooRealVar*)it->Next() ) ) {
 
     if ( fObsList.find(var->GetName()) != NULL ) {
-      cout << "NOTICE FitUtil::PrintParameters() observable: " << var->GetName() << endl;
+      cout << "NOTICE FitUtil::PrintParameters() observable: " << var->GetName() << " current value: " << var->getVal() << endl;
     }
     else {
-      cout << "NOTICE FitUtil::PrintParameters() parameter: " << var->GetName() << endl;
+      cout << "NOTICE FitUtil::PrintParameters() parameter : " << var->GetName() << " current value: " << var->getVal() << endl;
     }
 
   }

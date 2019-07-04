@@ -77,7 +77,8 @@ public:
       }
 
       if ( TMath::Abs(fluxint - fluxintws) > 1e-3 ) {
-	cout << "NOTICE TestFitUtilWsystFlux test failed at flux integral preservation with tilt parameters" << endl;
+	cout << "NOTICE TestFitUtilWsystFlux test failed at flux integral preservation with tilt parameters, fluxes and diff: " << fluxint << "\t" << fluxintws << "\t" << fluxint - fluxintws << endl;
+	this->PrintParameters();
 	return 1;
       }
 
@@ -110,12 +111,14 @@ public:
 	GetFluxWsyst( ELEC, NUB, ebin, ctbin, pdfws.GetProxyMap() );
 
       if ( TMath::Abs(flux_mu-fluxws_mu) > 1e-5 ) {
-	cout << "NOTICE TestFitUtilWsystFlux test failed at muon flux conservation" << endl;
+	cout << "NOTICE TestFitUtilWsystFlux test failed at muon flux conservation, fluxes and diff: " << flux_mu << "\t" << fluxws_mu << "\t" << flux_mu - fluxws_mu << endl;
+	this->PrintParameters();
 	return 1;
       }
 
       if ( TMath::Abs(flux_e-fluxws_e) > 1e-5 ) {
-	cout << "NOTICE TestFitUtilWsystFlux test failed at elec flux conservation" << endl;
+	cout << "NOTICE TestFitUtilWsystFlux test failed at elec flux conservation, fluxes and diff: " << flux_e << "\t" << fluxws_e << "\t" << flux_e - fluxws_e << endl;
+	this->PrintParameters();
 	return 1;
       }
 
@@ -133,12 +136,14 @@ public:
 	GetFluxWsyst( ELEC, NUB, ebin, ctbin, pdfws.GetProxyMap() );
 
       if ( TMath::Abs(R_mu_amu - Rws_mu_amu) > 1e-5 ) {
-	cout << "NOTICE TestFitUtilWsystFlux test failed, mu-amu ratio is not modified as expected" << endl;
+	cout << "NOTICE TestFitUtilWsystFlux test failed, mu-amu ratio is not modified as expected, ratios and diff: " << R_mu_amu << "\t" << Rws_mu_amu << "\t" << R_mu_amu - Rws_mu_amu << endl;
+	this->PrintParameters();
 	return 1;
       }
 
       if ( TMath::Abs(R_e_ae - Rws_e_ae) > 1e-5 ) {
-	cout << "NOTICE TestFitUtilWsystFlux test failed, e-ae ratio is not modified as expected" << endl;
+	cout << "NOTICE TestFitUtilWsystFlux test failed, e-ae ratio is not modified as expected, ratios and diff: " << R_e_ae << "\t" << Rws_e_ae << "\t" << R_e_ae - Rws_e_ae << endl;
+	this->PrintParameters();
 	return 1;
       }
 
@@ -162,7 +167,8 @@ public:
 			       GetFluxWsyst( ELEC, NUB, ebin, ctbin, pdfws.GetProxyMap() ) );
 
       if ( TMath::Abs(flux_mu_e-fluxws_mu_e) > 1e-5 ) {
-	cout << "NOTICE TestFitUtilWsystFlux test failed at muon+elec flux conservation" << endl;
+	cout << "NOTICE TestFitUtilWsystFlux test failed at muon+elec flux conservation, fluxes and diff: " << flux_mu_e << "\t" << fluxws_mu_e << "\t" << flux_mu_e - fluxws_mu_e << endl;
+	this->PrintParameters();
 	return 1;
       }
     
@@ -198,7 +204,8 @@ public:
       }
     
       if ( TMath::Abs(fluxint - fluxintws) > 1e-2 ) {
-	cout << "NOTICE TestFitUtilWsystFlux test failed at overall flux conservation" << endl;
+	cout << "NOTICE TestFitUtilWsystFlux test failed at overall flux conservation, fluxes and diff: " << fluxint << "\t" << fluxintws << "\t" << fluxint - fluxintws << endl;
+	this->PrintParameters();
 	return 1;
       }
     
