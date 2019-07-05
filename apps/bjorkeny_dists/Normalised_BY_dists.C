@@ -18,13 +18,15 @@ int main(const int argc, const char **argv) {
 
   TString byhists_olist;
   TString output;
+  TString irodsdir;
 
   try {
 
     JParser<> zap("Application to merge the outputs of `Create_BY_hists` application.");
 
     zap['f'] = make_field(byhists_olist, "List of files output by `Create_BY_hists`. For example, create via ls *some_files* > my_list.txt and provide -f my_list.txt as arugment.");
-    zap['o'] = make_field(output, "Name of the output file") = "output.root";
+    zap['o'] = make_field(output, "Name of the output file") = "by_dists_gSeaGen_v4r1.root";
+    zap['g'] = make_field(irodsdir, "iRODS location at cc-lyon of the gSeaGen files used for the creation of the datafile (for doc in header only)") = "/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v1.0/gSeaGen";
 
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
@@ -102,7 +104,7 @@ int main(const int argc, const char **argv) {
   // overwrite the output with normalised histograms, add header for info
   //-------------------------------------------------
   FileHeader h("Normalised_BY_dists");
-  h.AddParameter("gSeaGen_files","/in2p3/km3net/mc/atm_neutrino/KM3NeT_ORCA_115_23m_9m/v1.0/gSeaGen");
+  h.AddParameter("gSeaGen_files",irodsdir);
 
   TFile fout(output, "RECREATE");
   for (auto h: hist_list) {

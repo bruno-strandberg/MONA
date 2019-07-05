@@ -3,7 +3,7 @@ Data directory
 
 This is the data directory distributed with the repo. The sub-directories are described below.
 
-* `cross_sections_gSeaGen_v4r1/` - neutrino cc/nc cross-sections on n, p, O16 from GENIE. Gift from M. Jongen. Bjorken-y distributions, created with `NMH/apps/bjorkeny_dists`, to help distribute events into bjorken-y bins. Files in this directory are used by `NMH/common_software/NuXsec.h/C` class.
+* `xsec_data/` - neutrino cc/nc cross-sections on H1, O16 from GENIE, alongside a file to distribute events into bjorknen-y bins. Files in this directory are used by `NMH/common_software/NuXsec.h/C` class.
 
 * `honda_flux/` - honda flux tables for the class `NMH/common_software/AtmFlux.h/C`.
 
