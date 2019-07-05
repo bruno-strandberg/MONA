@@ -33,8 +33,8 @@ class NuXsec {
 
  public:
   NuXsec(UInt_t bybins        = 0, 
-	 TString xsecfile     = (TString)getenv("MONADIR") + "/data/xsec_data/xsec_gSeaGen_v4r1.root", 
-	 TString by_dist_file = (TString)getenv("MONADIR") + "/data/xsec_data/by_dists_gSeaGen_v4r1.root");
+	 TString xsecfile     = (TString)getenv("MONADIR") + "/data/xsec_data/xsec_gSeaGen_v5r1.root", 
+	 TString by_dist_file = (TString)getenv("MONADIR") + "/data/xsec_data/by_dists_gSeaGen_v5r1.root");
   ~NuXsec();
 
   void     SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar);

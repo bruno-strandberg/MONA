@@ -3,13 +3,14 @@
 This script can be used to send Create_BY_hists application jobs to the farm.
 
 Usage:
-    hist_caller.py -g GSG_FILE (--local | --farm) [-n FMIN]
+    hist_caller.py -g GSG_FILE (--local | --lyon | --nikhef) [-n FMIN]
     hist_caller.py -h
 
 Option:
    -g GSG_FILE gSeaGen file(s); select several with -g '*some_files*'
    --local     Process locally
-   --farm      Process on the farm
+   --lyon      Process on the cc-lyon farm
+   --nikhef    Process on the nikhef farm
    -n FMIN     If processed on the farm, minimum number of gsg files per job [default: 100]
    -h --help   Show this sreen
 
@@ -27,7 +28,7 @@ def create_syscmd(gsg_file_list, output_name):
     """
     This function creates the command to execute Create_BY_hists application
     """
-    syscmd  = "{}/Create_BY_hists".format(cwd)
+    syscmd  = "{}/./Create_BY_hists".format(cwd)
     syscmd += " -g {}".format(gsg_file_list)
     syscmd += " -o {}".format(output_name)
 
@@ -110,4 +111,12 @@ else:
     for i, arg_pair in enumerate(arg_list):
         syscmd = create_syscmd(arg_pair[0], arg_pair[1])
         scriptname = create_farm_script(syscmd, cwd+"/tmp", i)
-        os.system( "qsub -P P_km3net -l sps=1 -l vmem=2G -l ct=5:00:00 -o {0} -e {0} {1}".format(cwd+"/tmp", scriptname) )
+
+        if args['--lyon']:
+            syscmd = "qsub -P P_km3net -l sps=1 -l vmem=2G -l ct=5:00:00 -o {0} -e {0} {1}".format(cwd+"/tmp", scriptname)
+        elif args['--nikhef']:
+            syscmd = "qsub -q short7 -o {0} -e {0} {1}".format(cwd+"/tmp", scriptname)
+        else:
+            raise Exception("ERROR! hist_caller.py: unknown farming resource requested.")
+
+        os.system( syscmd )

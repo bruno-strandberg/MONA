@@ -178,7 +178,7 @@ Double_t NuXsec::GetBYfrac(Double_t E, Double_t by) {
   if ( f_h_by->GetYaxis()->GetNbins() == 1 ) return 1.0;
 
   if ( E < f_h_by->GetXaxis()->GetXmin() || E >= f_h_by->GetXaxis()->GetXmax() ) {
-    throw std::invalid_argument("ERROR! NuXsec::GetBYfrac() energy" + to_string(E) + " out of range, limited by the input file " + (string)fByFile );
+    throw std::invalid_argument("ERROR! NuXsec::GetBYfrac() energy " + to_string(E) + " out of range, limited by the input file " + (string)fByFile );
   }
 
   if ( by < f_h_by->GetYaxis()->GetXmin() || by > f_h_by->GetYaxis()->GetXmax() ) {
