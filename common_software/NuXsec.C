@@ -10,34 +10,14 @@
  * Constructor.
 
  * \param  bybins       Number of bjorken-y bins used in the analysis
- * \param  xsecfile     A root file in specific format with neutrino xsec data.
- * \param  by_dist_file A roof file in specific format with energy vs bjorken-y distributions
+ * \param  xsecfile     A root file from genie's `gspl2root` tool with neutrino xsec data, created by `MONA/apps/xsec_extractor`
+ * \param  by_dist_file A roof file in specific format with energy vs bjorken-y distributions, created by `MONA/apps/bjorkeny_dists`
  */
 NuXsec::NuXsec(UInt_t bybins, TString xsecfile, TString by_dist_file) {
-
-  // get the nmhdir, if default options (xsecfile="", by_dist_file="") 
-  // point to default xsecfile and bjorken-y distribution file
   
-  TString nmhdir = getenv("MONADIR");
+  fXsecFile = xsecfile;
+  fByFile   = by_dist_file;  
 
-  if ( nmhdir == "" ) {
-    throw std::invalid_argument( "ERROR! NuXsec::NuXsec() $MONADIR not set (source setenv.sh), init failed");
-  }
-
-  if ( xsecfile == "" ) {
-    fXsecFile = nmhdir + "/data/cross_sections_gSeaGen_v4r1/xsec.root"; 
-  }
-  else {
-    fXsecFile = xsecfile;
-  }
-
-  if (by_dist_file == "") {
-    fByFile = nmhdir + "/data/cross_sections_gSeaGen_v4r1/by_dists.root";
-  }
-  else {
-    fByFile = by_dist_file;
-  }
-  
   //init the maps fGraphs and fByHists that holds the TGraphs with xsec data
 
   InitMaps(fXsecFile, fByFile, bybins);

@@ -33,7 +33,9 @@ using namespace std;
 class NuXsec {
 
  public:
-  NuXsec(UInt_t bybins = 0, TString xsecfile="", TString by_dist_file="");
+  NuXsec(UInt_t bybins        = 0, 
+	 TString xsecfile     = (TString)getenv("MONADIR") + "/data/xsec_data/xsec.root", 
+	 TString by_dist_file = (TString)getenv("MONADIR") + "/data/xsec_data/by_dists.root");
   ~NuXsec();
 
   void     SelectInteraction(Int_t nu_flavor, Bool_t is_cc, Bool_t is_nubar);
