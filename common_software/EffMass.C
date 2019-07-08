@@ -652,6 +652,35 @@ TGraphErrors* EffMass::AverageUpgoing(Int_t flavor, Bool_t iscc, Bool_t isnb) {
 
 //********************************************************************
 
+/** This function returns a pointer to TH1D with energy on the x-axis and eff mass on the y-axis.
+    \param flavor       Neutrino flavor (0 - elec, 1 - muon, 2 - tau)
+    \param iscc         NC = 0, CC = 1
+    \param isnb         nu = 0, nub = 1
+    \param ct           cos-theta value at which the slice is drawn
+    \param by           bjorken-y value at which the slice is drawn
+    \return `TH1D` with the effective mass curve for given input
+*/
+TH1D* EffMass::GetSlice(Int_t flavor, Bool_t iscc, Bool_t isnb, Double_t ct, Double_t by) {
+
+  if (flavor > TAU) {
+    throw std::invalid_argument("ERROR! EffMass::GetSlice() unknown flavor " + to_string(flavor));
+  }
+
+  TH3D* hmeff = fhMeff[flavor][(UInt_t)iscc][(UInt_t)isnb];
+
+  TString nametitle = "meff_ct=" + (TString)to_string(ct) + "_by=" + (TString)to_string(by);
+  Int_t ybin = hmeff->GetYaxis()->FindBin( ct );
+  Int_t zbin = hmeff->GetZaxis()->FindBin( by );
+
+  TH1D* slice = hmeff->ProjectionX(nametitle, ybin, ybin, zbin, zbin);
+  fHeap.Add( slice );
+
+  return slice;
+
+}
+
+//********************************************************************
+
 /** Get the histogram with 'generated' events for given neutrino type
 
     \param flavor       Neutrino flavor (0 - elec, 1 - muon, 2 - tau)

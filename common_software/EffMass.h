@@ -35,6 +35,7 @@ class EffMass {
 			  Int_t E_truebin, Int_t Ct_truebin, Int_t By_truebin);
   TH3D*         GetMeff3DH(Int_t flavor, Bool_t iscc, Bool_t isnb);
   TGraphErrors* AverageUpgoing(Int_t flavor, Bool_t iscc, Bool_t isnb);
+  TH1D* GetSlice(Int_t flavor, Bool_t iscc, Bool_t isnb, Double_t ct, Double_t by);
     
  private:
   
