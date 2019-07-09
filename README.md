@@ -11,7 +11,7 @@ Directory structure
 * `common_software/` - this directory holds the software that provides the base functionality of the package. It has the classes for the data format, atmospheric neutrino count calculation and data filtering. The software is documented carefully in `common_software/README.md`
 * `fitter_software/` - software in this directory is built upon the software in `common_software/` and `RooFit` to provide tools for NMO fits. Documentation in `fitter_software/README.md`
 * `apps/` - this directory has sub-directories for various applications that are built on top of `common_software` and `fitter_software`. The applications should be considered relatively dynamic and expected to develop/change/grow as the analyses become more complicated. Each application directory comes with a README-file that describes the purposes of the application. If the README-file is missing, it means the applications are not ready/not meant for wider use.
-* `macros/` - this directory has sub-directories for various analyses that are built using the `common_software/` and `fitter_software/` libraries. The `macros/` directory is the most dynamic working directory of the repository and typically documentation is sparse.
+* `macros/` - this directory stores some example macros that demonstrate the usage of the software available in `common_software` and `fitter_software`.
 * `data/` - this directory holds data that is necessary for cross-section and atmospheric flux calculations. Additionally, it has sub-directories for Monte-Carlo data storage. More info in `data/README.md`.
 * `doxygen/` - directory that is auto-populated by `doxygen` for documentation.
 * `tests/` - directory that holds some example scripts/applications, some of which also act as tests.
