@@ -43,7 +43,6 @@ class EffMass {
   void CreateDummyData(Int_t nebins, Int_t nctbins, Int_t nbybins);
   void CreateMeffHists(Int_t nebins, Int_t nctbins, Int_t nbybins);
   Bool_t InCoveredRange(Double_t E_true, Double_t Ct_true, Double_t By_true);
-  Double_t BringToInterpolRange(TAxis *axis, Double_t val);
 
   TString  fDataTag; //!< tag to identify the prodution
   Double_t fRhoSW;   //!< sea-water density
