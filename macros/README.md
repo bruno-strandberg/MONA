@@ -22,4 +22,5 @@ Short description
 -----------------
 
 * `llh_scan.C`: this macro performs a likelihood scan in theta-23
+* `llh_scan.py`: this macro does exactly the same as `llh_scan.C`, but in python
 * `sim_fit.C`: this macro demonstrates how to perform simultaneous fits in track and shower channel
