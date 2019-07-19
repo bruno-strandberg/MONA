@@ -23,6 +23,7 @@
 #include "JSupport/JSupport.hh"
 
 //generic cpp
+#include <algorithm>
 #include <stdexcept>
 
 using namespace GSGS;

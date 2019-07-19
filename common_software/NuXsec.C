@@ -1,7 +1,8 @@
 #include "NuXsec.h"
 #include "TFile.h"
-#include<iostream>
 #include "TSystem.h"
+#include <algorithm>
+#include <iostream>
 #include <stdexcept>
 
 //*************************************************************************
