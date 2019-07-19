@@ -1,5 +1,7 @@
 #include "EventFilter.h"
 #include<iostream>
+#include<stdexcept>
+using namespace std;
 
 /**
    Constructor.
@@ -43,6 +45,41 @@ void EventFilter::AddCut( std::function<Double_t(SummaryEvent&)> getter_ptr,
 			  std::function<bool(double, double)> comp_ptr, 
 			  Double_t value, Bool_t AndCut) {
   cutobj this_cut(getter_ptr, value, comp_ptr);
+  if (AndCut) fAndCuts.push_back(this_cut);
+  else fOrCuts.push_back(this_cut);
+}
+
+//***************************************************************************************
+
+/**
+   Function to add an 'and' cut or an 'or' cut to this event filter in python.
+
+   Example usage:
+   \code{.cpp}
+   EventFilter f;
+   f.AddCut("SummaryEvent.Get_track_ql0", ">", 0.5, kTRUE);
+   \endcode
+   
+   The first string specifies a getter function name of `SummaryEvent` class, the second string specifies a comparison operator. When using MONA with PyROOT, only this function will work for adding cuts.
+
+   \param getter_func_name  `SummaryEvent` function name, e.g. `SummaryEvent.Get_track_ql0`
+   \param comp_op           Comparison operator string, supported types are ">", ">=", "==", "<=", "<"
+   \param value             Value that the getter return is compared to
+   \param AndCut            true - treat this cut as 'and' cut; false - treat this cut as 'or' cut
+ */
+void EventFilter::AddCut(TString getter_func_name, TString comp_op, Double_t value, Bool_t AndCut) {
+
+  if ( fFuncMap.find(getter_func_name) == fFuncMap.end() ) {
+    for (auto f: fFuncMap) cout << f.first << endl;
+    throw std::invalid_argument("ERROR! EventFilter::AddCut(TString ...) unrecognized function name " + (string)getter_func_name + " . Recognized function names listed above.");
+  }
+
+  if ( fOpMap.find(comp_op) == fOpMap.end() ) {
+    for (auto o: fOpMap) cout << o.first << endl;
+    throw std::invalid_argument("ERROR! EventFilter::AddCut(TString ...) unrecognized operator " + (string)comp_op + " . Recognized operators listed above.");
+  }
+
+  cutobj this_cut( fFuncMap[getter_func_name], value, fOpMap[comp_op]);
   if (AndCut) fAndCuts.push_back(this_cut);
   else fOrCuts.push_back(this_cut);
 }
