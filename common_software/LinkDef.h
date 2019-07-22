@@ -21,6 +21,5 @@
 #pragma link C++ class TrueB+;
 #pragma link C++ class TrueEvt+;
 #pragma link C++ class EffMass+;
-#pragma link C++ class EMextr+;
 
 #endif
