@@ -18,11 +18,13 @@ using namespace std;
 */
 int main(const int argc, const char** argv) {
 
+  TString effmfile;
   TString outfile;
 
   try {
     JParser<> zap("This application tests the effective mass extrapolator class `EXextr` against the purely MC statistics based effective mass class `EffMass`");
-    zap['o'] = make_field(outfile, "Draw canvases for visual inspection of the effective mass curves into this file") = "";
+    zap['e'] = make_field(effmfile, "Input effective mass file (optional, by default download from an ftp server is attempter)") = "";
+    zap['o'] = make_field(outfile, "Draw canvases for visual inspection of the effective mass curves into this file (optional)") = "";
     if ( zap.read(argc, argv) != 0 ) return 1;
   }
   catch(const exception &error) {
@@ -35,17 +37,25 @@ int main(const int argc, const char** argv) {
   // fetch an effective mass file from the server
   //=============================================================================
 
-  TString effmfile = "EffMass_ORCA115_20x9m_ECAP190222.root";
-  TString syscmd   = "wget http://sftp.km3net.de/MONA/" + effmfile;
-  Int_t sysret     = system( syscmd );
+  Bool_t cleanup = kFALSE;
 
-  if (sysret != 0) {
-    cout << "ERROR! effmass: file retrieval returned " << sysret << ", exiting" << endl;
-    system("rm " + effmfile);
-    return 1;
-  }
-  else {
-    cout << "NOTICE effmass: file retrieval done" << endl;
+  if ( effmfile == "" ) {
+
+    effmfile = "EffMass_ORCA115_20x9m_ECAP190222.root";
+    TString syscmd   = "wget http://sftp.km3net.de/MONA/" + effmfile;
+    Int_t sysret     = system( syscmd );
+
+    if (sysret != 0) {
+      cout << "ERROR! effmass: file retrieval returned " << sysret << ", exiting" << endl;
+      sysret = system("rm " + effmfile);
+      cout << "NOTICE effmass: attempted clean-up of the file returned " << sysret << endl;
+      return 1;
+    }
+    else {
+      cout << "NOTICE effmass: file retrieval done" << endl;
+      cleanup = kTRUE; // request clean-up at the end
+    }
+    
   }
 
   //=============================================================================
@@ -53,10 +63,10 @@ int main(const int argc, const char** argv) {
   //=============================================================================
 
   // response where true and reco have same binning, should yield identical results
-  DetResponse R1(DetResponse::track, "R1", 40, 1, 100, 40, -1, 1, 2, 0, 1);
+  DetResponse R1(DetResponse::track, "R1", 40, 1, 100, 40, -1, 1, 1, 0, 1);
 
   // init the standard effective mass calculator
-  EffMass em(effmfile, 40, 40, 2);
+  EffMass em(effmfile, 40, 40, 1);
 
   // init the interpolated eff mass calculator with same binning, results should match identically
   EMextr  ex1(R1.GetHist3DTrue(), effmfile);
@@ -95,7 +105,7 @@ int main(const int argc, const char** argv) {
   //==========================================================================
 
   // desponse where true and reco have different binning and true energy extends MC range
-  DetResponse R2(DetResponse::track, "R2", 70, 0.1, 150, 70, -1, 1, 2, 0, 1, 40, 1, 100, 40, -1, 1, 1, 0, 1);
+  DetResponse R2(DetResponse::track, "R2", 70, 0.1, 150, 70, -1, 1, 1, 0, 1, 40, 1, 100, 40, -1, 1, 1, 0, 1);
 
   // init the interpolated eff mass calculator with different binning, results should match within tolerance
   EMextr  ex2(R2.GetHist3DTrue(), effmfile);
@@ -144,44 +154,55 @@ int main(const int argc, const char** argv) {
 
     TFile fout(outfile, "RECREATE");
 
-    vector<Int_t> flavs = {0, 1, 2};
-
+    std::map< Int_t, TString > flavs = { {0, "ELEC"}, {1, "MUON"}, {2, "TAU"} };
+    std::map< Int_t, TString > ints  = { {0, "NC"}, {1, "CC"} };
+    std::map< Int_t, TString > pols  = { {0, "NU"}, {1, "NUB"} };
+    
     for (auto f: flavs) {
+      for (auto i: ints) {
+	for (auto p: pols) {
 
-      vector<TH1D*> slices_em, slices_extr;
+	  if (i.first == 0 && f.first != 0) continue;
+	  
+	  vector<TH1D*> slices_em, slices_extr;
 
-      for (Double_t ct = -0.95; ct <= 0.95; ct += 0.2) {
-      
-	TString nt_em   = "slice_em_flavor_" + (TString)to_string(f) + "_ct_" + (TString)to_string(ct);
-	TString nt_extr = "slice_extr_flavor_" + (TString)to_string(f) + "_ct_" + (TString)to_string(ct);
+	  for (Double_t ct = -0.95; ct <= 0.95; ct += 0.2) {
 
-	TH1D* slice_em = em.GetSlice(1, 1, 0, ct, 0.25);
-	slice_em->SetNameTitle( nt_em, nt_em );
+	    Double_t by = 0.5;
+	    TString nt_em   = "slice_em_" + f.second + "_" + i.second + "_" + p.second + "_ct_" + (TString)to_string(ct);
+	    TString nt_extr = "slice_extr_" + f.second + "_" + i.second + "_" + p.second + "_ct_" + (TString)to_string(ct);
 
-	TH1D* slice_extr = ex2.GetSlice(1, 1, 0, ct, 0.25);
-	slice_extr->SetNameTitle( nt_extr, nt_extr );
-      
-	slice_em->SetLineColor(kRed);
-	slice_em->SetLineWidth(2);
-
-	slice_extr->SetLineColor(kBlue);
-	slice_extr->SetLineWidth(2);
-
-	slices_em.push_back( slice_em );
-	slices_extr.push_back( slice_extr );
+	    TH1D* slice_em = em.GetSlice(f.first, i.first, p.first, ct, by);
+	    slice_em->SetNameTitle( nt_em, nt_em );
+	    slice_em->SetDirectory(0);
+	    
+	    TH1D* slice_extr = ex2.GetSlice(f.first, i.first, p.first, ct, by);
+	    slice_extr->SetNameTitle( nt_extr, nt_extr );
+	    slice_extr->SetDirectory(0);
 	
-      }
+	    slice_em->SetLineColor(kRed);
+	    slice_em->SetLineWidth(2);
 
-      TString cname = "cflav_" + (TString)to_string( f );
-      TCanvas *c = new TCanvas(cname, cname, 1);
-      c->DivideSquare( slices_em.size() );
-      for (Int_t i = 0; i < (Int_t)slices_em.size(); i++) {
-	c->cd(i+1);
-	slices_extr[i]->Draw("HIST");
-	slices_em[i]->Draw("HISTsame");
-      }
-      c->Write();
+	    slice_extr->SetLineColor(kBlue);
+	    slice_extr->SetLineWidth(2);
 
+	    slices_em.push_back( slice_em );
+	    slices_extr.push_back( slice_extr );
+	
+	  }
+
+	  TString cname = "c_" + f.second + "_" + i.second + "_" + p.second;
+	  TCanvas *c = new TCanvas(cname, cname, 1);
+	  c->DivideSquare( slices_em.size() );
+	  for (Int_t i = 0; i < (Int_t)slices_em.size(); i++) {
+	    c->cd(i+1);
+	    slices_extr[i]->Draw("HIST");
+	    slices_em[i]->Draw("HISTsame");
+	  }
+	  c->Write();
+
+	}
+      }
     }
 
     fout.Close();
@@ -191,10 +212,14 @@ int main(const int argc, const char** argv) {
   //==========================================================================
   // clean-up
   //==========================================================================
+
+  if ( cleanup ) {
   
-  sysret = system("rm EffMass_ORCA115_20x9m_ECAP190222.root*");
-  if ( sysret != 0 ) {
-    cout << "NOTICE effmass: file deletion returned " << sysret << endl;
+    Int_t sysret = system("rm EffMass_ORCA115_20x9m_ECAP190222.root*");
+    if ( sysret != 0 ) {
+      cout << "NOTICE effmass: file deletion returned " << sysret << endl;
+    }
+
   }
 
   cout << "NOTICE: effmass finished" << endl;

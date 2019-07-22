@@ -2,10 +2,11 @@
 #include "NMHUtils.h"
 
 #include "TFile.h"
-#include "TGraph.h"
 
 #include <stdexcept>
 #include <iostream>
+
+#define OUTSIDEIR -1.0 // to indicate values outside the MC data range
 
 using namespace std;
 
@@ -182,7 +183,7 @@ void EMextr::FillDataMCrange(Bool_t interpolate) {
 		bc = fEM->GetMeff(f.first, i.first, p.first, E, ct, by, interpolate);
 	      }
 	      catch (std::invalid_argument& ia) {
-		bc = 0.0;
+		bc = OUTSIDEIR;
 	      }
 
 	      hmeff->SetBinContent( xbin, ybin, zbin, bc );
@@ -210,45 +211,65 @@ void EMextr::Extrapolate(Bool_t extrapolate) {
     for (auto i: fIntMap) {
       for (auto p: fPolMap) {
 	
-	TH3D*  hmeff = fhMeff[f.first][i.first][p.first];
-
+	TH3D*  hmeff      = fhMeff[f.first][i.first][p.first];
+	
+	// find the center bin on the energy axis, necessary below
+	Double_t emin = hmeff->GetXaxis()->GetXmin();
+	Double_t emax = hmeff->GetXaxis()->GetXmax();
+	Double_t e_center     = (emax - emin)/2 + emin;
+	Double_t e_center_bin = hmeff->GetXaxis()->FindBin( e_center );
+	
 	for (Int_t ctbin = 1; ctbin <= hmeff->GetYaxis()->GetNbins(); ctbin++) {
 	  for (Int_t bybin = 1; bybin <= hmeff->GetZaxis()->GetNbins(); bybin++) {
 
-	    //------------------------------------------------------------------------------
-	    // Get the 1D histogram in energy at given (cos-theta, bjorken-y) & put non-empty bin data to a TGraph
-	    //------------------------------------------------------------------------------
+	    // in the first loop over the energy bins, determine the minimum value and the maximum value
+	    // the min and max are searched both from the interpolated and true histogram
 
-	    TH1D* slice = hmeff->ProjectionX("slice", ctbin, ctbin, bybin, bybin);
+	    Double_t meff_min = 1e10;
+	    Double_t meff_max = 0.0;
+	    
+	    Double_t ct = hmeff->GetYaxis()->GetBinCenter( ctbin );
+	    Double_t by = hmeff->GetZaxis()->GetBinCenter( bybin );
 
-	    TGraph graph;
+	    // look for min/max in the true histogram
+	    for (Int_t ebin = 1; ebin <= fEM->GetMeff3DH(f.first, i.first, p.first)->GetXaxis()->GetNbins(); ebin++) {
 
-	    for (Int_t ebin = 1; ebin <= slice->GetXaxis()->GetNbins(); ebin++) {
+	      Double_t en = fEM->GetMeff3DH(f.first, i.first, p.first)->GetXaxis()->GetBinCenter( ebin );
+	      Double_t MT = fEM->GetMeff( f.first, i.first, p.first, en, ct, by );
+
+	      if ( MT > meff_max ) meff_max = MT;
+	      if ( MT < meff_min ) meff_min = MT;
 	      
-	      Double_t E  = slice->GetXaxis()->GetBinCenter( ebin );
-	      Double_t bc = slice->GetBinContent( ebin );
-	      
-	      if ( bc > 0.) graph.SetPoint( graph.GetN(), E, bc );
-
 	    }
 
-	    delete slice;
-
-	    //------------------------------------------------------------------------------
-	    // use the graph to perform simple extrapolation to ranges outside the MC range
-	    // the extrapolation is based on 1D splines in energy only
-	    //------------------------------------------------------------------------------
-
-	    for (Int_t ebin = 1; ebin <= slice->GetXaxis()->GetNbins(); ebin++) {
-
-	      Double_t E  = hmeff->GetXaxis()->GetBinCenter( ebin );
-	      Double_t bc = hmeff->GetBinContent(ebin, ctbin, bybin);
+	    // look for min/max in the interpolated histogram
+	    for (Int_t ebin = 1; ebin <= hmeff->GetXaxis()->GetNbins(); ebin++) {
 	      
-	      if ( bc == 0. ) bc = graph.Eval( E );  // extrapolate bin content if bin was empty
-	      if ( bc < 0.  ) bc = 0;                // if extrapolated to below 0 set to 0
+	      Double_t M = hmeff->GetBinContent(ebin, ctbin, bybin);
 
-	      hmeff->SetBinContent( ebin, ctbin, bybin, bc );
+	      // look for the minimum from the interpolated histogram
+	      if ( M != OUTSIDEIR ) {
+		if ( M > meff_max ) meff_max = M;
+		if ( M < meff_min ) meff_min = M;
+	      }
+	      
+	    }
 
+	    // set the bins below the lower edge of interpolation equal to minimum
+	    // and the bins above the higher edge of interpolation equal to maximum
+
+	    for (Int_t ebin = 1; ebin <= hmeff->GetXaxis()->GetNbins(); ebin++) {
+
+	      Double_t bc = hmeff->GetBinContent(ebin, ctbin, bybin);
+
+	      // do not change the bins that already have data inside
+	      if ( bc != OUTSIDEIR ) continue;
+
+	      // bins outside the interpolation range below axis center are assigned meff_min,
+	      // above axis center are assigned meff_max
+	      if ( ebin < e_center_bin ) { hmeff->SetBinContent(ebin, ctbin, bybin, meff_min); }
+	      else                       { hmeff->SetBinContent(ebin, ctbin, bybin, meff_max); }
+	      
 	    }
 
 	  } // end loop over bjorken-y
