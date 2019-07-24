@@ -28,28 +28,51 @@ FitUtilWsyst::FitUtilWsyst(Double_t op_time, TH3 *h_temp_T, TH3* h_temp_R,
   fParSet.add( RooArgSet(*fNC_norm, *fTau_norm) );
   
   // detector
-  fE_scale = new RooRealVar("E_scale", "E_scale", 0., -0.3, 0.3);
+  fE_scale = new RooRealVar("E_scale", "E_scale", 1., 0.8, 1.2);
   fParSet.add( *fE_scale );
   
   // init flux shape systematics cache variables
   CalcTiltedFluxNorms( 0., 0. );
 
-  //----------------------------------------------------------------------------------
-  // the limits of `fE_reco` are set to bin edges in `FitUtil`. Check that the energy scale cannot
-  // take the bin edges outside of the MC range
-  //----------------------------------------------------------------------------------
+  //---------------------------------------------------------------
+  // find the true bins that should be excluded from the calculation for e-scale to behave consistently for all bins
+  //---------------------------------------------------------------
+
+  fE_tb_low  = -1;
+  fE_tb_high = -1;
+
+  for (Int_t ebin = 1; ebin <= fHBT->GetXaxis()->GetNbins(); ebin++) {
+
+    Double_t low_edge_scaled = fHBT->GetXaxis()->GetBinLowEdge(ebin) * fE_scale->getMin();
+    Double_t low_lim         = fHBT->GetXaxis()->GetXmin();
+
+    if ( low_edge_scaled >= low_lim && fE_tb_low == -1 ) fE_tb_low = ebin;
+
+    Double_t high_edge_scaled = fHBT->GetXaxis()->GetBinUpEdge(ebin) * fE_scale->getMax();
+    Double_t high_lim         = fHBT->GetXaxis()->GetXmax();
+
+    if ( high_edge_scaled < high_lim ) fE_tb_high = ebin;
+      
+  }
   
-  Double_t emin_scaled = fE_reco->getMin() * ( 1. + fE_scale->getMin() );
-  Double_t emax_scaled = fE_reco->getMax() * ( 1. + fE_scale->getMax() );
+  //---------------------------------------------------------------
+  // check that fit range is narrower/equal to the true bin energy range
+  //---------------------------------------------------------------
 
-  if ( emin_scaled < fHBR->GetXaxis()->GetXmin() ) {
-    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() the input minimum energy " + to_string(emin) + " is adjusted to the bin edge " + to_string(fE_reco->getMin()) + ", which can be taken to the value " + to_string(emin_scaled) + " by the minimum of the energy scale parameter " + to_string(fE_scale->getMin()) + ". This is outside of the binning minimum " + to_string(fHBR->GetXaxis()->GetXmin()) + ". Choose a higher emin to avoid this problem." );
+  Double_t elow_true  = fHBT->GetXaxis()->GetBinCenter( fE_tb_low );
+  Double_t elow_reco  = fHBR->GetXaxis()->GetBinCenter( fEbin_min );
+
+  Double_t ehigh_true = fHBT->GetXaxis()->GetBinCenter( fE_tb_high );
+  Double_t ehigh_reco = fHBR->GetXaxis()->GetBinCenter( fEbin_max );
+
+  if ( elow_true > elow_reco ) {
+    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() for the consistent implementation of the energy scale systematic, the MC range in true space is constrained to the lower limit " + to_string(elow_true) + ", which is higher than the input lower fit energy limit " + to_string(elow_reco) + ". Increase the lower limit of the fit range." );
   }
 
-  if ( emax_scaled >= fHBR->GetXaxis()->GetXmax() ) {
-    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() the input maximum energy " + to_string(emax) + " is adjusted to the bin edge " + to_string(fE_reco->getMax()) + ", which can be taken to the value " + to_string(emax_scaled) + " by the maximum of the energy scale parameter " + to_string(fE_scale->getMax()) + ". This is outside of the binning maximum " + to_string(fHBR->GetXaxis()->GetXmax()) + ". Choose a lower emax to avoid this problem." );
+  if ( ehigh_true < ehigh_reco ) {
+    throw std::invalid_argument("ERROR! FitUtilWsyst::FitUtilWsyst() for the consistent implementation of the energy scale systematic, the MC range in true space is constrained to the higher limit " + to_string(ehigh_true) + ", which is lower than the input higher fit energy limit " + to_string(ehigh_reco) + ". Decrease the higher limit of the fit range." );
   }
-    
+  
 };
 
 //***************************************************************************************
@@ -222,86 +245,88 @@ Double_t FitUtilWsyst::GetFluxWsyst(UInt_t flav, Bool_t isnb, Int_t true_ebin, I
   
 /** Overload of the virtual function `FitUtil::TrueEvts` (see that for parameter definitions) to get the expected number of events in a true bin.
 */
-std::pair<Double_t, Double_t> FitUtilWsyst::TrueEvts(const TrueB &tb, const proxymap_t &proxymap) {
+std::pair<Double_t, Double_t> FitUtilWsyst::TrueEvts(const TrueB &_tb, const proxymap_t &proxymap) {
 
-  // get the atm nu count
-  Double_t atm_count_e = GetFluxWsyst(ELEC, tb.fIsNB, tb.fE_true_bin, tb.fCt_true_bin, proxymap);
-  Double_t atm_count_m = GetFluxWsyst(MUON, tb.fIsNB, tb.fE_true_bin, tb.fCt_true_bin, proxymap);
-
-  // get the oscillation probabilities
-  Double_t prob_elec = GetCachedOsc(ELEC, tb, proxymap);
-  Double_t prob_muon = GetCachedOsc(MUON, tb, proxymap);
-
-  // get the oscillated nu count in operation time (in units 1/m2)
-  Double_t osc_count = ( atm_count_e * prob_elec + atm_count_m * prob_muon );
-
-  // calculate xsec normalisation; compound of NC normalisation and tau normalisation
-  Double_t xsec_norm = 1.;
-  if ( !tb.fIsCC )       { xsec_norm *= *( proxymap.at( (TString)fNC_norm ->GetName() ) ); }
-  if ( tb.fFlav == TAU ) { xsec_norm *= *( proxymap.at( (TString)fTau_norm->GetName() ) ); }
-
-  // get the interacted neutrino count in operation time (in units 1/MTon), apply xsec systematic
-  Double_t int_count = osc_count * GetCachedXsec(tb)/fMN * fKg_per_MTon * xsec_norm;
-
-  // get the effective mass
-  Double_t meff  = GetCachedMeff( tb );
-
-  // calculate the number of detected events (unitless)
-  Double_t det_count = int_count * GetCachedBYfrac(tb) * meff * 1e-6;
-
-  // MC stat err, coming from eff mass and BY distribution (0 for now)
-  Double_t det_err = 0.;
-
-  return std::make_pair(det_count, det_err);
-
-}
-
-//***************************************************************************************
+  /*ignore true bins outside the range defined for the e-scale to work. From the perspective of the DetResponse, this is equivalent to the situation if the MC was simulated in the example range [2,80] GeV. For example, the energy scale can take the lower limit to 2*0.8 = 1.6 GeV. As actually MC data exists at that energy, the below logic that deals with bin fractions can be performed exactly.*/
   
-/** Overload of the virtual function `FitUtil::RecoEvts` (see that for parameter definitions) to get the expected number of events in a reco bin.
-*/
-std::pair<Double_t, Double_t> FitUtilWsyst::RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco, AbsResponse *resp, const proxymap_t &proxymap) {
-
   // get the energy scale
   Double_t e_scale = *( proxymap.at( (TString)fE_scale->GetName() ) );
   
-  // scale the bin low and high edges and use these new limits to calculate the fractions that specify
-  //how much of the reco event density should come from which bin
-  Double_t ereco_bin = fHBR->GetXaxis()->FindBin( E_reco );
-  Double_t ereco_min = fHBR->GetXaxis()->GetBinLowEdge( ereco_bin ) * (1. + e_scale);
-  Double_t ereco_max = fHBR->GetXaxis()->GetBinUpEdge ( ereco_bin ) * (1. + e_scale);
-  auto binfracs = GetBinFractions( ereco_min, ereco_max, fHBR->GetXaxis());  
+  // exclusion of bins is performed if E_scale is free or it is not equal to 1
+  Bool_t escale_configed = !fE_scale->isConstant() || ( e_scale != 1.0 );
+  
+  if ( ( ( _tb.fE_true_bin < fE_tb_low ) || ( _tb.fE_true_bin > fE_tb_high ) ) && escale_configed ) {
+    return std::make_pair(0.0, 0.0);
+  }
+  
+  // scale the true bin low and high edges and use these new limits to calculate the fractions that specify
+  // how many of the true events should come from which bin
+  Double_t etrue_min = fHBT->GetXaxis()->GetBinLowEdge( _tb.fE_true_bin ) * e_scale;
+  Double_t etrue_max = fHBT->GetXaxis()->GetBinUpEdge ( _tb.fE_true_bin ) * e_scale;
+  auto binfracs = GetBinFractions( etrue_min, etrue_max, fHBT->GetXaxis() );  
 
-  // loop over the bin fractions and calculate the event density from the relative fractions
-  Double_t RE    = 0.;
-  Double_t REerr = 0.;
+  // loop over the bin fractions and calculate the event count from the relative fractions
+  Double_t TE     = 0.;
+  Double_t TE_err = 0.;
+  TrueB tb( _tb );
   
   for (auto bf: binfracs) {
+    
+    // modify energy bin nr
+    tb.fE_true_bin = bf.first;
+    
+    // get the atm nu count
+    Double_t atm_count_e = GetFluxWsyst(ELEC, tb.fIsNB, tb.fE_true_bin, tb.fCt_true_bin, proxymap);
+    Double_t atm_count_m = GetFluxWsyst(MUON, tb.fIsNB, tb.fE_true_bin, tb.fCt_true_bin, proxymap);
 
-    // get the bin center and calculate the number 
-    Double_t ereco = fHBR->GetXaxis()->GetBinCenter( bf.first );
-    auto RE_bin = FitUtil::RecoEvts( ereco, Ct_reco, By_reco, resp, proxymap );
-	    
-    RE    += RE_bin.first * bf.second;
-    REerr += TMath::Power(RE_bin.second * bf.second, 2);
-          
-  } // end loop over bin fractions
+    // get the oscillation probabilities
+    Double_t prob_elec = GetCachedOsc(ELEC, tb, proxymap);
+    Double_t prob_muon = GetCachedOsc(MUON, tb, proxymap);
+
+    // get the oscillated nu count in operation time (in units 1/m2)
+    Double_t osc_count = ( atm_count_e * prob_elec + atm_count_m * prob_muon );
+
+    // calculate xsec normalisation; compound of NC normalisation and tau normalisation
+    Double_t xsec_norm = 1.;
+    if ( !tb.fIsCC )       { xsec_norm *= *( proxymap.at( (TString)fNC_norm ->GetName() ) ); }
+    if ( tb.fFlav == TAU ) { xsec_norm *= *( proxymap.at( (TString)fTau_norm->GetName() ) ); }
+
+    // get the interacted neutrino count in operation time (in units 1/MTon), apply xsec systematic
+    Double_t int_count = osc_count * GetCachedXsec(tb)/fMN * fKg_per_MTon * xsec_norm;
+
+    // get the effective mass
+    Double_t meff  = GetCachedMeff( tb );
+
+    // calculate the number of detected events (unitless)
+    Double_t det_count = int_count * GetCachedBYfrac(tb) * meff * 1e-6;
+
+    // MC stat err, coming from eff mass and BY distribution (0 for now)
+    Double_t det_err = 0.;
+
+    // accumulate TE by the weight of the bin
+    TE     += det_count * bf.second;
+    TE_err += det_err * bf.second * det_err * bf.second;
+    
+  }
   
-  // take sqrt of the error and return
-  return std::make_pair( RE, TMath::Sqrt(REerr) );
-   
+  return std::make_pair( TE, TMath::Sqrt(TE_err) );
+
 }
 
 //***************************************************************************************
 
 /** Overload the virtual function `FitUtil::RecoEvtsER` to accommodate calculations with systematics, see that function for the parameter interface.
 
-    The structuring of the virtual functions gets a bit complicated here, but that is to avoid duplicating code. As one can see, `FitUtilWsyst::RecoEvts` applies the energy scale systematic, but otherwise calls `FitUtil::RecoEvts`. The latter, in turn, calls two virtual functions, `FitUtil::RecoEvtsDR` and `FitUtil::RecoEvtsER`. The first of those performs the calculation using the binned response `DetResponse`, the latter uses the `EvtResponse`. `RecoEvtsDR` does not need to be modified here, because most of the systematics are taken care of in the `FitUtilWsyst::TrueEvts` function, that is used by `RecoEvtsDR`. On the other hand, `RecoEvtsER` needs to be modified, because it does not use `TrueEvts` and this one needs to account for the systematics here.
+    The structuring of the virtual functions gets a bit complicated here, but that is to avoid duplicating code. FitUtil::RecoEvts` calls two virtual functions, `FitUtil::RecoEvtsDR` and `FitUtil::RecoEvtsER`. The first of those performs the calculation using the binned response `DetResponse`, the latter uses the `EvtResponse`. `RecoEvtsDR` does not need to be modified here, because most of the systematics are taken care of in the `FitUtilWsyst::TrueEvts` function, that is used by `RecoEvtsDR`. On the other hand, `RecoEvtsER` needs to be modified, because it does not use `TrueEvts` and this one needs to account for the systematics here.
     
 */
 std::pair< Double_t, Double_t > FitUtilWsyst::RecoEvtsER(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
 							 EvtResponse *resp, const proxymap_t &proxymap,
 							 Bool_t AddMuonsNoise) {
+
+  // get the energy scale, check that it is 1, e_scale does not work with event-by-event response
+  Double_t e_scale = *( proxymap.at( (TString)fE_scale->GetName() ) );
+  if ( e_scale != 1.0 || !fE_scale->isConstant() ) throw std::logic_error("ERROR! FitUtilWsyst::RecoEvtsER() does not support the use of the energy scale systematic; it should be set to 1.0 and constant.");
 
   Double_t det_count = 0.;
   Double_t det_err   = 0.;
@@ -414,7 +439,7 @@ vector< std::pair<Int_t, Double_t> > FitUtilWsyst::GetBinFractions(Double_t lo, 
     throw std::invalid_argument("ERROR! FitUtilWsyst::GetBinFractions() low value " + to_string(lo) + " is outside the axis range.");
   }
 
-  if ( hi >= axis->GetXmax() ) {
+  if ( hi > axis->GetXmax() ) {
     throw std::invalid_argument("ERROR! FitUtilWsyst::GetBinFractions() high value " + to_string(hi) + " is outside the axis range.");
   }
 
@@ -434,16 +459,16 @@ vector< std::pair<Int_t, Double_t> > FitUtilWsyst::GetBinFractions(Double_t lo, 
   // add the bins to the return vector
   //---------------------------------------------------------------------
 
-  // add the lower bin to the return vector
-  bins.push_back( std::make_pair(bin_lo, binW_lo) );
+  // add the lower bin to the return vector, if bin weight is larger than 0
+  if (binW_lo > 0.0) bins.push_back( std::make_pair(bin_lo, binW_lo) );
 
   // add all the intermediate bins with weight 1; this happens if the range encloses several bins
   for (Int_t binnr = bin_lo+1; binnr < bin_hi; binnr++) {
     bins.push_back( std::make_pair(binnr, 1.) );
   }
   
-  // add the higher bin to the return vector
-  bins.push_back( std::make_pair(bin_hi, binW_hi) );
+  // add the higher bin to the return vector, if binw is larger than 0
+  if (binW_hi > 0.0) bins.push_back( std::make_pair(bin_hi, binW_hi) );
 
   return bins;
   
