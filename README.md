@@ -25,7 +25,7 @@ Prerequisities
 
 Documentation
 =============
-* Doxygen documentation of the project is available in https://bstrandberg.pages.km3net.de/MONA.
+* Doxygen documentation of the project is available in https://common.pages.km3net.de/analysis/MONA/
 * To view doxygen locally, do `doxygen doxyconf` and open `doxygen/html/index.html` in your favorite browser (e.g. `firefox doxygen/html/index.html`)
 * Each subdirectory holds a `README.md` file that describes what the code can be used for.
 
