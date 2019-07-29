@@ -945,8 +945,8 @@ std::pair<Double_t, Double_t> FitUtil::RecoEvts(Double_t E_reco, Double_t Ct_rec
     \param By_reco        Reco bjorken-y
     \param resp           Pointer to `DetResponse` instance
     \param proxymap       A proxy map with `RooFit` variables from `FitPDF` that contains the shared fit parameters, including oscillation parameters.
-    \param AttMuonsNoise Add atmospheric muon and noise events
-    \return              a pair with the number of events in a bin and the associated statistical uncertainty
+    \param AddMuonsNoise  Add atmospheric muon and noise events
+    \return               a pair with the number of events in a bin and the associated statistical uncertainty
 */
 std::pair< Double_t, Double_t > FitUtil::RecoEvtsDR(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
 						    DetResponse *resp, const proxymap_t &proxymap, 
@@ -1030,7 +1030,7 @@ std::pair< Double_t, Double_t > FitUtil::RecoEvtsDR(Double_t E_reco, Double_t Ct
     \param By_reco       Reco bjorken-y
     \param resp          Pointer to `DetResponse` instance
     \param proxymap      A proxy map with `RooFit` variables from `FitPDF` that contains the shared fit parameters, including oscillation parameters.
-    \param AttMuonsNoise Add atmospheric muon and noise events
+    \param AddMuonsNoise Add atmospheric muon and noise events
     \return              a pair with the number of events in a bin and the associated statistical uncertainty */
 
 std::pair< Double_t, Double_t > FitUtil::RecoEvtsER(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
