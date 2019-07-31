@@ -986,6 +986,10 @@ std::pair< Double_t, Double_t > FitUtil::RecoEvtsDR(Double_t E_reco, Double_t Ct
 
       /* for NC events the response only says how the elec-NC events from the considered true bin contribute to the reco-bin. However, in the flux chain we have we also have a contribution from muon-NC and tau-NC true bin to the reco bin, which are assumed to look identical to the detector as elec-NC (this is why we only simulate elec-NC). Hence for NC events I need to add `TrueEvts` contributions from the three NC flavours */
 
+      if ( tb.fFlav != ELEC ) {
+	throw std::invalid_argument("ERROR! FitUtil::RecoEvtsDR() expects only elec events for NC. If the response is filled also with muon and tau NC data, this function requires modification, current implementation leads to double-counting.");
+      }
+      
       TrueB elecTB( tb );
       TrueB muonTB( tb );
       TrueB tauTB ( tb );
@@ -1081,6 +1085,10 @@ std::pair< Double_t, Double_t > FitUtil::RecoEvtsER(Double_t E_reco, Double_t Ct
       // xsec_{flavor} and meff_{flavor} are the same for elec, muon, tau for NC events, the calculation
       // can be simplified and the oscillated flux is just equal to the un-oscillated elec+muon flux
 
+      if ( te.GetFlav() != ELEC ) {
+	throw std::invalid_argument("ERROR! FitUtil::RecoEvtsER() expects only elec events for NC. If the response is filled also with muon and tau NC data, this function requires modification, current implementation leads to double-counting.");
+      }
+      
       Double_t oscf = atm_count_e + atm_count_m;
       det_count += te.GetW1y() * oscf;
       det_err++;

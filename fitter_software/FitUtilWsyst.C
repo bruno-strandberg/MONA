@@ -352,6 +352,10 @@ std::pair< Double_t, Double_t > FitUtilWsyst::RecoEvtsER(Double_t E_reco, Double
       // xsec_{flavor} and meff_{flavor} are the same for elec, muon, tau for NC events, the calculation
       // can be simplified and the oscillated flux is just equal to the un-oscillated elec+muon flux
 
+      if ( te.GetFlav() != ELEC ) {
+	throw std::invalid_argument("ERROR! FitUtilWsyst::RecoEvtsER() expects only elec events for NC. If the response is filled also with muon and tau NC data, this function requires modification, current implementation leads to double-counting.");
+      }
+      
       Double_t oscf = atm_count_e + atm_count_m;
 
       // calculate the fraction of tau events in the total flux to apply tau normalisation also to NC events
