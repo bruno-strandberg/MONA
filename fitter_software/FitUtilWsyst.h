@@ -25,6 +25,8 @@ public:
   /** Destructor */
   virtual ~FitUtilWsyst() {};
 
+  virtual std::pair<Double_t, Double_t> RecoEvts(Double_t E_reco, Double_t Ct_reco, Double_t By_reco,
+						 AbsResponse *resp, const proxymap_t &proxymap);
   virtual std::pair<Double_t, Double_t> TrueEvts(const TrueB &tb, const proxymap_t &proxymap);
   Double_t GetFluxWsyst(UInt_t flav, Bool_t isnb, Int_t true_ebin, Int_t true_ctbin, const proxymap_t& proxymap);
   
@@ -58,10 +60,8 @@ protected:
   RooRealVar* fSkew_mu_e;   //!< parameter to skew mu to e flux, preserves mu+amu+e+ae norm; 0 means no skew
 
   // detector systematics
-  RooRealVar* fE_scale;   //!< energy scale parameter, such that \f$ E_{true} \rightarrow E_{true}E_{scale}\f$, 1 means no energy scaling
-  Int_t       fE_tb_low;  //!< true bins below this bin nr are excluded from the analysis, this is necessary such that `fE_scale` cannot enter a region outside the MC range
-  Int_t       fE_tb_high; //!< true bins above this bin nr are excluded from the analysis, this is necessary such that `fE_scale` cannot enter a region outside the MC range
-  
+  RooRealVar* fE_scale;  //!< energy scale parameter, such that \f$ E_{true} \rightarrow E_{true}(1+E_{scale})\f$, 0 means no energy scaling
+    
   // xsec systematic parameters
   RooRealVar* fNC_norm;     //!< parameter for NC xsec normalisation; 1 means no scaling
   RooRealVar* fTau_norm;    //!< parameter for tau xsec normalisation; 1 means no scaling

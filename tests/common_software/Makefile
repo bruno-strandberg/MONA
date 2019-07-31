@@ -1,6 +1,6 @@
 include $(MONADIR)/Makerules
 
-CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS) $(JPPCFLAGS)
+CFLAGS = $(CXXFLAGS) $(ROOTCFLAGS)
 LFLAGS = $(ROOTLIBS) $(NMHLIB)
 
 SOURCES  = $(wildcard *.C)

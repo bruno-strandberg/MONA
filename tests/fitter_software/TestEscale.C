@@ -72,52 +72,32 @@ int main(const int argc, const char **argv) {
     // test values when the e-scale is 0; have to be identical
     //------------------------------------------------------------------------
     
-    futilws->GetVar("E_scale")->setVal( 1.0 );
-    futilws->GetVar("E_scale")->setConstant( kTRUE );
+    ((FitUtil*)futilws)->GetVar("E_scale")->setVal( 0. );
 
     Double_t recoevts   = futil->RecoEvts(ereco, ctreco, byreco, &resp, pdf.GetProxyMap()).first;
-    Double_t recoevts_s = futilws->RecoEvts(ereco, ctreco, byreco, &resp, pdfws.GetProxyMap()).first;
+    Double_t recoevts_s = ((FitUtil*)futilws)->RecoEvts(ereco, ctreco, byreco, &resp, pdfws.GetProxyMap()).first;
 
     if ( recoevts != recoevts_s ) {
-      cout << "NOTICE TestEscale failed, reco events differ when no energy scale applied, values: " << recoevts << "\t" << recoevts_s << endl;
+      cout << "NOTICE TestEscale failed, reco events differ when no energy scale applied" << endl;
       return 1;
     }
 
     // test values when the e-scale is non-zero; this here re-produces the calculation
-    // that is performed in `FitUtilWsyst::TrueEvts`
+    // that is performed in `FitUtilWsyst::RecoEvts`
     //------------------------------------------------------------------------
 
-    // set a random value to e-scale
-    Double_t scale = rand.Uniform( 0.8, 1.2 );
-    futilws->GetVar("E_scale")->setVal( scale );
-    futilws->GetVar("E_scale")->setConstant( kFALSE );
+    Double_t scale = rand.Uniform( -0.2, 0.2 );
+    ((FitUtil*)futilws)->GetVar("E_scale")->setVal( scale );
 
-    // get a random true bin from the response
-    vector<TrueB> true_bins;
-    Bool_t bin_found = kFALSE;
+    TAxis *EX = resp.GetHist3D()->GetXaxis();
     
-    while( !bin_found ) {
+    Int_t ebin    = EX->FindBin( ereco );
+    Double_t elo  = EX->GetBinLowEdge( ebin ) * (1. + scale);
+    Double_t ehi  = EX->GetBinUpEdge( ebin ) * (1. + scale);
 
-      true_bins = resp.GetBinWeights( rand.Uniform(5, 50), rand.Uniform(-1,0), rand.Uniform(0,1) );
-
-      // continue if nothing contributes to this reco bin (should happen rarely anyway, but make certain)
-      if (true_bins.size() == 0) continue;
-
-      // ignore the first and last couple of bins, as FitUtilWsyst will also pretend they are not there
-      if (true_bins[0].fE_true_bin > 5 && true_bins[0].fE_true_bin < 35 ) bin_found = kTRUE;
-      
-    }
-
-    auto tb = true_bins[0];
-    
-    // find the bin fractions
-    TAxis *EX      = resp.GetHist3D()->GetXaxis();
-    Double_t elo   = EX->GetBinLowEdge( tb.fE_true_bin ) * scale;
-    Double_t ehi   = EX->GetBinUpEdge ( tb.fE_true_bin ) * scale;
-    
     Int_t ebin_lo = EX->FindBin( elo );
     Int_t ebin_hi = EX->FindBin( ehi );
-    
+
     if ( (ebin_hi - ebin_lo) > 1 ) {
       cout << "NOTICE TestEscale failed, bin range extraction not correct" << endl;
       return 1;
@@ -125,18 +105,14 @@ int main(const int argc, const char **argv) {
 
     Double_t binW_lo = ( EX->GetBinUpEdge( ebin_lo ) - elo )/EX->GetBinWidth( ebin_lo );
     Double_t binW_hi = ( ehi - EX->GetBinLowEdge( ebin_hi ) )/EX->GetBinWidth( ebin_hi );
-    
-    TrueB tb_lo( tb );
-    TrueB tb_hi( tb );
-    tb_lo.fE_true_bin = ebin_lo;
-    tb_hi.fE_true_bin = ebin_hi;
 
-    // compare the calculation
-    auto trueevts   = futil->TrueEvts( tb_lo, pdf.GetProxyMap() ).first * binW_lo + futil->TrueEvts( tb_hi, pdf.GetProxyMap() ).first * binW_hi;
-    auto trueevts_s = futilws->TrueEvts( tb, pdfws.GetProxyMap() ).first;
-    
-    if ( trueevts != trueevts_s ) {
-      cout << "NOTICE TestEscale failed, cannot reproduce the energy scale calculation, values: " << trueevts << "\t" << trueevts_s << ", true bin: " << tb << endl;
+    recoevts = ( futil->RecoEvts( elo, ctreco, byreco, &resp, pdf.GetProxyMap()).first * binW_lo +
+		 futil->RecoEvts( ehi, ctreco, byreco, &resp, pdf.GetProxyMap()).first * binW_hi );
+
+    recoevts_s = ((FitUtil*)futilws)->RecoEvts( ereco, ctreco, byreco, &resp, pdfws.GetProxyMap()).first;
+
+    if ( recoevts != recoevts_s ) {
+      cout << "NOTICE TestEscale failed, cannot reproduce the energy scale calculation." << endl;
       return 1;
     }
 
