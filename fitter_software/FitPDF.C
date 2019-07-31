@@ -97,6 +97,10 @@ Double_t FitPDF::evaluate() const {
     for (auto kv: fProxies) {cout << "Parameter: " << kv.first << "\tValue: " << (Double_t)(*kv.second) << endl;}
     throw std::logic_error("ERROR! FitPDF::evaluate() has received a negative event density from the (overloaded) RecoEvts function. This is not physical and indicates an issue in the (re-)implementation of the virtual functions FitUtil::RecoEvts and FitUtil::TrueEvts.");
   }
+  else if ( reco_evt_density == 0.0 ) {
+    cout << "NOTICE FitPDF::evaluate() has received 0 event-density from (overloaded) FitUtil::RecoEvts(); returning std::numeric_limits<double>::min() to avoid potential infinity in likelihood evaluation if the fitted bin content is > 0" << endl;
+    reco_evt_density = std::numeric_limits<double>::min();
+  }
 
   return reco_evt_density;
 
