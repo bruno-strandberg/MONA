@@ -414,7 +414,7 @@ vector< std::pair<Int_t, Double_t> > FitUtilWsyst::GetBinFractions(Double_t lo, 
     throw std::invalid_argument("ERROR! FitUtilWsyst::GetBinFractions() low value " + to_string(lo) + " is outside the axis range.");
   }
 
-  if ( hi >= axis->GetXmax() ) {
+  if ( hi > axis->GetXmax() ) {
     throw std::invalid_argument("ERROR! FitUtilWsyst::GetBinFractions() high value " + to_string(hi) + " is outside the axis range.");
   }
 
@@ -434,16 +434,16 @@ vector< std::pair<Int_t, Double_t> > FitUtilWsyst::GetBinFractions(Double_t lo, 
   // add the bins to the return vector
   //---------------------------------------------------------------------
 
-  // add the lower bin to the return vector
-  bins.push_back( std::make_pair(bin_lo, binW_lo) );
+  // add the lower bin to the return vector, if bin weight is larger than 0
+  if (binW_lo > 0.0) bins.push_back( std::make_pair(bin_lo, binW_lo) );
 
   // add all the intermediate bins with weight 1; this happens if the range encloses several bins
   for (Int_t binnr = bin_lo+1; binnr < bin_hi; binnr++) {
     bins.push_back( std::make_pair(binnr, 1.) );
   }
   
-  // add the higher bin to the return vector
-  bins.push_back( std::make_pair(bin_hi, binW_hi) );
+  // add the higher bin to the return vector, if binw is larger than 0
+  if (binW_hi > 0.0) bins.push_back( std::make_pair(bin_hi, binW_hi) );
 
   return bins;
   
