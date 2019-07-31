@@ -130,7 +130,7 @@ Bool_t NMHUtils::FileExists(TString filename, Double_t size) {
     \return True if bins match, False otherwise
 
  */
-Bool_t NMHUtils::BinsMatch(TH1 *h1, TH1 *h2) {
+Bool_t NMHUtils::BinsMatch(TH1 *h1, TH1 *h2, Bool_t notify) {
 
   Bool_t bins_match = kTRUE;
 
@@ -143,8 +143,8 @@ Bool_t NMHUtils::BinsMatch(TH1 *h1, TH1 *h2) {
   h1->GetZaxis()->SetTitle("z");
 
   std::vector< std::pair<TAxis*, TAxis*> > axps = { std::make_pair( h1->GetXaxis(), h2->GetXaxis() ), 
-                            std::make_pair( h1->GetYaxis(), h2->GetYaxis() ),
-                            std::make_pair( h1->GetZaxis(), h2->GetZaxis() ) };
+						    std::make_pair( h1->GetYaxis(), h2->GetYaxis() ),
+						    std::make_pair( h1->GetZaxis(), h2->GetZaxis() ) };
   
   for (auto &axp: axps) {
 
@@ -152,7 +152,7 @@ Bool_t NMHUtils::BinsMatch(TH1 *h1, TH1 *h2) {
     auto ax2 = axp.second;
 
     if ( ax1->GetNbins() != ax2->GetNbins() ) {
-      cout << "NOTICE NMHUtils::BinsMatch() different number of bins on axis " << ax1->GetTitle() << endl;
+      if (notify) cout << "NOTICE NMHUtils::BinsMatch() different number of bins on axis " << ax1->GetTitle() << ", nr of bins: " << ax1->GetNbins() << "\t" << ax2->GetNbins() << endl;
       bins_match = kFALSE;
     }
 
@@ -160,10 +160,11 @@ Bool_t NMHUtils::BinsMatch(TH1 *h1, TH1 *h2) {
 
     for (Int_t bin = 1; bin <= nbins; bin++) {
 
-      if ( ax1->GetBinLowEdge(bin) != ax2->GetBinLowEdge(bin) ) {
-    cout << "NOTICE NMHUtils::BinsMatch() different bin low edges on axis " 
-         << ax1->GetTitle() << ", bin number " << bin << endl;
-    bins_match = kFALSE;
+      Double_t diff = TMath::Abs( ax1->GetBinLowEdge(bin) - ax2->GetBinLowEdge(bin) );
+
+      if ( diff > 1e-10 ) {
+	if (notify) cout << "NOTICE NMHUtils::BinsMatch() different bin low edges on axis "  << ax1->GetTitle() << ", bin number: " << bin << ", edges: " << ax1->GetBinLowEdge(bin) << "\t" << ax2->GetBinLowEdge(bin) << ", diff: " << diff << endl;
+	bins_match = kFALSE;
       }
 
     }
