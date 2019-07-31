@@ -7,7 +7,7 @@
 
 /** A structure to store event data in an event-by-event detector response implemented in the class `EvtResponse`.
 
-    The function `EvtResponse::GetBinEvts()` returns a vector of `TrueEvt` objects associated with the bin in reco space. The `TrueEvt` object stores all of the information necessary to calculate the number of expected events in a reco bin (see e.g. the class `fitter_software/FitUtil::RecoEvts`). Some data conversions are applied in this object in order to save RAM space, as all of the monte carlo events need to be read into memory for `EvtResponse`.
+    The function `EvtResponse::GetBinEvts()` returns a vector of `TrueEvt` objects associated with the bin in reco space. The `TrueEvt` object stores all of the information necessary to calculate the number of expected events in a reco bin (see e.g. `FitUtil::RecoEvts`). Some data conversions are applied in this object in order to save RAM space, as all of the monte carlo events need to be read into memory for `EvtResponse`.
 
  */
 class TrueEvt {
@@ -117,7 +117,7 @@ class TrueEvt {
 
    \endcode
 
-   Note that `GetOscillatedFlux` is pseudo-code, it is a function that returns the oscillated atmospheric neutrino flux at the detector cite for the neutrino type specified in the input argument `TrueEvt`. The usage of the class `EvtResponse` is illustrated in `fitter_software/FitUtil::RecoEvts`.
+   Note that `GetOscillatedFlux` is pseudo-code, it is a function that returns the oscillated atmospheric neutrino flux at the detector cite for the neutrino type specified in the input argument `TrueEvt`. The usage of the class `EvtResponse` is illustrated in `FitUtil::RecoEvts`.
 
 */
 class EvtResponse : public AbsResponse {
