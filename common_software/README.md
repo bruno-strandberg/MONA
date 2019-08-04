@@ -56,9 +56,7 @@ As the start of development of this package started in the early days of ORCA wh
 
 MC chain data/sea data in native format
 ---------------------------------------
-Sometime in the (far?) future we will agree that all data (sea data and monte-carlo summary data) will be in XXX format (when this package was started, no such agreement existed - some said `aanet` is the best, some said `hdf5` is the best, some said plain text is the best). Let it be assumed that, for example, `aanet` emerges victorious. How can one now use this package, which assumes `SummaryEvent` format? Should everything be deleted and started from scratch? Or should I convert each file I wish to use to `SummaryEvent` format? This sounds painful...
-
-**Easy and sustainable solution**: TBD set up pseudo-code in `SummaryParser` to exemplify how `aanet` files could be read.
+Sometime in the (far?) future we will agree that all data (sea data and monte-carlo summary data) will be in XXX format (when this package was started, no such agreement existed - some said `aanet` is the best, some said `hdf5` is the best, some said plain text is the best). Let it be assumed that, for example, `aanet` emerges victorious. To use this package, a converter class/namespace needs to be implemented that converts the event data from XXX to `SummaryEvent` format.
 
 Known bugs
 ----------
