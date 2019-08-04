@@ -69,8 +69,8 @@ void EventFilter::AddCut( std::function<Double_t(SummaryEvent&)> getter_ptr,
  */
 void EventFilter::AddCut(TString getter_func_name, TString comp_op, Double_t value, Bool_t AndCut) {
 
-  if ( fFuncMap.find(getter_func_name) == fFuncMap.end() ) {
-    for (auto f: fFuncMap) cout << f.first << endl;
+  if ( SUMMARYUTILS::fFuncMap.find(getter_func_name) == SUMMARYUTILS::fFuncMap.end() ) {
+    for (auto f: SUMMARYUTILS::fFuncMap) cout << f.first << endl;
     throw std::invalid_argument("ERROR! EventFilter::AddCut(TString ...) unrecognized function name " + (string)getter_func_name + " . Recognized function names listed above.");
   }
 
@@ -79,7 +79,7 @@ void EventFilter::AddCut(TString getter_func_name, TString comp_op, Double_t val
     throw std::invalid_argument("ERROR! EventFilter::AddCut(TString ...) unrecognized operator " + (string)comp_op + " . Recognized operators listed above.");
   }
 
-  cutobj this_cut( fFuncMap[getter_func_name], value, fOpMap[comp_op]);
+  cutobj this_cut( SUMMARYUTILS::fFuncMap[getter_func_name], value, fOpMap[comp_op]);
   if (AndCut) fAndCuts.push_back(this_cut);
   else fOrCuts.push_back(this_cut);
 }

@@ -1,19 +1,8 @@
 #include "TObject.h"
 #include "TVector3.h"
 #include "TRandom3.h"
-
-#ifndef SUMMARYUTILS
-#define SUMMARYUTILS
-
-/** This namespace stores the members that are necessary for `SummaryEvent::FillPseudoData()`. */
-namespace SUMMARYUTILS {
-
-  TRandom3 fRand(0);
-  std::vector<Double_t> fFlavs = {12.,14.,16.,-12.,-14.,-16.};
-
-};
-
-#endif
+#include <functional>
+#include <map>
 
 #ifndef SummaryEvent_h
 #define SummaryEvent_h
@@ -37,10 +26,7 @@ class SummaryEvent : public TObject {
   SummaryEvent();
   ~SummaryEvent();
 
-  /** Function to set the seed for the random event generation in `SummaryEvent::CreatePseudoData`.
-      \param seed  Generator seed
-   */
-  void SetSeed(UInt_t seed) { SUMMARYUTILS::fRand.SetSeed(seed); }
+  void SetSeed(UInt_t seed);
   
   //public interface to the data structure
 
@@ -226,6 +212,70 @@ class SummaryEvent : public TObject {
   // variables, increment the intex by 1. Then at read-in you can check the index and e.g. ignore
   // some variables in older versions
   ClassDef(SummaryEvent, 2)
+};
+
+#endif
+
+#ifndef SUMMARYUTILS
+#define SUMMARYUTILS
+
+/** This namespace provides some structures and functions for miscellaneous operations involving `SummaryEvent` data. */
+namespace SUMMARYUTILS {
+
+  TRandom3 fRand(0); //!< random generator for `SummaryEvent::FillPseudoData`
+  std::vector<Double_t> fFlavs = {12.,14.,16.,-12.,-14.,-16.}; //!< PDG codes for `SummaryEvent::FillPseudoData`
+
+  /// map of function names and corresponding getter functions from `SummaryEvent` class, this is required to be able to use MONA with PyROOT. If more variables & getters are added to `SummaryEvent`, the getter functions should be added to this map to make the new functionality also available in PyROOT. The map is used in the `EventFilter::AddCut(TString, TString, Double_t, Bool_t)` function.
+  
+  std::map< TString, std::function<Double_t(SummaryEvent&)> > fFuncMap = {
+    {"SummaryEvent.Get_MC_runID"       , &SummaryEvent::Get_MC_runID       },
+    {"SummaryEvent.Get_MC_evtID"       , &SummaryEvent::Get_MC_evtID       },
+    {"SummaryEvent.Get_MC_w2"          , &SummaryEvent::Get_MC_w2          },
+    {"SummaryEvent.Get_MC_w1y"         , &SummaryEvent::Get_MC_w1y         },
+    {"SummaryEvent.Get_MC_w2denom"     , &SummaryEvent::Get_MC_w2denom     },  
+    {"SummaryEvent.Get_MC_erange_start", &SummaryEvent::Get_MC_erange_start},
+    {"SummaryEvent.Get_MC_erange_stop" , &SummaryEvent::Get_MC_erange_stop },
+    {"SummaryEvent.Get_MC_is_CC"       , &SummaryEvent::Get_MC_is_CC       },
+    {"SummaryEvent.Get_MC_is_neutrino" , &SummaryEvent::Get_MC_is_neutrino },
+    {"SummaryEvent.Get_MC_type"        , &SummaryEvent::Get_MC_type        },
+    {"SummaryEvent.Get_MC_ichan"       , &SummaryEvent::Get_MC_ichan       },
+    {"SummaryEvent.Get_MC_dir_x"       , &SummaryEvent::Get_MC_dir_x       },
+    {"SummaryEvent.Get_MC_dir_y"       , &SummaryEvent::Get_MC_dir_y       },
+    {"SummaryEvent.Get_MC_dir_z"       , &SummaryEvent::Get_MC_dir_z       },
+    {"SummaryEvent.Get_MC_pos_x"       , &SummaryEvent::Get_MC_pos_x       },
+    {"SummaryEvent.Get_MC_pos_y"       , &SummaryEvent::Get_MC_pos_y       },
+    {"SummaryEvent.Get_MC_pos_z"       , &SummaryEvent::Get_MC_pos_z       },
+    {"SummaryEvent.Get_MC_energy"      , &SummaryEvent::Get_MC_energy      },
+    {"SummaryEvent.Get_MC_bjorkeny"    , &SummaryEvent::Get_MC_bjorkeny    },
+    {"SummaryEvent.Get_track_dir_x"    , &SummaryEvent::Get_track_dir_x    },
+    {"SummaryEvent.Get_track_dir_y"    , &SummaryEvent::Get_track_dir_y    },
+    {"SummaryEvent.Get_track_dir_z"    , &SummaryEvent::Get_track_dir_z    },
+    {"SummaryEvent.Get_track_pos_x"    , &SummaryEvent::Get_track_pos_x    },
+    {"SummaryEvent.Get_track_pos_y"    , &SummaryEvent::Get_track_pos_y    },
+    {"SummaryEvent.Get_track_pos_z"    , &SummaryEvent::Get_track_pos_z    },
+    {"SummaryEvent.Get_track_energy"   , &SummaryEvent::Get_track_energy   },
+    {"SummaryEvent.Get_track_bjorkeny" , &SummaryEvent::Get_track_bjorkeny },
+    {"SummaryEvent.Get_track_ql0"      , &SummaryEvent::Get_track_ql0      },
+    {"SummaryEvent.Get_track_ql1"      , &SummaryEvent::Get_track_ql1      },
+    {"SummaryEvent.Get_track_ql2"      , &SummaryEvent::Get_track_ql2      },
+    {"SummaryEvent.Get_track_ql3"      , &SummaryEvent::Get_track_ql3      },
+    {"SummaryEvent.Get_shower_dir_x"   , &SummaryEvent::Get_shower_dir_x   },
+    {"SummaryEvent.Get_shower_dir_y"   , &SummaryEvent::Get_shower_dir_y   },
+    {"SummaryEvent.Get_shower_dir_z"   , &SummaryEvent::Get_shower_dir_z   },
+    {"SummaryEvent.Get_shower_pos_x"   , &SummaryEvent::Get_shower_pos_x   },
+    {"SummaryEvent.Get_shower_pos_y"   , &SummaryEvent::Get_shower_pos_y   },
+    {"SummaryEvent.Get_shower_pos_z"   , &SummaryEvent::Get_shower_pos_z   },
+    {"SummaryEvent.Get_shower_energy"  , &SummaryEvent::Get_shower_energy  },
+    {"SummaryEvent.Get_shower_bjorkeny", &SummaryEvent::Get_shower_bjorkeny},
+    {"SummaryEvent.Get_shower_ql0"     , &SummaryEvent::Get_shower_ql0     },
+    {"SummaryEvent.Get_shower_ql1"     , &SummaryEvent::Get_shower_ql1     },
+    {"SummaryEvent.Get_shower_ql2"     , &SummaryEvent::Get_shower_ql2     },
+    {"SummaryEvent.Get_shower_ql3"     , &SummaryEvent::Get_shower_ql3     },
+    {"SummaryEvent.Get_RDF_muon_score" , &SummaryEvent::Get_RDF_muon_score },
+    {"SummaryEvent.Get_RDF_track_score", &SummaryEvent::Get_RDF_track_score},
+    {"SummaryEvent.Get_RDF_noise_score", &SummaryEvent::Get_RDF_noise_score},
+  };
+
 };
 
 #endif

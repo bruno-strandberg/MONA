@@ -60,6 +60,13 @@ SummaryEvent::~SummaryEvent() {}
 
 //***************************************************************************************
 
+/** Function to set the seed for the random event generation in `SummaryEvent::CreatePseudoData`.
+    \param seed  Generator seed
+*/
+void SummaryEvent::SetSeed(UInt_t seed) { SUMMARYUTILS::fRand.SetSeed(seed); }
+
+//***************************************************************************************
+
 /** This function writes simplistic pseudodata to the member variables and is mainly useful for testing.
 
     For example, the pseudo-events can be processed through event filters/selections/detector responses.

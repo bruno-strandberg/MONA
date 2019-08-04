@@ -120,57 +120,7 @@ class EventFilter {
     { "<=", std::less_equal<double>()    },
     { "<" , std::less<double>()          },
   };
-  
-  /// map of function names and corresponding getter functions from `SummaryEvent` class, this is required to be able to use MONA with PyROOT, as python does not like pointers to functions. If More variables & getters are added to summary events, the getter functions should be added to this map to make the new functionality also available in pyroot
-  std::map< TString, std::function<Double_t(SummaryEvent&)> > fFuncMap = {
-    {"SummaryEvent.Get_MC_runID"       , &SummaryEvent::Get_MC_runID       },
-    {"SummaryEvent.Get_MC_evtID"       , &SummaryEvent::Get_MC_evtID       },
-    {"SummaryEvent.Get_MC_w2"          , &SummaryEvent::Get_MC_w2          },
-    {"SummaryEvent.Get_MC_w1y"         , &SummaryEvent::Get_MC_w1y         },
-    {"SummaryEvent.Get_MC_w2denom"     , &SummaryEvent::Get_MC_w2denom     },  
-    {"SummaryEvent.Get_MC_erange_start", &SummaryEvent::Get_MC_erange_start},
-    {"SummaryEvent.Get_MC_erange_stop" , &SummaryEvent::Get_MC_erange_stop },
-    {"SummaryEvent.Get_MC_is_CC"       , &SummaryEvent::Get_MC_is_CC       },
-    {"SummaryEvent.Get_MC_is_neutrino" , &SummaryEvent::Get_MC_is_neutrino },
-    {"SummaryEvent.Get_MC_type"        , &SummaryEvent::Get_MC_type        },
-    {"SummaryEvent.Get_MC_ichan"       , &SummaryEvent::Get_MC_ichan       },
-    {"SummaryEvent.Get_MC_dir_x"       , &SummaryEvent::Get_MC_dir_x       },
-    {"SummaryEvent.Get_MC_dir_y"       , &SummaryEvent::Get_MC_dir_y       },
-    {"SummaryEvent.Get_MC_dir_z"       , &SummaryEvent::Get_MC_dir_z       },
-    {"SummaryEvent.Get_MC_pos_x"       , &SummaryEvent::Get_MC_pos_x       },
-    {"SummaryEvent.Get_MC_pos_y"       , &SummaryEvent::Get_MC_pos_y       },
-    {"SummaryEvent.Get_MC_pos_z"       , &SummaryEvent::Get_MC_pos_z       },
-    {"SummaryEvent.Get_MC_energy"      , &SummaryEvent::Get_MC_energy      },
-    {"SummaryEvent.Get_MC_bjorkeny"    , &SummaryEvent::Get_MC_bjorkeny    },
-    {"SummaryEvent.Get_track_dir_x"    , &SummaryEvent::Get_track_dir_x    },
-    {"SummaryEvent.Get_track_dir_y"    , &SummaryEvent::Get_track_dir_y    },
-    {"SummaryEvent.Get_track_dir_z"    , &SummaryEvent::Get_track_dir_z    },
-    {"SummaryEvent.Get_track_pos_x"    , &SummaryEvent::Get_track_pos_x    },
-    {"SummaryEvent.Get_track_pos_y"    , &SummaryEvent::Get_track_pos_y    },
-    {"SummaryEvent.Get_track_pos_z"    , &SummaryEvent::Get_track_pos_z    },
-    {"SummaryEvent.Get_track_energy"   , &SummaryEvent::Get_track_energy   },
-    {"SummaryEvent.Get_track_bjorkeny" , &SummaryEvent::Get_track_bjorkeny },
-    {"SummaryEvent.Get_track_ql0"      , &SummaryEvent::Get_track_ql0      },
-    {"SummaryEvent.Get_track_ql1"      , &SummaryEvent::Get_track_ql1      },
-    {"SummaryEvent.Get_track_ql2"      , &SummaryEvent::Get_track_ql2      },
-    {"SummaryEvent.Get_track_ql3"      , &SummaryEvent::Get_track_ql3      },
-    {"SummaryEvent.Get_shower_dir_x"   , &SummaryEvent::Get_shower_dir_x   },
-    {"SummaryEvent.Get_shower_dir_y"   , &SummaryEvent::Get_shower_dir_y   },
-    {"SummaryEvent.Get_shower_dir_z"   , &SummaryEvent::Get_shower_dir_z   },
-    {"SummaryEvent.Get_shower_pos_x"   , &SummaryEvent::Get_shower_pos_x   },
-    {"SummaryEvent.Get_shower_pos_y"   , &SummaryEvent::Get_shower_pos_y   },
-    {"SummaryEvent.Get_shower_pos_z"   , &SummaryEvent::Get_shower_pos_z   },
-    {"SummaryEvent.Get_shower_energy"  , &SummaryEvent::Get_shower_energy  },
-    {"SummaryEvent.Get_shower_bjorkeny", &SummaryEvent::Get_shower_bjorkeny},
-    {"SummaryEvent.Get_shower_ql0"     , &SummaryEvent::Get_shower_ql0     },
-    {"SummaryEvent.Get_shower_ql1"     , &SummaryEvent::Get_shower_ql1     },
-    {"SummaryEvent.Get_shower_ql2"     , &SummaryEvent::Get_shower_ql2     },
-    {"SummaryEvent.Get_shower_ql3"     , &SummaryEvent::Get_shower_ql3     },
-    {"SummaryEvent.Get_RDF_muon_score" , &SummaryEvent::Get_RDF_muon_score },
-    {"SummaryEvent.Get_RDF_track_score", &SummaryEvent::Get_RDF_track_score},
-    {"SummaryEvent.Get_RDF_noise_score", &SummaryEvent::Get_RDF_noise_score},
-  };
-  
+    
 };
 
 #endif
